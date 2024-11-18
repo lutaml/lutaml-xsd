@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "lutaml/xsd"
+require "equivalent-xml"
+require "equivalent-xml/rspec_matchers"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
