@@ -2,13 +2,13 @@
 
 module Lutaml
   module Xsd
-    class Unique < Lutaml::Model::Serializable
+    class Key < Lutaml::Model::Serializable
       attribute :name, :string
-      attribute :selector, Selector, collection: true
-      attribute :field, Field, collection: true
+      attribute :selector, Selector
+      attribute :field, Field
 
       xml do
-        root "unique", mixed: true
+        root "key", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :name, to: :name
