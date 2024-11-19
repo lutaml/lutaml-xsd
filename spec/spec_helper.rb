@@ -18,6 +18,6 @@ end
 
 def to_xml(parsed_schema, escape_content_tags: false)
   xml = parsed_schema.to_xml
-  xml.gsub!(/\&lt;([^\&]+)\&\gt;/, '<\1>') if escape_content_tags
+  xml.gsub!(/&lt;([^&]+)&\gt;/, '<\1>') if escape_content_tags
   xml
 end
