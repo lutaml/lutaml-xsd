@@ -7,7 +7,6 @@ module Lutaml
     module_function
 
     def parse(xsd)
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
       Schema.from_xml(xsd)
     end
   end

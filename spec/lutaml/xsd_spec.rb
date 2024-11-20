@@ -27,7 +27,8 @@ RSpec.describe Lutaml::Xsd do
       end
 
       it "matches count of attributes" do
-        expect(to_xml(parsed_schema, escape_content_tags: true)).to be_equivalent_to(schema)
+        processed_xml = schema_to_xml(parsed_schema.to_xml, escape_content_tags: true)
+        expect(processed_xml).to be_analogous_with(schema_to_xml(schema))
       end
     end
   end

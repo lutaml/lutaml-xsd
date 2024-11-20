@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 require "lutaml/xsd"
-require "equivalent-xml"
-require "equivalent-xml/rspec_matchers"
+require "xml/c14n"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -16,8 +15,8 @@ RSpec.configure do |config|
   end
 end
 
-def to_xml(parsed_schema, escape_content_tags: false)
-  xml = parsed_schema.to_xml
+def schema_to_xml(xml, escape_content_tags: false)
+  xml = Xml::C14n.format(xml)
   xml.gsub!(/&lt;([^&]+)&\gt;/, '<\1>') if escape_content_tags
   xml
 end
