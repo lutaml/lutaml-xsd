@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
-require_relative "xsd/version"
+require "zeitwerk"
+require "lutaml/model"
+require_relative "xsd/xsd"
 
-module Lutaml
-  module Xsd
-    class Error < StandardError; end
-    # Your code goes here...
-  end
-end
+Lutaml::Model::Config.xml_adapter_type = :nokogiri
+
+loader = Zeitwerk::Loader.for_gem(warn_on_extra_files: true)
+loader.push_dir("#{__dir__}/xsd", namespace: Lutaml::Xsd)
+loader.ignore("#{__dir__}/lib/lutaml/xsd.rb")
+loader.setup
