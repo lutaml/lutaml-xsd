@@ -5,6 +5,7 @@ module Lutaml
     class Schema < Lutaml::Model::Serializable
       attribute :xmlns, :string
       attribute :import, Import, collection: true
+      attribute :schema, Schema, collection: true
       attribute :include, Include, collection: true
       attribute :element, Element, collection: true
       attribute :complex_type, ComplexType, collection: true
@@ -21,7 +22,7 @@ module Lutaml
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :xmlns, to: :xmlns, namespace: "http://csrc.nist.gov/ns/oscal/metaschema/1.0", prefix: nil
-        map_element :import, to: :import
+        map_element :import, to: :import, with: { from: :from_schema, to: :to_schema }
         map_element :include, to: :include
         map_element :element, to: :element
         map_element :complexType, to: :complex_type
@@ -32,6 +33,18 @@ module Lutaml
         map_attribute :attributeFormDefault, to: :attribute_form_default
         map_attribute :blockDefault, to: :block_default
         map_attribute :targetNamespace, to: :target_namespace
+      end
+
+      def from_schema(model, value)
+        # IN-PROGRESS
+        # value.each do |imported_schema|
+        #   binding.irb
+        #   imported_schema.from_schema(model, value)
+        # end
+      end
+
+      def to_schema(model, parent, doc)
+        # binding.irb
       end
     end
   end

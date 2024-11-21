@@ -5,6 +5,7 @@ module Lutaml
     class Import < Lutaml::Model::Serializable
       attribute :id, :string
       attribute :namespace, :string
+      attribute :schema_location, :string
 
       xml do
         root "import", mixed: true

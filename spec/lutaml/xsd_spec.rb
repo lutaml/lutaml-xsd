@@ -3,7 +3,8 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Xsd do
-  subject(:parsed_schema) { described_class.parse(schema) }
+  # TODO: remove dummy location url
+  subject(:parsed_schema) { described_class.parse(schema, location: "https://www.something.com/") }
 
   it "has a version number" do
     expect(Lutaml::Xsd::VERSION).not_to be nil

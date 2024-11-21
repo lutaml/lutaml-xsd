@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
   
-  <!-- <xs:include schemaLocation="metaschema-prose-base.xsd"/> -->
+  <xs:include schemaLocation="metaschema-prose-base.xsd"/>
 
   <xs:complexType name="MarkupMultilineDatatype">
     <xs:choice minOccurs="1" maxOccurs="unbounded">
