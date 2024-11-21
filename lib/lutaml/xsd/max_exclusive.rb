@@ -2,14 +2,16 @@
 
 module Lutaml
   module Xsd
-    class MaxInclusive < Model::Serializable
-      attribute :value, :string
+    class MaxExclusive < Model::Serializable
+      attribute :fixed, :string
+      attribute :value, :integer
 
       xml do
-        root "maxInclusive", mixed: true
+        root "maxExclusive", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :value, to: :value
+        map_attribute :fixed, to: :fixed
       end
     end
   end

@@ -2,9 +2,9 @@
 
 module Lutaml
   module Xsd
-    class Enumeration < Lutaml::Model::Serializable
+    class Enumeration < Model::Serializable
       attribute :value, :string
-      attribute :annotation, Annotation, collection: true
+      attribute :annotation, Annotation
 
       xml do
         root "enumeration", mixed: true
