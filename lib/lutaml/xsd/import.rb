@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "net/http"
 module Lutaml
   module Xsd
     class Import < Lutaml::Model::Serializable
@@ -13,6 +14,22 @@ module Lutaml
 
         map_attribute :id, to: :id
         map_attribute :namespace, to: :namespace
+      end
+
+      def import_schema
+        if Glob.location? && schema_location
+          if Glob.url?
+            Net::HTTP.get(
+              URI.parse(
+                Glob.schema_location_path(schema_location),
+              ),
+            )
+          else
+            File.read(
+              Glob.schema_location_path(schema_location),
+            )
+          end
+        end
       end
     end
   end
