@@ -3,10 +3,10 @@
 module Lutaml
   module Xsd
     module Glob
-      module_function
+      extend self
 
       def set_path_or_url(location)
-        return nullify_path_and_url if location.nil?
+        return nullify_location if location.nil?
 
         @location = location
         @url = location if location.start_with?(/http\w?:\/{2}[^.]+/)
@@ -31,15 +31,23 @@ module Lutaml
         url? || path?
       end
 
-      def schema_location_path(schema_location)
-        if schema_location.start_with?("/") || location.end_with?("/")
-          location + schema_location
-        else
-          location + "/" + schema_location
-        end
+      def http_get(url)
+        Net::HTTP.get(URI.parse(url))
+      end
+
+      def include_schema(schema_location)
+        return unless location? || schema_location
+
+        schema_path = schema_location_path(schema_location)
+        url? ? http_get(schema_path) : File.read(schema_path)
       end
 
       private
+
+      def schema_location_path(schema_location)
+        separator = "/" unless schema_location&.start_with?("/") || location&.end_with?("/")
+        [location, schema_location].join(separator)
+      end
 
       def nullify_location
         @location = nil

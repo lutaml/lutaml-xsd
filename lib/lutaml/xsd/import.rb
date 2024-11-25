@@ -6,6 +6,7 @@ module Lutaml
     class Import < Lutaml::Model::Serializable
       attribute :id, :string
       attribute :namespace, :string
+      attribute :annotation, Annotation
       attribute :schema_location, :string
 
       xml do
@@ -17,19 +18,7 @@ module Lutaml
       end
 
       def import_schema
-        if Glob.location? && schema_location
-          if Glob.url?
-            Net::HTTP.get(
-              URI.parse(
-                Glob.schema_location_path(schema_location),
-              ),
-            )
-          else
-            File.read(
-              Glob.schema_location_path(schema_location),
-            )
-          end
-        end
+        Glob.include_schema(schema_location) if schema_location
       end
     end
   end

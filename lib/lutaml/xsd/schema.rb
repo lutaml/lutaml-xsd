@@ -4,11 +4,12 @@ module Lutaml
   module Xsd
     class Schema < Lutaml::Model::Serializable
       attribute :xmlns, :string
+      attribute :imports, Import, collection: true
+      attribute :includes, Include, collection: true
       attribute :import, Import, collection: true
       attribute :schemas, Schema, collection: true
-      attribute :import_and_include, :hash, collection: true
-      attribute :include, Include, collection: true
       attribute :element, Element, collection: true
+      attribute :include, Include, collection: true
       attribute :complex_type, ComplexType, collection: true
       attribute :simple_type, SimpleType, collection: true
       attribute :group, Group, collection: true
@@ -23,8 +24,8 @@ module Lutaml
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :xmlns, to: :xmlns, namespace: "http://csrc.nist.gov/ns/oscal/metaschema/1.0", prefix: nil
-        map_element :import, to: :import, with: { from: :from_schema, to: :to_schema_xml }
-        map_element :include, to: :include
+        map_element :import, to: :import, with: { from: :import_from_schema, to: :import_to_schema }
+        map_element :include, to: :include, with: { from: :include_from_schema, to: :include_to_schema }
         map_element :element, to: :element
         map_element :complexType, to: :complex_type
         map_element :simpleType, to: :simple_type
@@ -40,41 +41,103 @@ module Lutaml
         @processed_schemas ||= {}
       end
 
-      def self.schema_processed?(id)
-        processed_schemas[id]
+      def self.schema_processed?(location)
+        processed_schemas[location]
       end
 
-      def self.schema_processed(id)
-        processed_schemas[id] = true
+      def self.schema_processed(location)
+        processed_schemas[location] = true
       end
 
-      def from_schema(model, value)
-        model.import_and_include += value
-        model.import_and_include&.flatten!&.uniq!
+      def import_from_schema(model, value)
+        model.imports += value
+        model.imports&.flatten!&.uniq!
+
         value.each do |imported_schema|
-          next if self.class.schema_processed?(imported_schema["id"])
+          next if self.class.schema_processed?(dig_schema_location(imported_schema))
 
-          self.class.schema_processed(imported_schema["id"])
-          imported_schema["schema_location"] = imported_schema.delete("__schema_location")&.dig(:schema_location)
+          self.class.schema_processed(dig_schema_location(imported_schema))
           schema_imported = Import.new(
             id: imported_schema["id"],
             namespace: imported_schema["namespace"],
-            schema_location: imported_schema["schema_location"],
+            schema_location: dig_schema_location(imported_schema),
           ).import_schema
           model.schemas << Lutaml::Xsd.parse(schema_imported, location: Glob.location) if schema_imported
         end
       end
 
-      def to_schema_xml(model, parent, doc)
-        model.import_and_include.each_with_index do |imported_schema, index|
-          import_element = doc.create_element("import")
-          import_element.set_attribute("id", imported_schema["id"]) if imported_schema["id"]
-          import_element.set_attribute("namespace", imported_schema["namespace"]) if imported_schema["namespace"]
-          if imported_schema["__schema_location"]&.key?(:schema_location)
-            import_element.set_attribute("schemaLocation", imported_schema["__schema_location"][:schema_location])
-          end
-          model.import_and_include.delete_at(index)
+      def import_to_schema(model, parent, doc)
+        model.imports.each_with_index do |imported_schema, index|
+          import_element = create_import_or_include_element(imported_schema, doc, element_name: "import")
+          insert_annotation(imported_schema, import_element, doc)
           parent.add_child(import_element)
+          model.imports.delete_at(index)
+        end
+      end
+
+      def include_from_schema(model, value)
+        model.includes += value
+        model.includes&.flatten!&.uniq!
+
+        value.each do |included_schema|
+          next if self.class.schema_processed?(dig_schema_location(included_schema))
+
+          self.class.schema_processed(dig_schema_location(included_schema))
+          schema_included = Include.new(
+            id: included_schema["id"],
+            schema_location: dig_schema_location(included_schema),
+          ).include_schema
+          model.schemas << Lutaml::Xsd.parse(schema_included, location: Glob.location) if schema_included
+        end
+      end
+
+      def include_to_schema(model, parent, doc)
+        model.includes.each_with_index do |included_schema, index|
+          include_element = create_import_or_include_element(included_schema, doc, element_name: "include")
+          insert_annotation(included_schema, include_element, doc)
+          parent.add_child(include_element)
+          model.includes.delete_at(index)
+        end
+      end
+
+      def dig_schema_location(schema_hash)
+        schema_hash&.dig("__schema_location", :schema_location)
+      end
+
+      def schema_location?(schema_hash)
+        schema_hash&.dig("__schema_location")&.key?(:schema_location)
+      end
+
+      def reject_text(schema_hash)
+        schema_hash&.reject! { |k, _| k if k == "text" }
+      end
+
+      def add_annotation(value, doc)
+        annotation = doc.create_element("annotation")
+        documentation_element = doc.create_element("documentation")
+        documentation_element.add_child(documentation_text(value))
+        annotation.add_child(documentation_element)
+        annotation
+      end
+
+      def documentation_text(value)
+        documentation_key = value.keys.find { |key| key.include?("documentation") }
+        value.dig(documentation_key, "text")
+      end
+
+      def create_import_or_include_element(schema_hash, doc, element_name:)
+        element = doc.create_element(element_name)
+        element.set_attribute("id", schema_hash["id"]) if schema_hash["id"]
+        element.set_attribute("namespace", schema_hash["namespace"]) if schema_hash["namespace"]
+        element.set_attribute("schemaLocation", dig_schema_location(schema_hash)) if schema_location?(schema_hash)
+        element
+      end
+
+      def insert_annotation(schema_hash, element, doc)
+        schema_hash.each do |key, value|
+          next unless key.include?("annotation")
+
+          element.add_child(add_annotation(value, doc))
         end
       end
     end
