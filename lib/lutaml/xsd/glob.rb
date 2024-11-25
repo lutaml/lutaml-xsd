@@ -5,13 +5,13 @@ module Lutaml
     module Glob
       extend self
 
-      def set_path_or_url(location)
+      def path_or_url(location)
         return nullify_location if location.nil?
 
         @location = location
-        @url = location if location.start_with?(/http\w?:\/{2}[^.]+/)
+        @url = location if location.start_with?(%r{http\w?:/{2}[^.]+})
         @path = File.expand_path(location) unless @url
-      rescue => e
+      rescue Errno::ENOENT
         raise Error, "Invalid location: #{location}"
       end
 

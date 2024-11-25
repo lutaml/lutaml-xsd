@@ -23,7 +23,6 @@ module Lutaml
         root "schema", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
-        map_attribute :xmlns, to: :xmlns, namespace: "http://csrc.nist.gov/ns/oscal/metaschema/1.0", prefix: nil
         map_element :import, to: :import, with: { from: :import_from_schema, to: :import_to_schema }
         map_element :include, to: :include, with: { from: :include_from_schema, to: :include_to_schema }
         map_element :element, to: :element
@@ -37,18 +36,6 @@ module Lutaml
         map_attribute :targetNamespace, to: :target_namespace
       end
 
-      def self.processed_schemas
-        @processed_schemas ||= {}
-      end
-
-      def self.schema_processed?(location)
-        processed_schemas[location]
-      end
-
-      def self.schema_processed(location)
-        processed_schemas[location] = true
-      end
-
       def import_from_schema(model, value)
         model.imports += value
         model.imports&.flatten!&.uniq!
@@ -57,12 +44,7 @@ module Lutaml
           next if self.class.schema_processed?(dig_schema_location(imported_schema))
 
           self.class.schema_processed(dig_schema_location(imported_schema))
-          schema_imported = Import.new(
-            id: imported_schema["id"],
-            namespace: imported_schema["namespace"],
-            schema_location: dig_schema_location(imported_schema),
-          ).import_schema
-          model.schemas << Lutaml::Xsd.parse(schema_imported, location: Glob.location) if schema_imported
+          insert_in_schemas(schema_imported(imported_schema), model)
         end
       end
 
@@ -83,11 +65,7 @@ module Lutaml
           next if self.class.schema_processed?(dig_schema_location(included_schema))
 
           self.class.schema_processed(dig_schema_location(included_schema))
-          schema_included = Include.new(
-            id: included_schema["id"],
-            schema_location: dig_schema_location(included_schema),
-          ).include_schema
-          model.schemas << Lutaml::Xsd.parse(schema_included, location: Glob.location) if schema_included
+          insert_in_schemas(schema_included(included_schema), model)
         end
       end
 
@@ -99,6 +77,8 @@ module Lutaml
           model.includes.delete_at(index)
         end
       end
+
+      private
 
       def dig_schema_location(schema_hash)
         schema_hash&.dig("__schema_location", :schema_location)
@@ -134,6 +114,41 @@ module Lutaml
           next unless key.include?("annotation")
 
           element.add_child(add_annotation(value, doc))
+        end
+      end
+
+      def schema_imported(imported_schema)
+        Import.new(
+          id: imported_schema["id"],
+          namespace: imported_schema["namespace"],
+          schema_location: dig_schema_location(imported_schema)
+        ).import_schema
+      end
+
+      def schema_included(included_schema)
+        Include.new(
+          id: included_schema["id"],
+          schema_location: dig_schema_location(included_schema)
+        ).include_schema
+      end
+
+      def insert_in_schemas(schema, model)
+        return unless schema
+
+        model.schemas << Lutaml::Xsd.parse(schema, location: Glob.location)
+      end
+
+      class << self
+        def processed_schemas
+          @processed_schemas ||= {}
+        end
+
+        def schema_processed?(location)
+          processed_schemas[location]
+        end
+
+        def schema_processed(location)
+          processed_schemas[location] = true
         end
       end
     end

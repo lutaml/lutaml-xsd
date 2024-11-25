@@ -7,7 +7,7 @@ module Lutaml
     module_function
 
     def parse(xsd, location: nil)
-      Glob.set_path_or_url(location)
+      Glob.path_or_url(location)
       Schema.from_xml(xsd)
     end
   end
