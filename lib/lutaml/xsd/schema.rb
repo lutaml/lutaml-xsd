@@ -108,10 +108,6 @@ module Lutaml
         schema_hash&.dig("__schema_location")&.key?(:schema_location)
       end
 
-      def reject_text(schema_hash)
-        schema_hash&.reject! { |k, _| k if k == "text" }
-      end
-
       def add_annotation(value, doc)
         annotation = doc.create_element("annotation")
         documentation_element = doc.create_element("documentation")
