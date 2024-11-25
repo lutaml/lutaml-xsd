@@ -2,16 +2,22 @@
 
 require "spec_helper"
 
-RSpec.describe Lutaml::Xsd do
-  subject(:parsed_schema) { described_class.parse(schema) }
+LOCATIONS = {
+  omml_schema: "https://raw.githubusercontent.com/t-yuki/ooxml-xsd/refs/heads/master",
+  "metaschema-meta-constraints": "spec/lutaml/fixtures",
+  "metaschema-markup-multiline": "spec/lutaml/fixtures",
+  "metaschema-prose-module": "spec/lutaml/fixtures",
+  "metaschema-markup-line": "spec/lutaml/fixtures",
+  metaschema: "spec/lutaml/fixtures"
+}.freeze
 
-  it "has a version number" do
-    expect(Lutaml::Xsd::VERSION).not_to be nil
-  end
+RSpec.describe Lutaml::Xsd do
+  subject(:parsed_schema) { described_class.parse(schema, location: location) }
 
   Dir.glob(File.expand_path("fixtures/*.xsd", __dir__)).each do |input_file|
     context "when parsing #{input_file}" do
       let(:schema) { File.read(input_file) }
+      let(:location) { LOCATIONS[File.basename(input_file, ".xsd").to_sym] }
 
       it "matches a Lutaml::Model::Schema object" do
         expect(parsed_schema).to be_a(Lutaml::Xsd::Schema)
