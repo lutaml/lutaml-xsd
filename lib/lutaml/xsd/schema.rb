@@ -140,10 +140,14 @@ module Lutaml
       def insert_in_schemas(schema, model)
         return unless schema
 
-        model.schemas << Lutaml::Xsd.parse(schema, location: Glob.location)
+        model.schemas << Lutaml::Xsd.parse(schema, location: Glob.location, nested_schema: true)
       end
 
       class << self
+        def reset_processed_schemas
+          @processed_schemas = {}
+        end
+
         def processed_schemas
           @processed_schemas ||= {}
         end
