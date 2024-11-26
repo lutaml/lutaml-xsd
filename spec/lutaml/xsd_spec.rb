@@ -24,12 +24,13 @@ RSpec.describe Lutaml::Xsd do
       end
 
       it "matches count of direct child elements of the root" do
-        # TODO: uncomment once we have a way to process imports
-        # expect(parsed_schema.import.count).to eql(schema.scan(/<\w+:import /).count)
+        expect(parsed_schema.import.count).to eql(schema.scan(/<\w+:import /).count)
+        expect(parsed_schema.include.count).to eql(schema.scan(/<\w+:include /).count)
         expect(parsed_schema.group.count).to eql(schema.scan(/<\w+:group name=/).count)
         expect(parsed_schema.simple_type.count).to eql(schema.scan(/<\w+:simpleType /).count)
         expect(parsed_schema.element.count).to eql(schema.scan(/^\s{0,2}<\w+:element /).count)
         expect(parsed_schema.complex_type.count).to eql(schema.scan(/<\w+:complexType /).count)
+        expect(parsed_schema.schemas.count).to eql(schema.scan(/ schemaLocation="[^"]+"/).count)
       end
 
       it "matches count of attributes" do

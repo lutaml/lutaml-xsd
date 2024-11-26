@@ -2,6 +2,7 @@
 
 module Lutaml
   module Xsd
+    # rubocop:disable Metrics/ClassLength
     class Schema < Lutaml::Model::Serializable
       attribute :xmlns, :string
       attribute :imports, Import, collection: true
@@ -41,10 +42,12 @@ module Lutaml
         model.imports&.flatten!&.uniq!
 
         value.each do |imported_schema|
-          next if self.class.schema_processed?(dig_schema_location(imported_schema))
+          import_instance = import_object(imported_schema)
+          model.import << import_instance
+          next if self.class.schema_processed?(import_instance.schema_location)
 
-          self.class.schema_processed(dig_schema_location(imported_schema))
-          insert_in_schemas(schema_imported(imported_schema), model)
+          self.class.schema_processed(import_instance.schema_location)
+          insert_in_schemas(import_instance.import_schema, model)
         end
       end
 
@@ -62,10 +65,12 @@ module Lutaml
         model.includes&.flatten!&.uniq!
 
         value.each do |included_schema|
-          next if self.class.schema_processed?(dig_schema_location(included_schema))
+          include_instance = include_object(included_schema)
+          model.include << include_instance
+          next if self.class.schema_processed?(include_instance.schema_location)
 
-          self.class.schema_processed(dig_schema_location(included_schema))
-          insert_in_schemas(schema_included(included_schema), model)
+          self.class.schema_processed(include_instance.schema_location)
+          insert_in_schemas(include_instance.include_schema, model)
         end
       end
 
@@ -117,19 +122,19 @@ module Lutaml
         end
       end
 
-      def schema_imported(imported_schema)
+      def import_object(imported_schema)
         Import.new(
           id: imported_schema["id"],
           namespace: imported_schema["namespace"],
           schema_location: dig_schema_location(imported_schema)
-        ).import_schema
+        )
       end
 
-      def schema_included(included_schema)
+      def include_object(included_schema)
         Include.new(
           id: included_schema["id"],
           schema_location: dig_schema_location(included_schema)
-        ).include_schema
+        )
       end
 
       def insert_in_schemas(schema, model)
@@ -152,5 +157,6 @@ module Lutaml
         end
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
