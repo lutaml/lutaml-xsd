@@ -4,6 +4,7 @@ module Lutaml
   module Xsd
     class Attribute < Lutaml::Model::Serializable
       attribute :use, :string
+      attribute :ref, :string
       attribute :name, :string
       attribute :type, :string
       attribute :default, :string
@@ -15,6 +16,7 @@ module Lutaml
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :use, to: :use
+        map_attribute :ref, to: :ref
         map_attribute :name, to: :name
         map_attribute :type, to: :type
         map_attribute :default, to: :default
