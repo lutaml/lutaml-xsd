@@ -5,20 +5,22 @@ module Lutaml
     # rubocop:disable Metrics/ClassLength
     class Schema < Lutaml::Model::Serializable
       attribute :xmlns, :string
+      attribute :block_default, :string
+      attribute :target_namespace, :string
+      attribute :element_form_default, :string
+      attribute :attribute_form_default, :string
+      attribute :schemas, Schema, collection: true
       attribute :imports, Import, collection: true
       attribute :includes, Include, collection: true
+
       attribute :import, Import, collection: true
-      attribute :schemas, Schema, collection: true
       attribute :element, Element, collection: true
       attribute :include, Include, collection: true
       attribute :complex_type, ComplexType, collection: true
       attribute :simple_type, SimpleType, collection: true
       attribute :group, Group, collection: true
       attribute :attribute_group, AttributeGroup, collection: true
-      attribute :element_form_default, :string
-      attribute :attribute_form_default, :string
-      attribute :block_default, :string
-      attribute :target_namespace, :string
+      attribute :attribute, Attribute, collection: true
 
       xml do
         root "schema", mixed: true
@@ -31,6 +33,7 @@ module Lutaml
         map_element :simpleType, to: :simple_type
         map_element :group, to: :group
         map_element :attributeGroup, to: :attribute_group
+        map_element :attribute, to: :attribute
         map_attribute :elementFormDefault, to: :element_form_default
         map_attribute :attributeFormDefault, to: :attribute_form_default
         map_attribute :blockDefault, to: :block_default
@@ -157,6 +160,8 @@ module Lutaml
         end
 
         def schema_processed(location)
+          return if location.nil?
+
           processed_schemas[location] = true
         end
       end

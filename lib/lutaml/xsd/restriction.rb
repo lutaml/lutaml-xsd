@@ -4,13 +4,15 @@ module Lutaml
   module Xsd
     class Restriction < Lutaml::Model::Serializable
       attribute :base, :string
+      attribute :length, Length
+      attribute :pattern, Pattern
       attribute :max_length, MaxLength
       attribute :min_inclusive, MinInclusive
       attribute :max_inclusive, MaxInclusive
-      attribute :pattern, Pattern, collection: true
       attribute :annotation, Annotation, collection: true
       attribute :white_space, WhiteSpace, collection: true
       attribute :enumeration, Enumeration, collection: true
+
       xml do
         root "restriction", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
@@ -23,6 +25,7 @@ module Lutaml
         map_element :annotation, to: :annotation
         map_element :maxLength, to: :max_length
         map_element :pattern, to: :pattern
+        map_element :length, to: :length
       end
     end
   end
