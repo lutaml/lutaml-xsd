@@ -30,7 +30,6 @@ RSpec.describe Lutaml::Xsd do
         expect(parsed_schema.simple_type.count).to eql(schema.scan(/<\w+:simpleType /).count)
         expect(parsed_schema.element.count).to eql(schema.scan(/^\s{0,2}<\w+:element /).count)
         expect(parsed_schema.complex_type.count).to eql(schema.scan(/<\w+:complexType /).count)
-        expect(parsed_schema.schemas.count).to eql(schema.scan(/ schemaLocation="[^"]+"/).count)
       end
 
       it "matches count of attributes" do

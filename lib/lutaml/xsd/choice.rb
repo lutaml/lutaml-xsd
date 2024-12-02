@@ -3,6 +3,7 @@
 module Lutaml
   module Xsd
     class Sequence < Lutaml::Model::Serializable; end
+    class Group < Lutaml::Model::Serializable; end
 
     class Choice < Lutaml::Model::Serializable
       attribute :any, Any, collection: true
