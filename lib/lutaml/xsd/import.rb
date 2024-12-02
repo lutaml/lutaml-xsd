@@ -5,6 +5,8 @@ module Lutaml
     class Import < Lutaml::Model::Serializable
       attribute :id, :string
       attribute :namespace, :string
+      attribute :annotation, Annotation
+      attribute :schema_path, :string
 
       xml do
         root "import", mixed: true
@@ -12,6 +14,12 @@ module Lutaml
 
         map_attribute :id, to: :id
         map_attribute :namespace, to: :namespace
+        map_attribute :schemaLocation, to: :schema_path
+        map_element :annotation, to: :annotation
+      end
+
+      def fetch_schema
+        Glob.include_schema(schema_location) if schema_location
       end
     end
   end

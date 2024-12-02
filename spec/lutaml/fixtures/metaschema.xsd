@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
   attributeFormDefault="unqualified" targetNamespace="http://csrc.nist.gov/ns/oscal/metaschema/1.0">
-<!-- 
+
   <xs:include schemaLocation="metaschema-prose-module.xsd">
     <xs:annotation>
       <xs:documentation>This prose module provides support for line and multiline markup.</xs:documentation>
@@ -12,7 +12,7 @@
     <xs:annotation>
       <xs:documentation>This data types module provides support for all other built-in Metaschema data types.</xs:documentation>
     </xs:annotation>
-  </xs:include> -->
+  </xs:include>
 
   <xs:element name="METASCHEMA">
     <xs:annotation>
