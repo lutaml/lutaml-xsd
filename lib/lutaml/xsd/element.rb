@@ -3,9 +3,12 @@
 module Lutaml
   module Xsd
     class Element < Lutaml::Model::Serializable
+      attribute :ref, :string
       attribute :name, :string
       attribute :type, :string
+      attribute :fixed, :string
       attribute :default, :string
+      attribute :abstract, :boolean
       attribute :min_occurs, :string
       attribute :max_occurs, :string
       attribute :key, Key, collection: true
@@ -18,9 +21,12 @@ module Lutaml
         root "element", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
+        map_attribute :ref, to: :ref
         map_attribute :name, to: :name
         map_attribute :type, to: :type
+        map_attribute :fixed, to: :fixed
         map_attribute :default, to: :default
+        map_attribute :abstract, to: :abstract
         map_attribute :minOccurs, to: :min_occurs
         map_attribute :maxOccurs, to: :max_occurs
         map_element :complexType, to: :complex_type

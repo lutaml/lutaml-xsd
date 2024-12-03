@@ -8,6 +8,7 @@ module Lutaml
       attribute :element, Element, collection: true
       attribute :choice, Choice, collection: true
       attribute :group, Group, collection: true
+      attribute :any, Any, collection: true
 
       xml do
         root "sequence", mixed: true
@@ -16,6 +17,7 @@ module Lutaml
         map_element :element, to: :element
         map_element :choice, to: :choice
         map_element :group, to: :group
+        map_element :any, to: :any
       end
     end
   end
