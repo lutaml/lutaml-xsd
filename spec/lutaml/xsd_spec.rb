@@ -24,7 +24,7 @@ RSpec.describe Lutaml::Xsd do
       end
 
       it "matches count of direct child elements of the root" do
-        expect(parsed_schema.import.count).to eql(schema.scan(/<\w+:import /).count)
+        expect(parsed_schema.imports.count).to eql(schema.scan(/<\w+:import /).count)
         expect(parsed_schema.include.count).to eql(schema.scan(/<\w+:include /).count)
         expect(parsed_schema.group.count).to eql(schema.scan(/<\w+:group name=/).count)
         expect(parsed_schema.simple_type.count).to eql(schema.scan(/<\w+:simpleType /).count)

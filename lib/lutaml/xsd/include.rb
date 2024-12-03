@@ -17,7 +17,7 @@ module Lutaml
       end
 
       def fetch_schema
-        Glob.include_schema(schema_location)
+        Glob.include_schema(schema_path)
       end
     end
   end

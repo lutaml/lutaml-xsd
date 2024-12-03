@@ -7,6 +7,7 @@ module Lutaml
       attribute :id, :string
       attribute :xmlns, :string
       attribute :version, :string
+      attribute :import_id, :string
       attribute :final_default, :string
       attribute :block_default, :string
       attribute :target_namespace, :string
@@ -50,18 +51,11 @@ module Lutaml
 
       def import_from_schema(model, value)
         value.each do |schema|
-          setup_imports(model, schema)
-          instance = import_object(schema)
-          schema_location = instance.schema_location
-          next if self.class.in_progress?(schema_location) || schema_location.nil?
-
-          self.class.set_in_progress(schema_location)
-          model.import << insert_in_processed_schemas(instance)
-          self.class.remove_in_progress(schema_location)
+          setup_import_and_include("import", model, schema, namespace: schema["namespace"])
         end
       end
 
-      def import_to_schema(model, parent, doc)
+      def import_to_schema(model, parent, _doc)
         model.imports.each_with_index do |imported_schema, index|
           parent.add_child(imported_schema.to_xml)
           model.imports.delete_at(index)
@@ -69,17 +63,12 @@ module Lutaml
       end
 
       def include_from_schema(model, value)
-        model.includes += value
-        model.includes&.flatten!&.uniq!
-
         value.each do |schema|
-          model.include << insert_in_processed_schemas(
-            include_object(schema)
-          )
+          setup_import_and_include("include", model, schema)
         end
       end
 
-      def include_to_schema(model, parent, doc)
+      def include_to_schema(model, parent, _doc)
         model.includes.each_with_index do |schema_hash, index|
           parent.add_child(schema_hash.to_xml)
           model.includes.delete_at(index)
@@ -87,6 +76,18 @@ module Lutaml
       end
 
       private
+
+      def setup_import_and_include(klass, model, schema, args = {})
+        instance = init_instance_of(klass, schema, args)
+        annotation_object(instance, schema)
+        model.send("#{klass}s") << instance
+        schema_path = instance.schema_path
+        return if self.class.in_progress?(schema_path) || schema_path.nil?
+
+        self.class.add_in_progress(schema_path)
+        model.send(klass) << insert_in_processed_schemas(instance)
+        self.class.remove_in_progress(schema_path)
+      end
 
       def dig_schema_location(schema_hash)
         schema_hash&.dig("__schema_location", :schema_location)
@@ -96,45 +97,31 @@ module Lutaml
         schema_hash&.dig("__schema_location")&.key?(:schema_location)
       end
 
-      def import_object(imported_schema)
-        Import.new(
-          id: imported_schema["id"],
-          namespace: imported_schema["namespace"],
-          schema_path: dig_schema_location(imported_schema)
-        )
-      end
-
-      def include_object(schema_hash)
-        Include.new(
-          id: schema_hash["id"],
-          schema_location: dig_schema_location(schema_hash)
-        )
+      def init_instance_of(klass, schema_hash, args = {})
+        args[:id] = schema_hash["id"]
+        args[:schema_path] = dig_schema_location(schema_hash)
+        Lutaml::Xsd.const_get(klass.capitalize).new(**args)
       end
 
       def insert_in_processed_schemas(instance)
         parsed_schema = schema_by_location_or_instance(instance)
         return unless parsed_schema
 
-        self.class.schema_processed(instance.schema_location, parsed_schema)
+        parsed_schema.import_id = instance.id if instance.is_a?(Import)
+        self.class.schema_processed(instance.schema_path, parsed_schema)
         parsed_schema
       end
 
       def schema_by_location_or_instance(instance)
-        schema_location = instance.schema_location
-        return unless schema_location
+        schema_path = instance.schema_path
+        return unless schema_path
 
-        self.class.processed_schemas[schema_location] ||
+        self.class.processed_schemas[schema_path] ||
           Lutaml::Xsd.parse(
             instance.fetch_schema,
             location: Glob.location,
             nested_schema: true
           )
-      end
-
-      def setup_imports(model, schema)
-        instance = import_object(schema)
-        annotation_object(instance, schema)
-        model.imports << instance
       end
 
       def annotation_object(instance, schema)
@@ -171,7 +158,7 @@ module Lutaml
           in_progress.include?(location)
         end
 
-        def set_in_progress(location)
+        def add_in_progress(location)
           in_progress << location
         end
 
