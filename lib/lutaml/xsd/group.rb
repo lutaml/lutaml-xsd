@@ -2,22 +2,25 @@
 
 module Lutaml
   module Xsd
-    class Sequence < Lutaml::Model::Serializable; end
-    class Choice < Lutaml::Model::Serializable; end
+    class Sequence < Model::Serializable; end
+    class Choice < Model::Serializable; end
 
-    class Group < Lutaml::Model::Serializable
+    class Group < Model::Serializable
+      attribute :id, :string
       attribute :ref, :string
       attribute :name, :string
       attribute :min_occurs, :string
       attribute :max_occurs, :string
-      attribute :choice, Choice, collection: true
-      attribute :sequence, Sequence, collection: true
-      attribute :annotation, Annotation, collection: true
+      attribute :all, All
+      attribute :choice, Choice
+      attribute :sequence, Sequence
+      attribute :annotation, Annotation
 
       xml do
         root "group", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
+        map_attribute :id, to: :id
         map_attribute :ref, to: :ref
         map_attribute :name, to: :name
         map_attribute :minOccurs, to: :min_occurs
@@ -25,6 +28,7 @@ module Lutaml
         map_element :annotation, to: :annotation
         map_element :sequence, to: :sequence
         map_element :choice, to: :choice
+        map_element :all, to: :all
       end
     end
   end

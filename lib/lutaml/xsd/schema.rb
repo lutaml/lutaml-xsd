@@ -3,11 +3,11 @@
 module Lutaml
   module Xsd
     # rubocop:disable Metrics/ClassLength
-    class Schema < Lutaml::Model::Serializable
+    class Schema < Model::Serializable
       attribute :id, :string
+      attribute :lang, :string
       attribute :xmlns, :string
       attribute :version, :string
-      attribute :import_id, :string
       attribute :final_default, :string
       attribute :block_default, :string
       attribute :target_namespace, :string
@@ -20,6 +20,8 @@ module Lutaml
       attribute :import, Import, collection: true
       attribute :element, Element, collection: true
       attribute :include, Include, collection: true
+      attribute :notation, Notation, collection: true
+      attribute :redefine, Redefine, collection: true
       attribute :attribute, Attribute, collection: true
       attribute :annotation, Annotation, collection: true
       attribute :simple_type, SimpleType, collection: true
@@ -32,6 +34,8 @@ module Lutaml
 
         map_element :group, to: :group
         map_element :element, to: :element
+        map_element :redefine, to: :redefine
+        map_element :notation, to: :notation
         map_element :attribute, to: :attribute
         map_element :annotation, to: :annotation
         map_element :simpleType, to: :simple_type
@@ -47,6 +51,7 @@ module Lutaml
         map_attribute :blockDefault, to: :block_default
         map_attribute :version, to: :version
         map_attribute :id, to: :id
+        map_attribute :lang, to: :lang
       end
 
       def import_from_schema(model, value)
@@ -107,7 +112,6 @@ module Lutaml
         parsed_schema = schema_by_location_or_instance(instance)
         return unless parsed_schema
 
-        parsed_schema.import_id = instance.id if instance.is_a?(Import)
         self.class.schema_processed(instance.schema_path, parsed_schema)
         parsed_schema
       end

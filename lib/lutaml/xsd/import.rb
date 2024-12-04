@@ -2,11 +2,11 @@
 
 module Lutaml
   module Xsd
-    class Import < Lutaml::Model::Serializable
+    class Import < Model::Serializable
       attribute :id, :string
       attribute :namespace, :string
-      attribute :annotation, Annotation
       attribute :schema_path, :string
+      attribute :annotation, Annotation
 
       xml do
         root "import", mixed: true

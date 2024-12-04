@@ -2,17 +2,15 @@
 
 module Lutaml
   module Xsd
-    class Documentation < Model::Serializable
-      attribute :lang, :string
+    class Appinfo < Model::Serializable
       attribute :source, :string
-      attribute :content, :string
+      attribute :text, :string
 
       xml do
-        root "documentation"
+        root "appinfo", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
-        map_all to: :content
-        map_attribute :lang, to: :lang
+        map_content to: :text
         map_attribute :source, to: :source
       end
     end

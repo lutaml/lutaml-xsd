@@ -2,16 +2,16 @@
 
 module Lutaml
   module Xsd
-    class Length < Model::Serializable
-      attribute :value, :string
-      attribute :annotation, Annotation
+    class MinLength < Model::Serializable
+      attribute :fixed, :string
+      attribute :value, :integer
 
       xml do
-        root "length", mixed: true
+        root "minLength", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :value, to: :value
-        map_element :annotation, to: :annotation
+        map_attribute :fixed, to: :fixed
       end
     end
   end
