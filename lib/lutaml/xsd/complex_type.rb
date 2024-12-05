@@ -9,6 +9,8 @@ module Lutaml
       attribute :block, :string
       attribute :mixed, :boolean, default: -> { false }
       attribute :abstract, :boolean, default: -> { false }
+      attribute :all, All
+      attribute :group, Group
       attribute :choice, Choice
       attribute :sequence, Sequence
       attribute :annotation, Annotation
@@ -27,6 +29,8 @@ module Lutaml
         map_attribute :block, to: :block
         map_attribute :mixed, to: :mixed
         map_attribute :abstract, to: :abstract
+        map_element :all, to: :all
+        map_element :group, to: :group
         map_element :choice, to: :choice
         map_element :sequence, to: :sequence
         map_element :attribute, to: :attribute
