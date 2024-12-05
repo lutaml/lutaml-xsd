@@ -2,9 +2,9 @@
 
 module Lutaml
   module Xsd
-    class Pattern < Lutaml::Model::Serializable
+    class Pattern < Model::Serializable
       attribute :value, :string
-      attribute :annotation, Annotation, collection: true
+      attribute :annotation, Annotation
 
       xml do
         root "pattern", mixed: true

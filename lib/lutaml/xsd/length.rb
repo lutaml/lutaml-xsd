@@ -2,17 +2,17 @@
 
 module Lutaml
   module Xsd
-    class Selector < Model::Serializable
-      attribute :id, :string
-      attribute :xpath, :string
+    class Length < Model::Serializable
+      attribute :fixed, :boolean
+      attribute :value, :integer
       attribute :annotation, Annotation
 
       xml do
-        root "selector", mixed: true
+        root "length", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
-        map_attribute :id, to: :id
-        map_attribute :xpath, to: :xpath
+        map_attribute :fixed, to: :fixed
+        map_attribute :value, to: :value
         map_element :annotation, to: :annotation
       end
     end

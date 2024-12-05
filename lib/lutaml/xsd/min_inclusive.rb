@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class MinInclusive < Lutaml::Model::Serializable
+    class MinInclusive < Model::Serializable
       attribute :value, :string
 
       xml do

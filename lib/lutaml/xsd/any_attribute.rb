@@ -2,22 +2,20 @@
 
 module Lutaml
   module Xsd
-    class Include < Model::Serializable
+    class AnyAttribute < Model::Serializable
       attribute :id, :string
-      attribute :schema_path, :string
+      attribute :namespace, :string
+      attribute :process_contents, :string
       attribute :annotation, Annotation
 
       xml do
-        root "include", mixed: true
+        root "anyAttribute", mixed: true
         namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :id, to: :id
-        map_attribute :schemaLocation, to: :schema_path
+        map_attribute :namespace, to: :namespace
+        map_attribute :processContents, to: :process_contents
         map_element :annotation, to: :annotation
-      end
-
-      def fetch_schema
-        Glob.include_schema(schema_path)
       end
     end
   end
