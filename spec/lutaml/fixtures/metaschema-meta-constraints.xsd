@@ -2,7 +2,7 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
     xmlns="http://csrc.nist.gov/ns/oscal/metaschema/1.0"
     targetNamespace="http://csrc.nist.gov/ns/oscal/metaschema/1.0">
-  <!-- <xs:include schemaLocation="metaschema.xsd"/> -->
+  <xs:include schemaLocation="metaschema.xsd"/>
 
   <xs:simpleType name="MetaschemaPathStringType">
     <xs:restriction base="StringDatatype"/>
@@ -27,14 +27,10 @@
 
   <xs:complexType name="ModelContextType">
     <xs:sequence>
-      <!--
       <xs:choice>
-      -->
-      <xs:element name="metapath" type="MetaschemaMetapathReferenceType" maxOccurs="unbounded"/>
-      <!--
-          <xs:element name="metaschema-definition" type="MetaschemaMetapathReferenceType" maxOccurs="unbounded"/>
-      </xs:choice>
-      -->
+        <xs:element name="metapath" type="MetaschemaMetapathReferenceType" maxOccurs="unbounded"/>
+        <xs:element name="metaschema-definition" type="MetaschemaMetapathReferenceType" maxOccurs="unbounded"/>
+      </xs:choice>     
       <xs:element name="constraints" type="DefineAssemblyConstraintsType" minOccurs="0"/>
       <xs:element name="context" type="ModelContextType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="remarks" type="RemarksType" minOccurs="0"/>

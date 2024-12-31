@@ -1,0 +1,141 @@
+= Lutaml::Xsd
+
+== Overview
+
+**Lutaml::Xsd** is a *Ruby* gem designed to parse and build *XML Schema Definition (XSD)* objects. It provides a robust framework for handling *XSD* *elements*, *attributes*, and *complex types*, allowing users to manipulate and generate *XSD* objects programmatically.
+
+== Installation
+
+To install *Lutaml::Xsd*, add this line to your application's Gemfile:
+
+[source,ruby]
+----
+gem 'lutaml-xsd'
+----
+
+And then execute:
+
+[source,bash]
+----
+bundle install
+----
+
+Or install it by running:
+
+[source,bash]
+----
+gem install lutaml-xsd
+----
+
+== Usage
+
+=== Parsing XSD Files
+
+To parse an *XSD* file, you can use the `Lutaml::Xsd.parse` method. This method takes the content of an *XSD* file as a string and optional parameters such as the location of the *XSD* file for resolving relative paths.
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('path/to/your/schema.xsd')
+parsed_schema = Lutaml::Xsd.parse(xsd_content, location: 'path/to/your/')
+----
+
+=== Working with Parsed Data
+
+Once parsed, the data is represented as instances of various classes such as `Lutaml::Xsd::Schema`, `Lutaml::Xsd::Element`, and others. These objects reflect the structure of the *XSD* and can be manipulated or inspected in *Ruby*.
+
+[source,ruby]
+----
+schema = <<~SCHEMA
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="root">
+    ...
+  </xsd:element>
+  <xsd:element name="root1">
+    ...
+  </xsd:element>
+</xsd:schema>
+SCHEMA
+
+parsed_schema = Lutaml::Xsd.parse(schema, location: 'http://example.com/')
+
+# Accessing elements of the schema
+elements = parsed_schema.element
+elements.each do |element|
+  puts "Element Name: #{element.name}"
+end
+# the output will be:
+> Element Name: root
+> Element Name: root1
+----
+
+=== Serialization
+
+The gem supports serializing the schema back to *XML*. Each class like `Lutaml::Xsd::Schema` has a method `to_xml` that generates the *XML* representation of the object.
+
+[source,ruby]
+----
+xml_output = parsed_schema.to_xml
+puts xml_output
+----
+
+== Key Components
+
+=== Schema Representation
+
+The *Lutaml::Xsd::Schema* class represents an *XSD* schema. It includes attributes for various schema properties like target namespace, element form default, and others.
+
+- **Attributes and Elements**: The schema object contains collections of elements, complex types, simple types, etc., which are all accessible via attributes on the `Schema` object.
+
+=== Include and Import Handling
+
+The path provided in `location` via `Lutaml::Xsd.parse(schema, location: 'path/to/your/directory/')` is used for resolving relative paths provided in *include* and *import* element's *schemaLocation* attribute.
+
+Make sure to provide the directory *path*/*URL* in `location` parameter, as it will be used as base path for resolving relative paths.
+
+For example, if *URL* is provided:
+
+[source,ruby]
+----
+Lutaml::Xsd.parse(xsd_content, location: 'http://example.com/directory/')
+----
+
+If local path is provided:
+
+[source,ruby]
+----
+Lutaml::Xsd.parse(xsd_content, location: 'path/to/your/directory/')
+----
+
+[source, xml]
+----
+<xs:include schemaLocation="<location>/directory2/metaschema.xsd"/>
+<!-- AND/OR -->
+<xs:import schemaLocation="<location>/metaschema.xsd"/>
+----
+
+All schemas specified in the *include* and/or *import* elements will be fetched from their *schemaLocation*, parsed and added to their parent *Lutaml::Xsd::Schema* object.
+
+== Development
+
+- **Dependencies**: The gem depends on other gems like `zeitwerk` for autoloading and `lutaml-model` for model serialization. See the `Gemfile` and `lutaml-xsd.gemspec` for details on dependencies.
+
+- **Testing**: Tests are written using RSpec. Test files and fixtures are located in the `spec` directory.
+
+== About LutaML
+
+The name "LutaML" is pronounced as "Looh-tah-mel".
+
+The name "LutaML" comes from the Latin word for clay, "Lutum", and "ML"
+for "Markup Language". Just as clay can be molded and modeled into beautiful and
+practical end products, the Lutaml::Model gem is used for data modeling,
+allowing you to shape and structure your data into useful forms.
+
+
+== License and Copyright
+
+This project is licensed under the BSD 2-clause License.
+See the link:LICENSE.md[] file for details.
+
+Copyright Ribose.
