@@ -8,6 +8,7 @@ module Lutaml
       attribute :lang, :string
       attribute :xmlns, :string
       attribute :version, :string
+      attribute :imported, :boolean
       attribute :final_default, :string
       attribute :block_default, :string
       attribute :target_namespace, :string
@@ -56,14 +57,16 @@ module Lutaml
 
       def import_from_schema(model, value)
         value.each do |schema|
-          setup_import_and_include("import", model, schema, namespace: schema["namespace"])
+          setup_import_and_include("import", model, schema, namespace: schema["attributes"]["namespace"])
         end
       end
 
       def import_to_schema(model, parent, _doc)
-        model.imports.each_with_index do |imported_schema, index|
+        return if model.imported
+
+        model.imported = true
+        model.imports.each do |imported_schema|
           parent.add_child(imported_schema.to_xml)
-          model.imports.delete_at(index)
         end
       end
 
@@ -83,7 +86,7 @@ module Lutaml
       private
 
       def setup_import_and_include(klass, model, schema, args = {})
-        instance = init_instance_of(klass, schema, args)
+        instance = init_instance_of(klass, schema.dig("attributes") || {}, args)
         annotation_object(instance, schema)
         model.send("#{klass}s") << instance
         schema_path = instance.schema_path
@@ -118,7 +121,7 @@ module Lutaml
 
       def schema_by_location_or_instance(instance)
         schema_path = instance.schema_path
-        return unless schema_path
+        return unless schema_path && Glob.location?
 
         self.class.processed_schemas[schema_path] ||
           Lutaml::Xsd.parse(
@@ -129,10 +132,11 @@ module Lutaml
       end
 
       def annotation_object(instance, schema)
-        annotation_key = schema.keys.find { |key| key.include?("annotation") }
+        elements = schema.fetch("elements") || {}
+        annotation_key = elements.keys.find { |key| key.include?("annotation") }
         return unless annotation_key
 
-        instance.annotation = Annotation.apply_mappings(schema[annotation_key], :xml)
+        instance.annotation = Annotation.apply_mappings(elements[annotation_key], :xml)
       end
 
       class << self
