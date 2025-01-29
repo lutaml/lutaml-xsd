@@ -19,7 +19,7 @@ module Lutaml
       end
 
       def fetch_schema
-        Glob.include_schema(schema_path) if schema_path
+        Glob.include_schema(schema_path) if schema_path && Glob.location?
       end
     end
   end

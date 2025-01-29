@@ -38,7 +38,7 @@ module Lutaml
       end
 
       def include_schema(schema_location)
-        return unless location? || schema_location
+        return unless location? && schema_location
 
         schema_path = schema_location_path(schema_location)
         url? ? http_get(schema_path) : File.read(schema_path)

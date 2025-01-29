@@ -8,7 +8,8 @@ LOCATIONS = {
   "metaschema-markup-multiline": "spec/lutaml/fixtures",
   "metaschema-prose-module": "spec/lutaml/fixtures",
   "metaschema-markup-line": "spec/lutaml/fixtures",
-  metaschema: "spec/lutaml/fixtures"
+  metaschema: "spec/lutaml/fixtures",
+  "unitsml-v1.0-csd03": nil,
 }.freeze
 
 RSpec.describe Lutaml::Xsd do
