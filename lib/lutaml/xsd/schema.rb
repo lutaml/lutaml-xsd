@@ -86,7 +86,7 @@ module Lutaml
       private
 
       def setup_import_and_include(klass, model, schema, args = {})
-        instance = init_instance_of(klass, schema.dig("attributes") || {}, args)
+        instance = init_instance_of(klass, schema["attributes"] || {}, args)
         annotation_object(instance, schema)
         model.send("#{klass}s") << instance
         schema_path = instance.schema_path
@@ -132,7 +132,7 @@ module Lutaml
       end
 
       def annotation_object(instance, schema)
-        elements = schema.fetch("elements") || {}
+        elements = schema["elements"] || {}
         annotation_key = elements.keys.find { |key| key.include?("annotation") }
         return unless annotation_key
 
