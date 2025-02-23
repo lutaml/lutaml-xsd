@@ -66,7 +66,7 @@ module Lutaml
         return if model.imported
 
         model.imported = true
-        model.imports.each_with_index do |imported_schema, index|
+        model.imports.each do |imported_schema|
           parent.add_child(imported_schema.to_xml)
         end
       end
@@ -81,7 +81,7 @@ module Lutaml
         return if model.included
 
         model.included = true
-        model.includes.each_with_index do |schema_hash, index|
+        model.includes.each do |schema_hash|
           parent.add_child(schema_hash.to_xml)
         end
       end
