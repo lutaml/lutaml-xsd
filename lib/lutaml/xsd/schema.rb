@@ -9,6 +9,7 @@ module Lutaml
       attribute :xmlns, :string
       attribute :version, :string
       attribute :imported, :boolean
+      attribute :included, :boolean
       attribute :final_default, :string
       attribute :block_default, :string
       attribute :target_namespace, :string
@@ -57,7 +58,7 @@ module Lutaml
 
       def import_from_schema(model, value)
         value.each do |schema|
-          setup_import_and_include("import", model, schema, namespace: schema["attributes"]["namespace"])
+          setup_import_and_include("import", model, schema, namespace: schema.attributes["namespace"].value)
         end
       end
 
@@ -65,7 +66,7 @@ module Lutaml
         return if model.imported
 
         model.imported = true
-        model.imports.each do |imported_schema|
+        model.imports.each_with_index do |imported_schema, index|
           parent.add_child(imported_schema.to_xml)
         end
       end
@@ -77,16 +78,18 @@ module Lutaml
       end
 
       def include_to_schema(model, parent, _doc)
+        return if model.included
+
+        model.included = true
         model.includes.each_with_index do |schema_hash, index|
           parent.add_child(schema_hash.to_xml)
-          model.includes.delete_at(index)
         end
       end
 
       private
 
       def setup_import_and_include(klass, model, schema, args = {})
-        instance = init_instance_of(klass, schema["attributes"] || {}, args)
+        instance = init_instance_of(klass, schema.attributes || {}, args)
         annotation_object(instance, schema)
         model.send("#{klass}s") << instance
         schema_path = instance.schema_path
@@ -97,17 +100,9 @@ module Lutaml
         self.class.remove_in_progress(schema_path)
       end
 
-      def dig_schema_location(schema_hash)
-        schema_hash&.dig("__schema_location", :schema_location)
-      end
-
-      def schema_location?(schema_hash)
-        schema_hash&.dig("__schema_location")&.key?(:schema_location)
-      end
-
       def init_instance_of(klass, schema_hash, args = {})
-        args[:id] = schema_hash["id"]
-        args[:schema_path] = dig_schema_location(schema_hash)
+        args[:id] = schema_hash["id"].value if schema_hash&.key?("id")
+        args[:schema_path] = schema_hash["schemaLocation"].value if schema_hash&.key?("schemaLocation")
         Lutaml::Xsd.const_get(klass.capitalize).new(**args)
       end
 
@@ -132,11 +127,11 @@ module Lutaml
       end
 
       def annotation_object(instance, schema)
-        elements = schema["elements"] || {}
-        annotation_key = elements.keys.find { |key| key.include?("annotation") }
+        elements = schema.children || []
+        annotation_key = elements.find { |element| element.unprefixed_name == "annotation" }
         return unless annotation_key
 
-        instance.annotation = Annotation.apply_mappings(elements[annotation_key], :xml)
+        instance.annotation = Annotation.apply_mappings(annotation_key, :xml)
       end
 
       class << self
