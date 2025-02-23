@@ -6,7 +6,7 @@ require "lutaml/model/xml_adapter/nokogiri_adapter"
 Lutaml::Model::Config.xml_adapter_type = :nokogiri
 
 loader = Zeitwerk::Loader.for_gem(warn_on_extra_files: true)
-loader.push_dir("#{__dir__}", namespace: Lutaml)
+loader.push_dir(__dir__, namespace: Lutaml)
 loader.push_dir("#{__dir__}/xsd", namespace: Lutaml::Xsd)
 loader.setup
 
