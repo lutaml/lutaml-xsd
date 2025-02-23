@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "spec_helper"
-
 LOCATIONS = {
   omml_schema: "https://raw.githubusercontent.com/t-yuki/ooxml-xsd/refs/heads/master",
   "metaschema-meta-constraints": "spec/lutaml/fixtures",
@@ -35,7 +33,7 @@ RSpec.describe Lutaml::Xsd do
         expect(parsed_schema.complex_type.count).to eql(schema.scan(/<\w+:complexType /).count)
       end
 
-      it "matches count of attributes" do
+      it "matches parsed schema to xml with the input" do
         processed_xml = schema_to_xml(parsed_schema.to_xml, escape_content_tags: true)
         expect(processed_xml).to be_analogous_with(schema_to_xml(schema))
       end
