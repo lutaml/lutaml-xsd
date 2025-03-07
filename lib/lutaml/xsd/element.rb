@@ -20,9 +20,9 @@ module Lutaml
       attribute :annotation, Annotation
       attribute :simple_type, SimpleType
       attribute :complex_type, ComplexType
-      attribute :key, Key, collection: true
-      attribute :keyref, Keyref, collection: true
-      attribute :unique, Unique, collection: true
+      attribute :key, Key, collection: true, initialize_empty: true
+      attribute :keyref, Keyref, collection: true, initialize_empty: true
+      attribute :unique, Unique, collection: true, initialize_empty: true
 
       xml do
         root "element", mixed: true

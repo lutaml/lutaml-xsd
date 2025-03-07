@@ -7,8 +7,8 @@ module Lutaml
       attribute :base, :string
       attribute :annotation, Annotation
       attribute :any_attribute, AnyAttribute
-      attribute :attribute, Attribute, collection: true
-      attribute :attribute_group, AttributeGroup, collection: true
+      attribute :attribute, Attribute, collection: true, initialize_empty: true
+      attribute :attribute_group, AttributeGroup, collection: true, initialize_empty: true
 
       xml do
         root "extension", mixed: true

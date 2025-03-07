@@ -8,7 +8,7 @@ module Lutaml
       attribute :refer, :string
       attribute :selector, Selector
       attribute :annotation, Annotation
-      attribute :field, Field, collection: true
+      attribute :field, Field, collection: true, initialize_empty: true
       # Field should be one or more
 
       xml do
