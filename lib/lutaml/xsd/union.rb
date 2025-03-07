@@ -6,7 +6,7 @@ module Lutaml
       attribute :id, :string
       attribute :member_types, :string, default: -> { "" }
       attribute :annotation, Annotation
-      attribute :simple_type, SimpleType, collection: true
+      attribute :simple_type, SimpleType, collection: true, initialize_empty: true
 
       xml do
         root "union", mixed: true

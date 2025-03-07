@@ -15,20 +15,20 @@ module Lutaml
       attribute :target_namespace, :string
       attribute :element_form_default, :string
       attribute :attribute_form_default, :string
-      attribute :imports, Import, collection: true
-      attribute :includes, Include, collection: true
+      attribute :imports, Import, collection: true, initialize_empty: true
+      attribute :includes, Include, collection: true, initialize_empty: true
 
-      attribute :group, Group, collection: true
-      attribute :import, Import, collection: true
-      attribute :element, Element, collection: true
-      attribute :include, Include, collection: true
-      attribute :notation, Notation, collection: true
-      attribute :redefine, Redefine, collection: true
-      attribute :attribute, Attribute, collection: true
-      attribute :annotation, Annotation, collection: true
-      attribute :simple_type, SimpleType, collection: true
-      attribute :complex_type, ComplexType, collection: true
-      attribute :attribute_group, AttributeGroup, collection: true
+      attribute :group, Group, collection: true, initialize_empty: true
+      attribute :import, Import, collection: true, initialize_empty: true
+      attribute :element, Element, collection: true, initialize_empty: true
+      attribute :include, Include, collection: true, initialize_empty: true
+      attribute :notation, Notation, collection: true, initialize_empty: true
+      attribute :redefine, Redefine, collection: true, initialize_empty: true
+      attribute :attribute, Attribute, collection: true, initialize_empty: true
+      attribute :annotation, Annotation, collection: true, initialize_empty: true
+      attribute :simple_type, SimpleType, collection: true, initialize_empty: true
+      attribute :complex_type, ComplexType, collection: true, initialize_empty: true
+      attribute :attribute_group, AttributeGroup, collection: true, initialize_empty: true
 
       xml do
         root "schema", mixed: true
@@ -91,13 +91,11 @@ module Lutaml
       def setup_import_and_include(klass, model, schema, args = {})
         instance = init_instance_of(klass, schema.attributes || {}, args)
         annotation_object(instance, schema)
-        model.send("#{klass}s=", []) if model.send("#{klass}s").nil?
         model.send("#{klass}s") << instance
         schema_path = instance.schema_path
         return if self.class.in_progress?(schema_path) || schema_path.nil?
 
         self.class.add_in_progress(schema_path)
-        model.send("#{klass}=", []) if model.send(klass).nil?
         model.send(klass) << insert_in_processed_schemas(instance)
         self.class.remove_in_progress(schema_path)
       end

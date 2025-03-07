@@ -4,8 +4,8 @@ module Lutaml
   module Xsd
     class Annotation < Model::Serializable
       attribute :id, :string
-      attribute :documentation, Documentation, collection: true
-      attribute :appinfo, Appinfo, collection: true
+      attribute :documentation, Documentation, collection: true, initialize_empty: true
+      attribute :appinfo, Appinfo, collection: true, initialize_empty: true
 
       xml do
         root "annotation", mixed: true

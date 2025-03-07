@@ -7,7 +7,7 @@ module Lutaml
       attribute :max_occurs, :string
       attribute :min_occurs, :string
       attribute :annotation, Annotation
-      attribute :element, Element, collection: true
+      attribute :element, Element, collection: true, initialize_empty: true
 
       xml do
         root "all", mixed: true

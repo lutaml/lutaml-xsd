@@ -16,8 +16,8 @@ module Lutaml
       attribute :annotation, Annotation
       attribute :simple_content, SimpleContent
       attribute :complex_content, ComplexContent
-      attribute :attribute, Attribute, collection: true
-      attribute :attribute_group, AttributeGroup, collection: true
+      attribute :attribute, Attribute, collection: true, initialize_empty: true
+      attribute :attribute_group, AttributeGroup, collection: true, initialize_empty: true
 
       xml do
         root "complexType", mixed: true

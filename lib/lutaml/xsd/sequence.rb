@@ -9,11 +9,11 @@ module Lutaml
       attribute :min_occurs, :string
       attribute :max_occurs, :string
       attribute :annotation, Annotation
-      attribute :sequence, Sequence, collection: true
-      attribute :element, Element, collection: true
-      attribute :choice, Choice, collection: true
-      attribute :group, Group, collection: true
-      attribute :any, Any, collection: true
+      attribute :sequence, Sequence, collection: true, initialize_empty: true
+      attribute :element, Element, collection: true, initialize_empty: true
+      attribute :choice, Choice, collection: true, initialize_empty: true
+      attribute :group, Group, collection: true, initialize_empty: true
+      attribute :any, Any, collection: true, initialize_empty: true
 
       xml do
         root "sequence", mixed: true

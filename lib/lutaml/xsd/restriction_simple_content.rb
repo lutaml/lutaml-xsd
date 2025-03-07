@@ -8,20 +8,20 @@ module Lutaml
       attribute :annotation, Annotation
       attribute :simple_type, SimpleType
       attribute :any_attribute, AnyAttribute
-      attribute :length, Length, collection: true
-      attribute :pattern, Pattern, collection: true
-      attribute :attribute, Attribute, collection: true
-      attribute :max_length, MaxLength, collection: true
-      attribute :min_length, MinLength, collection: true
-      attribute :white_space, WhiteSpace, collection: true
-      attribute :enumeration, Enumeration, collection: true
-      attribute :total_digits, TotalDigits, collection: true
-      attribute :min_exclusive, MinExclusive, collection: true
-      attribute :min_inclusive, MinInclusive, collection: true
-      attribute :max_exclusive, MaxExclusive, collection: true
-      attribute :max_inclusive, MaxInclusive, collection: true
-      attribute :attribute_group, AttributeGroup, collection: true
-      attribute :fraction_digits, FractionDigits, collection: true
+      attribute :length, Length, collection: true, initialize_empty: true
+      attribute :pattern, Pattern, collection: true, initialize_empty: true
+      attribute :attribute, Attribute, collection: true, initialize_empty: true
+      attribute :max_length, MaxLength, collection: true, initialize_empty: true
+      attribute :min_length, MinLength, collection: true, initialize_empty: true
+      attribute :white_space, WhiteSpace, collection: true, initialize_empty: true
+      attribute :enumeration, Enumeration, collection: true, initialize_empty: true
+      attribute :total_digits, TotalDigits, collection: true, initialize_empty: true
+      attribute :min_exclusive, MinExclusive, collection: true, initialize_empty: true
+      attribute :min_inclusive, MinInclusive, collection: true, initialize_empty: true
+      attribute :max_exclusive, MaxExclusive, collection: true, initialize_empty: true
+      attribute :max_inclusive, MaxInclusive, collection: true, initialize_empty: true
+      attribute :attribute_group, AttributeGroup, collection: true, initialize_empty: true
+      attribute :fraction_digits, FractionDigits, collection: true, initialize_empty: true
 
       xml do
         root "restriction", mixed: true
