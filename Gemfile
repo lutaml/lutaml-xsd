@@ -6,13 +6,8 @@ source "https://rubygems.org"
 gemspec
 
 gem "equivalent-xml"
-
-gem "rake", "~> 13.0"
-
-gem "rspec", "~> 3.0"
-
-gem "rubocop", "~> 1.21"
-
+gem "rake"
+gem "rspec"
+gem "rubocop"
 gem "nokogiri"
-
 gem "xml-c14n"

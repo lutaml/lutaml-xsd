@@ -25,12 +25,19 @@ RSpec.describe Lutaml::Xsd do
       end
 
       it "matches count of direct child elements of the root" do
-        expect(parsed_schema.imports.count).to eql(schema.scan(/<\w+:import /).count)
-        expect(parsed_schema.includes.count).to eql(schema.scan(/<\w+:include /).count)
-        expect(parsed_schema.group.count).to eql(schema.scan(/<\w+:group name=/).count)
-        expect(parsed_schema.simple_type.count).to eql(schema.scan(/<\w+:simpleType /).count)
-        expect(parsed_schema.element.count).to eql(schema.scan(/^\s{0,2}<\w+:element /).count)
-        expect(parsed_schema.complex_type.count).to eql(schema.scan(/<\w+:complexType /).count)
+        expected_counts = {
+          imports: /<\w+:import /,
+          includes: /<\w+:include /,
+          group: /<\w+:group name=/,
+          simple_type: /<\w+:simpleType /,
+          element: /^\s{0,2}<\w+:element /,
+          complex_type: /<\w+:complexType /
+        }
+        expected_counts.each_pair do |key, regex|
+          value = parsed_schema.send(key)
+          count = value.nil? ? 0 : value.count
+          expect(count).to eql(schema.scan(regex).count)
+        end
       end
 
       it "matches parsed schema to xml with the input" do

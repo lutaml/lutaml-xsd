@@ -91,11 +91,13 @@ module Lutaml
       def setup_import_and_include(klass, model, schema, args = {})
         instance = init_instance_of(klass, schema.attributes || {}, args)
         annotation_object(instance, schema)
+        model.send("#{klass}s=", []) if model.send("#{klass}s").nil?
         model.send("#{klass}s") << instance
         schema_path = instance.schema_path
         return if self.class.in_progress?(schema_path) || schema_path.nil?
 
         self.class.add_in_progress(schema_path)
+        model.send("#{klass}=", []) if model.send(klass).nil?
         model.send(klass) << insert_in_processed_schemas(instance)
         self.class.remove_in_progress(schema_path)
       end
