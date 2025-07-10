@@ -36,8 +36,9 @@ ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR
 PURPOSE.
 
 -->
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="urn:oasis:names:tc:unitsml:schema:xsd:UnitsMLSchema-1.0" targetNamespace="urn:oasis:names:tc:unitsml:schema:xsd:UnitsMLSchema-1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0-CSD-03">
-	
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns="urn:oasis:names:tc:unitsml:schema:xsd:UnitsMLSchema-1.0" targetNamespace="urn:oasis:names:tc:unitsml:schema:xsd:UnitsMLSchema-1.0" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0-CSD-03">
+
 	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2009/01/xml.xsd"/>
 	<!--=== Root-Node of an UnitsML document ===-->
 	<xsd:element name="UnitsML" type="UnitsMLType">
@@ -82,7 +83,6 @@ PURPOSE.
 	<xsd:element name="UnitSymbol" type="SymbolType">
 		<xsd:annotation>
 			<xsd:documentation>Element containing various unit symbols.  Examples include Aring (ASCII), Ã (HTML).</xsd:documentation>
-			
 		</xsd:annotation>
 	</xsd:element>
 	<xsd:element name="UnitVersionHistory" type="NoteType">
@@ -1242,7 +1242,7 @@ additive inverse of this number.</xsd:documentation>
 		<xsd:attribute name="type" use="required">
 			<xsd:annotation>
 				<xsd:documentation>Type of symbol representation.  Examples include ASCII, unicode, HTML, and MathML.</xsd:documentation>
-				
+
 			</xsd:annotation>
 			<xsd:simpleType>
 				<xsd:union memberTypes="xsd:token">
