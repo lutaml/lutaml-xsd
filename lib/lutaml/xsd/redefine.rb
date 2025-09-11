@@ -5,11 +5,11 @@ module Lutaml
     class Redefine < Model::Serializable
       attribute :id, :string
       attribute :schema_path, :string
-      attribute :group, Group
-      attribute :annotation, Annotation
-      attribute :simple_type, SimpleType
-      attribute :complex_type, ComplexType
-      attribute :attribute_group, AttributeGroup
+      attribute :group, :group
+      attribute :annotation, :annotation
+      attribute :simple_type, :simple_type
+      attribute :complex_type, :complex_type
+      attribute :attribute_group, :attribute_group
 
       xml do
         root "redefine", mixed: true
@@ -23,6 +23,8 @@ module Lutaml
         map_element :complexType, to: :complexType
         map_element :attributeGroup, to: :attributeGroup
       end
+
+      Lutaml::Xsd.register_model(self, :redefine)
     end
   end
 end

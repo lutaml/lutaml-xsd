@@ -6,7 +6,7 @@ module Lutaml
       attribute :id, :string
       attribute :namespace, :string
       attribute :process_contents, :string
-      attribute :annotation, Annotation
+      attribute :annotation, :annotation
 
       xml do
         root "anyAttribute", mixed: true
@@ -17,6 +17,8 @@ module Lutaml
         map_attribute :processContents, to: :process_contents
         map_element :annotation, to: :annotation
       end
+
+      Lutaml::Xsd.register_model(self, :any_attribute)
     end
   end
 end

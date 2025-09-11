@@ -33,5 +33,4 @@ Gem::Specification.new do |spec|
   spec.test_files = `git ls-files -- {spec}/*`.split("\n")
 
   spec.add_dependency "lutaml-model", "~> 0.7"
-  spec.add_dependency "zeitwerk"
 end

@@ -8,7 +8,7 @@ module Lutaml
       attribute :max_occurs, :string
       attribute :namespace, :string
       attribute :process_contents, :string
-      attribute :annotation, Annotation
+      attribute :annotation, :annotation
 
       xml do
         root "any", mixed: true
@@ -21,6 +21,8 @@ module Lutaml
         map_attribute :processContents, to: :process_contents
         map_element :annotation, to: :annotation
       end
+
+      Lutaml::Xsd.register_model(self, :any)
     end
   end
 end

@@ -11,8 +11,8 @@ module Lutaml
       attribute :form, :string
       attribute :fixed, :string
       attribute :default, :string
-      attribute :annotation, Annotation
-      attribute :simple_type, SimpleType
+      attribute :annotation, :annotation
+      attribute :simple_type, :simple_type
 
       xml do
         root "attribute", mixed: true
@@ -29,6 +29,8 @@ module Lutaml
         map_element :annotation, to: :annotation
         map_element :simpleType, to: :simple_type
       end
+
+      Lutaml::Xsd.register_model(self, :attribute)
     end
   end
 end

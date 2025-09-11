@@ -4,7 +4,7 @@ module Lutaml
   module Xsd
     class Pattern < Model::Serializable
       attribute :value, :string
-      attribute :annotation, Annotation
+      attribute :annotation, :annotation
 
       xml do
         root "pattern", mixed: true
@@ -13,6 +13,8 @@ module Lutaml
         map_attribute :value, to: :value
         map_element :annotation, to: :annotation
       end
+
+      Lutaml::Xsd.register_model(self, :pattern)
     end
   end
 end

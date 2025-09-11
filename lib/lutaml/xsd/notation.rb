@@ -7,7 +7,7 @@ module Lutaml
       attribute :name, :string
       attribute :public, :string
       attribute :system, :string
-      attribute :annotation, Annotation
+      attribute :annotation, :annotation
 
       xml do
         root "notation", mixed: true
@@ -19,6 +19,8 @@ module Lutaml
         map_attribute :system, to: :system
         map_element :annotation, to: :annotation
       end
+
+      Lutaml::Xsd.register_model(self, :notation)
     end
   end
 end

@@ -6,10 +6,10 @@ module Lutaml
       attribute :id, :string
       attribute :name, :string
       attribute :final, :string
-      attribute :list, List
-      attribute :union, Union
-      attribute :annotation, Annotation
-      attribute :restriction, RestrictionSimpleType
+      attribute :list, :list
+      attribute :union, :union
+      attribute :annotation, :annotation
+      attribute :restriction, :restriction_simple_type
 
       xml do
         root "simpleType", mixed: true
@@ -23,6 +23,8 @@ module Lutaml
         map_element :annotation, to: :annotation
         map_element :restriction, to: :restriction
       end
+
+      Lutaml::Xsd.register_model(self, :simple_type)
     end
   end
 end

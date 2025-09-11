@@ -5,9 +5,9 @@ module Lutaml
     class SimpleContent < Model::Serializable
       attribute :id, :string
       attribute :base, :string
-      attribute :annotation, Annotation
-      attribute :extension, ExtensionSimpleContent
-      attribute :restriction, RestrictionSimpleContent
+      attribute :annotation, :annotation
+      attribute :extension, :extension_simple_content
+      attribute :restriction, :restriction_simple_content
 
       xml do
         root "simpleContent", mixed: true
@@ -19,6 +19,8 @@ module Lutaml
         map_element :annotation, to: :annotation
         map_element :extension, to: :extension
       end
+
+      Lutaml::Xsd.register_model(self, :simple_content)
     end
   end
 end

@@ -9,15 +9,15 @@ module Lutaml
       attribute :block, :string
       attribute :mixed, :boolean, default: -> { false }
       attribute :abstract, :boolean, default: -> { false }
-      attribute :all, All
-      attribute :group, Group
-      attribute :choice, Choice
-      attribute :sequence, Sequence
-      attribute :annotation, Annotation
-      attribute :simple_content, SimpleContent
-      attribute :complex_content, ComplexContent
-      attribute :attribute, Attribute, collection: true, initialize_empty: true
-      attribute :attribute_group, AttributeGroup, collection: true, initialize_empty: true
+      attribute :all, :all
+      attribute :group, :group
+      attribute :choice, :choice
+      attribute :sequence, :sequence
+      attribute :annotation, :annotation
+      attribute :simple_content, :simple_content
+      attribute :complex_content, :complex_content
+      attribute :attribute, :attribute, collection: true, initialize_empty: true
+      attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
 
       xml do
         root "complexType", mixed: true
@@ -39,6 +39,8 @@ module Lutaml
         map_element :simpleContent, to: :simple_content
         map_element :complexContent, to: :complex_content
       end
+
+      Lutaml::Xsd.register_model(self, :complex_type)
     end
   end
 end

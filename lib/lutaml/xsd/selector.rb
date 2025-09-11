@@ -5,7 +5,7 @@ module Lutaml
     class Selector < Model::Serializable
       attribute :id, :string
       attribute :xpath, :string
-      attribute :annotation, Annotation
+      attribute :annotation, :annotation
 
       xml do
         root "selector", mixed: true
@@ -15,6 +15,8 @@ module Lutaml
         map_attribute :xpath, to: :xpath
         map_element :annotation, to: :annotation
       end
+
+      Lutaml::Xsd.register_model(self, :selector)
     end
   end
 end

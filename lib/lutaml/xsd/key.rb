@@ -5,9 +5,9 @@ module Lutaml
     class Key < Model::Serializable
       attribute :id, :string
       attribute :name, :string
-      attribute :selector, Selector
-      attribute :annotation, Annotation
-      attribute :field, Field, collection: true, initialize_empty: true
+      attribute :selector, :selector
+      attribute :annotation, :annotation
+      attribute :field, :field, collection: true, initialize_empty: true
       # Field should be one or more
 
       xml do
@@ -20,6 +20,8 @@ module Lutaml
         map_element :selector, to: :selector
         map_element :field, to: :field
       end
+
+      Lutaml::Xsd.register_model(self, :key)
     end
   end
 end

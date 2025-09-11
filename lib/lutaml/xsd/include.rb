@@ -5,7 +5,7 @@ module Lutaml
     class Include < Model::Serializable
       attribute :id, :string
       attribute :schema_path, :string
-      attribute :annotation, Annotation
+      attribute :annotation, :annotation
 
       xml do
         root "include", mixed: true
@@ -19,6 +19,8 @@ module Lutaml
       def fetch_schema
         Glob.include_schema(schema_path)
       end
+
+      Lutaml::Xsd.register_model(self, :include)
     end
   end
 end
