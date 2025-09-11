@@ -5,10 +5,10 @@ module Lutaml
     class ExtensionSimpleContent < Model::Serializable
       attribute :id, :string
       attribute :base, :string
-      attribute :annotation, Annotation
-      attribute :any_attribute, AnyAttribute
-      attribute :attribute, Attribute, collection: true, initialize_empty: true
-      attribute :attribute_group, AttributeGroup, collection: true, initialize_empty: true
+      attribute :annotation, :annotation
+      attribute :any_attribute, :any_attribute
+      attribute :attribute, :attribute, collection: true, initialize_empty: true
+      attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
 
       xml do
         root "extension", mixed: true
@@ -21,6 +21,8 @@ module Lutaml
         map_element :any_attribute, to: :any_attribute
         map_element :attributeGroup, to: :attribute_group
       end
+
+      Lutaml::Xsd.register_model(self, :extension_simple_content)
     end
   end
 end

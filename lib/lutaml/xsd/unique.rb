@@ -5,9 +5,9 @@ module Lutaml
     class Unique < Model::Serializable
       attribute :id, :string
       attribute :name, :string
-      attribute :selector, Selector
-      attribute :annotation, Annotation
-      attribute :field, Field, collection: true, initialize_empty: true
+      attribute :selector, :selector
+      attribute :annotation, :annotation
+      attribute :field, :field, collection: true, initialize_empty: true
 
       xml do
         root "unique", mixed: true
@@ -19,6 +19,8 @@ module Lutaml
         map_element :selector, to: :selector
         map_element :field, to: :field
       end
+
+      Lutaml::Xsd.register_model(self, :unique)
     end
   end
 end

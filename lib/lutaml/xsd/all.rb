@@ -6,8 +6,8 @@ module Lutaml
       attribute :id, :string
       attribute :max_occurs, :string
       attribute :min_occurs, :string
-      attribute :annotation, Annotation
-      attribute :element, Element, collection: true, initialize_empty: true
+      attribute :annotation, :annotation
+      attribute :element, :element, collection: true, initialize_empty: true
 
       xml do
         root "all", mixed: true
@@ -19,6 +19,8 @@ module Lutaml
         map_element :annotation, to: :annotation
         map_element :element, to: :element
       end
+
+      Lutaml::Xsd.register_model(self, :all)
     end
   end
 end

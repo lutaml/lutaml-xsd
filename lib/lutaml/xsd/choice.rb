@@ -2,19 +2,16 @@
 
 module Lutaml
   module Xsd
-    class Sequence < Model::Serializable; end
-    class Group < Model::Serializable; end
-
     class Choice < Model::Serializable
       attribute :id, :string
       attribute :min_occurs, :string
       attribute :max_occurs, :string
-      attribute :annotation, Annotation
-      attribute :any, Any, collection: true, initialize_empty: true
-      attribute :group, Group, collection: true, initialize_empty: true
-      attribute :choice, Choice, collection: true, initialize_empty: true
-      attribute :element, Element, collection: true, initialize_empty: true
-      attribute :sequence, Sequence, collection: true, initialize_empty: true
+      attribute :annotation, :annotation
+      attribute :any, :any, collection: true, initialize_empty: true
+      attribute :group, :group, collection: true, initialize_empty: true
+      attribute :choice, :choice, collection: true, initialize_empty: true
+      attribute :element, :element, collection: true, initialize_empty: true
+      attribute :sequence, :sequence, collection: true, initialize_empty: true
 
       xml do
         root "choice", mixed: true
@@ -30,6 +27,8 @@ module Lutaml
         map_element :group, to: :group
         map_element :any, to: :any
       end
+
+      Lutaml::Xsd.register_model(self, :choice)
     end
   end
 end

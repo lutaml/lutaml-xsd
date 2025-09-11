@@ -6,7 +6,7 @@ module Lutaml
       attribute :id, :string
       attribute :value, :string
       attribute :fixed, :string
-      attribute :annotation, Annotation
+      attribute :annotation, :annotation
 
       xml do
         root "totalDigits", mixed: true
@@ -17,6 +17,8 @@ module Lutaml
         map_attribute :fixed, to: :fixed
         map_element :annotation, to: :annotation
       end
+
+      Lutaml::Xsd.register_model(self, :total_digits)
     end
   end
 end

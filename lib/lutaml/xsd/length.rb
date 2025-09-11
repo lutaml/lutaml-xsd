@@ -5,7 +5,7 @@ module Lutaml
     class Length < Model::Serializable
       attribute :fixed, :boolean
       attribute :value, :integer
-      attribute :annotation, Annotation
+      attribute :annotation, :annotation
 
       xml do
         root "length", mixed: true
@@ -15,6 +15,8 @@ module Lutaml
         map_attribute :value, to: :value
         map_element :annotation, to: :annotation
       end
+
+      Lutaml::Xsd.register_model(self, :length)
     end
   end
 end

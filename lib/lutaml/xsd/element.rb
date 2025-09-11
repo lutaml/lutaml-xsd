@@ -17,12 +17,12 @@ module Lutaml
       attribute :min_occurs, :string
       attribute :max_occurs, :string
       attribute :substitution_group, :string
-      attribute :annotation, Annotation
-      attribute :simple_type, SimpleType
-      attribute :complex_type, ComplexType
-      attribute :key, Key, collection: true, initialize_empty: true
-      attribute :keyref, Keyref, collection: true, initialize_empty: true
-      attribute :unique, Unique, collection: true, initialize_empty: true
+      attribute :annotation, :annotation
+      attribute :simple_type, :simple_type
+      attribute :complex_type, :complex_type
+      attribute :key, :key, collection: true, initialize_empty: true
+      attribute :keyref, :keyref, collection: true, initialize_empty: true
+      attribute :unique, :unique, collection: true, initialize_empty: true
 
       xml do
         root "element", mixed: true
@@ -49,6 +49,8 @@ module Lutaml
         map_element :unique, to: :unique
         map_element :key, to: :key
       end
+
+      Lutaml::Xsd.register_model(self, :element)
     end
   end
 end

@@ -13,6 +13,8 @@ module Lutaml
         map_attribute :id, to: :id
         map_attribute :xpath, to: :xpath
       end
+
+      Lutaml::Xsd.register_model(self, :field)
     end
   end
 end

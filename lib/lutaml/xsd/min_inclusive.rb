@@ -11,6 +11,8 @@ module Lutaml
 
         map_attribute :value, to: :value
       end
+
+      Lutaml::Xsd.register_model(self, :min_inclusive)
     end
   end
 end

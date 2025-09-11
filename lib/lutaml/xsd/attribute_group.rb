@@ -6,10 +6,10 @@ module Lutaml
       attribute :id, :string
       attribute :name, :string
       attribute :ref, :string
-      attribute :annotation, Annotation
-      attribute :any_attribute, AnyAttribute
-      attribute :attribute, Attribute, collection: true, initialize_empty: true
-      attribute :attribute_group, AttributeGroup, collection: true, initialize_empty: true
+      attribute :annotation, :annotation
+      attribute :any_attribute, :any_attribute
+      attribute :attribute, :attribute, collection: true, initialize_empty: true
+      attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
 
       xml do
         root "attributeGroup", mixed: true
@@ -23,6 +23,8 @@ module Lutaml
         map_element :anyAttribute, to: :any_attribute
         map_element :attributeGroup, to: :attribute_group
       end
+
+      Lutaml::Xsd.register_model(self, :attribute_group)
     end
   end
 end

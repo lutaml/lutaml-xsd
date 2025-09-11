@@ -119,7 +119,7 @@ All schemas specified in the *include* and/or *import* elements will be fetched 
 
 == Development
 
-- **Dependencies**: The gem depends on other gems like `zeitwerk` for autoloading and `lutaml-model` for model serialization. See the `Gemfile` and `lutaml-xsd.gemspec` for details on dependencies.
+- **Dependencies**: The gem depends on `lutaml-model` for model serialization. See the `Gemfile` and `lutaml-xsd.gemspec` for details on dependencies.
 
 - **Testing**: Tests are written using RSpec. Test files and fixtures are located in the `spec` directory.
 

@@ -6,7 +6,7 @@ module Lutaml
       attribute :id, :string
       attribute :namespace, :string
       attribute :schema_path, :string
-      attribute :annotation, Annotation
+      attribute :annotation, :annotation
 
       xml do
         root "import", mixed: true
@@ -21,6 +21,8 @@ module Lutaml
       def fetch_schema
         Glob.include_schema(schema_path) if schema_path && Glob.location?
       end
+
+      Lutaml::Xsd.register_model(self, :import)
     end
   end
 end

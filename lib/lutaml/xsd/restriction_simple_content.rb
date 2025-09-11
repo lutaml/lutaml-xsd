@@ -5,23 +5,23 @@ module Lutaml
     class RestrictionSimpleContent < Model::Serializable
       attribute :id, :string
       attribute :base, :string
-      attribute :annotation, Annotation
-      attribute :simple_type, SimpleType
-      attribute :any_attribute, AnyAttribute
-      attribute :length, Length, collection: true, initialize_empty: true
-      attribute :pattern, Pattern, collection: true, initialize_empty: true
-      attribute :attribute, Attribute, collection: true, initialize_empty: true
-      attribute :max_length, MaxLength, collection: true, initialize_empty: true
-      attribute :min_length, MinLength, collection: true, initialize_empty: true
-      attribute :white_space, WhiteSpace, collection: true, initialize_empty: true
-      attribute :enumeration, Enumeration, collection: true, initialize_empty: true
-      attribute :total_digits, TotalDigits, collection: true, initialize_empty: true
-      attribute :min_exclusive, MinExclusive, collection: true, initialize_empty: true
-      attribute :min_inclusive, MinInclusive, collection: true, initialize_empty: true
-      attribute :max_exclusive, MaxExclusive, collection: true, initialize_empty: true
-      attribute :max_inclusive, MaxInclusive, collection: true, initialize_empty: true
-      attribute :attribute_group, AttributeGroup, collection: true, initialize_empty: true
-      attribute :fraction_digits, FractionDigits, collection: true, initialize_empty: true
+      attribute :annotation, :annotation
+      attribute :simple_type, :simple_type
+      attribute :any_attribute, :any_attribute
+      attribute :length, :length, collection: true, initialize_empty: true
+      attribute :pattern, :pattern, collection: true, initialize_empty: true
+      attribute :attribute, :attribute, collection: true, initialize_empty: true
+      attribute :max_length, :max_length, collection: true, initialize_empty: true
+      attribute :min_length, :min_length, collection: true, initialize_empty: true
+      attribute :white_space, :white_space, collection: true, initialize_empty: true
+      attribute :enumeration, :enumeration, collection: true, initialize_empty: true
+      attribute :total_digits, :total_digits, collection: true, initialize_empty: true
+      attribute :min_exclusive, :min_exclusive, collection: true, initialize_empty: true
+      attribute :min_inclusive, :min_inclusive, collection: true, initialize_empty: true
+      attribute :max_exclusive, :max_exclusive, collection: true, initialize_empty: true
+      attribute :max_inclusive, :max_inclusive, collection: true, initialize_empty: true
+      attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
+      attribute :fraction_digits, :fraction_digits, collection: true, initialize_empty: true
 
       xml do
         root "restriction", mixed: true
@@ -47,6 +47,8 @@ module Lutaml
         map_element :pattern, to: :pattern
         map_element :length, to: :length
       end
+
+      Lutaml::Xsd.register_model(self, :restriction_simple_content)
     end
   end
 end

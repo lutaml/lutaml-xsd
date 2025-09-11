@@ -5,8 +5,8 @@ module Lutaml
     class Union < Model::Serializable
       attribute :id, :string
       attribute :member_types, :string, default: -> { "" }
-      attribute :annotation, Annotation
-      attribute :simple_type, SimpleType, collection: true, initialize_empty: true
+      attribute :annotation, :annotation
+      attribute :simple_type, :simple_type, collection: true, initialize_empty: true
 
       xml do
         root "union", mixed: true
@@ -17,6 +17,8 @@ module Lutaml
         map_element :annotation, to: :annotation
         map_element :simpleType, to: :simple_type
       end
+
+      Lutaml::Xsd.register_model(self, :union)
     end
   end
 end

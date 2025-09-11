@@ -15,20 +15,20 @@ module Lutaml
       attribute :target_namespace, :string
       attribute :element_form_default, :string
       attribute :attribute_form_default, :string
-      attribute :imports, Import, collection: true, initialize_empty: true
-      attribute :includes, Include, collection: true, initialize_empty: true
+      attribute :imports, :import, collection: true, initialize_empty: true
+      attribute :includes, :include, collection: true, initialize_empty: true
 
-      attribute :group, Group, collection: true, initialize_empty: true
-      attribute :import, Import, collection: true, initialize_empty: true
-      attribute :element, Element, collection: true, initialize_empty: true
-      attribute :include, Include, collection: true, initialize_empty: true
-      attribute :notation, Notation, collection: true, initialize_empty: true
-      attribute :redefine, Redefine, collection: true, initialize_empty: true
-      attribute :attribute, Attribute, collection: true, initialize_empty: true
-      attribute :annotation, Annotation, collection: true, initialize_empty: true
-      attribute :simple_type, SimpleType, collection: true, initialize_empty: true
-      attribute :complex_type, ComplexType, collection: true, initialize_empty: true
-      attribute :attribute_group, AttributeGroup, collection: true, initialize_empty: true
+      attribute :group, :group, collection: true, initialize_empty: true
+      attribute :import, :import, collection: true, initialize_empty: true
+      attribute :element, :element, collection: true, initialize_empty: true
+      attribute :include, :include, collection: true, initialize_empty: true
+      attribute :notation, :notation, collection: true, initialize_empty: true
+      attribute :redefine, :redefine, collection: true, initialize_empty: true
+      attribute :attribute, :attribute, collection: true, initialize_empty: true
+      attribute :annotation, :annotation, collection: true, initialize_empty: true
+      attribute :simple_type, :simple_type, collection: true, initialize_empty: true
+      attribute :complex_type, :complex_type, collection: true, initialize_empty: true
+      attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
 
       xml do
         root "schema", mixed: true
@@ -58,7 +58,12 @@ module Lutaml
 
       def import_from_schema(model, value)
         value.each do |schema|
-          setup_import_and_include("import", model, schema, namespace: schema.attributes["namespace"].value)
+          setup_import_and_include(
+            "import",
+            model,
+            schema,
+            namespace: schema.attributes["namespace"].value
+          )
         end
       end
 
@@ -73,7 +78,11 @@ module Lutaml
 
       def include_from_schema(model, value)
         value.each do |schema|
-          setup_import_and_include("include", model, schema)
+          setup_import_and_include(
+            "include",
+            model,
+            schema
+          )
         end
       end
 
@@ -103,7 +112,7 @@ module Lutaml
       def init_instance_of(klass, schema_hash, args = {})
         args[:id] = schema_hash["id"].value if schema_hash&.key?("id")
         args[:schema_path] = schema_hash["schemaLocation"].value if schema_hash&.key?("schemaLocation")
-        Lutaml::Xsd.const_get(klass.capitalize).new(**args)
+        Lutaml::Xsd.register.get_class(klass.to_sym).new(**args)
       end
 
       def insert_in_processed_schemas(instance)
@@ -122,7 +131,8 @@ module Lutaml
           Lutaml::Xsd.parse(
             instance.fetch_schema,
             location: Glob.location,
-            nested_schema: true
+            nested_schema: true,
+            register: Lutaml::Xsd.register.id
           )
       end
 
@@ -131,7 +141,12 @@ module Lutaml
         annotation_key = elements.find { |element| element.unprefixed_name == "annotation" }
         return unless annotation_key
 
-        instance.annotation = Annotation.apply_mappings(annotation_key, :xml)
+        annotation = Lutaml::Xsd.register.get_class(:annotation)
+        instance.annotation = annotation.apply_mappings(
+          annotation_key,
+          :xml,
+          register: Lutaml::Xsd.register.id
+        )
       end
 
       class << self
@@ -169,6 +184,8 @@ module Lutaml
           in_progress.delete(location)
         end
       end
+
+      Lutaml::Xsd.register_model(self, :schema)
     end
     # rubocop:enable Metrics/ClassLength
   end
