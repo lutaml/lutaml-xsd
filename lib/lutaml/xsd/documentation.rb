@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Documentation < Model::Serializable
+    class Documentation < Base
       attribute :lang, :string
       attribute :source, :string
       attribute :content, :string

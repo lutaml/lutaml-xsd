@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class SimpleType < Model::Serializable
+    class SimpleType < Base
       attribute :id, :string
       attribute :name, :string
       attribute :final, :string

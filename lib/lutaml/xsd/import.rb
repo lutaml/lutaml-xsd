@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Import < Model::Serializable
+    class Import < Base
       attribute :id, :string
       attribute :namespace, :string
       attribute :schema_path, :string

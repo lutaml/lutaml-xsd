@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Annotation < Model::Serializable
+    class Annotation < Base
       attribute :id, :string
       attribute :documentation, :documentation, collection: true, initialize_empty: true
       attribute :appinfo, :appinfo, collection: true, initialize_empty: true

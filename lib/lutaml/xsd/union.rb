@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Union < Model::Serializable
+    class Union < Base
       attribute :id, :string
       attribute :member_types, :string, default: -> { "" }
       attribute :annotation, :annotation

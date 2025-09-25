@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class ExtensionSimpleContent < Model::Serializable
+    class ExtensionSimpleContent < Base
       attribute :id, :string
       attribute :base, :string
       attribute :annotation, :annotation

@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class All < Model::Serializable
+    class All < Base
       attribute :id, :string
       attribute :max_occurs, :string
       attribute :min_occurs, :string

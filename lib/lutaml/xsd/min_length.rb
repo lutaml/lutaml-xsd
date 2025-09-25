@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class MinLength < Model::Serializable
+    class MinLength < Base
       attribute :fixed, :string
       attribute :value, :integer
 

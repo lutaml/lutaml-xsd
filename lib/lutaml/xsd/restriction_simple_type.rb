@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class RestrictionSimpleType < Model::Serializable
+    class RestrictionSimpleType < Base
       attribute :id, :string
       attribute :base, :string
       attribute :annotation, :annotation

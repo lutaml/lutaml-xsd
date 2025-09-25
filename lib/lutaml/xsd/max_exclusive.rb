@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class MaxExclusive < Model::Serializable
+    class MaxExclusive < Base
       attribute :fixed, :string
       attribute :value, :integer
 

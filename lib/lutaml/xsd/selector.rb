@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Selector < Model::Serializable
+    class Selector < Base
       attribute :id, :string
       attribute :xpath, :string
       attribute :annotation, :annotation

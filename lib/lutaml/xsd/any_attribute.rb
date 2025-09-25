@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class AnyAttribute < Model::Serializable
+    class AnyAttribute < Base
       attribute :id, :string
       attribute :namespace, :string
       attribute :process_contents, :string

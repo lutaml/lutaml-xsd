@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class ComplexContent < Model::Serializable
+    class ComplexContent < Base
       attribute :id, :string
       attribute :mixed, :boolean
       attribute :extension, :extension_complex_content

@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Field < Model::Serializable
+    class Field < Base
       attribute :id, :string
       attribute :xpath, :string
 

@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require_relative "liquid_methods/complex_type"
+
 module Lutaml
   module Xsd
-    class ComplexType < Model::Serializable
+    class ComplexType < Base
+      include LiquidMethods::ComplexType
+
       attribute :id, :string
       attribute :name, :string
       attribute :final, :string
@@ -40,6 +44,9 @@ module Lutaml
         map_element :complexContent, to: :complex_content
       end
 
+      register_drop_method(:used_by)
+      register_drop_method(:child_elements)
+      register_drop_method(:attribute_elements)
       Lutaml::Xsd.register_model(self, :complex_type)
     end
   end

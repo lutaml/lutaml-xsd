@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Unique < Model::Serializable
+    class Unique < Base
       attribute :id, :string
       attribute :name, :string
       attribute :selector, :selector

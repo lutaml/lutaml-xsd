@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require_relative "liquid_methods/attribute"
+
 module Lutaml
   module Xsd
-    class Attribute < Model::Serializable
+    class Attribute < Base
+      include LiquidMethods::Attribute
+
       attribute :id, :string
       attribute :use, :string, values: %w[required prohibited optional], default: -> { "optional" }
       attribute :ref, :string
@@ -30,6 +34,8 @@ module Lutaml
         map_element :simpleType, to: :simple_type
       end
 
+      register_drop_method(:cardinality)
+      register_drop_method(:referenced_object)
       Lutaml::Xsd.register_model(self, :attribute)
     end
   end

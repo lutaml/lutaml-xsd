@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Include < Model::Serializable
+    class Include < Base
       attribute :id, :string
       attribute :schema_path, :string
       attribute :annotation, :annotation

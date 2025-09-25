@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class List < Model::Serializable
+    class List < Base
       attribute :id, :string
       attribute :item_type, :string
       attribute :annotation, :annotation

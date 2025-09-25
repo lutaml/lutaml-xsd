@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Enumeration < Model::Serializable
+    class Enumeration < Base
       attribute :value, :string
       attribute :annotation, :annotation
 

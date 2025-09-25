@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require_relative "liquid_methods/choice"
+
 module Lutaml
   module Xsd
-    class Choice < Model::Serializable
+    class Choice < Base
+      include LiquidMethods::Choice
+
       attribute :id, :string
       attribute :min_occurs, :string
       attribute :max_occurs, :string
@@ -28,6 +32,7 @@ module Lutaml
         map_element :any, to: :any
       end
 
+      register_drop_method(:child_elements)
       Lutaml::Xsd.register_model(self, :choice)
     end
   end

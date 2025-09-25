@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Key < Model::Serializable
+    class Key < Base
       attribute :id, :string
       attribute :name, :string
       attribute :selector, :selector

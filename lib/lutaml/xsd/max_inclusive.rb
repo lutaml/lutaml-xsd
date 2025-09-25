@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class MaxInclusive < Model::Serializable
+    class MaxInclusive < Base
       attribute :value, :string
 
       xml do

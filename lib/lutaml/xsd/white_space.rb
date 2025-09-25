@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class WhiteSpace < Model::Serializable
+    class WhiteSpace < Base
       attribute :id, :string
       attribute :fixed, :string
       attribute :value, :string

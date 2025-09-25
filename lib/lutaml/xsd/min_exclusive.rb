@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class MinExclusive < Model::Serializable
+    class MinExclusive < Base
       attribute :fixed, :string
       attribute :value, :integer
 
