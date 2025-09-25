@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require_relative "liquid_methods/attribute_group"
+
 module Lutaml
   module Xsd
-    class AttributeGroup < Model::Serializable
+    class AttributeGroup < Base
+      include LiquidMethods::AttributeGroup
+
       attribute :id, :string
       attribute :name, :string
       attribute :ref, :string
@@ -24,6 +28,8 @@ module Lutaml
         map_element :attributeGroup, to: :attribute_group
       end
 
+      register_drop_method(:used_by)
+      register_drop_method(:attribute_elements)
       Lutaml::Xsd.register_model(self, :attribute_group)
     end
   end

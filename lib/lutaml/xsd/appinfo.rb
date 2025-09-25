@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Appinfo < Model::Serializable
+    class Appinfo < Base
       attribute :source, :string
       attribute :text, :string
 

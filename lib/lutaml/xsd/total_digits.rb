@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class TotalDigits < Model::Serializable
+    class TotalDigits < Base
       attribute :id, :string
       attribute :value, :string
       attribute :fixed, :string

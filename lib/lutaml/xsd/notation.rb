@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Notation < Model::Serializable
+    class Notation < Base
       attribute :id, :string
       attribute :name, :string
       attribute :public, :string

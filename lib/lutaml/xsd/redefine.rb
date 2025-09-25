@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Redefine < Model::Serializable
+    class Redefine < Base
       attribute :id, :string
       attribute :schema_path, :string
       attribute :group, :group

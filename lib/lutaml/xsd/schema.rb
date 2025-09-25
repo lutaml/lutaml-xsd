@@ -3,7 +3,7 @@
 module Lutaml
   module Xsd
     # rubocop:disable Metrics/ClassLength
-    class Schema < Model::Serializable
+    class Schema < Base
       attribute :id, :string
       attribute :lang, :string
       attribute :xmlns, :string
@@ -186,6 +186,7 @@ module Lutaml
       end
 
       Lutaml::Xsd.register_model(self, :schema)
+      register_drop_method(:to_xml)
     end
     # rubocop:enable Metrics/ClassLength
   end

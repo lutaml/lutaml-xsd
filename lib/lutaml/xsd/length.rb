@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Length < Model::Serializable
+    class Length < Base
       attribute :fixed, :boolean
       attribute :value, :integer
       attribute :annotation, :annotation

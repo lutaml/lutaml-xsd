@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require_relative "liquid_methods/element"
+
 module Lutaml
   module Xsd
-    class Element < Model::Serializable
+    class Element < Base
+      include LiquidMethods::Element
+
       attribute :id, :string
       attribute :ref, :string
       attribute :name, :string
@@ -50,6 +54,9 @@ module Lutaml
         map_element :key, to: :key
       end
 
+      register_drop_method(:child_elements)
+      register_drop_method(:min_occurrences)
+      register_drop_method(:max_occurrences)
       Lutaml::Xsd.register_model(self, :element)
     end
   end

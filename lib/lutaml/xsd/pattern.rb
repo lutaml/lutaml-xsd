@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Pattern < Model::Serializable
+    class Pattern < Base
       attribute :value, :string
       attribute :annotation, :annotation
 

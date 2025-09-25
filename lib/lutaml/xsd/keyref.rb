@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class Keyref < Model::Serializable
+    class Keyref < Base
       attribute :id, :string
       attribute :name, :string
       attribute :refer, :string

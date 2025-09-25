@@ -31,6 +31,7 @@ module Lutaml
   end
 end
 
+require_relative "xsd/base"
 require_relative "xsd/all"
 require_relative "xsd/annotation"
 require_relative "xsd/any"

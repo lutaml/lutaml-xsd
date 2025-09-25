@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class FractionDigits < Model::Serializable
+    class FractionDigits < Base
       attribute :id, :string
       attribute :value, :string
       attribute :fixed, :string

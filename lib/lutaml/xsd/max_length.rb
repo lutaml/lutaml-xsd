@@ -2,7 +2,7 @@
 
 module Lutaml
   module Xsd
-    class MaxLength < Model::Serializable
+    class MaxLength < Base
       attribute :fixed, :string
       attribute :value, :integer
 
