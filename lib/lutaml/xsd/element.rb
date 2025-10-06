@@ -54,9 +54,14 @@ module Lutaml
         map_element :key, to: :key
       end
 
-      register_drop_method(:child_elements)
-      register_drop_method(:min_occurrences)
-      register_drop_method(:max_occurrences)
+      liquid do
+        map "used_by", to: :used_by
+        map "attributes", to: :attributes
+        map "child_elements", to: :child_elements
+        map "min_occurrences", to: :min_occurrences
+        map "max_occurrences", to: :max_occurrences
+      end
+
       Lutaml::Xsd.register_model(self, :element)
     end
   end

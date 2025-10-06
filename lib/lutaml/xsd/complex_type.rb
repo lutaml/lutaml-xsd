@@ -44,9 +44,12 @@ module Lutaml
         map_element :complexContent, to: :complex_content
       end
 
-      register_drop_method(:used_by)
-      register_drop_method(:child_elements)
-      register_drop_method(:attribute_elements)
+      liquid do
+        map "used_by", to: :used_by
+        map "child_elements", to: :child_elements
+        map "attribute_elements", to: :attribute_elements
+      end
+
       Lutaml::Xsd.register_model(self, :complex_type)
     end
   end

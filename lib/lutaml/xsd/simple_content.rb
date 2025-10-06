@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require_relative "liquid_methods/simple_content"
+
 module Lutaml
   module Xsd
     class SimpleContent < Base
+      include LiquidMethods::SimpleContent
+
       attribute :id, :string
       attribute :base, :string
       attribute :annotation, :annotation
@@ -18,6 +22,10 @@ module Lutaml
         map_element :restriction, to: :restriction
         map_element :annotation, to: :annotation
         map_element :extension, to: :extension
+      end
+
+      liquid do
+        map "attribute_elements", to: :attribute_elements
       end
 
       Lutaml::Xsd.register_model(self, :simple_content)
