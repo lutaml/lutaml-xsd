@@ -6,7 +6,7 @@ module Lutaml
   module Xsd
     module LiquidMethods
       module AttributeGroup
-        include Lutaml::Model::Liquefiable
+        include Model::Serialize
         include ResolvedElementOrder
 
         def used_by
@@ -14,7 +14,7 @@ module Lutaml
         end
 
         def attribute_elements(array = [])
-          resolved_element_order.each_with_object(array) do |child, object|
+          object_element_order.each_with_object(array) do |child, object|
             case child
             when Xsd::AttributeGroup then child.attribute_elements(object)
             when Xsd::Attribute then object << child
@@ -30,6 +30,14 @@ module Lutaml
               find_used_by(child)
             end
           end
+        end
+
+        private
+
+        def object_element_order
+          return resolved_element_order unless ref
+
+          @__root.attribute_group.find { |group| group.name == ref }&.resolved_element_order
         end
       end
     end

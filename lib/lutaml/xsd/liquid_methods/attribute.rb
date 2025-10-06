@@ -4,7 +4,7 @@ module Lutaml
   module Xsd
     module LiquidMethods
       module Attribute
-        include Lutaml::Model::Liquefiable
+        include Model::Serialize
 
         def cardinality
           case use
@@ -13,12 +13,20 @@ module Lutaml
           end
         end
 
-        def used_by_items
+        def referenced_type
+          referenced_object&.type
         end
 
-        def referenced_object
-          return self if ref.start_with?("xml:")
+        def referenced_name
+          referenced_object&.name || ref
+        end
 
+        private
+
+        def referenced_object
+          return self if name
+
+          @__root.attribute.find { |attr| attr.name == ref }
         end
       end
     end

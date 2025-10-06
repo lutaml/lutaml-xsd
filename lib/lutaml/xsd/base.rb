@@ -5,10 +5,12 @@ require "canon"
 module Lutaml
   module Xsd
     class Base < Model::Serializable
-      XML_REGEX = %r{\<\?xml[^>]+\>\s+}.freeze
+      XML_REGEX = /<\?xml[^>]+>\s+/
 
-      def to_formatted_xml
-        Canon.format_xml(to_xml).gsub(XML_REGEX, '')
+      def to_formatted_xml(except: [])
+        Canon.format_xml(
+          to_xml(except: except),
+        ).gsub(XML_REGEX, "")
       end
 
       # TODO: Update all occurrences of `register_drop_method` to liquid block

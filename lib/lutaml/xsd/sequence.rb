@@ -32,7 +32,10 @@ module Lutaml
         map_element :any, to: :any
       end
 
-      register_drop_method(:child_elements)
+      liquid do
+        map "child_elements", to: :child_elements
+      end
+
       Lutaml::Xsd.register_model(self, :sequence)
     end
   end

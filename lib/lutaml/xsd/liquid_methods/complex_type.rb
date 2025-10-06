@@ -6,7 +6,7 @@ module Lutaml
   module Xsd
     module LiquidMethods
       module ComplexType
-        include Lutaml::Model::Liquefiable
+        include Model::Serialize
         include ResolvedElementOrder
 
         def used_by
@@ -17,13 +17,28 @@ module Lutaml
 
         def attribute_elements(array = [])
           array.concat(attribute)
-          array.concat(attribute_group.flat_map(&:attribute_elements))
+          attribute_group.flat_map { |group| group.attribute_elements(array) }
+          simple_content&.attribute_elements(array)
           array
         end
 
         def child_elements(array = [])
-          resolved_element_order.each_with_object(array) do |child, storage|
-            child.child_elements(storage) if child.respond_to?(:child_elements)
+          resolved_element_order.each do |child|
+            if child.is_a?(Xsd::Element)
+              array << child
+            elsif child.respond_to?(:child_elements)
+              child.child_elements(array)
+            end
+          end
+        end
+
+        def find_elements_used(element_name)
+          resolved_element_order.any? do |child|
+            if child.is_a?(Xsd::Element)
+              child.ref == element_name
+            elsif child.respond_to?(:find_elements_used)
+              child.find_elements_used(element_name)
+            end
           end
         end
 

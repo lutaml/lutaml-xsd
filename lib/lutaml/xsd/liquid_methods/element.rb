@@ -4,7 +4,15 @@ module Lutaml
   module Xsd
     module LiquidMethods
       module Element
-        include Lutaml::Model::Liquefiable
+        include Model::Serialize
+
+        def used_by
+          @__root.complex_type.select { |object| object.find_elements_used(name) }
+        end
+
+        def attributes
+          referenced_complex_type.attribute_elements
+        end
 
         def min_occurrences
           @min_occurs&.to_i || 1
@@ -17,7 +25,20 @@ module Lutaml
         end
 
         def child_elements(array = [])
-          array << self
+          referenced_complex_type.child_elements(array)
+          array
+        end
+
+        private
+
+        def referenced_complex_type
+          @__root.complex_type.find { |type| type.name == referenced_type }
+        end
+
+        def referenced_type
+          return type unless ref
+
+          @__root.element.find { |el| el.name == ref }&.type
         end
       end
     end

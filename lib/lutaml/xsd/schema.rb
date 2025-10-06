@@ -56,6 +56,10 @@ module Lutaml
         map_attribute :lang, to: :lang
       end
 
+      liquid do
+        map "to_xml", to: :to_xml
+      end
+
       def import_from_schema(model, value)
         value.each do |schema|
           setup_import_and_include(
@@ -186,7 +190,6 @@ module Lutaml
       end
 
       Lutaml::Xsd.register_model(self, :schema)
-      register_drop_method(:to_xml)
     end
     # rubocop:enable Metrics/ClassLength
   end

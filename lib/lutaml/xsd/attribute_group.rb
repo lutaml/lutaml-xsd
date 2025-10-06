@@ -28,8 +28,11 @@ module Lutaml
         map_element :attributeGroup, to: :attribute_group
       end
 
-      register_drop_method(:used_by)
-      register_drop_method(:attribute_elements)
+      liquid do
+        map "used_by", to: :used_by
+        map "attribute_elements", to: :attribute_elements
+      end
+
       Lutaml::Xsd.register_model(self, :attribute_group)
     end
   end
