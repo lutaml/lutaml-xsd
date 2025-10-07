@@ -14,11 +14,11 @@ module Lutaml
         end
 
         def referenced_type
-          referenced_object&.type
+          @referenced_type ||= referenced_object&.type
         end
 
         def referenced_name
-          referenced_object&.name || ref
+          @referenced_name ||= referenced_object&.name || ref
         end
 
         private

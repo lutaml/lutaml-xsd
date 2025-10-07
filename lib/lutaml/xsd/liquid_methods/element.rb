@@ -25,20 +25,23 @@ module Lutaml
         end
 
         def child_elements(array = [])
-          referenced_complex_type.child_elements(array)
-          array
+          referenced_complex_type&.child_elements(array)
+        end
+
+        def referenced_type
+          referenced_object&.type
+        end
+
+        def referenced_object
+          return self if name
+
+          @__root.element.find { |el| el.name == ref }
         end
 
         private
 
         def referenced_complex_type
           @__root.complex_type.find { |type| type.name == referenced_type }
-        end
-
-        def referenced_type
-          return type unless ref
-
-          @__root.element.find { |el| el.name == ref }&.type
         end
       end
     end
