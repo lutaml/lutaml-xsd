@@ -17,6 +17,7 @@ module Lutaml
               child.child_elements(array)
             end
           end
+          array
         end
 
         def find_elements_used(element_name)

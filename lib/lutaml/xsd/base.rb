@@ -13,8 +13,8 @@ module Lutaml
         ).gsub(XML_REGEX, "")
       end
 
-      # TODO: Update all occurrences of `register_drop_method` to liquid block
       liquid do
+        map "to_xml", to: :to_xml
         map "to_formatted_xml", to: :to_formatted_xml
       end
     end
