@@ -62,6 +62,7 @@ module Lutaml
         map "min_occurrences", to: :min_occurrences
         map "max_occurrences", to: :max_occurrences
         map "referenced_object", to: :referenced_object
+        map "referenced_complex_type", to: :referenced_complex_type
       end
 
       Lutaml::Xsd.register_model(self, :element)

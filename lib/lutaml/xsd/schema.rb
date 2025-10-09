@@ -56,10 +56,6 @@ module Lutaml
         map_attribute :lang, to: :lang
       end
 
-      liquid do
-        map "to_xml", to: :to_xml
-      end
-
       def import_from_schema(model, value)
         value.each do |schema|
           setup_import_and_include(

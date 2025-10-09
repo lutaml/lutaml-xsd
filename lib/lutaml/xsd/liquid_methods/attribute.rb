@@ -21,8 +21,6 @@ module Lutaml
           @referenced_name ||= referenced_object&.name || ref
         end
 
-        private
-
         def referenced_object
           return self if name
 
