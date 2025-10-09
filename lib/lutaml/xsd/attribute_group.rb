@@ -30,6 +30,7 @@ module Lutaml
 
       liquid do
         map "used_by", to: :used_by
+        map "referenced_object", to: :referenced_object
         map "attribute_elements", to: :attribute_elements
       end
 

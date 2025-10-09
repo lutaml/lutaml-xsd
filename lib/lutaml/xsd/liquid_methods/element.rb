@@ -38,8 +38,6 @@ module Lutaml
           @__root.element.find { |el| el.name == ref }
         end
 
-        private
-
         def referenced_complex_type
           @__root.complex_type.find { |type| type.name == referenced_type }
         end

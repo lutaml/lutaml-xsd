@@ -38,6 +38,7 @@ module Lutaml
         map "cardinality", to: :cardinality
         map "referenced_name", to: :referenced_name
         map "referenced_type", to: :referenced_type
+        map "referenced_object", to: :referenced_object
       end
 
       Lutaml::Xsd.register_model(self, :attribute)

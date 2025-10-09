@@ -14,7 +14,9 @@ module Lutaml
         end
 
         def attribute_elements(array = [])
-          object_element_order.each_with_object(array) do |child, object|
+          referenced_object
+            .resolved_element_order
+            .each_with_object(array) do |child, object|
             case child
             when Xsd::AttributeGroup then child.attribute_elements(object)
             when Xsd::Attribute then object << child
@@ -32,12 +34,10 @@ module Lutaml
           end
         end
 
-        private
+        def referenced_object
+          return self unless name
 
-        def object_element_order
-          return resolved_element_order unless ref
-
-          @__root.attribute_group.find { |group| group.name == ref }&.resolved_element_order
+          @__root.attribute_group.find { |group| group.name == ref }
         end
       end
     end
