@@ -1,17 +1,15 @@
 # frozen_string_literal: true
 
-require_relative "resolved_element_order"
-
 module Lutaml
   module Xsd
     module LiquidMethods
       module ComplexType
-        include Model::Serialize
-        include ResolvedElementOrder
 
         def used_by
-          raw_elements = @__root.group.map(&:elements)
+          root_complex_types = @__root.complex_type.reject { |ct| ct == self }
+          raw_elements = @__root.group.map(&:child_elements).flatten
           raw_elements.concat(@__root.element)
+          raw_elements.concat(root_complex_types.map(&:child_elements).flatten)
           raw_elements.select { |el| el.type == name }
         end
 

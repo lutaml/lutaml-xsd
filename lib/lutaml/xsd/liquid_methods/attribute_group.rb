@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
-require_relative "resolved_element_order"
-
 module Lutaml
   module Xsd
     module LiquidMethods
       module AttributeGroup
-        include Model::Serialize
-        include ResolvedElementOrder
-
         def used_by
           @__root.complex_type.select { |type| find_used_by(type) }
         end
