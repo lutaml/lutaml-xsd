@@ -4,8 +4,6 @@ module Lutaml
   module Xsd
     module LiquidMethods
       module Attribute
-        include Model::Serialize
-
         def cardinality
           case use
           when "required" then "1"

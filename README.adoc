@@ -117,6 +117,134 @@ Lutaml::Xsd.parse(xsd_content, location: 'path/to/your/directory/')
 
 All schemas specified in the *include* and/or *import* elements will be fetched from their *schemaLocation*, parsed and added to their parent *Lutaml::Xsd::Schema* object.
 
+== Liquid methods
+
+This gem exposes convenient methods for use in Liquid templates via `to_liquid` on parsed objects. Below is a concise reference of the Liquid-enabled helpers organized by module/type.
+
+=== Element (`Lutaml::Xsd::LiquidMethods::Element`)
+
+- `used_by` — Returns complex_types that use/reference this element.
+- `attributes` — Returns attribute elements.
+- `min_occurrences` — Returns the element's minimum occurrences as Integer (default 1).
+- `max_occurrences` — Returns `*` for unbounded, otherwise Integer (default 1).
+- `child_elements` — Returns all nested child elements (resolved across groups/choices/sequences).
+- `referenced_type` — Returns the name of the element's `type` if present, or the type name indicated by `ref` if defined.
+- `referenced_object` — Resolves and returns the element or its referenced element by `ref`.
+- `referenced_complex_type` — Resolves the complex type matching `referenced_type`.
+
+[source,liquid]
+----
+{% for el in schema.element %}
+  Element: {{ el.name }} ({{ el.min_occurrences }}..{{ el.max_occurrences }})
+  Type: {{ el.referenced_type }}
+  {% assign attrs = el.attributes %}
+  {% if attrs.size > 0 %}
+    Attributes:
+    {% for a in attrs %}
+      - {{ a.referenced_name }} ({{ a.cardinality }})
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+----
+
+=== Attribute (`Lutaml::Xsd::LiquidMethods::Attribute`)
+
+- `referenced_object` — Returns the actual attribute object, resolving references via `ref` if necessary.
+- `referenced_name` — Retrieves the definitive attribute name, using `ref` if not explicitly named.
+- `referenced_type` — Retrieves the fully resolved type name for this attribute.
+- `cardinality` — Returns `1` for required, `0..1` for optional.
+
+[source,liquid]
+----
+{% for a in complex_type.attribute %}
+  {{ a.referenced_name }}: {{ a.referenced_type }} ({{ a.cardinality }})
+{% endfor %}
+----
+
+=== AttributeGroup (`Lutaml::Xsd::LiquidMethods::AttributeGroup`)
+
+- `used_by` — Returns complex types that use this attribute group.
+- `attribute_elements` — Returns a flattened list of attributes, resolving nested groups.
+
+[source,liquid]
+----
+{% for ag in schema.attribute_group %}
+  Group {{ ag.name }} used by:
+  {% for ct in ag.used_by %}
+    - {{ ct.name }}
+  {% endfor %}
+  Attributes:
+  {% for a in ag.attribute_elements %}
+    - {{ a.referenced_name }}
+  {% endfor %}
+{% endfor %}
+----
+
+=== ComplexType (`Lutaml::Xsd::LiquidMethods::ComplexType`)
+
+- `used_by` — Returns elements and group elements that reference this type.
+- `attribute_elements` — Returns all attributes (including those from groups and simple content extensions).
+- `child_elements` — Returns all child elements (across sequences/choices/groups).
+- `find_elements_used(name)` — Boolean indicating if an element name is used within this type.
+
+[source,liquid]
+----
+{% for ct in schema.complex_type %}
+  ComplexType: {{ ct.name }}
+  Elements:
+  {% for el in ct.child_elements %}
+    - {{ el.referenced_name }}
+  {% endfor %}
+  Attributes:
+  {% for a in ct.attribute_elements %}
+    - {{ a.referenced_name }}
+  {% endfor %}
+{% endfor %}
+----
+
+=== Group (`Lutaml::Xsd::LiquidMethods::Group`) and Sequence (`...::Sequence`) and Choice (`...::Choice`)
+
+- `child_elements` — Returns all nested `Element` instances contained within.
+- `find_elements_used(name)` — Boolean indicating if an element name is used within this container.
+- All three include the same helper surface and resolve nested structures consistently.
+
+[source,liquid]
+----
+{% for g in schema.group %}
+  Group {{ g.name }} elements:
+  {% for el in g.child_elements %}
+    - {{ el.referenced_name }}
+  {% endfor %}
+{% endfor %}
+----
+
+=== SimpleContent (`Lutaml::Xsd::LiquidMethods::SimpleContent`)
+
+- `attribute_elements` — Returns attributes coming from the `extension` and nested attribute groups.
+
+[source,liquid]
+----
+{% assign attrs = ct.simple_content.attribute_elements %}
+{% for a in attrs %}
+  - {{ a.referenced_name }} ({{ a.cardinality }})
+{% endfor %}
+----
+
+=== Extension (`Lutaml::Xsd::LiquidMethods::Extension`)
+
+- `attribute_elements` — Returns attributes of the extension and its attribute groups.
+
+[source,liquid]
+----
+{% for a in ct.simple_content.extension.attribute_elements %}
+  - {{ a.referenced_name }}
+{% endfor %}
+----
+
+=== ResolvedElementOrder (`Lutaml::Xsd::LiquidMethods::ResolvedElementOrder`)
+
+- `resolved_element_order` — A helper method that returns all elements in the order they originally appeared in the XSD.
+
 == Development
 
 - **Dependencies**: The gem depends on `lutaml-model` for model serialization. See the `Gemfile` and `lutaml-xsd.gemspec` for details on dependencies.

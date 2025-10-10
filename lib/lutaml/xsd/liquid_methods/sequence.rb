@@ -4,9 +4,6 @@ module Lutaml
   module Xsd
     module LiquidMethods
       module Sequence
-        include Model::Serialize
-        include ResolvedElementOrder
-
         def child_elements(array = [])
           resolved_element_order.each do |child|
             if child.is_a?(Xsd::Element)

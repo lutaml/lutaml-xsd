@@ -4,8 +4,6 @@ module Lutaml
   module Xsd
     module LiquidMethods
       module Element
-        include Model::Serialize
-
         def used_by
           @__root.complex_type.select { |object| object.find_elements_used(name) }
         end
@@ -26,6 +24,10 @@ module Lutaml
 
         def child_elements(array = [])
           referenced_complex_type&.child_elements(array)
+        end
+
+        def referenced_name
+          referenced_object&.name
         end
 
         def referenced_type
