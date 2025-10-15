@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "liquid"
-
 RSpec.describe Lutaml::Xsd do
   subject(:parsed_schema) { described_class.parse(schema) }
 
