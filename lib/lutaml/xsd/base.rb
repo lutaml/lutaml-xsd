@@ -10,7 +10,7 @@ module Lutaml
 
       def to_formatted_xml(except: [])
         Canon.format_xml(
-          to_xml(except: except),
+          to_xml(except: except)
         ).gsub(XML_DECLARATION_REGEX, "")
       end
 
