@@ -4,7 +4,6 @@ module Lutaml
   module Xsd
     module LiquidMethods
       module ComplexType
-
         def used_by
           root_complex_types = @__root.complex_type.reject { |ct| ct == self }
           raw_elements = @__root.group.map(&:child_elements).flatten
