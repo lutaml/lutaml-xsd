@@ -34,12 +34,17 @@ module Lutaml
         map_element :simpleType, to: :simple_type
       end
 
-      liquid do
-        map "cardinality", to: :cardinality
-        map "referenced_name", to: :referenced_name
-        map "referenced_type", to: :referenced_type
-        map "referenced_object", to: :referenced_object
-      end
+      # liquid do
+
+      #         map "cardinality", to: :cardinality
+
+      #         map "referenced_name", to: :referenced_name
+
+      #         map "referenced_type", to: :referenced_type
+
+      #         map "referenced_object", to: :referenced_object
+
+      #       end
 
       Lutaml::Xsd.register_model(self, :attribute)
     end
