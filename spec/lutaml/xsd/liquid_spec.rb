@@ -4,8 +4,8 @@ RSpec.describe Lutaml::Xsd do
   subject(:parsed_schema) { described_class.parse(schema) }
 
   context "when parsing schema unitsml-v1.0-csd03.xsd" do
-    let(:schema) { File.read("spec/lutaml/fixtures/unitsml-v1.0-csd03.xsd") }
-    let(:liquid_file_content) { File.read("spec/lutaml/fixtures/liquid_templates/_elements.liquid") }
+    let(:schema) { File.read("spec/fixtures/unitsml-v1.0-csd03.xsd") }
+    let(:liquid_file_content) { File.read("spec/fixtures/liquid_templates/_elements.liquid") }
 
     it "matches the parsed" do
       processed_xml = schema_to_xml(parsed_schema.to_xml, escape_content_tags: true)
