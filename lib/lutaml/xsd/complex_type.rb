@@ -44,11 +44,15 @@ module Lutaml
         map_element :complexContent, to: :complex_content
       end
 
-      liquid do
-        map "used_by", to: :used_by
-        map "child_elements", to: :child_elements
-        map "attribute_elements", to: :attribute_elements
-      end
+      # liquid do
+
+      #         map "used_by", to: :used_by
+
+      #         map "child_elements", to: :child_elements
+
+      #         map "attribute_elements", to: :attribute_elements
+
+      #       end
 
       Lutaml::Xsd.register_model(self, :complex_type)
     end

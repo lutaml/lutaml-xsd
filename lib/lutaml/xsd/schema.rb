@@ -132,7 +132,8 @@ module Lutaml
             instance.fetch_schema,
             location: Glob.location,
             nested_schema: true,
-            register: Lutaml::Xsd.register.id
+            register: Lutaml::Xsd.register.id,
+            schema_mappings: Glob.schema_mappings
           )
       end
 

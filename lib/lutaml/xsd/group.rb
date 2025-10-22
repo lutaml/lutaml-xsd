@@ -32,9 +32,11 @@ module Lutaml
         map_element :all, to: :all
       end
 
-      liquid do
-        map "child_elements", to: :child_elements
-      end
+      # liquid do
+
+      #         map "child_elements", to: :child_elements
+
+      #       end
 
       Lutaml::Xsd.register_model(self, :group)
     end

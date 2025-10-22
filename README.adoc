@@ -1,12 +1,56 @@
 = Lutaml::Xsd
 
-== Overview
+https://github.com/lutaml/lutaml-xsd[image:https://img.shields.io/github/stars/lutaml/lutaml-xsd.svg?style=social[GitHub Stars]]
+https://github.com/lutaml/lutaml-xsd[image:https://img.shields.io/github/forks/lutaml/lutaml-xsd.svg?style=social[GitHub Forks]]
+image:https://img.shields.io/gem/v/lutaml-xsd.svg[RubyGems Version]
+image:https://img.shields.io/github/license/lutaml/lutaml-xsd.svg[License]
+image:https://github.com/lutaml/lutaml-xsd/actions/workflows/rake.yml/badge.svg["Build", link="https://github.com/lutaml/lutaml-xsd/actions/workflows/rake.yml"]
 
-**Lutaml::Xsd** is a *Ruby* gem designed to parse and build *XML Schema Definition (XSD)* objects. It provides a robust framework for handling *XSD* *elements*, *attributes*, and *complex types*, allowing users to manipulate and generate *XSD* objects programmatically.
+== Purpose
+
+Lutaml::Xsd is a Ruby gem designed to parse and manipulate XML Schema
+Definition (XSD) files. It provides a robust framework for handling XSD
+elements, attributes, complex types, and all other XSD constructs, allowing
+users to programmatically work with XML schemas.
+
+The `lutaml-xsd` gem provides a Ruby library for working with XSD schemas,
+allowing users to parse XSD files into Ruby objects, manipulate schema
+structures, and serialize them back to XML. It is built on top of the
+`lutaml-model` serialization framework, which provides a flexible and
+extensible way to define data models.
+
+This library is particularly useful for developers working with XML-based
+standards, schema transformation tools, code generators, and XML validation
+systems.
+
+== Origin
+
+The name "LutaML" is pronounced as "Looh-tah-mel".
+
+The name "LutaML" comes from the Latin word for clay, "Lutum", and "ML" for
+"Markup Language". Just as clay can be molded and modeled into beautiful and
+practical end products, the Lutaml::Model gem is used for data modeling,
+allowing you to shape and structure your data into useful forms.
+
+== Features
+
+* <<parsing-xsd,XSD file parsing>> with full schema structure support
+* <<schema-representation,Schema object representation>> with all XSD
+  components
+* <<include-import,Include and import handling>> with location resolution
+* <<schema-mappings,Schema location mappings>> for local/remote schema
+  redirection
+* <<serialization,XML serialization>> with round-trip compatibility
+* <<liquid-methods,Liquid template methods>> for schema introspection and
+  documentation
+* Integration with the `lutaml-model` serialization framework
+* Support for complex types, simple types, elements, attributes, and groups
+* Pattern-based schema location mapping with regular expressions
+* URL fetching for remote schemas with local caching support
 
 == Installation
 
-To install *Lutaml::Xsd*, add this line to your application's Gemfile:
+Add this line to your application's Gemfile:
 
 [source,ruby]
 ----
@@ -15,123 +59,821 @@ gem 'lutaml-xsd'
 
 And then execute:
 
-[source,bash]
+[source,sh]
 ----
-bundle install
-----
-
-Or install it by running:
-
-[source,bash]
-----
-gem install lutaml-xsd
+$ bundle install
 ----
 
-== Usage
+Or install it yourself as:
 
-=== Parsing XSD Files
+[source,sh]
+----
+$ gem install lutaml-xsd
+----
 
-To parse an *XSD* file, you can use the `Lutaml::Xsd.parse` method. This method takes the content of an *XSD* file as a string and optional parameters such as the location of the *XSD* file for resolving relative paths.
+== Architecture
 
+=== XSD object hierarchy
+
+The following diagram illustrates the hierarchical structure of XSD objects
+and their relationships:
+
+[source]
+----
+                        Schema
+                          │
+          ┌───────────────┼───────────────┐
+          │               │               │
+       Elements      ComplexTypes    SimpleTypes
+          │               │               │
+          │       ┌───────┴───────┐       │
+          │       │               │       │
+      Attributes Sequences    Extensions  │
+          │       │           Restrictions│
+          │   ┌───┴───┐           │       │
+          │   │       │           │       │
+      Groups Elements Choice      │   Facets
+                  │               │
+                  │               │
+              Attributes      Attributes
+----
+
+.XSD Model class relationships
+[source]
+----
+   Schema
+     ├── element: [Element]
+     ├── complex_type: [ComplexType]
+     ├── simple_type: [SimpleType]
+     ├── attribute: [Attribute]
+     ├── attribute_group: [AttributeGroup]
+     ├── group: [Group]
+     ├── notation: [Notation]
+     ├── import: [Import]
+     └── include: [Include]
+
+   Element
+     ├── name: String
+     ├── type: String
+     ├── ref: String
+     ├── min_occurs: String
+     ├── max_occurs: String
+     ├── complex_type: ComplexType
+     └── simple_type: SimpleType
+
+   ComplexType
+     ├── name: String
+     ├── sequence: Sequence
+     ├── choice: Choice
+     ├── all: All
+     ├── attribute: [Attribute]
+     ├── attribute_group: [AttributeGroup]
+     ├── simple_content: SimpleContent
+     └── complex_content: ComplexContent
+----
+
+=== Data transformation flow
+
+The following diagram shows how XSD files are processed through the parsing
+pipeline:
+
+[source]
+----
+╔═══════════════════╗           ╔═══════════════════════╗
+║   XSD File(s)     ║           ║  Schema Mappings      ║
+║                   ║           ║  (Local redirects)    ║
+╚═════════┬═════════╝           ╚═══════════┬═══════════╝
+          │                                 │
+          └────────────┬────────────────────┘
+                       │
+                       ▼
+              ┌────────────────┐
+              │  XSD Parser    │
+              │  (XML → Model) │
+              └────────┬───────┘
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+          ▼            ▼            ▼
+    ┌─────────┐  ┌─────────┐  ┌─────────┐
+    │ Schema  │  │ Element │  │  Type   │
+    │ Object  │  │ Objects │  │ Objects │
+    └────┬────┘  └────┬────┘  └────┬────┘
+         │            │            │
+         └────────────┼────────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │  Manipulation  │
+              │  & Traversal   │
+              └────────┬───────┘
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+          ▼            ▼            ▼
+    ┌─────────┐  ┌─────────┐  ┌─────────┐
+    │   XML   │  │  Liquid │  │  Code   │
+    │ Output  │  │Template │  │  Gen    │
+    └─────────┘  └─────────┘  └─────────┘
+----
+
+[[parsing-xsd]]
+== Parsing XSD files
+
+=== General
+
+To parse an XSD file, use the `Lutaml::Xsd.parse` method. This method takes
+the content of an XSD file as a string and optional parameters such as the
+location of the XSD file for resolving relative paths.
+
+Syntax:
+
+[source,ruby]
+----
+Lutaml::Xsd.parse(xsd_content, location: {location}, schema_mappings: {mappings}) <1>
+----
+<1> Parse XSD content with optional location and schema mappings
+
+Where,
+
+`xsd_content`:: The XSD file content as a string (required)
+`location`:: The base path or URL for resolving relative schema locations
+  (optional)
+`schema_mappings`:: An array of hash mappings for redirecting schema locations
+  (optional)
+
+.Parsing an XSD file with location context
+[example]
+====
 [source,ruby]
 ----
 require 'lutaml/xsd'
 
 xsd_content = File.read('path/to/your/schema.xsd')
-parsed_schema = Lutaml::Xsd.parse(xsd_content, location: 'path/to/your/')
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: 'path/to/your/'
+)
+
+# Access schema properties
+puts "Target namespace: #{parsed_schema.target_namespace}"
+puts "Element count: #{parsed_schema.element.size}"
+puts "Complex type count: #{parsed_schema.complex_type.size}"
 ----
 
-=== Working with Parsed Data
+This example parses an XSD file and displays basic schema information.
+====
 
-Once parsed, the data is represented as instances of various classes such as `Lutaml::Xsd::Schema`, `Lutaml::Xsd::Element`, and others. These objects reflect the structure of the *XSD* and can be manipulated or inspected in *Ruby*.
+=== Working with parsed data
 
+Once parsed, the data is represented as instances of various classes such as
+`Lutaml::Xsd::Schema`, `Lutaml::Xsd::Element`, and others. These objects
+reflect the structure of the XSD and can be manipulated or inspected in Ruby.
+
+.Accessing schema elements
+[example]
+====
 [source,ruby]
 ----
 schema = <<~SCHEMA
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <xsd:element name="root">
-    ...
-  </xsd:element>
-  <xsd:element name="root1">
-    ...
-  </xsd:element>
-</xsd:schema>
+  <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <xsd:element name="root">
+      <xsd:complexType>
+        <xsd:sequence>
+          <xsd:element name="child" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:complexType>
+    </xsd:element>
+    <xsd:element name="root1">
+      <xsd:complexType>
+        <xsd:attribute name="id" type="xsd:string"/>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
 SCHEMA
 
-parsed_schema = Lutaml::Xsd.parse(schema, location: 'http://example.com/')
+parsed_schema = Lutaml::Xsd.parse(
+  schema,
+  location: 'http://example.com/'
+)
 
-# Accessing elements of the schema
-elements = parsed_schema.element
-elements.each do |element|
-  puts "Element Name: #{element.name}"
+# Iterate through elements
+parsed_schema.element.each do |element|
+  puts "Element name: #{element.name}"
+
+  if element.complex_type
+    puts "  Has complex type"
+
+    # Access sequences
+    if element.complex_type.sequence
+      element.complex_type.sequence.element.each do |child|
+        puts "    Child element: #{child.name}"
+      end
+    end
+
+    # Access attributes
+    element.complex_type.attribute.each do |attr|
+      puts "    Attribute: #{attr.name}"
+    end
+  end
 end
-# the output will be:
-> Element Name: root
-> Element Name: root1
 ----
 
-=== Serialization
+Output:
 
-The gem supports serializing the schema back to *XML*. Each class like `Lutaml::Xsd::Schema` has a method `to_xml` that generates the *XML* representation of the object.
+----
+Element name: root
+  Has complex type
+    Child element: child
+Element name: root1
+  Has complex type
+    Attribute: id
+----
+====
 
+[[schema-representation]]
+== Schema representation
+
+The `Lutaml::Xsd::Schema` class represents an XSD schema. It includes
+attributes for various schema properties like target namespace, element form
+default, and collections of schema components.
+
+.Schema object properties
+[example]
+====
 [source,ruby]
 ----
+# Access schema-level properties
+puts "Target namespace: #{parsed_schema.target_namespace}"
+puts "Element form default: #{parsed_schema.element_form_default}"
+puts "Attribute form default: #{parsed_schema.attribute_form_default}"
+
+# Access schema components
+puts "Elements: #{parsed_schema.element.size}"
+puts "Complex types: #{parsed_schema.complex_type.size}"
+puts "Simple types: #{parsed_schema.simple_type.size}"
+puts "Attributes: #{parsed_schema.attribute.size}"
+puts "Groups: #{parsed_schema.group.size}"
+puts "Attribute groups: #{parsed_schema.attribute_group.size}"
+puts "Imports: #{parsed_schema.import.size}"
+puts "Includes: #{parsed_schema.include.size}"
+----
+====
+
+[[include-import]]
+== Include and import handling
+
+=== General
+
+The `location` parameter provided to `Lutaml::Xsd.parse` is used for
+resolving relative paths specified in `<xs:include>` and `<xs:import>`
+elements' `schemaLocation` attributes.
+
+Make sure to provide the directory path or URL in the `location` parameter,
+as it will be used as the base path for resolving relative paths.
+
+=== Using URL locations
+
+.Parsing with a URL base location
+[example]
+====
+[source,ruby]
+----
+Lutaml::Xsd.parse(
+  xsd_content,
+  location: 'http://example.com/schemas/'
+)
+----
+
+The schema can include references like:
+
+[source,xml]
+----
+<xs:include schemaLocation="common/types.xsd"/>
+<xs:import schemaLocation="external/definitions.xsd"/>
+----
+
+These will be resolved as:
+
+* `http://example.com/schemas/common/types.xsd`
+* `http://example.com/schemas/external/definitions.xsd`
+====
+
+=== Using local file paths
+
+.Parsing with a local base path
+[example]
+====
+[source,ruby]
+----
+Lutaml::Xsd.parse(
+  xsd_content,
+  location: '/path/to/schemas/'
+)
+----
+
+The schema can include references like:
+
+[source,xml]
+----
+<xs:include schemaLocation="common/types.xsd"/>
+<xs:import schemaLocation="../external/definitions.xsd"/>
+----
+
+These will be resolved as:
+
+* `/path/to/schemas/common/types.xsd`
+* `/path/to/external/definitions.xsd`
+====
+
+All schemas specified in the `<xs:include>` and `<xs:import>` elements will
+be fetched from their `schemaLocation`, parsed, and added to their parent
+`Lutaml::Xsd::Schema` object.
+
+[[schema-mappings]]
+== Schema location mappings
+
+=== General
+
+When parsing XSD files that import or include schemas from remote URLs, you
+may want to override those locations to use local copies instead. This is
+especially useful when:
+
+* Remote schemas are unavailable or inaccessible
+* You want to work offline
+* You have local copies of standard schemas (e.g., CityGML, GML, ISO/TC 211)
+* You need to ensure consistent schema versions
+
+The `schema_mappings` parameter allows you to provide an array of mappings
+that redirect original schema locations to local file paths or alternative
+URLs.
+
+NOTE: For comprehensive documentation on schema mappings, including advanced
+patterns, CityGML/i-UR examples, debugging techniques, and best practices,
+see link:docs/schema_mapping.adoc[Advanced Schema Location Mappings].
+
+=== Basic usage
+
+Schema mappings use a simple array of hash objects with `from` and `to` keys.
+
+.Basic schema mapping example
+[example]
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('path/to/your/schema.xsd')
+
+# Define schema location mappings
+schema_mappings = [
+  # Exact string match
+  {
+    from: 'http://schemas.opengis.net/gml/3.1.1/base/gml.xsd',
+    to: '/local/path/to/gml.xsd'
+  },
+
+  # Regex pattern with capture group
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/(.+)},
+    to: '/local/citygml/\1'
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: 'path/to/your/',
+  schema_mappings: schema_mappings
+)
+----
+
+The first mapping uses exact string matching, while the second uses a regular
+expression with a capture group (`\1`) to map an entire directory structure.
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('path/to/your/schema.xsd')
+
+# Define schema location mappings (array of hashes with from/to keys)
+schema_mappings = [
+  # Exact string match
+  {
+    from: 'http://schemas.opengis.net/gml/3.1.1/base/gml.xsd',
+    to: '/local/path/to/gml.xsd'
+  },
+
+  # Relative path mapping
+  {
+    from: '../../external/schema.xsd',
+    to: '/absolute/path/to/schema.xsd'
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: 'path/to/your/',
+  schema_mappings: schema_mappings
+)
+----
+
+This example redirects two schema locations to local files.
+====
+
+=== Pattern-based mappings with regular expressions
+
+For more flexible mappings, you can use regular expressions in the `from`
+field. This is particularly useful when you need to map multiple schemas
+under a common base URL.
+
+.Using regex patterns for schema mappings
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('spec/fixtures/i-ur/urbanFunction.xsd')
+
+# Define pattern-based mappings using regex in the 'from' field
+schema_mappings = [
+  # Map all CityGML schemas to local directory using regex pattern
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/(.+)},
+    to: File.expand_path('../fixtures/citygml/\1', __dir__)
+  },
+
+  # Map specific relative imports to local paths using exact string match
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.expand_path('../fixtures/i-ur/urbanObject.xsd', __dir__)
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: File.dirname(
+    File.expand_path('spec/fixtures/i-ur/urbanFunction.xsd')
+  ),
+  schema_mappings: schema_mappings
+)
+----
+
+In the regex pattern example above:
+
+* The `from` field contains the pattern
+  `%r{http://schemas\.opengis\.net/citygml/(.+)}` which matches any URL
+  starting with `http://schemas.opengis.net/citygml/`
+* The capture group `(.+)` captures the rest of the path
+* The `to` field uses `\1` to insert the captured path portion in the
+  replacement
+* This allows mapping `http://schemas.opengis.net/citygml/2.0/cityGMLBase.xsd`
+  to `/local/path/citygml/2.0/cityGMLBase.xsd`
+====
+
+=== Working with CityGML and i-UR schemas
+
+When working with CityGML and i-UR (Urban and Rural) schemas, which commonly
+reference remote OGC schemas:
+
+.Mapping CityGML schemas to local copies
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Path to your i-UR schema that imports CityGML schemas
+xsd_file = 'spec/fixtures/i-ur/urbanFunction.xsd'
+xsd_content = File.read(xsd_file)
+
+# Map remote CityGML schemas to local copies (array of mappings)
+schema_mappings = [
+  # Map all CityGML schemas from OGC to local directory
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/2\.0/(.+)},
+    to: File.expand_path('spec/fixtures/citygml/2.0/\1', __dir__)
+  },
+
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/appearance/2\.0/(.+)},
+    to: File.expand_path('spec/fixtures/citygml/appearance/2.0/\1', __dir__)
+  },
+
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/building/2\.0/(.+)},
+    to: File.expand_path('spec/fixtures/citygml/building/2.0/\1', __dir__)
+  },
+
+  # Map i-UR schema imports
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.expand_path('spec/fixtures/i-ur/urbanObject.xsd', __dir__)
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: File.dirname(File.expand_path(xsd_file)),
+  schema_mappings: schema_mappings
+)
+----
+====
+
+=== Mapping resolution order
+
+The schema mapping resolution follows this order:
+
+. *Check schema mappings* — Iterate through the mappings array in order
+. For each mapping, check if the `from` field matches:
+  * If `from` is a String and matches exactly, use the `to` value
+  * If `from` is a Regexp and matches the location, substitute using the `to`
+    value
+. *If no mapping matches, try URL fetching* — The system will attempt to
+  fetch the schema from its original URL
+. *Fall back to relative path resolution* — Resolve as a relative path from
+  the location parameter
+
+When multiple mappings could match, the first matching mapping in the array
+is used. This allows you to control precedence by ordering your mappings
+appropriately.
+
+IMPORTANT: Overly broad regex patterns can prevent the built-in URL fetching
+from working. Only map schemas that you have locally.
+
+=== Best practices for schema mappings
+
+==== Keep mappings minimal
+
+Only map schemas that you actually have available locally. Don't create
+mappings for schemas that should be fetched from URLs.
+
+.Comparing broad vs. specific mappings
+[example]
+====
+[source,ruby]
+----
+# BAD - too broad, blocks URL fetching for ALL .xsd files
+schema_mappings = [
+  {
+    from: %r{^([^/]+\.xsd)$},  # Catches everything!
+    to: '/local/path/\1'
+  }
+]
+
+# GOOD - specific to files you have locally
+schema_mappings = [
+  {
+    from: %r{^(gml|gmlBase|feature)\.xsd$},  # Only specific files
+    to: '/local/path/gml/3.2.1/\1.xsd'
+  }
+]
+----
+====
+
+==== Order matters - specific before general
+
+Place more specific patterns before more general ones to ensure correct
+matching.
+
+.Ordering mappings from specific to general
+[example]
+====
+[source,ruby]
+----
+schema_mappings = [
+  # Specific relative path first
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: '/local/path/urbanObject.xsd'
+  },
+
+  # General pattern for GML schemas
+  {
+    from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+    to: '/local/path/gml/\1'
+  }
+]
+----
+====
+
+==== Use capture groups for flexible mappings
+
+Regex capture groups allow you to map entire directory structures
+efficiently.
+
+.Using capture groups to map directory structures
+[example]
+====
+[source,ruby]
+----
+# Maps: ../../gml/3.2.1/gml.xsd
+#   to: /local/codesynthesis/gml/3.2.1/gml.xsd
+# And:  ../../../../gml/3.2.1/feature.xsd
+#   to: /local/codesynthesis/gml/3.2.1/feature.xsd
+{
+  from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+  to: '/local/codesynthesis/gml/\1'
+}
+----
+====
+
+==== Let URL fetching work
+
+The system has built-in support for fetching schemas from HTTP/HTTPS URLs.
+Don't block this with overly broad mappings.
+
+.Allowing URL fetching for unmapped schemas
+[example]
+====
+[source,ruby]
+----
+# This lets sweCommon.xsd be fetched from its URL automatically
+schema_mappings = [
+  # Only map what you have locally
+  {
+    from: %r{^(gml|gmlBase|feature)\.xsd$},
+    to: '/local/path/gml/\1.xsd'
+  }
+
+  # sweCommon.xsd will be fetched from URL - no mapping needed!
+]
+----
+====
+
+=== Complete example with best practices
+
+.Comprehensive schema mapping example
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_file = File.expand_path('spec/fixtures/i-ur/urbanFunction.xsd')
+xsd_content = File.read(xsd_file)
+
+# Targeted mappings following best practices
+schema_mappings = [
+  # 1. Specific relative path (exact match)
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.expand_path('spec/fixtures/i-ur/urbanObject.xsd')
+  },
+
+  # 2-4. Relative path patterns (handles any number of ../)
+  {
+    from: %r{(?:\.\./)+xlink/(.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/xlink/\1')
+  },
+  {
+    from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/gml/\1')
+  },
+  {
+    from: %r{(?:\.\./)+iso/(.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/iso/\1')
+  },
+
+  # 5-10. Simple relative paths for ISO metadata schemas
+  {
+    from: %r{^\.\./gmd/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gss/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gss/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gts/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gts/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gsr/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gsr/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gco/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gmx/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmx/\1'
+    )
+  },
+
+  # Bare filename patterns (specific files only)
+  {
+    from: %r{^(basicTypes|coordinateOperations|gml|feature|geometry)\.xsd$},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd')
+  },
+
+  # URL mappings
+  {
+    from: %r{https://schemas\.isotc211\.org/(.+)},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/iso/\1')
+  },
+  {
+    from: %r{(?:\.\./)+(\d{5}/.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/isotc211/\1')
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: File.dirname(xsd_file),
+  schema_mappings: schema_mappings
+)
+
+# Access parsed data
+puts "Target namespace: #{parsed_schema.target_namespace}"
+puts "Elements: #{parsed_schema.element.size}"
+puts "Complex types: #{parsed_schema.complex_type.size}"
+puts "Imports: #{parsed_schema.import.size}"
+----
+
+This example demonstrates:
+
+* Minimal, targeted mappings (only for local files)
+* Proper ordering (specific before general)
+* Effective use of regex patterns and capture groups
+* Leaving room for automatic URL fetching
+====
+
+[[serialization]]
+== Serialization
+
+=== General
+
+The gem supports serializing the schema back to XML. Each class like
+`Lutaml::Xsd::Schema` has a method `to_xml` that generates the XML
+representation of the object.
+
+=== Converting parsed schemas to XML
+
+.Serializing a schema to XML
+[example]
+====
+[source,ruby]
+----
+# Parse a schema
+xsd_content = File.read('schema.xsd')
+parsed_schema = Lutaml::Xsd.parse(xsd_content)
+
+# Serialize back to XML
 xml_output = parsed_schema.to_xml
 puts xml_output
+
+# Write to file
+File.write('output.xsd', xml_output)
 ----
+====
 
-== Key Components
-
-=== Schema Representation
-
-The *Lutaml::Xsd::Schema* class represents an *XSD* schema. It includes attributes for various schema properties like target namespace, element form default, and others.
-
-- **Attributes and Elements**: The schema object contains collections of elements, complex types, simple types, etc., which are all accessible via attributes on the `Schema` object.
-
-=== Include and Import Handling
-
-The path provided in `location` via `Lutaml::Xsd.parse(schema, location: 'path/to/your/directory/')` is used for resolving relative paths provided in *include* and *import* element's *schemaLocation* attribute.
-
-Make sure to provide the directory *path*/*URL* in `location` parameter, as it will be used as base path for resolving relative paths.
-
-For example, if *URL* is provided:
-
-[source,ruby]
-----
-Lutaml::Xsd.parse(xsd_content, location: 'http://example.com/directory/')
-----
-
-If local path is provided:
-
-[source,ruby]
-----
-Lutaml::Xsd.parse(xsd_content, location: 'path/to/your/directory/')
-----
-
-[source, xml]
-----
-<xs:include schemaLocation="<location>/directory2/metaschema.xsd"/>
-<!-- AND/OR -->
-<xs:import schemaLocation="<location>/metaschema.xsd"/>
-----
-
-All schemas specified in the *include* and/or *import* elements will be fetched from their *schemaLocation*, parsed and added to their parent *Lutaml::Xsd::Schema* object.
-
+[[liquid-methods]]
 == Liquid methods
 
-This gem exposes convenient methods for use in Liquid templates via `to_liquid` on parsed objects. Below is a concise reference of the Liquid-enabled helpers organized by module/type.
+=== General
 
-=== Element (`Lutaml::Xsd::LiquidMethods::Element`)
+This gem exposes convenient methods for use in Liquid templates via
+`to_liquid` on parsed objects. These methods are particularly useful for
+generating documentation and analyzing schema structures.
 
-- `used_by` — Returns complex_types that use/reference this element.
-- `attributes` — Returns attribute elements.
-- `min_occurrences` — Returns the element's minimum occurrences as Integer (default 1).
-- `max_occurrences` — Returns `*` for unbounded, otherwise Integer (default 1).
-- `child_elements` — Returns all nested child elements (resolved across groups/choices/sequences).
-- `referenced_type` — Returns the name of the element's `type` if present, or the type name indicated by `ref` if defined.
-- `referenced_object` — Resolves and returns the element or its referenced element by `ref`.
-- `referenced_complex_type` — Resolves the complex type matching `referenced_type`.
+Below is a concise reference of the Liquid-enabled helpers organized by
+module/type.
 
+=== Element methods
+
+The `Lutaml::Xsd::LiquidMethods::Element` module provides methods for working
+with element objects in Liquid templates.
+
+`used_by`:: Returns complex types that use or reference this element
+`attributes`:: Returns attribute elements
+`min_occurrences`:: Returns the element's minimum occurrences as Integer
+  (default 1)
+`max_occurrences`:: Returns `*` for unbounded, otherwise Integer (default 1)
+`child_elements`:: Returns all nested child elements (resolved across
+  groups/choices/sequences)
+`referenced_type`:: Returns the name of the element's `type` if present, or
+  the type name indicated by `ref` if defined
+`referenced_object`:: Resolves and returns the element or its referenced
+  element by `ref`
+`referenced_complex_type`:: Resolves the complex type matching
+  `referenced_type`
+
+.Using element methods in Liquid templates
+[example]
+====
 [source,liquid]
 ----
 {% for el in schema.element %}
@@ -146,26 +888,42 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
   {% endif %}
 {% endfor %}
 ----
+====
 
-=== Attribute (`Lutaml::Xsd::LiquidMethods::Attribute`)
+=== Attribute methods
 
-- `referenced_object` — Returns the actual attribute object, resolving references via `ref` if necessary.
-- `referenced_name` — Retrieves the definitive attribute name, using `ref` if not explicitly named.
-- `referenced_type` — Retrieves the fully resolved type name for this attribute.
-- `cardinality` — Returns `1` for required, `0..1` for optional.
+The `Lutaml::Xsd::LiquidMethods::Attribute` module provides methods for
+working with attribute objects in Liquid templates.
 
+`referenced_object`:: Returns the actual attribute object, resolving
+  references via `ref` if necessary
+`referenced_name`:: Retrieves the definitive attribute name, using `ref` if
+  not explicitly named
+`referenced_type`:: Retrieves the fully resolved type name for this attribute
+`cardinality`:: Returns `1` for required, `0..1` for optional
+
+.Using attribute methods in Liquid templates
+[example]
+====
 [source,liquid]
 ----
 {% for a in complex_type.attribute %}
   {{ a.referenced_name }}: {{ a.referenced_type }} ({{ a.cardinality }})
 {% endfor %}
 ----
+====
 
-=== AttributeGroup (`Lutaml::Xsd::LiquidMethods::AttributeGroup`)
+=== AttributeGroup methods
 
-- `used_by` — Returns complex types that use this attribute group.
-- `attribute_elements` — Returns a flattened list of attributes, resolving nested groups.
+The `Lutaml::Xsd::LiquidMethods::AttributeGroup` module provides methods for
+working with attribute group objects in Liquid templates.
 
+`used_by`:: Returns complex types that use this attribute group
+`attribute_elements`:: Returns a flattened list of attributes, resolving
+  nested groups
+
+.Using attribute group methods in Liquid templates
+[example]
 [source,liquid]
 ----
 {% for ag in schema.attribute_group %}
@@ -180,13 +938,21 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 {% endfor %}
 ----
 
-=== ComplexType (`Lutaml::Xsd::LiquidMethods::ComplexType`)
+=== ComplexType methods
 
-- `used_by` — Returns elements and group elements that reference this type.
-- `attribute_elements` — Returns all attributes (including those from groups and simple content extensions).
-- `child_elements` — Returns all child elements (across sequences/choices/groups).
-- `find_elements_used(name)` — Boolean indicating if an element name is used within this type.
+The `Lutaml::Xsd::LiquidMethods::ComplexType` module provides methods for
+working with complex type objects in Liquid templates.
 
+`used_by`:: Returns elements and group elements that reference this type
+`attribute_elements`:: Returns all attributes (including those from groups
+  and simple content extensions)
+`child_elements`:: Returns all child elements (across
+  sequences/choices/groups)
+`find_elements_used(name)`:: Boolean indicating if an element name is used
+  within this type
+
+.Using complex type methods in Liquid templates
+[example]
 [source,liquid]
 ----
 {% for ct in schema.complex_type %}
@@ -202,12 +968,18 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 {% endfor %}
 ----
 
-=== Group (`Lutaml::Xsd::LiquidMethods::Group`) and Sequence (`...::Sequence`) and Choice (`...::Choice`)
+=== Group, Sequence, and Choice methods
 
-- `child_elements` — Returns all nested `Element` instances contained within.
-- `find_elements_used(name)` — Boolean indicating if an element name is used within this container.
-- All three include the same helper surface and resolve nested structures consistently.
+The `Lutaml::Xsd::LiquidMethods::Group`, `...::Sequence`, and `...::Choice`
+modules provide methods for working with these container objects in Liquid
+templates.
 
+`child_elements`:: Returns all nested `Element` instances contained within
+`find_elements_used(name)`:: Boolean indicating if an element name is used
+  within this container
+
+.Using group methods in Liquid templates
+[example]
 [source,liquid]
 ----
 {% for g in schema.group %}
@@ -218,10 +990,16 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 {% endfor %}
 ----
 
-=== SimpleContent (`Lutaml::Xsd::LiquidMethods::SimpleContent`)
+=== SimpleContent methods
 
-- `attribute_elements` — Returns attributes coming from the `extension` and nested attribute groups.
+The `Lutaml::Xsd::LiquidMethods::SimpleContent` module provides methods for
+working with simple content objects in Liquid templates.
 
+`attribute_elements`:: Returns attributes coming from the `extension` and
+  nested attribute groups
+
+.Using simple content methods in Liquid templates
+[example]
 [source,liquid]
 ----
 {% assign attrs = ct.simple_content.attribute_elements %}
@@ -230,10 +1008,16 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 {% endfor %}
 ----
 
-=== Extension (`Lutaml::Xsd::LiquidMethods::Extension`)
+=== Extension methods
 
-- `attribute_elements` — Returns attributes of the extension and its attribute groups.
+The `Lutaml::Xsd::LiquidMethods::Extension` module provides methods for
+working with extension objects in Liquid templates.
 
+`attribute_elements`:: Returns attributes of the extension and its attribute
+  groups
+
+.Using extension methods in Liquid templates
+[example]
 [source,liquid]
 ----
 {% for a in ct.simple_content.extension.attribute_elements %}
@@ -241,29 +1025,29 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 {% endfor %}
 ----
 
-=== ResolvedElementOrder (`Lutaml::Xsd::LiquidMethods::ResolvedElementOrder`)
+=== ResolvedElementOrder methods
 
-- `resolved_element_order` — A helper method that returns all elements in the order they originally appeared in the XSD.
+The `Lutaml::Xsd::LiquidMethods::ResolvedElementOrder` module provides a
+helper method for maintaining original element order.
 
-== Development
+`resolved_element_order`:: Returns all elements in the order they originally
+  appeared in the XSD
 
-- **Dependencies**: The gem depends on `lutaml-model` for model serialization. See the `Gemfile` and `lutaml-xsd.gemspec` for details on dependencies.
+.Using resolved element order in Liquid templates
+[example]
+[source,liquid]
+----
+{% assign ordered = ct.resolved_element_order %}
+{% for el in ordered %}
+  {{ el.name }} (position preserved from XSD)
+{% endfor %}
+----
 
-- **Testing**: Tests are written using RSpec. Test files and fixtures are located in the `spec` directory.
+== Copyright
 
-== About LutaML
+Copyright https://www.ribose.com[Ribose].
 
-The name "LutaML" is pronounced as "Looh-tah-mel".
+== License
 
-The name "LutaML" comes from the Latin word for clay, "Lutum", and "ML"
-for "Markup Language". Just as clay can be molded and modeled into beautiful and
-practical end products, the Lutaml::Model gem is used for data modeling,
-allowing you to shape and structure your data into useful forms.
-
-
-== License and Copyright
-
-This project is licensed under the BSD 2-clause License.
-See the link:LICENSE.md[] file for details.
-
-Copyright Ribose.
+The gem is available as open source under the terms of the
+https://opensource.org/licenses/BSD-2-Clause[2-Clause BSD License].

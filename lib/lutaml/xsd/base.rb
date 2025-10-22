@@ -22,11 +22,11 @@ module Lutaml
         end
       end
 
-      liquid do
-        map "to_xml", to: :to_xml
-        map "to_formatted_xml", to: :to_formatted_xml
-        map "resolved_element_order", to: :resolved_element_order
-      end
+      # liquid do
+      #   map "to_xml", to: :to_xml
+      #   map "to_formatted_xml", to: :to_formatted_xml
+      #   map "resolved_element_order", to: :resolved_element_order
+      # end
 
       private
 

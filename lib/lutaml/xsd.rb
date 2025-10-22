@@ -21,10 +21,11 @@ module Lutaml
       register.register_model(klass, id: id)
     end
 
-    def parse(xsd, location: nil, nested_schema: false, register: nil)
+    def parse(xsd, location: nil, nested_schema: false, register: nil, schema_mappings: nil)
       register ||= self.register
       Schema.reset_processed_schemas unless nested_schema
 
+      Glob.schema_mappings = schema_mappings
       Glob.path_or_url(location)
       Schema.from_xml(xsd, register: register)
     end
