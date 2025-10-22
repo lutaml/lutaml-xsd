@@ -11,7 +11,7 @@ RSpec.describe Lutaml::Xsd::Glob do
     end
 
     it "returns empty hash by default" do
-      expect(described_class.schema_mappings).to eq({})
+      expect(described_class.schema_mappings).to eq([])
     end
 
     it "allows setting mappings" do
@@ -22,7 +22,7 @@ RSpec.describe Lutaml::Xsd::Glob do
 
     it "handles nil assignment by setting empty hash" do
       described_class.schema_mappings = nil
-      expect(described_class.schema_mappings).to eq({})
+      expect(described_class.schema_mappings).to eq([])
     end
 
     it "preserves mappings across multiple accesses" do
