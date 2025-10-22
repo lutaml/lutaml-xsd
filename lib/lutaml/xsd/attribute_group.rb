@@ -28,11 +28,15 @@ module Lutaml
         map_element :attributeGroup, to: :attribute_group
       end
 
-      liquid do
-        map "used_by", to: :used_by
-        map "referenced_object", to: :referenced_object
-        map "attribute_elements", to: :attribute_elements
-      end
+      # liquid do
+
+      #         map "used_by", to: :used_by
+
+      #         map "referenced_object", to: :referenced_object
+
+      #         map "attribute_elements", to: :attribute_elements
+
+      #       end
 
       Lutaml::Xsd.register_model(self, :attribute_group)
     end
