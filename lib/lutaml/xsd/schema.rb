@@ -150,6 +150,29 @@ module Lutaml
         )
       end
 
+      # Find a type definition by local name
+      # @param local_name [String] The local name of the type
+      # @return [SimpleType, ComplexType, nil] The type definition or nil
+      def find_type(local_name)
+        return nil if local_name.nil?
+
+        # Search simple types
+        found = simple_type.find { |t| t.name == local_name }
+        return found if found
+
+        # Search complex types
+        complex_type.find { |t| t.name == local_name }
+      end
+
+      # Find an element definition by local name
+      # @param local_name [String] The local name of the element
+      # @return [Element, nil] The element definition or nil
+      def find_element(local_name)
+        return nil if local_name.nil?
+
+        element.find { |e| e.name == local_name }
+      end
+
       class << self
         def reset_processed_schemas
           @processed_schemas = {}

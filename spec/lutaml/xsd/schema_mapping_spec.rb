@@ -91,15 +91,67 @@ RSpec.describe "Schema mapping integration" do
     end
 
     it "handles multiple regex patterns" do
-      # Skip test due to complex schema dependencies
-      skip "Requires complete schema setup with namespaces"
+      # Create a test XSD that imports from multiple ISO directories
+      xsd_content = <<~XSD
+        <?xml version="1.0" encoding="UTF-8"?>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/test">
+          <xs:import namespace="http://www.isotc211.org/2005/gmd"
+                     schemaLocation="http://schemas.isotc211.org/19139/20070417/gmd/gmd.xsd"/>
+          <xs:import namespace="http://www.isotc211.org/2005/gco"
+                     schemaLocation="http://schemas.isotc211.org/19139/20070417/gco/gco.xsd"/>
+        </xs:schema>
+      XSD
+
+      schema_mappings = [
+        # Multiple regex patterns for different ISO directories
+        { from: %r{https://schemas\.isotc211\.org/19139/20070417/gmd/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\1') },
+        { from: %r{https://schemas\.isotc211\.org/19139/20070417/gco/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\1') }
+      ]
+
+      parsed = Lutaml::Xsd.parse(
+        xsd_content,
+        location: fixtures_dir,
+        schema_mappings: schema_mappings
+      )
+
+      expect(parsed).to be_a(Lutaml::Xsd::Schema)
+      expect(parsed.imports).not_to be_empty
+      expect(parsed.imports.size).to eq(2)
     end
   end
 
   describe "parsing with mixed exact and regex mappings" do
     it "prioritizes exact matches over patterns" do
-      # Skip test due to complex schema dependencies
-      skip "Requires complete schema setup with namespaces"
+      xsd_content = <<~XSD
+        <?xml version="1.0" encoding="UTF-8"?>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/test">
+          <xs:import namespace="http://example.com/specific"
+                     schemaLocation="gmd.xsd"/>
+        </xs:schema>
+      XSD
+
+      exact_match_path = File.join(fixtures_dir, "codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/gmd.xsd")
+      pattern_match_path = File.join(fixtures_dir, "metaschema.xsd")
+
+      schema_mappings = [
+        # Exact match should take priority
+        { from: "gmd.xsd", to: exact_match_path },
+        # Regex pattern as fallback
+        { from: /^(.+\.xsd)$/, to: pattern_match_path }
+      ]
+
+      parsed = Lutaml::Xsd.parse(
+        xsd_content,
+        location: fixtures_dir,
+        schema_mappings: schema_mappings
+      )
+
+      expect(parsed).to be_a(Lutaml::Xsd::Schema)
+      # The exact match mapping should be used (exact_match_path)
     end
   end
 
@@ -229,21 +281,167 @@ RSpec.describe "Schema mapping integration" do
 
   describe "regex pattern matching" do
     it "matches relative paths with multiple ../ segments" do
-      skip "Requires complete GML schema dependencies (dynamicFeature.xsd etc.)"
+      xsd_content = <<~XSD
+        <?xml version="1.0" encoding="UTF-8"?>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/test">
+          <xs:import namespace="http://www.opengis.net/gml/3.2"
+                     schemaLocation="../../gml/3.2.1/dynamicFeature.xsd"/>
+        </xs:schema>
+      XSD
+
+      schema_mappings = [
+        # Map GML relative paths with multiple ../
+        { from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/\1') },
+        # Map xlink relative paths with multiple ../
+        { from: %r{(?:\.\./)+xlink/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/xlink/\1') },
+        # Map GML bare filenames for nested includes
+        { from: /^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects)\.xsd$/,
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd') }
+      ]
+
+      parsed = Lutaml::Xsd.parse(
+        xsd_content,
+        location: fixtures_dir,
+        schema_mappings: schema_mappings
+      )
+
+      expect(parsed).to be_a(Lutaml::Xsd::Schema)
+      expect(parsed.imports).not_to be_empty
     end
 
     it "matches simple relative paths" do
-      skip "Requires complete ISO metadata schema dependencies"
+      xsd_content = <<~XSD
+        <?xml version="1.0" encoding="UTF-8"?>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/test">
+          <xs:import namespace="http://www.isotc211.org/2005/gmd"
+                     schemaLocation="../gmd/gmd.xsd"/>
+        </xs:schema>
+      XSD
+
+      schema_mappings = [
+        # Map simple relative paths for GMD
+        { from: %r{^\.\./gmd/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\1') },
+        # Map simple relative paths for GCO (needed by gmd.xsd)
+        { from: %r{^\.\./gco/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\1') },
+        # Map other ISO directories that gmd.xsd imports
+        { from: %r{^\.\./gss/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gss/\1') },
+        { from: %r{^\.\./gts/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gts/\1') },
+        { from: %r{^\.\./gsr/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gsr/\1') },
+        { from: %r{^\.\./gmx/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gmx/\1') },
+        # Map ISO relative paths with multiple ../
+        { from: %r{(?:\.\./)+iso/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/\1') },
+        # Map xlink relative paths with multiple ../
+        { from: %r{(?:\.\./)+xlink/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/xlink/\1') },
+        # Map GML relative paths with multiple ../
+        { from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/\1') },
+        # Map GML bare filenames
+        { from: /^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects)\.xsd$/,
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd') }
+      ]
+
+      parsed = Lutaml::Xsd.parse(
+        xsd_content,
+        location: fixtures_dir,
+        schema_mappings: schema_mappings
+      )
+
+      expect(parsed).to be_a(Lutaml::Xsd::Schema)
+      expect(parsed.imports).not_to be_empty
     end
 
     it "matches bare filenames with specific patterns" do
-      skip "Requires complete GML schema dependencies (topology.xsd etc.)"
+      xsd_content = <<~XSD
+        <?xml version="1.0" encoding="UTF-8"?>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/test">
+          <xs:import namespace="http://www.opengis.net/gml/3.2"
+                     schemaLocation="topology.xsd"/>
+        </xs:schema>
+      XSD
+
+      schema_mappings = [
+        # Map GML bare filenames
+        { from: /^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects)\.xsd$/,
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd') },
+        # Map xlink relative paths (needed by GML schemas)
+        { from: %r{(?:\.\./)+xlink/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/xlink/\1') }
+      ]
+
+      parsed = Lutaml::Xsd.parse(
+        xsd_content,
+        location: fixtures_dir,
+        schema_mappings: schema_mappings
+      )
+
+      expect(parsed).to be_a(Lutaml::Xsd::Schema)
+      expect(parsed.imports).not_to be_empty
     end
   end
 
   describe "URL pattern mappings" do
     it "maps HTTPS URLs to local directory structure" do
-      skip "Requires complete ISO metadata schema dependencies (gmd/metadataApplication.xsd etc.)"
+      xsd_content = <<~XSD
+        <?xml version="1.0" encoding="UTF-8"?>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/test">
+          <xs:import namespace="http://www.isotc211.org/2005/gmd"
+                     schemaLocation="https://schemas.isotc211.org/19139/20070417/gmd/metadataApplication.xsd"/>
+        </xs:schema>
+      XSD
+
+      schema_mappings = [
+        # Map HTTPS URLs to local ISO directory
+        { from: %r{https://schemas\.isotc211\.org/(.+)},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/\1') },
+        # Map relative paths for nested includes
+        { from: %r{^\.\./gmd/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\1') },
+        { from: %r{^\.\./gco/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\1') },
+        { from: %r{^\.\./gss/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gss/\1') },
+        { from: %r{^\.\./gts/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gts/\1') },
+        { from: %r{^\.\./gsr/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gsr/\1') },
+        { from: %r{^\.\./gmx/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gmx/\1') },
+        # Map ISO relative paths with multiple ../
+        { from: %r{(?:\.\./)+iso/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/\1') },
+        # Map GML with multiple ../
+        { from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/\1') },
+        # Map xlink with multiple ../
+        { from: %r{(?:\.\./)+xlink/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/xlink/\1') },
+        # Map GML bare filenames
+        { from: /^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects)\.xsd$/,
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd') }
+      ]
+
+      parsed = Lutaml::Xsd.parse(
+        xsd_content,
+        location: fixtures_dir,
+        schema_mappings: schema_mappings
+      )
+
+      expect(parsed).to be_a(Lutaml::Xsd::Schema)
+      expect(parsed.imports).not_to be_empty
     end
   end
 
@@ -329,8 +527,57 @@ RSpec.describe "Schema mapping integration" do
 
   describe "nested schema imports with mappings" do
     it "resolves nested imports using mappings" do
-      # Skip test due to missing dependent schemas (dynamicFeature.xsd)
-      skip "Requires complete CityGML schema dependencies"
+      # Use CityGML building schema which imports cityGMLBase
+      citygml_building_path = File.join(fixtures_dir, "citygml/building/2.0/building.xsd")
+      citygml_building_content = File.read(citygml_building_path)
+
+      schema_mappings = [
+        # Map cityGMLBase.xsd
+        { from: "../../2.0/cityGMLBase.xsd",
+          to: File.join(fixtures_dir, "citygml/2.0/cityGMLBase.xsd") },
+        # Map GML schemas via HTTP URL
+        { from: %r{http://schemas\.opengis\.net/gml/3\.2\.1/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/3.2.1/\1') },
+        # Map GML relative paths with multiple ../
+        { from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/\1') },
+        # Map GML bare filenames for nested includes
+        { from: /^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects)\.xsd$/,
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd') },
+        # Map xlink for GML dependencies
+        { from: %r{(?:\.\./)+xlink/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/xlink/\1') },
+        # Map ISO with multiple ../
+        { from: %r{(?:\.\./)+iso/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/\1') },
+        # Map simple relative paths for ISO subdirectories
+        { from: %r{^\.\./gmd/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\1') },
+        { from: %r{^\.\./gco/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\1') },
+        { from: %r{^\.\./gss/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gss/\1') },
+        { from: %r{^\.\./gts/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gts/\1') },
+        { from: %r{^\.\./gsr/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gsr/\1') },
+        { from: %r{^\.\./gmx/(.+\.xsd)$},
+          to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gmx/\1') },
+        # Map SMIL20 files
+        { from: /^(smil20-.*|smil20|xml-mod|rdf)\.xsd$/,
+          to: File.join(fixtures_dir, 'smil20/\1.xsd') }
+      ]
+
+      parsed = Lutaml::Xsd.parse(
+        citygml_building_content,
+        location: File.dirname(citygml_building_path),
+        schema_mappings: schema_mappings
+      )
+
+      expect(parsed).to be_a(Lutaml::Xsd::Schema)
+      expect(parsed.target_namespace).to eq("http://www.opengis.net/citygml/building/2.0")
+      # Verify that imports were resolved
+      expect(parsed.imports).not_to be_empty
     end
   end
 

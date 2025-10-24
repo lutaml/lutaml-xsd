@@ -32,7 +32,21 @@ module Lutaml
   end
 end
 
+require_relative "xsd/version"
 require_relative "xsd/base"
+require_relative "xsd/schema_location_mapping"
+require_relative "xsd/namespace_mapping"
+require_relative "xsd/type_resolution_result"
+require_relative "xsd/type_index_entry"
+require_relative "xsd/serialized_schema"
+require_relative "xsd/package_configuration"
+require_relative "xsd/schema_resolver"
+require_relative "xsd/xsd_bundler"
+require_relative "xsd/package_builder"
+require_relative "xsd/schema_name_resolver"
+require_relative "xsd/schema_repository_metadata"
+require_relative "xsd/schema_repository_package"
+require_relative "xsd/schema_repository"
 require_relative "xsd/all"
 require_relative "xsd/annotation"
 require_relative "xsd/any"
