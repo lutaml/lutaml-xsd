@@ -34,12 +34,23 @@ allowing you to shape and structure your data into useful forms.
 
 == Features
 
+* <<lxr-packages,LXR (LutaML XSD Repository) packages>> for distributable,
+  pre-indexed schema collections
 * <<parsing-xsd,XSD file parsing>> with full schema structure support
 * <<schema-representation,Schema object representation>> with all XSD
   components
 * <<include-import,Include and import handling>> with location resolution
 * <<schema-mappings,Schema location mappings>> for local/remote schema
   redirection
+* <<schema-repository,SchemaRepository>> for namespace-aware type resolution
+  across multiple schemas
+* Command-line interface for package management, type queries, and statistics
+* Multiple serialization formats (marshal, json, yaml, parse)
+* Flexible package configuration with three independent axes (XSD mode,
+  resolution mode, serialization format)
+* Interactive package building from XSD files
+* Instant schema loading with pre-serialized schemas
+* Pre-built type indexes for fast qualified name lookups
 * <<serialization,XML serialization>> with round-trip compatibility
 * <<liquid-methods,Liquid template methods>> for schema introspection and
   documentation
@@ -175,6 +186,832 @@ pipeline:
     │   XML   │  │  Liquid │  │  Code   │
     │ Output  │  │Template │  │  Gen    │
     └─────────┘  └─────────┘  └─────────┘
+----
+
+[[lxr-packages]]
+== LutaML XML Repository (LXR) packages
+
+=== General
+
+A LutaML XML Repository (LXR) package is a self-contained, portable archive
+format (`.lxr` file extension) designed for distributing and using XSD schema
+collections. LXR packages solve the challenge of managing complex,
+multi-schema XML applications by bundling schemas, their dependencies, and a
+pre-built type index into a single, optimized file.
+
+An LXR package is essentially a ZIP archive containing:
+
+* XSD schema files (optional, based on configuration)
+* Pre-serialized schema objects for instant loading
+* A comprehensive type index for fast lookups
+* Namespace and schema location mappings
+* Package metadata (version, description, creation date)
+* Statistics about types, elements, and namespaces
+
+The `.lxr` extension stands for "LutaML XSD Repository", emphasizing its role
+as a complete repository of schema information rather than just a collection
+of files.
+
+=== What problems do LXR packages solve?
+
+LXR packages address several key challenges in working with XSD schemas:
+
+==== Performance
+
+Traditional workflow requires parsing XML schemas every time an application
+starts, which can take seconds or even minutes for large schema sets like
+CityGML or ISO/TC 211 standards.
+
+.Traditional vs. LXR workflow
+[source]
+----
+Traditional Workflow:
+  XSD Files (scattered) → Parse every time → Slow startup → External dependencies
+  ├─ schema1.xsd (parse: 2s)
+  ├─ schema2.xsd (parse: 3s)
+  └─ schema3.xsd (parse: 1s)
+  Total: 6+ seconds on every startup
+
+LXR Workflow:
+  package.lxr → Instant load → Fast queries → Self-contained
+  Total: <100ms to load pre-serialized schemas
+----
+
+LXR packages eliminate this overhead by pre-serializing schemas and building
+type indexes during package creation, not at runtime.
+
+==== Distribution complexity
+
+Distributing XSD schemas traditionally means sharing multiple files with
+complex directory structures, external dependencies, and version
+inconsistencies.
+
+LXR packages provide:
+
+* **Single-file distribution**: One `.lxr` file contains everything
+* **Dependency bundling**: All referenced schemas included (optional)
+* **Version tracking**: Metadata ensures schema version consistency
+* **Offline capability**: No external fetching required
+
+==== Type resolution challenges
+
+Finding types across namespaces in multi-schema applications requires manual
+tracking of imports, includes, and namespace URIs.
+
+LXR packages offer:
+
+* **Pre-built type index**: Instant qualified name lookups
+* **Namespace-aware queries**: Resolve `gml:CodeType` without manual mapping
+* **Cross-schema resolution**: Find types across all included schemas
+* **Three name formats**: Support prefixed, Clark notation, and unprefixed
+  names
+
+=== What can you do with LXR packages?
+
+LXR packages enable several practical use cases:
+
+==== Distribute schema collections
+
+Share complete schema sets with collaborators or users:
+
+[source,bash]
+----
+# Create a CityGML package
+lutaml-xsd package build citygml.yaml -o citygml-2.0.lxr
+
+# Distribute the single .lxr file
+# Recipients can immediately use it without setup
+----
+
+==== Build code generators
+
+Use pre-indexed schemas for fast code generation:
+
+[source,ruby]
+----
+# Load schema repository
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+# Generate classes from types
+repo.complex_types.each do |type|
+  generate_class(type)
+end
+----
+
+==== Create validation tools
+
+Build XML validators with instant schema loading:
+
+[source,ruby]
+----
+validator = XmlValidator.new(
+  schema_package: 'validation.lxr'
+)
+
+result = validator.validate(xml_document)
+----
+
+==== Document schemas
+
+Query types and relationships for documentation generation:
+
+[source,bash]
+----
+# List all types
+lutaml-xsd type list --from schemas.lxr --format yaml > types.yaml
+
+# Find specific types
+lutaml-xsd type find "gml:CodeType" --from schemas.lxr
+----
+
+==== Version control schemas
+
+Track schema versions with embedded metadata:
+
+[source,yaml]
+----
+# Package metadata
+name: "CityGML Schemas"
+version: "2.0.0"
+created_at: "2024-10-24T18:00:00+08:00"
+description: "Complete CityGML 2.0 schema set with dependencies"
+----
+
+==== Enable offline development
+
+Work without network access to remote schemas:
+
+[source,bash]
+----
+# Build package with all dependencies bundled
+lutaml-xsd package build config.yaml \
+  --xsd-mode include_all \
+  --output offline_schemas.lxr
+
+# Use offline
+lutaml-xsd type find "uro:BuildingType" --from offline_schemas.lxr
+----
+
+=== LXR configuration options
+
+LXR packages are highly configurable through three independent axes, allowing
+you to optimize for your specific use case:
+
+.LXR Package configuration matrix
+[source]
+----
+╔═══════════════════════════════════════════════════════════╗
+║           LXR Package Configuration Matrix                ║
+╠═══════════════════════════════════════════════════════════╣
+║                                                           ║
+║  Axis 1: XSD Bundling Mode                               ║
+║  ┌────────────────────┬─────────────────────────┐        ║
+║  │   include_all      │    allow_external       │        ║
+║  ├────────────────────┼─────────────────────────┤        ║
+║  │ • Bundle all XSDs  │ • Keep URL references   │        ║
+║  │ • Rewrite paths    │ • Smaller packages      │        ║
+║  │ • Self-contained   │ • Requires network      │        ║
+║  │ • Larger file size │ • Faster packaging      │        ║
+║  └────────────────────┴─────────────────────────┘        ║
+║                                                           ║
+║  Axis 2: Resolution Mode                                 ║
+║  ┌────────────────────┬─────────────────────────┐        ║
+║  │     resolved       │         bare            │        ║
+║  ├────────────────────┼─────────────────────────┤        ║
+║  │ • Pre-serialized   │ • Parse on load         │        ║
+║  │ • Instant loading  │ • Smaller packages      │        ║
+║  │ • Larger packages  │ • Slower startup        │        ║
+║  │ • Best for queries │ • Best for editing      │        ║
+║  └────────────────────┴─────────────────────────┘        ║
+║                                                           ║
+║  Axis 3: Serialization Format                            ║
+║  ┌─────────┬─────────┬─────────┬──────────┐             ║
+║  │ marshal │  json   │  yaml   │  parse   │             ║
+║  ├─────────┼─────────┼─────────┼──────────┤             ║
+║  │ Fastest │Portable │ Human   │ No cache │             ║
+║  │ Binary  │ Slower  │readable │ Smallest │             ║
+║  │ Ruby    │ Cross   │ Debug   │ Always   │             ║
+║  │ only    │platform │friendly │ parse    │             ║
+║  └─────────┴─────────┴─────────┴──────────┘             ║
+╚═══════════════════════════════════════════════════════════╝
+----
+
+==== XSD bundling mode
+
+Controls how XSD files are included in the package:
+
+`include_all` (recommended)::
+  * Bundles all XSD files into the package
+  * Rewrites schema location paths to be package-relative
+  * Creates fully self-contained packages
+  * Larger file size but completely portable
+  * No network access required
+
+`allow_external`::
+  * Keeps original schema location references
+  * Package only contains metadata and indexes
+  * Smaller file size
+  * Requires network access or local schemas
+  * Useful for development environments
+
+==== Resolution mode
+
+Controls whether schemas are pre-serialized:
+
+`resolved` (recommended)::
+  * Pre-serializes all parsed schema objects
+  * Enables instant loading without XML parsing
+  * Larger package size due to serialized data
+  * Best for production use and queries
+  * Type index immediately available
+
+`bare`::
+  * Only includes XSD files and minimal metadata
+  * Schemas parsed on first load
+  * Smaller package size
+  * Slower initial startup
+  * Best for schema development and editing
+
+==== Serialization format
+
+Controls how schemas are serialized (only relevant for `resolved` mode):
+
+`marshal` (recommended for Ruby)::
+  * Ruby's native serialization format
+  * Fastest serialization and deserialization
+  * Binary format, not human-readable
+  * Ruby version dependent
+  * Best for Ruby-only applications
+
+`json`::
+  * JSON serialization format
+  * Cross-platform and cross-language compatible
+  * Human-readable text format
+  * Slower than marshal
+  * Good for interoperability
+
+`yaml`::
+  * YAML serialization format
+  * Most human-readable
+  * Excellent for debugging
+  * Slowest format
+  * Best for development and inspection
+
+`parse`::
+  * No serialization, always parse XSD files
+  * Smallest package size
+  * Always fresh parsing
+  * Slowest loading
+  * Best when schemas change frequently
+
+=== Creating LXR packages
+
+LXR packages can be created in two ways: from a YAML configuration file or
+interactively from the command line.
+
+==== Via YAML configuration
+
+The recommended approach for reproducible builds is using a YAML configuration
+file.
+
+Syntax:
+
+[source,yaml]
+----
+files: <1>
+  - path/to/schema.xsd
+
+schema_location_mappings: <2>
+  - from: "http://schemas.example.com/schema.xsd"
+    to: "local/path/schema.xsd"
+
+namespace_mappings: <3>
+  - prefix: "ex"
+    uri: "http://example.com/namespace"
+----
+<1> List of XSD files to include (required)
+<2> Schema location mappings for imports/includes (optional)
+<3> Namespace prefix mappings (optional)
+
+Where,
+
+`files`:: Array of XSD file paths to include in the package (required)
+`schema_location_mappings`:: Array of schema location redirections (optional)
+`namespace_mappings`:: Array of namespace prefix-to-URI mappings (optional)
+
+.Creating a package from YAML configuration
+[example]
+[source,yaml]
+----
+# config/urban_function_repository.yaml
+files:
+  - spec/fixtures/i-ur/urbanFunction.xsd
+
+schema_location_mappings:
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: "spec/fixtures/i-ur/urbanObject.xsd"
+
+  - from: !ruby/regexp /(?:\.\.\/)+gml\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/gml/\\1"
+
+namespace_mappings:
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+----
+
+Build the package:
+
+[source,bash]
+----
+lutaml-xsd package build config/urban_function_repository.yaml \
+  --name "Urban Function Schema Repository" \
+  --version "3.2" \
+  --description "i-UR Urban Function schema with dependencies" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/urban_function.lxr \
+  --validate
+----
+
+Output:
+
+----
+✓ Configuration loaded
+  Files: 1
+  Schema Location Mappings: 2
+  Namespace Mappings: 2
+
+Parsing and resolving schemas...
+✓ Schemas parsed and resolved
+
+Creating package: pkg/urban_function.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: pkg/urban_function.lxr
+  Size: 4683850 bytes
+
+Validating package...
+✓ Package is valid
+----
+
+==== Via interactive CLI
+
+For quick package creation, use the CLI directly with an XSD file:
+
+.Building a package interactively
+[example]
+[source,bash]
+----
+# Build with defaults (include_all, resolved, marshal)
+lutaml-xsd package build urbanFunction.xsd
+
+# Build with custom options
+lutaml-xsd package build urbanFunction.xsd \
+  --name "Urban Function Schema" \
+  --version "3.2" \
+  --description "i-UR Urban Function schema collection" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/urban_function.lxr \
+  --validate
+
+# Build with JSON format for cross-platform use
+lutaml-xsd package build schema.xsd \
+  --serialization-format json \
+  --output schema.lxr
+
+# Build bare package (parse on load)
+lutaml-xsd package build schema.xsd \
+  --resolution-mode bare \
+  --output schema_bare.lxr
+----
+
+==== CLI build options
+
+The `lutaml-xsd package build` command supports these options:
+
+`--output, -o PATH`::
+  Output package path (default: `pkg/<name>.lxr`)
+
+`--xsd-mode MODE`::
+  XSD bundling mode: `include_all` or `allow_external` (default: `include_all`)
+
+`--resolution-mode MODE`::
+  Resolution mode: `resolved` or `bare` (default: `resolved`)
+
+`--serialization-format FORMAT`::
+  Serialization format: `marshal`, `json`, `yaml`, or `parse` (default:
+  `marshal`)
+
+`--name NAME`::
+  Package name for metadata
+
+`--version VERSION`::
+  Package version for metadata
+
+`--description DESC`::
+  Package description for metadata
+
+`--validate`::
+  Validate package after building
+
+`--verbose`::
+  Enable verbose output
+
+=== Using LXR packages
+
+Once created, LXR packages can be used programmatically via the Ruby API or
+interactively via the command-line interface.
+
+==== Loading via Ruby API
+
+.Loading and using an LXR package
+[example]
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load package
+repository = Lutaml::Xsd::SchemaRepository.from_package(
+  'pkg/urban_function.lxr'
+)
+
+# Package loads instantly (pre-serialized schemas)
+puts "Loaded in milliseconds!"
+
+# Query types
+result = repository.find_type('gml:CodeType')
+if result.resolved?
+  puts "Found: #{result.qname}"
+  puts "Namespace: #{result.namespace}"
+end
+
+# Get statistics
+stats = repository.statistics
+puts "Total types: #{stats[:total_types]}"
+puts "Total namespaces: #{stats[:total_namespaces]}"
+
+# List types by category
+stats[:types_by_category].each do |category, count|
+  puts "#{category}: #{count}"
+end
+----
+
+==== Using via command-line interface
+
+The CLI provides convenient commands for working with packages:
+
+.Package information and validation
+[example]
+[source,bash]
+----
+# Display package metadata
+lutaml-xsd package info pkg/urban_function.lxr
+
+# Validate package structure
+lutaml-xsd package validate pkg/urban_function.lxr
+
+# Validate with strict mode (fail on warnings)
+lutaml-xsd package validate pkg/urban_function.lxr --strict
+
+# Get validation results in JSON
+lutaml-xsd package validate pkg/urban_function.lxr --format json
+----
+
+Output from `package info`:
+
+----
+Package: urban_function.lxr
+Size: 4683850 bytes
+
+Metadata:
+--------------------------------------------------------------------------------
+name: Urban Function Schema Repository
+version: 3.2
+description: i-UR Urban Function schema with dependencies
+created_at: 2024-10-24T17:11:33+08:00
+lutaml_xsd_version: 1.0.4
+created_by: lutaml-xsd CLI
+xsd_mode: include_all
+resolution_mode: resolved
+serialization_format: marshal
+files: 1
+namespace_mappings: 4
+schema_location_mappings: 2
+----
+
+.Type queries
+[example]
+[source,bash]
+----
+# Find a specific type
+lutaml-xsd type find "gml:CodeType" --from pkg/urban_function.lxr
+
+# Find with JSON output
+lutaml-xsd type find "gml:CodeType" \
+  --from pkg/urban_function.lxr \
+  --format json
+
+# List all types
+lutaml-xsd type list --from pkg/urban_function.lxr
+
+# List types in specific namespace
+lutaml-xsd type list \
+  --from pkg/urban_function.lxr \
+  --namespace "http://www.opengis.net/gml/3.2"
+
+# List types by category
+lutaml-xsd type list \
+  --from pkg/urban_function.lxr \
+  --category complex_type
+----
+
+Output from `type find`:
+
+----
+Type Resolution: gml:CodeType
+
+✓ Type found
+
+Qualified Name: gml:CodeType
+Namespace: http://www.opengis.net/gml/3.2
+Local Name: CodeType
+Schema File: basicTypes.xsd
+Type Class: Lutaml::Xsd::ComplexType
+
+Documentation:
+  gml:CodeType is a generalized type to be used for a term, keyword or name.
+  It adds a XML attribute codeSpace to a term, where the value of the
+  codeSpace attribute (if present) shall indicate a dictionary, thesaurus,
+  classification scheme, authority, or pattern for the term.
+
+Simple Content:
+  Extension:
+    Base: string
+    Attributes:
+      - codeSpace: anyURI (optional)
+----
+
+.Repository statistics
+[example]
+[source,bash]
+----
+# Display repository statistics
+lutaml-xsd stats show pkg/urban_function.lxr
+
+# Get statistics in YAML format
+lutaml-xsd stats show pkg/urban_function.lxr --format yaml
+----
+
+Output:
+
+----
+Repository Statistics:
+  Total schemas parsed: 0
+  Total types indexed: 2764
+  Types by category:
+    attribute_group: 68
+    complex_type: 1356
+    element: 1221
+    group: 27
+    simple_type: 92
+  Total namespaces: 34
+----
+
+=== LXR package internals
+
+Understanding the internal structure of LXR packages helps with debugging and
+optimization.
+
+.LXR package internal structure
+[source]
+----
+my_schemas.lxr (ZIP archive)
+├── metadata.yaml              # Package metadata
+│   ├── name: "Schema Collection"
+│   ├── version: "1.0"
+│   ├── created_at: "2024-10-24T18:00:00+08:00"
+│   ├── xsd_mode: "include_all"
+│   ├── resolution_mode: "resolved"
+│   └── serialization_format: "marshal"
+│
+├── xsd_files/                 # Bundled XSD files (if include_all)
+│   ├── schema1.xsd
+│   ├── schema2.xsd
+│   └── dependencies/
+│       └── common.xsd
+│
+├── schemas/                   # Serialized schemas (if resolved)
+│   ├── schema1.marshal        # (or .json, .yaml based on format)
+│   └── schema2.marshal
+│
+├── type_index.marshal         # Pre-built type index
+│   ├── namespace -> types mapping
+│   ├── qualified name -> type mapping
+│   └── category -> types mapping
+│
+├── namespace_mappings.yaml    # Namespace prefix mappings
+│   └── - prefix: "gml"
+│       uri: "http://www.opengis.net/gml/3.2"
+│
+└── schema_location_mappings.yaml  # Schema location mappings
+    └── - from: "http://example.com/schema.xsd"
+        to: "local/schema.xsd"
+----
+
+==== Metadata structure
+
+The `metadata.yaml` file contains:
+
+[source,yaml]
+----
+name: "Schema Collection"
+version: "1.0"
+description: "Complete schema set with dependencies"
+created_at: "2024-10-24T18:00:00+08:00"
+created_by: "lutaml-xsd CLI"
+lutaml_xsd_version: "1.0.4"
+
+# Configuration
+xsd_mode: "include_all"
+resolution_mode: "resolved"
+serialization_format: "marshal"
+
+# Content summary
+files: 3
+namespace_mappings: 4
+schema_location_mappings: 2
+
+# Statistics
+statistics:
+  total_schemas: 3
+  total_types: 150
+  types_by_category:
+    complex_type: 80
+    simple_type: 30
+    element: 35
+    attribute_group: 5
+  total_namespaces: 3
+  namespace_prefixes: 4
+  resolved: true
+  validated: true
+----
+
+==== Type index structure
+
+The type index enables fast lookups:
+
+[source,ruby]
+----
+# Conceptual structure (serialized format varies)
+{
+  by_namespace: {
+    "http://www.opengis.net/gml/3.2" => {
+      "CodeType" => <TypeDefinition>,
+      "MeasureType" => <TypeDefinition>
+    }
+  },
+
+  by_qualified_name: {
+    "gml:CodeType" => <TypeDefinition>,
+    "{http://www.opengis.net/gml/3.2}CodeType" => <TypeDefinition>
+  },
+
+  by_category: {
+    complex_type: [<TypeDefinition>, ...],
+    simple_type: [<TypeDefinition>, ...],
+    element: [<TypeDefinition>, ...]
+  }
+}
+----
+
+=== Best practices for LXR packages
+
+==== Choosing XSD bundling mode
+
+Use `include_all` when:
+
+* Distributing schemas to users who may not have internet access
+* Creating portable, self-contained packages
+* Ensuring consistent schema versions
+* Working with schemas from multiple sources
+
+Use `allow_external` when:
+
+* Working in development environments
+* Schemas change frequently
+* Package size is critical
+* Network access to schemas is guaranteed
+
+==== Choosing resolution mode
+
+Use `resolved` when:
+
+* Building production packages
+* Optimizing for query performance
+* Creating packages for repeated use
+* Package size is not a constraint
+
+Use `bare` when:
+
+* Developing or editing schemas
+* Package size is critical
+* Schemas change frequently between builds
+* One-time use packages
+
+==== Choosing serialization format
+
+Use `marshal` when:
+
+* Building Ruby-only applications
+* Performance is critical
+* Package size and speed are both important
+* Ruby version is consistent
+
+Use `json` when:
+
+* Cross-platform compatibility needed
+* Integrating with non-Ruby tools
+* Some human readability desired
+* Moderate performance acceptable
+
+Use `yaml` when:
+
+* Debugging packages
+* Maximum human readability needed
+* Performance is not critical
+* Inspecting package contents manually
+
+Use `parse` when:
+
+* Schemas change very frequently
+* Smallest possible package size needed
+* Always want fresh parsing
+* No serialization overhead acceptable
+
+==== Package versioning
+
+Include version information in metadata:
+
+[source,bash]
+----
+lutaml-xsd package build config.yaml \
+  --name "CityGML Schemas" \
+  --version "2.0.0" \
+  --description "CityGML 2.0 complete schema set" \
+  --output citygml-2.0.0.lxr
+----
+
+Use semantic versioning:
+
+* MAJOR version for incompatible schema changes
+* MINOR version for backward-compatible additions
+* PATCH version for bug fixes and documentation
+
+==== Distribution recommendations
+
+* Include a README with package contents and version
+* Document required Ruby version for marshal packages
+* Provide checksums (SHA256) for package verification
+* Host packages in version-controlled repositories
+* Create separate packages for major schema versions
+
+==== Package optimization
+
+For smallest packages:
+
+[source,bash]
+----
+lutaml-xsd package build config.yaml \
+  --xsd-mode allow_external \
+  --resolution-mode bare \
+  --serialization-format parse
+----
+
+For fastest loading:
+
+[source,bash]
+----
+lutaml-xsd package build config.yaml \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal
+----
+
+For maximum portability:
+
+[source,bash]
+----
+lutaml-xsd package build config.yaml \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format json
 ----
 
 [[parsing-xsd]]
@@ -810,6 +1647,516 @@ This example demonstrates:
 * Effective use of regex patterns and capture groups
 * Leaving room for automatic URL fetching
 ====
+
+[[schema-repository]]
+== SchemaRepository
+
+=== General
+
+The `SchemaRepository` provides namespace-aware type resolution across
+multiple XSD schemas. It builds a comprehensive index of all types, elements,
+and other schema components, enabling efficient lookups by qualified names
+in multiple formats.
+
+This feature is particularly valuable when working with complex schema sets
+like CityGML, GML, ISO/TC 211 standards, or any multi-schema XML application
+where types need to be resolved across namespace boundaries.
+
+Key capabilities:
+
+* Parse and index multiple schemas with their imports and includes
+* Resolve types using prefixed names (`gml:CodeType`), Clark notation
+  (`{http://...}CodeType`), or unprefixed names
+* Validate schema consistency and detect circular dependencies
+* Query schema statistics and component counts
+* Export and import schema collections as ZIP packages
+* Integrate seamlessly with schema location mappings
+
+=== Creating a schema repository
+
+.Basic repository initialization
+[example]
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create a new repository
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Optionally specify a base directory for relative paths
+repo = Lutaml::Xsd::SchemaRepository.new(
+  base_dir: '/path/to/schemas'
+)
+----
+
+=== Configuring namespaces
+
+Before parsing schemas, configure namespace prefix-to-URI mappings to enable
+prefixed name resolution.
+
+Syntax:
+
+[source,ruby]
+----
+repo.add_namespace_mapping(prefix: {prefix}, uri: {uri}) <1>
+----
+<1> Register a namespace prefix and its corresponding URI
+
+Where,
+
+`prefix`:: The namespace prefix (e.g., `"gml"`, `"xlink"`) (required)
+`uri`:: The full namespace URI (e.g., `"http://www.opengis.net/gml/3.2"`)
+  (required)
+
+.Configuring namespace mappings
+[example]
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Add namespace mappings for common schemas
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+repo.add_namespace_mapping(
+  prefix: 'xlink',
+  uri: 'http://www.w3.org/1999/xlink'
+)
+
+repo.add_namespace_mapping(
+  prefix: 'gco',
+  uri: 'http://www.isotc211.org/2005/gco'
+)
+----
+
+Namespace mappings enable resolving qualified names like `gml:CodeType` to
+their full namespace URIs.
+
+=== Parsing and resolving schemas
+
+Use `parse_schema` to load a schema into the repository. The method
+automatically processes all imports and includes, building a complete
+index of types and components.
+
+Syntax:
+
+[source,ruby]
+----
+repo.parse_schema(
+  content: {content},
+  location: {location},
+  schema_mappings: {mappings}
+) <1>
+----
+<1> Parse a schema with optional location and mappings
+
+Where,
+
+`content`:: The XSD schema content as a string (required)
+`location`:: Base path or URL for resolving relative schema locations
+  (optional)
+`schema_mappings`:: Array of schema location mappings for local/remote
+  redirection (optional)
+
+.Parsing a schema with location mappings
+[example]
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Configure namespaces
+repo.add_namespace_mapping(prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2')
+repo.add_namespace_mapping(prefix: 'uro', uri: 'https://www.geospatial.jp/iur/uro/3.2')
+
+# Read schema content
+xsd_content = File.read('spec/fixtures/i-ur/urbanFunction.xsd')
+
+# Define schema mappings for imports
+schema_mappings = [
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.expand_path('spec/fixtures/i-ur/urbanObject.xsd')
+  },
+  {
+    from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/gml/\1')
+  }
+]
+
+# Parse the schema - this will also parse all imports/includes
+result = repo.parse_schema(
+  content: xsd_content,
+  location: File.dirname('spec/fixtures/i-ur/urbanFunction.xsd'),
+  schema_mappings: schema_mappings
+)
+
+puts "Parsed: #{result.location}"
+puts "Namespace: #{result.target_namespace}"
+----
+
+The repository automatically follows all `xs:import` and `xs:include`
+directives, parsing referenced schemas and adding them to the index.
+
+=== Resolving type references
+
+After parsing schemas, use `resolve_type` to look up types by qualified name.
+The method supports three name formats:
+
+* Prefixed: `gml:CodeType`
+* Clark notation: `{http://www.opengis.net/gml/3.2}CodeType`
+* Unprefixed: `CodeType` (searches all namespaces)
+
+Syntax:
+
+[source,ruby]
+----
+result = repo.resolve_type(qualified_name: {name}) <1>
+----
+<1> Resolve a type by its qualified name
+
+Where,
+
+`qualified_name`:: The type name in any supported format (required)
+
+Returns a `TypeResolutionResult` with:
+
+`found?`:: Boolean indicating if the type was found
+`type`:: The resolved type object (if found)
+`namespace`:: The namespace URI of the type
+`local_name`:: The local name portion of the type
+
+.Resolving types by qualified name
+[example]
+[source,ruby]
+----
+# Resolve using prefixed name
+result = repo.resolve_type(qualified_name: 'gml:CodeType')
+
+if result.found?
+  puts "Found: #{result.type.name}"
+  puts "Namespace: #{result.namespace}"
+  puts "Local name: #{result.local_name}"
+end
+
+# Resolve using Clark notation
+result = repo.resolve_type(
+  qualified_name: '{http://www.opengis.net/gml/3.2}CodeType'
+)
+
+# Resolve using unprefixed name (searches all namespaces)
+result = repo.resolve_type(qualified_name: 'CodeType')
+
+# Check resolution status
+unless result.found?
+  puts "Type not found: #{result.local_name}"
+end
+----
+
+=== Finding types and components
+
+The `find_type` method searches for types across all parsed schemas.
+
+Syntax:
+
+[source,ruby]
+----
+type = repo.find_type(name: {name}, namespace: {namespace}) <1>
+----
+<1> Find a type by name and optional namespace
+
+Where,
+
+`name`:: The local name of the type (required)
+`namespace`:: The namespace URI to search in (optional - searches all if
+  omitted)
+
+.Finding types across namespaces
+[example]
+[source,ruby]
+----
+# Find in specific namespace
+type = repo.find_type(
+  name: 'CodeType',
+  namespace: 'http://www.opengis.net/gml/3.2'
+)
+
+if type
+  puts "Found: #{type.name}"
+end
+
+# Find across all namespaces (may return first match)
+type = repo.find_type(name: 'CodeType')
+----
+
+=== Validation
+
+The repository can validate schema consistency, including detection of:
+
+* Missing type definitions
+* Circular schema dependencies
+* Invalid namespace references
+* Unresolved imports
+
+Syntax:
+
+[source,ruby]
+----
+validation = repo.validate <1>
+----
+<1> Validate all schemas in the repository
+
+Returns a hash with:
+
+`valid?`:: Boolean indicating overall validity
+`errors`:: Array of validation error messages
+`warnings`:: Array of validation warnings
+
+.Validating schema consistency
+[example]
+[source,ruby]
+----
+# Validate the repository
+validation = repo.validate
+
+if validation[:valid?]
+  puts "All schemas are valid!"
+else
+  puts "Validation errors:"
+  validation[:errors].each do |error|
+    puts "  - #{error}"
+  end
+end
+
+if validation[:warnings].any?
+  puts "Warnings:"
+  validation[:warnings].each do |warning|
+    puts "  - #{warning}"
+  end
+end
+----
+
+=== Statistics and queries
+
+The repository provides comprehensive statistics about parsed schemas.
+
+.Querying repository statistics
+[example]
+[source,ruby]
+----
+# Get overall statistics
+stats = repo.statistics
+
+puts "Total schemas: #{stats[:total_schemas]}"
+puts "Total namespaces: #{stats[:total_namespaces]}"
+puts "Total types: #{stats[:total_types]}"
+puts "Total elements: #{stats[:total_elements]}"
+
+# List all namespaces
+repo.namespaces.each do |uri|
+  puts "Namespace: #{uri}"
+end
+
+# Get schema count
+puts "Schemas loaded: #{repo.schema_count}"
+
+# Check if specific namespace exists
+if repo.namespace?('http://www.opengis.net/gml/3.2')
+  puts "GML namespace is loaded"
+end
+
+# Get types in a specific namespace
+types = repo.types_in_namespace('http://www.opengis.net/gml/3.2')
+puts "GML has #{types.size} types"
+----
+
+=== Packaging schemas
+
+The repository can export schema collections as ZIP packages with metadata,
+and import them later for distribution or caching.
+
+==== Exporting to ZIP
+
+Syntax:
+
+[source,ruby]
+----
+repo.export_to_zip(
+  output_path: {path},
+  metadata: {metadata}
+) <1>
+----
+<1> Export repository to a ZIP package
+
+Where,
+
+`output_path`:: Path where the ZIP file will be created (required)
+`metadata`:: Hash of metadata to include (e.g., `name`, `version`,
+  `description`) (optional)
+
+.Exporting a schema repository
+[example]
+[source,ruby]
+----
+# Export repository to ZIP with metadata
+repo.export_to_zip(
+  output_path: 'citygml_schemas.zip',
+  metadata: {
+    name: 'CityGML Schemas',
+    version: '2.0',
+    description: 'Complete CityGML 2.0 schema set with dependencies',
+    created_at: Time.now.iso8601
+  }
+)
+
+puts "Exported to citygml_schemas.zip"
+----
+
+The ZIP package contains:
+
+* All parsed XSD schema files
+* `metadata.yaml` with repository information
+* Namespace mappings
+* Schema location mappings
+
+==== Importing from ZIP
+
+Syntax:
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.import_from_zip(
+  zip_path: {path}
+) <1>
+----
+<1> Import a repository from a ZIP package
+
+Where,
+
+`zip_path`:: Path to the ZIP file to import (required)
+
+Returns a new `SchemaRepository` instance with all schemas and mappings
+loaded.
+
+.Importing a schema repository
+[example]
+[source,ruby]
+----
+# Import from previously exported ZIP
+repo = Lutaml::Xsd::SchemaRepository.import_from_zip(
+  zip_path: 'citygml_schemas.zip'
+)
+
+# Access metadata
+metadata = repo.metadata
+puts "Loaded: #{metadata[:name]} v#{metadata[:version]}"
+
+# Repository is ready to use
+result = repo.resolve_type(qualified_name: 'gml:CodeType')
+puts "Type found: #{result.found?}"
+----
+
+=== Complete workflow example
+
+.Comprehensive schema repository workflow
+[example]
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# 1. Create repository
+repo = Lutaml::Xsd::SchemaRepository.new(
+  base_dir: File.expand_path('spec/fixtures')
+)
+
+# 2. Configure namespaces
+repo.add_namespace_mapping(prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2')
+repo.add_namespace_mapping(prefix: 'uro', uri: 'https://www.geospatial.jp/iur/uro/3.2')
+repo.add_namespace_mapping(prefix: 'urf', uri: 'https://www.geospatial.jp/iur/urf/3.2')
+
+# 3. Parse main schema with mappings
+xsd_content = File.read('spec/fixtures/i-ur/urbanFunction.xsd')
+
+schema_mappings = [
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.expand_path('spec/fixtures/i-ur/urbanObject.xsd')
+  },
+  {
+    from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/gml/\1')
+  }
+]
+
+result = repo.parse_schema(
+  content: xsd_content,
+  location: 'spec/fixtures/i-ur',
+  schema_mappings: schema_mappings
+)
+
+puts "Parsed: #{result.location}"
+
+# 4. Query statistics
+stats = repo.statistics
+puts "\nRepository Statistics:"
+puts "  Schemas: #{stats[:total_schemas]}"
+puts "  Namespaces: #{stats[:total_namespaces]}"
+puts "  Types: #{stats[:total_types]}"
+puts "  Elements: #{stats[:total_elements]}"
+
+# 5. List all namespaces
+puts "\nNamespaces:"
+repo.namespaces.each do |uri|
+  type_count = repo.types_in_namespace(uri).size
+  puts "  #{uri} (#{type_count} types)"
+end
+
+# 6. Resolve types
+puts "\nType Resolution:"
+['gml:CodeType', 'uro:BuildingType', 'urf:UrbanFunctionType'].each do |qname|
+  result = repo.resolve_type(qualified_name: qname)
+  if result.found?
+    puts "  ✓ #{qname} -> #{result.type.name}"
+  else
+    puts "  ✗ #{qname} not found"
+  end
+end
+
+# 7. Validate schemas
+validation = repo.validate
+puts "\nValidation: #{validation[:valid?] ? 'PASS' : 'FAIL'}"
+validation[:errors].each { |e| puts "  Error: #{e}" }
+validation[:warnings].each { |w| puts "  Warning: #{w}" }
+
+# 8. Export to ZIP
+repo.export_to_zip(
+  output_path: 'schema_package.zip',
+  metadata: {
+    name: 'i-UR Schema Package',
+    version: '3.2',
+    description: 'Urban and Rural schemas with dependencies'
+  }
+)
+puts "\nExported to schema_package.zip"
+
+# 9. Import from ZIP (in a new session)
+imported_repo = Lutaml::Xsd::SchemaRepository.import_from_zip(
+  zip_path: 'schema_package.zip'
+)
+puts "Imported repository with #{imported_repo.schema_count} schemas"
+----
+
+This example demonstrates the complete lifecycle:
+
+* Repository creation and configuration
+* Schema parsing with imports
+* Statistics and queries
+* Type resolution
+* Validation
+* Package export and import
 
 [[serialization]]
 == Serialization
