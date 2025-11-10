@@ -22,8 +22,33 @@ module Lutaml
         end
       end
 
+      def is_sequence?
+        is_a?(Sequence)
+      end
+
+      def is_any?
+        is_a?(Any)
+      end
+
+      def is_all?
+        is_a?(All)
+      end
+
+      def is_choice?
+        is_a?(Choice)
+      end
+
+      def is_annotation?
+        is_a?(Annotation)
+      end
+
       liquid do
         map "to_xml", to: :to_xml
+        map "is_any?", to: :is_any?
+        map "is_all?", to: :is_all?
+        map "is_choice?", to: :is_choice?
+        map "is_sequence?", to: :is_sequence?
+        map "is_annotation?", to: :is_annotation?
         map "to_formatted_xml", to: :to_formatted_xml
         map "resolved_element_order", to: :resolved_element_order
       end
