@@ -6,7 +6,7 @@ module Lutaml
       module Sequence
         def child_elements(array = [])
           resolved_element_order.each do |child|
-            if child.is_a?(Xsd::Element)
+            if child.is_a?(Element)
               array << child
             elsif child.respond_to?(:child_elements)
               child.child_elements(array)
@@ -17,7 +17,7 @@ module Lutaml
 
         def find_elements_used(element_name)
           resolved_element_order.any? do |child|
-            if child.is_a?(Xsd::Element)
+            if child.is_a?(Element)
               child.ref == element_name
             elsif child.respond_to?(:find_elements_used)
               child.find_elements_used(element_name)

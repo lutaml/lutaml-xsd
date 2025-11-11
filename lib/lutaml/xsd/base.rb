@@ -42,14 +42,39 @@ module Lutaml
         is_a?(Annotation)
       end
 
+      def is_attribute?
+        is_a?(Attribute)
+      end
+
+      def is_attribute_group?
+        is_a?(AttributeGroup)
+      end
+
+      def min_occurrences
+        return unless respond_to?(:min_occurs)
+
+        @min_occurs&.to_i || 1
+      end
+
+      def max_occurrences
+        return unless respond_to?(:max_occurs)
+        return "*" if @max_occurs == "unbounded"
+
+        @max_occurs&.to_i || 1
+      end
+
       liquid do
         map "to_xml", to: :to_xml
         map "is_any?", to: :is_any?
         map "is_all?", to: :is_all?
         map "is_choice?", to: :is_choice?
         map "is_sequence?", to: :is_sequence?
+        map "is_attribute?", to: :is_attribute?
         map "is_annotation?", to: :is_annotation?
+        map "min_occurrences", to: :min_occurrences
+        map "max_occurrences", to: :max_occurrences
         map "to_formatted_xml", to: :to_formatted_xml
+        map "is_attribute_group?", to: :is_attribute_group?
         map "resolved_element_order", to: :resolved_element_order
       end
 

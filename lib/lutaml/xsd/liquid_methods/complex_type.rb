@@ -4,6 +4,13 @@ module Lutaml
   module Xsd
     module LiquidMethods
       module ComplexType
+        DIRECT_CHILD_ELEMENTS_EXCEPTION = %w[
+          AttributeGroup
+          AnyAttribute
+          Annotation
+          Attribute
+        ].freeze
+
         def used_by
           root_complex_types = @__root.complex_type.reject { |ct| ct == self }
           raw_elements = @__root.group.map(&:child_elements).flatten
@@ -17,6 +24,14 @@ module Lutaml
           attribute_group.flat_map { |group| group.attribute_elements(array) }
           simple_content&.attribute_elements(array)
           array
+        end
+
+        def direct_child_elements(array = [], except: DIRECT_CHILD_ELEMENTS_EXCEPTION)
+          resolved_element_order.each_with_object(array) do |child|
+            next if except.any? { |klass| child.class.name.include?("::#{klass}") }
+
+            array << child
+          end
         end
 
         def child_elements(array = [])
