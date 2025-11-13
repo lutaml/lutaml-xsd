@@ -30,7 +30,7 @@ module Lutaml
         end
 
         def referenced_object
-          return self unless name
+          return self if name
 
           @__root.attribute_group.find { |group| group.name == ref }
         end

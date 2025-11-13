@@ -21,7 +21,7 @@ module Lutaml
 
         def attribute_elements(array = [])
           array.concat(attribute)
-          attribute_group.flat_map { |group| group.attribute_elements(array) }
+          attribute_group.each { |group| group.attribute_elements(array) }
           simple_content&.attribute_elements(array)
           array
         end

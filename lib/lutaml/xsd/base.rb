@@ -50,6 +50,14 @@ module Lutaml
         is_a?(AttributeGroup)
       end
 
+      def is_simple_content?
+        is_a?(SimpleContent)
+      end
+
+      def is_element?
+        is_a?(Element)
+      end
+
       def min_occurrences
         return unless respond_to?(:min_occurs)
 
@@ -68,12 +76,14 @@ module Lutaml
         map "is_any?", to: :is_any?
         map "is_all?", to: :is_all?
         map "is_choice?", to: :is_choice?
+        map "is_element?", to: :is_element?
         map "is_sequence?", to: :is_sequence?
         map "is_attribute?", to: :is_attribute?
         map "is_annotation?", to: :is_annotation?
         map "min_occurrences", to: :min_occurrences
         map "max_occurrences", to: :max_occurrences
         map "to_formatted_xml", to: :to_formatted_xml
+        map "is_simple_content?", to: :is_simple_content?
         map "is_attribute_group?", to: :is_attribute_group?
         map "resolved_element_order", to: :resolved_element_order
       end
