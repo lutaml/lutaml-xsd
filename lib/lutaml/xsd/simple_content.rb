@@ -25,6 +25,7 @@ module Lutaml
       end
 
       liquid do
+        map "base_type", to: :base_type
         map "attribute_elements", to: :attribute_elements
       end
 

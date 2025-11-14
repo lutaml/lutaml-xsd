@@ -7,6 +7,12 @@ module Lutaml
         def attribute_elements(array = [])
           extension.attribute_elements(array)
         end
+
+        def base_type
+          base ||
+            extension&.base ||
+            restriction&.base
+        end
       end
     end
   end
