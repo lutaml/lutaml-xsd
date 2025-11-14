@@ -13,6 +13,11 @@ Definition (XSD) files. It provides a robust framework for handling XSD
 elements, attributes, complex types, and all other XSD constructs, allowing
 users to programmatically work with XML schemas.
 
+NOTE: For UML-to-XSD mapping and YAML documentation generation (including
+ShapeChange integration), see the https://github.com/lutaml/lutaml-klin[lutaml-klin]
+gem which orchestrates both https://github.com/lutaml/lutaml[lutaml] (for UML
+parsing) and lutaml-xsd (for XSD schema operations).
+
 The `lutaml-xsd` gem provides a Ruby library for working with XSD schemas,
 allowing users to parse XSD files into Ruby objects, manipulate schema
 structures, and serialize them back to XML. It is built on top of the
@@ -347,14 +352,17 @@ ENTRYPOINTS & DEPENDENCY TREE
    │   ├── import → gml/Feature.xsd
    │   │   URI: http://www.opengis.net/gml/3.2
    │   │   ├── include → gmlBase.xsd
-   │   │   ├── include → basicTypes.xsd
-   │   │   │   ├── include → dictionary.xsd
-   │   │   │   └── include → gmlBase.xsd (↻ circular)
-   │   │   └── include → feature.xsd
+   │   │   │   ├── include → basicTypes.xsd
+   │   │   │   │   ├── include → dictionary.xsd
+   │   │   │   │   └── include → gmlBase.xsd (↻ circular)
+   │   │   │   └── include → feature.xsd
+   │   │   │       └── ... (all shown)
+   │   │   └── import → core/CityModel.xsd
+   │   │       URI: http://www.opengis.net/citygml/3.0
    │   │       └── ... (all shown)
-   │   └── import → core/CityModel.xsd
-   │       URI: http://www.opengis.net/citygml/3.0
-   │       └── ... (all shown)
+   │   └── import → gml/AbstractGML.xsd
+   │       URI: http://www.opengis.net/gml/3.2
+   │       └── (resolved above)
    │
    └── import → gml/AbstractGML.xsd
        URI: http://www.opengis.net/gml/3.2
@@ -725,6 +733,39 @@ Or install it yourself as:
 $ gem install lutaml-xsd
 ----
 
+== Examples
+
+The `examples/` directory contains practical demonstrations organized by complexity:
+
+* **link:examples/01-simple/README.adoc[01-simple]** (★☆☆☆☆) - Basic schemas with no dependencies, perfect for learning
+  - Building LXR packages from YAML configuration
+  - Type searching and resolution
+  - Both Ruby API and CLI examples
+
+* **link:examples/02-urban-function/README.adoc[02-urban-function]** (★★★★☆) - Complex i-UR schemas with extensive imports
+  - Real-world Japanese urban planning standards
+  - Schema location mapping patterns
+  - 200+ types across multiple namespaces
+
+* **link:examples/03-unitsml/README.adoc[03-unitsml]** (★★☆☆☆) - OASIS UnitsML scientific standard
+  - Units of measure vocabulary
+  - Self-contained scientific schemas
+  - Domain-specific search examples
+
+* **link:examples/04-metaschema/README.adoc[04-metaschema]** (★★★★★) - NIST Metaschema (advanced)
+  - Self-referential schema patterns
+  - Meta-level type definitions
+  - Schemas defining schemas
+
+Each category includes:
+
+* `config.yml` - Visible package configuration
+* `ruby-api/example.rb` - Programmatic usage
+* `cli/run.sh` - Command-line usage
+* `README.adoc` - Category-specific documentation
+
+See link:examples/README.md[examples/README.md] for complete guidance.
+
 == Architecture
 
 === XSD object hierarchy
@@ -1033,8 +1074,8 @@ you to optimize for your specific use case:
 ║  ├─────────┼─────────┼─────────┼──────────┤             ║
 ║  │ Fastest │Portable │ Human   │ No cache │             ║
 ║  │ Binary  │ Slower  │readable │ Smallest │             ║
-║  │ Ruby    │ Cross   │ Debug   │ Always   │             ║
-║  │ only    │platform │friendly │ parse    │             ║
+║  │ Ruby    │ Cross   │friendly │ Always   │             ║
+║  │ only    │platform │       │ parse    │             ║
 ║  └─────────┴─────────┴─────────┴──────────┘             ║
 ╚═══════════════════════════════════════════════════════════╝
 ----
@@ -1683,7 +1724,7 @@ Syntax:
 ----
 Lutaml::Xsd.parse(xsd_content, location: {location}, schema_mappings: {mappings}) <1>
 ----
-<1> Parse XSD content with optional location and schema mappings
+<1> Parse XSD content with optional location and mappings
 
 Where,
 
@@ -1984,7 +2025,9 @@ under a common base URL.
 ----
 require 'lutaml/xsd'
 
-xsd_content = File.read('spec/fixtures/i-ur/urbanFunction.xsd')
+# Path to your i-UR schema that imports CityGML schemas
+xsd_file = 'spec/fixtures/i-ur/urbanFunction.xsd'
+xsd_content = File.read(xsd_file)
 
 # Define pattern-based mappings using regex in the 'from' field
 schema_mappings = [
@@ -1994,10 +2037,20 @@ schema_mappings = [
     to: File.expand_path('../fixtures/citygml/\1', __dir__)
   },
 
-  # Map specific relative imports to local paths using exact string match
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/appearance/2\.0/(.+)},
+    to: File.expand_path('spec/fixtures/citygml/appearance/2.0/\1', __dir__)
+  },
+
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/building/2\.0/(.+)},
+    to: File.expand_path('spec/fixtures/citygml/building/2.0/\1', __dir__)
+  },
+
+  # Map i-UR schema imports
   {
     from: '../../uro/3.2/urbanObject.xsd',
-    to: File.expand_path('../fixtures/i-ur/urbanObject.xsd', __dir__)
+    to: File.expand_path('spec/fixtures/i-ur/urbanObject.xsd', __dir__)
   }
 ]
 
@@ -2035,8 +2088,7 @@ reference remote OGC schemas:
 require 'lutaml/xsd'
 
 # Path to your i-UR schema that imports CityGML schemas
-xsd_file = 'spec/fixtures/i-ur/urbanFunction.xsd'
-xsd_content = File.read(xsd_file)
+xsd_content = File.read('spec/fixtures/i-ur/urbanFunction.xsd')
 
 # Map remote CityGML schemas to local copies (array of mappings)
 schema_mappings = [
@@ -2065,7 +2117,7 @@ schema_mappings = [
 
 parsed_schema = Lutaml::Xsd.parse(
   xsd_content,
-  location: File.dirname(File.expand_path(xsd_file)),
+  location: File.dirname(File.expand_path('spec/fixtures/i-ur/urbanFunction.xsd')),
   schema_mappings: schema_mappings
 )
 ----
@@ -2116,10 +2168,10 @@ schema_mappings = [
 schema_mappings = [
   {
     from: %r{^(gml|gmlBase|feature)\.xsd$},  # Only specific files
-    to: '/local/path/gml/3.2.1/\1.xsd'
+    to: '/local/path/gml/\1.xsd'
   }
 ]
-----
+====
 ====
 
 ==== Order matters - specific before general
@@ -2145,7 +2197,7 @@ schema_mappings = [
     to: '/local/path/gml/\1'
   }
 ]
-----
+====
 ====
 
 ==== Use capture groups for flexible mappings
@@ -2201,8 +2253,7 @@ schema_mappings = [
 ----
 require 'lutaml/xsd'
 
-xsd_file = File.expand_path('spec/fixtures/i-ur/urbanFunction.xsd')
-xsd_content = File.read(xsd_file)
+xsd_content = File.read('spec/fixtures/i-ur/urbanFunction.xsd')
 
 # Targeted mappings following best practices
 schema_mappings = [
@@ -2283,7 +2334,7 @@ schema_mappings = [
 
 parsed_schema = Lutaml::Xsd.parse(
   xsd_content,
-  location: File.dirname(xsd_file),
+  location: File.dirname('spec/fixtures/i-ur/urbanFunction.xsd'),
   schema_mappings: schema_mappings
 )
 
@@ -2425,6 +2476,7 @@ repo = Lutaml::Xsd::SchemaRepository.new
 # Configure namespaces
 repo.add_namespace_mapping(prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2')
 repo.add_namespace_mapping(prefix: 'uro', uri: 'https://www.geospatial.jp/iur/uro/3.2')
+repo.add_namespace_mapping(prefix: 'urf', uri: 'https://www.geospatial.jp/iur/urf/3.2')
 
 # Read schema content
 xsd_content = File.read('spec/fixtures/i-ur/urbanFunction.xsd')
@@ -2862,7 +2914,7 @@ repo.add_namespace_mapping(
 )
 
 # Now prefixed lookup works
-result = repo.find_type('gml:CodeType')
+result = repo.find_type('gml:CodeType')  # Works!
 ----
 
 If you don't register the prefix first:
@@ -3110,6 +3162,7 @@ working with attribute group objects in Liquid templates.
 
 .Using attribute group methods in Liquid templates
 [example]
+====
 [source,liquid]
 ----
 {% for ag in schema.attribute_group %}
@@ -3139,6 +3192,7 @@ working with complex type objects in Liquid templates.
 
 .Using complex type methods in Liquid templates
 [example]
+====
 [source,liquid]
 ----
 {% for ct in schema.complex_type %}
@@ -3166,6 +3220,7 @@ templates.
 
 .Using group methods in Liquid templates
 [example]
+====
 [source,liquid]
 ----
 {% for g in schema.group %}
@@ -3186,11 +3241,12 @@ working with simple content objects in Liquid templates.
 
 .Using simple content methods in Liquid templates
 [example]
+====
 [source,liquid]
 ----
 {% assign attrs = ct.simple_content.attribute_elements %}
 {% for a in attrs %}
-  - {{ a.referenced_name }} ({{ a.cardinality }})
+  - {{ a.referenced_name }}
 {% endfor %}
 ----
 
@@ -3204,6 +3260,7 @@ working with extension objects in Liquid templates.
 
 .Using extension methods in Liquid templates
 [example]
+====
 [source,liquid]
 ----
 {% for a in ct.simple_content.extension.attribute_elements %}

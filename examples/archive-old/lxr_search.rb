@@ -218,7 +218,9 @@ results = batch_query.execute(type_queries)
 
 puts "Results:"
 results.each do |qname, result|
-  if result.resolved?
+  if result.nil?
+    puts "  ✗ #{qname} => Query failed (nil result)"
+  elsif result.resolved?
     puts "  ✓ #{qname} => Found"
     puts "    Namespace: #{result.namespace}"
     puts "    Schema: #{File.basename(result.schema_file)}"
