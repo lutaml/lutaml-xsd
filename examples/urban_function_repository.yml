@@ -100,6 +100,9 @@ schema_location_mappings:
 
 # Namespace mappings define prefix-to-URI mappings for the schemas
 namespace_mappings:
+  - prefix: xs
+    uri: "http://www.w3.org/2001/XMLSchema"
+
   - prefix: urf
     uri: "https://www.geospatial.jp/iur/urf/3.2"
 

@@ -7,8 +7,6 @@ Lutaml::Model::Config.xml_adapter_type = adapter
 
 module Lutaml
   module Xsd
-    class Error < StandardError; end
-
     module_function
 
     def register
@@ -33,6 +31,7 @@ module Lutaml
 end
 
 require_relative "xsd/version"
+require_relative "xsd/errors"
 require_relative "xsd/base"
 require_relative "xsd/schema_location_mapping"
 require_relative "xsd/namespace_mapping"
@@ -47,6 +46,9 @@ require_relative "xsd/schema_name_resolver"
 require_relative "xsd/schema_repository_metadata"
 require_relative "xsd/schema_repository_package"
 require_relative "xsd/schema_repository"
+require_relative "xsd/schema_classifier"
+require_relative "xsd/package_validator"
+require_relative "xsd/package_tree_formatter"
 require_relative "xsd/all"
 require_relative "xsd/annotation"
 require_relative "xsd/any"
@@ -93,3 +95,6 @@ require_relative "xsd/total_digits"
 require_relative "xsd/union"
 require_relative "xsd/unique"
 require_relative "xsd/white_space"
+require_relative "xsd/type_searcher"
+require_relative "xsd/batch_type_query"
+require_relative "xsd/validation/validator"

@@ -37,13 +37,14 @@ module Lutaml
         end
       end
 
-      attr_reader :zip_path, :metadata
+      attr_reader :zip_path, :metadata, :repository
 
       # Create a new package instance
       # @param zip_path [String] Path to the ZIP package file
       def initialize(zip_path)
         @zip_path = zip_path
         @metadata = nil
+        @repository = nil
       end
 
       # Create a package from a schema repository
@@ -125,7 +126,8 @@ module Lutaml
         validation = validate
         raise Error, "Invalid package: #{validation.errors.join(", ")}" unless validation.valid?
 
-        extract_and_build_repository
+        @metadata = validation.metadata
+        @repository = extract_and_build_repository
       end
 
       # Write package from repository
@@ -314,7 +316,13 @@ module Lutaml
       end
 
       # Extract package and build repository
-      # @return [SchemaRepository]
+      #
+      # Extracts ZIP package contents to a temporary directory and builds
+      # a SchemaRepository from the extracted files. The temporary directory
+      # is automatically cleaned up when the repository is garbage collected.
+      #
+      # @return [SchemaRepository] Repository loaded from package
+      # @raise [Error] If package validation fails
       def extract_and_build_repository
         metadata = nil
         schema_files = []
@@ -322,19 +330,29 @@ module Lutaml
 
         temp_dir = Dir.mktmpdir("lutaml_xsd_package")
 
-        # Extract package
+        # Extract package contents to temporary directory
         Zip::File.open(zip_path) do |zipfile|
           zipfile.each do |entry|
+            # Skip directory entries (they're created automatically by mkdir_p)
+            next if entry.directory?
+
             extract_path = File.join(temp_dir, entry.name)
             FileUtils.mkdir_p(File.dirname(extract_path))
-            entry.extract(extract_path)
 
+            # Extract file content directly using explicit file I/O
+            # This is more reliable than entry.extract() which can have
+            # path interpretation issues with absolute paths on some platforms
+            File.open(extract_path, "wb") do |f|
+              f.write(entry.get_input_stream.read)
+            end
+
+            # Categorize extracted files
             if entry.name == "metadata.yaml"
               metadata = YAML.load_file(extract_path)
             elsif entry.name.start_with?("schemas/")
               schema_files << extract_path
             elsif entry.name.start_with?("schemas_data/")
-              # Track serialized schema files
+              # Track serialized schema files for later deserialization
               serialized_data_files[entry.name] = extract_path
             end
           end
@@ -573,9 +591,15 @@ module Lutaml
       end
 
       # Load serialized schemas from extracted files
-      # @param repository [SchemaRepository] Repository to load into
+      #
+      # Deserializes pre-parsed schemas from the schemas_data/ directory in
+      # the package and registers them in the global schema cache. This is
+      # significantly faster than parsing XSD files from scratch.
+      #
+      # @param repository [SchemaRepository] Repository to load schemas into
       # @param serialized_files [Hash] Map of zip_path => extracted file path
-      # @param metadata [Hash] Package metadata
+      # @param metadata [Hash] Package metadata containing serialization format
+      # @return [void]
       def load_serialized_schemas_from_files(repository, serialized_files, metadata)
         serialization_format = (metadata["serialization_format"] || "parse").to_sym
         return if serialization_format == :parse
@@ -595,10 +619,11 @@ module Lutaml
           schema = builder.deserialize_schema(data, serialization_format)
 
           # Extract unique name from serialized file (includes prefix or hash)
+          # The name may include a namespace prefix for disambiguation
           serialized_basename = File.basename(file_path, ".*")
 
           # Find matching XSD file by generating unique name from schema's namespace
-          # Match by comparing the unique name we would generate from each XSD file
+          # This matches the naming strategy used during package creation
           actual_schema_path = repository.files.find do |schema_file|
             xsd_basename = File.basename(schema_file, ".*")
             # Generate unique name using namespace prefix approach
@@ -608,7 +633,8 @@ module Lutaml
 
           unless actual_schema_path
             # Fallback: try to match just by basename (without prefix/hash suffix)
-            # Handle both old hash format (_[a-f0-9]+) and new prefix format (_prefix)
+            # This handles both old hash format (_[a-f0-9]+) and new prefix format (_prefix)
+            # Provides backward compatibility with older package formats
             xsd_basename_only = serialized_basename.sub(/_[a-z0-9]+$/i, "")
             actual_schema_path = repository.files.find do |f|
               File.basename(f, ".*") == xsd_basename_only
@@ -616,6 +642,7 @@ module Lutaml
           end
 
           # Register schema in global cache using the actual schema file path
+          # This makes the schema available for type resolution and queries
           Schema.schema_processed(actual_schema_path, schema)
         end
       end

@@ -42,6 +42,9 @@ module Lutaml
           # Index groups
           index_collection(schema.group, namespace, file_path, :group)
 
+          # Index top-level attributes
+          index_collection(schema.attribute, namespace, file_path, :attribute)
+
           # NOTE: imported and included schemas are already parsed and available
           # in the processed_schemas cache. We'll index them when build_from_schemas
           # iterates over all schemas in the cache.

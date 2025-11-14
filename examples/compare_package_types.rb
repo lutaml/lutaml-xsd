@@ -117,7 +117,8 @@ puts format("%-40s %12s %12s %12s", "Package Type", "Size (KB)", "Create (ms)", 
 puts "-" * 80
 
 results.each do |r|
-  puts format("%-40s %12.2f %12.2f %12.2f", r[:name].sub("Type ", ""), r[:file_size] / 1024.0, r[:creation_time] * 1000, r[:load_time] * 1000)
+  puts format("%-40s %12.2f %12.2f %12.2f", r[:name].sub("Type ", ""), r[:file_size] / 1024.0,
+              r[:creation_time] * 1000, r[:load_time] * 1000)
 end
 
 puts

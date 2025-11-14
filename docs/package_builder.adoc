@@ -37,7 +37,8 @@ lutaml-xsd package init urbanFunction.xsd \
 # Follow interactive prompts to resolve dependencies
 # Configuration saved to urban-schemas.yml
 
-lutaml-xsd package build urban-schemas.yml urban-schemas.zip \
+lutaml-xsd package build urban-schemas.yml \
+  --output urban-schemas.zip \
   --name "i-UR Urban Schemas" \
   --version "3.2"
 
@@ -356,7 +357,7 @@ After all dependencies are resolved, build the package:
 
 [source,shell]
 ----
-lutaml-xsd package build <config-file> <output-file> [options]
+lutaml-xsd package build <config-file> --output <output-file> [options]
 ----
 
 Where,
@@ -378,7 +379,8 @@ Where,
 
 [source,shell]
 ----
-lutaml-xsd package build urban-schemas.yml urban-schemas.zip \
+lutaml-xsd package build urban-schemas.yml \
+  --output urban-schemas.zip \
   --name "i-UR Urban Function Schemas" \
   --version "3.2" \
   --description "Urban planning schemas with all dependencies"
@@ -454,7 +456,7 @@ After editing, rebuild:
 
 [source,shell]
 ----
-lutaml-xsd package build urban-schemas.yml urban-schemas.zip
+lutaml-xsd package build urban-schemas.yml --output urban-schemas.zip
 ----
 
 == Advanced workflows
@@ -536,7 +538,7 @@ For CI/CD environments, use `--strict` mode:
 
 [source,shell]
 ----
-lutaml-xsd package build config.yml output.zip --strict
+lutaml-xsd package build config.yml --output output.zip --strict
 
 # Exits with code 1 if any ambiguity or error
 ----
@@ -584,7 +586,7 @@ Build package from configuration file.
 
 [source,shell]
 ----
-lutaml-xsd package build <config-file> <output-file> [options]
+lutaml-xsd package build <config-file> --output <output-file> [options]
 ----
 
 Options:

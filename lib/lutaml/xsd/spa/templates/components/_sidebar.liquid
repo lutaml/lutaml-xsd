@@ -1,0 +1,94 @@
+<nav class="sidebar-nav">
+  {% assign entrypoints = schemas | where: "is_entrypoint", true %}
+  {% assign dependencies = schemas | where: "is_entrypoint", false %}
+
+  {% if entrypoints.size > 0 %}
+  <div class="sidebar-section">
+    <h3 class="sidebar-heading">Entrypoints</h3>
+    <ul class="sidebar-list">
+      {% for schema in entrypoints %}
+      <li class="sidebar-item">
+        <a href="#/schemas/{{ schema.id }}" class="sidebar-link" data-schema-id="{{ schema.id }}">
+          ⭐ {{ schema.name | default: 'Unnamed Schema' }}
+          {% if schema.namespace %}
+          <span class="sidebar-meta">{{ schema.namespace }}</span>
+          {% endif %}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if dependencies.size > 0 %}
+  <div class="sidebar-section">
+    <h3 class="sidebar-heading">Dependencies ({{ dependencies.size }})</h3>
+    <ul class="sidebar-list">
+      {% for schema in dependencies %}
+      <li class="sidebar-item">
+        <a href="#/schemas/{{ schema.id }}" class="sidebar-link" data-schema-id="{{ schema.id }}">
+          {{ schema.name | default: 'Unnamed Schema' }}
+          {% if schema.namespace %}
+          <span class="sidebar-meta">{{ schema.namespace }}</span>
+          {% endif %}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</nav>
+
+<style>
+  .sidebar-nav {
+    padding: var(--spacing-lg);
+  }
+
+  .sidebar-section {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .sidebar-heading {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .sidebar-list {
+    list-style: none;
+  }
+
+  .sidebar-item {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .sidebar-link {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-default);
+    color: var(--text-primary);
+    transition: all var(--transition-duration);
+    text-decoration: none;
+  }
+
+  .sidebar-link:hover {
+    background: var(--bg-tertiary);
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .sidebar-link.active {
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .sidebar-meta {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+  }
+</style>

@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="{{ metadata.generator }}">
+  <meta name="description" content="XSD Schema Documentation for {{ metadata.title }}">
+  <title>{{ metadata.title | default: 'XSD Schema Documentation' }}</title>
+
+  <style>
+    /* CSS Custom Properties from UI Theme */
+    :root {
+      /* Colors */
+      --color-primary: {{ theme.colors.primary }};
+      --color-primary-light: {{ theme.colors.primary_light }};
+      --color-primary-dark: {{ theme.colors.primary_dark }};
+      --color-secondary: {{ theme.colors.secondary }};
+      --color-success: {{ theme.colors.success }};
+      --color-warning: {{ theme.colors.warning }};
+      --color-error: {{ theme.colors.error }};
+
+      /* Backgrounds */
+      --bg-primary: {{ theme.colors.background_primary }};
+      --bg-secondary: {{ theme.colors.background_secondary }};
+      --bg-tertiary: {{ theme.colors.background_tertiary }};
+
+      /* Text */
+      --text-primary: {{ theme.colors.text_primary }};
+      --text-secondary: {{ theme.colors.text_secondary }};
+      --text-muted: {{ theme.colors.text_muted }};
+      --text-inverse: {{ theme.colors.text_inverse }};
+
+      /* Borders */
+      --border-light: {{ theme.colors.border_light }};
+      --border-medium: {{ theme.colors.border_medium }};
+
+      /* Typography */
+      --font-family: {{ theme.typography.font_family }};
+      --font-mono: {{ theme.typography.mono_font_family }};
+      --font-size-base: {{ theme.typography.font_size_base }};
+      --line-height: {{ theme.typography.line_height_normal }};
+
+      /* Layout */
+      --header-height: {{ theme.layout.header_height }};
+      --sidebar-width: {{ theme.layout.sidebar_width }};
+      --content-padding: {{ theme.layout.content_padding }};
+      --spacing-md: {{ theme.layout.spacing_md }};
+      --spacing-lg: {{ theme.layout.spacing_lg }};
+
+      /* Border radius */
+      --radius-default: {{ theme.border_radius.default }};
+      --radius-lg: {{ theme.border_radius.lg }};
+
+      /* Shadows */
+      --shadow-sm: {{ theme.shadows.sm }};
+      --shadow-md: {{ theme.shadows.md }};
+      --shadow-lg: {{ theme.shadows.lg }};
+
+      /* Transitions */
+      --transition-duration: {{ theme.transitions.duration_base }};
+      --transition-timing: {{ theme.transitions.timing_function }};
+    }
+
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-primary: {{ theme.dark_colors.primary }};
+        --color-primary-light: {{ theme.dark_colors.primary_light }};
+        --bg-primary: {{ theme.dark_colors.background_primary }};
+        --bg-secondary: {{ theme.dark_colors.background_secondary }};
+        --bg-tertiary: {{ theme.dark_colors.background_tertiary }};
+        --text-primary: {{ theme.dark_colors.text_primary }};
+        --text-secondary: {{ theme.dark_colors.text_secondary }};
+        --text-muted: {{ theme.dark_colors.text_muted }};
+        --border-light: {{ theme.dark_colors.border_light }};
+        --border-medium: {{ theme.dark_colors.border_medium }};
+      }
+    }
+
+    /* Reset and base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height);
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      overflow-x: hidden;
+    }
+
+    /* Layout Grid */
+    .app-container {
+      display: grid;
+      grid-template-areas:
+        "header header"
+        "sidebar main"
+        "sidebar footer";
+      grid-template-columns: var(--sidebar-width) 1fr;
+      grid-template-rows: var(--header-height) 1fr auto;
+      min-height: 100vh;
+    }
+
+    .app-header {
+      grid-area: header;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-light);
+      padding: 0 var(--spacing-lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .app-sidebar {
+      grid-area: sidebar;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-light);
+      overflow-y: auto;
+      position: sticky;
+      top: var(--header-height);
+      height: calc(100vh - var(--header-height));
+    }
+
+    .app-main {
+      grid-area: main;
+      padding: var(--content-padding);
+      max-width: 1200px;
+    }
+
+    .app-footer {
+      grid-area: footer;
+      padding: var(--spacing-lg);
+      border-top: 1px solid var(--border-light);
+      background: var(--bg-secondary);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    /* Header */
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: center;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-default);
+      cursor: pointer;
+      transition: all var(--transition-duration) var(--transition-timing);
+    }
+
+    .theme-toggle:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--color-primary);
+    }
+
+    /* Typography */
+    h1, h2, h3, h4, h5, h6 {
+      margin-bottom: 0.75rem;
+      line-height: 1.25;
+      font-weight: 600;
+    }
+
+    h1 { font-size: 2.25rem; }
+    h2 { font-size: 1.875rem; }
+    h3 { font-size: 1.5rem; }
+
+    p {
+      margin-bottom: 1rem;
+    }
+
+    a {
+      color: var(--color-primary);
+      text-decoration: none;
+      transition: color var(--transition-duration);
+    }
+
+    a:hover {
+      color: var(--color-primary-light);
+      text-decoration: underline;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      background: var(--bg-tertiary);
+      padding: 0.125rem 0.375rem;
+      border-radius: var(--radius-default);
+      font-size: 0.875em;
+    }
+
+    /* Utilities */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .badge-primary {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .badge-secondary {
+      background: var(--color-secondary);
+      color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: {{ theme.breakpoints.md }}) {
+      .app-container {
+        grid-template-areas:
+          "header"
+          "main"
+          "footer";
+        grid-template-columns: 1fr;
+      }
+
+      .app-sidebar {
+        display: none;
+      }
+
+      .app-sidebar.mobile-open {
+        display: block;
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        width: 80%;
+        max-width: 300px;
+        height: calc(100vh - var(--header-height));
+        z-index: 90;
+        box-shadow: var(--shadow-lg);
+      }
+
+      .app-main {
+        padding: var(--spacing-md);
+      }
+    }
+
+    /* Print styles */
+    @media print {
+      .app-header,
+      .app-sidebar,
+      .app-footer,
+      .theme-toggle {
+        display: none;
+      }
+
+      .app-container {
+        display: block;
+      }
+
+      .app-main {
+        max-width: none;
+      }
+    }
+
+    /* Schema Detail Views */
+    .schema-detail {
+      display: none; /* Hidden by default, shown by router */
+    }
+
+    .schema-detail.active {
+      display: block;
+    }
+
+    #no-schema-selected {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text-secondary);
+    }
+
+    .welcome-message h2 {
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .welcome-message p {
+      color: var(--text-secondary);
+    }
+
+    .schema-overview {
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-lg);
+      border-bottom: 2px solid var(--border-light);
+    }
+
+    .schema-overview h2 {
+      margin-bottom: var(--spacing-md);
+      color: var(--color-primary);
+    }
+
+    .schema-meta {
+      background: var(--bg-secondary);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-default);
+    }
+
+    .schema-meta p {
+      margin-bottom: 0.5rem;
+    }
+
+    .schema-meta code {
+      background: var(--bg-tertiary);
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-default);
+      font-size: 0.875rem;
+    }
+
+    .schema-section {
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .schema-section h3 {
+      margin-bottom: var(--spacing-md);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .component-table {
+      overflow-x: auto;
+    }
+
+    .component-table table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-default);
+    }
+
+    .component-table thead {
+      background: var(--bg-tertiary);
+    }
+
+    .component-table th,
+    .component-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .component-table th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .component-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .component-table tr:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .component-link {
+      color: var(--color-primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .component-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Active sidebar link */
+    .sidebar-link.active {
+      background: var(--color-primary);
+      color: var(--text-inverse);
+    }
+
+    .sidebar-link.active .sidebar-meta {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Component Type Visual Distinctions */
+    .schema-detail .schema-overview h2::before {
+      content: "📄 ";
+      font-size: 1.5rem;
+    }
+
+    .element-detail .detail-overview h2::before {
+      content: "📦 ";
+      font-size: 1.5rem;
+      color: var(--color-success);
+    }
+
+    .type-detail .detail-overview h2::before {
+      content: "🔷 ";
+      font-size: 1.5rem;
+      color: var(--color-primary);
+    }
+
+    .type-detail.simple-type .detail-overview h2::before {
+      content: "🔸 ";
+      color: var(--color-warning);
+    }
+
+    .attribute-detail .detail-overview h2::before {
+      content: "🏷️ ";
+      font-size: 1.5rem;
+      color: var(--color-secondary);
+    }
+
+    /* Type links styling */
+    .type-link {
+      color: var(--color-primary);
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 2px dotted var(--color-primary);
+    }
+
+    .type-link:hover {
+      border-bottom-style: solid;
+      background: var(--bg-tertiary);
+    }
+
+    /* Schema links styling */
+    .meta-item .schema-link {
+      color: var(--color-primary);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: all var(--transition-duration);
+    }
+
+    .meta-item .schema-link:hover {
+      border-bottom-color: var(--color-primary);
+    }
+
+    /* Component badges */
+    .component-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-default);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-schema {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .badge-element {
+      background: var(--color-success);
+      color: white;
+    }
+
+    .badge-type {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .badge-attribute {
+      background: var(--color-secondary);
+      color: white;
+    }
+
+    /* Component Detail Views */
+    .component-detail {
+      padding: var(--spacing-lg);
+      background: var(--bg-primary);
+      border-radius: var(--radius-lg);
+    }
+
+    .breadcrumb {
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--border-light);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .breadcrumb a {
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    .detail-overview h2 {
+      color: var(--color-primary);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+      padding: var(--spacing-md);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-default);
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .meta-item label {
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .meta-item span {
+      color: var(--text-primary);
+    }
+
+    .documentation-box {
+      margin: var(--spacing-lg) 0;
+      padding: var(--spacing-md);
+      background: var(--bg-tertiary);
+      border-left: 4px solid var(--color-primary);
+      border-radius: var(--radius-default);
+    }
+
+    .documentation-box h3 {
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .detail-section {
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .detail-section h3 {
+      margin-bottom: var(--spacing-md);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-default);
+      overflow: hidden;
+    }
+
+    .detail-table th,
+    .detail-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .detail-table th {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .detail-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .actions {
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--border-light);
+    }
+
+    .btn-back {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-default);
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: all var(--transition-duration);
+    }
+
+    .btn-back:hover {
+      background: var(--color-primary);
+      color: var(--text-inverse);
+      border-color: var(--color-primary);
+      text-decoration: none;
+    }
+
+    /* Component Type Visual Distinctions */
+    .schema-detail .schema-overview h2::before {
+      content: "📄 ";
+      font-size: 1.5rem;
+    }
+
+    .element-detail .detail-overview h2::before {
+      content: "📦 ";
+      font-size: 1.5rem;
+      color: var(--color-success);
+    }
+
+    .type-detail .detail-overview h2::before {
+      content: "🔷 ";
+      font-size: 1.5rem;
+      color: var(--color-primary);
+    }
+
+    .type-detail.simple-type .detail-overview h2::before {
+      content: "🔸 ";
+      color: var(--color-warning);
+    }
+
+    .attribute-detail .detail-overview h2::before {
+      content: "🏷️ ";
+      font-size: 1.5rem;
+      color: var(--color-secondary);
+    }
+
+    /* Type links styling */
+    .type-link {
+      color: var(--color-primary);
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 2px dotted var(--color-primary);
+    }
+
+    .type-link:hover {
+      border-bottom-style: solid;
+      background: var(--bg-tertiary);
+    }
+
+    /* Component badges */
+    .component-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-default);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-schema {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .badge-element {
+      background: var(--color-success);
+      color: white;
+    }
+
+    .badge-type {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .badge-attribute {
+      background: var(--color-secondary);
+      color: white;
+    }
+
+    /* XML Instance Representation (xs3p-inspired) */
+    .instance-section {
+      margin: var(--spacing-lg) 0;
+      padding: var(--spacing-md);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-default);
+    }
+
+    .instance-section h3 {
+      margin-bottom: var(--spacing-md);
+      color: var(--text-primary);
+    }
+
+    .xml-instance {
+      background: #f8f9fa;
+      border-left: 4px solid var(--color-primary);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-default);
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance {
+        background: #1e1e1e;
+        color: #d4d4d4;
+      }
+    }
+
+    .xml-instance code {
+      background: transparent;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    /* xs3p color scheme for XML syntax */
+    .xml-instance .element-tag {
+      color: #2F6F9F;  /* Element tags - blue */
+      font-weight: 600;
+    }
+
+    /* Links in XML instance */
+    .xml-instance .element-link {
+      color: #2F6F9F;
+      text-decoration: none;
+      border-bottom: 1px dotted #2F6F9F;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .xml-instance .element-link:hover {
+      background: var(--bg-tertiary);
+      border-bottom-style: solid;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance .element-link {
+        color: #569CD6;
+        border-bottom-color: #569CD6;
+      }
+
+      .xml-instance .element-link:hover {
+        background: rgba(86, 156, 214, 0.2);
+      }
+    }
+
+    .xml-instance .type-link {
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      cursor: pointer;
+    }
+
+    .xml-instance .type-link:hover {
+      text-decoration-style: solid;
+      background: rgba(47, 111, 159, 0.1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance .type-link:hover {
+        background: rgba(86, 156, 214, 0.2);
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance .element-tag {
+        color: #569CD6;
+      }
+    }
+
+    .xml-instance .attr-name {
+      color: #47A447;  /* Attribute names - green */
+      font-weight: 500;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance .attr-name {
+        color: #9CDCFE;
+      }
+    }
+
+    .xml-instance .attr-value {
+      color: #D2322D;  /* Attribute values/types - red */
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance .attr-value {
+        color: #CE9178;
+      }
+    }
+
+    .xml-instance .cardinality {
+      color: #999;  /* [0..1], [1..*] - gray */
+      font-size: 0.85em;
+      font-weight: normal;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance .cardinality {
+        color: #858585;
+      }
+    }
+
+    .xml-instance .model-group {
+      color: #888;  /* Start Sequence, End Choice, etc. - gray */
+      font-style: italic;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance .model-group {
+        color: #9A9A9A;
+      }
+    }
+
+    .xml-instance .fixed-value {
+      color: #47A447;  /* Fixed attribute values - green */
+      background: #e8f5e9;
+      padding: 2px 4px;
+      border-radius: 2px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance .fixed-value {
+        background: #1a3a1a;
+      }
+    }
+
+    .xml-instance .content-placeholder {
+      color: #999;  /* ... */
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .xml-instance .content-placeholder {
+        color: #6A6A6A;
+      }
+    }
+
+    /* SVG Diagram styling */
+    .diagram-section {
+      margin: var(--spacing-lg) 0;
+      padding: var(--spacing-md);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-default);
+    }
+
+    .diagram-section h3 {
+      margin-bottom: var(--spacing-md);
+      color: var(--text-primary);
+    }
+
+    .svg-container {
+      border: 1px solid var(--border-light);
+      padding: 20px;
+      background: white;
+      border-radius: var(--radius-default);
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .svg-container {
+        background: #1e1e1e;
+      }
+    }
+
+    .svg-container svg {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header" role="banner">
+      <h1 class="header-title">{{ metadata.title | default: 'XSD Schema Documentation' }}</h1>
+      <div class="header-actions">
+        {% if features.user_preferences.theme_switcher %}
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+          <span id="theme-icon">🌙</span>
+        </button>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- Sidebar Navigation -->
+    {% if features.navigation.enabled %}
+    <aside class="app-sidebar" role="navigation" aria-label="Schema navigation">
+      {% include 'components/sidebar' %}
+    </aside>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="app-main" role="main">
+      {% if features.search.enabled %}
+      {% include 'components/search' %}
+      {% endif %}
+
+      {{ content }}
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer" role="contentinfo">
+      <p>Generated by {{ metadata.generator }} on {{ metadata.generated }}</p>
+      <p>{{ schemas | size }} schema(s) documented</p>
+    </footer>
+  </div>
+
+  <script>
+    // Theme Module
+    const Theme = {
+      init() {
+        const toggle = document.getElementById('theme-toggle');
+        const icon = document.getElementById('theme-icon');
+
+        if (!toggle) return;
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          icon.textContent = '☀️';
+        }
+
+        // Toggle theme
+        toggle.addEventListener('click', () => {
+          const currentTheme = document.documentElement.getAttribute('data-theme');
+          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+          document.documentElement.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+          icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        });
+      }
+    };
+
+    // Search Module
+    const Search = {
+      data: {{ schemas | json }},
+
+      init() {
+        const searchInput = document.getElementById('search-input');
+        if (!searchInput) return;
+
+        searchInput.addEventListener('input', (e) => {
+          this.performSearch(e.target.value);
+        });
+      },
+
+      performSearch(query) {
+        if (query.length < {{ features.search.min_characters }}) {
+          this.clearResults();
+          return;
+        }
+
+        const results = this.search(query);
+        this.displayResults(results);
+      },
+
+      search(query) {
+        const lowerQuery = query.toLowerCase();
+        const results = [];
+
+        this.data.forEach(schema => {
+          // Search elements
+          if (schema.elements) {
+            schema.elements.forEach(elem => {
+              if (elem.name && elem.name.toLowerCase().includes(lowerQuery)) {
+                results.push({
+                  type: 'element',
+                  name: elem.name,
+                  schema: schema.name
+                });
+              }
+            });
+          }
+
+          // Search complex types
+          if (schema.complex_types) {
+            schema.complex_types.forEach(type => {
+              if (type.name && type.name.toLowerCase().includes(lowerQuery)) {
+                results.push({
+                  type: 'complex_type',
+                  name: type.name,
+                  schema: schema.name
+                });
+              }
+            });
+          }
+        });
+
+        return results.slice(0, {{ features.search.max_results }});
+      },
+
+      displayResults(results) {
+        const container = document.getElementById('search-results');
+        if (!container) return;
+
+        if (results.length === 0) {
+          container.innerHTML = '<p class="no-results">No results found</p>';
+          return;
+        }
+
+        const html = results.map(r =>
+          `<div class="search-result">
+            <span class="badge badge-${r.type}">${r.type}</span>
+            <a href="#${r.name}">${r.name}</a>
+            <small>${r.schema}</small>
+          </div>`
+        ).join('');
+
+        container.innerHTML = html;
+      },
+
+      clearResults() {
+        const container = document.getElementById('search-results');
+        if (container) container.innerHTML = '';
+      }
+    };
+
+    // Navigation Module
+    const Navigation = {
+      init() {
+        // Smooth scrolling for anchor links (only for simple anchors, not routing hashes)
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+          anchor.addEventListener('click', (e) => {
+            const href = anchor.getAttribute('href');
+
+            // Skip if this is a routing hash (contains slashes like #schema/id)
+            if (href.includes('/')) {
+              return; // Let the router handle it
+            }
+
+            e.preventDefault();
+            try {
+              const target = document.querySelector(href);
+              if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+              }
+            } catch (err) {
+              // Invalid selector, ignore
+              console.warn('Invalid anchor selector:', href);
+            }
+          });
+        });
+
+        // Collapsible sections
+        document.querySelectorAll('.collapsible-toggle').forEach(toggle => {
+          toggle.addEventListener('click', () => {
+            const section = toggle.closest('.collapsible-section');
+            section.classList.toggle('collapsed');
+          });
+        });
+      }
+    };
+
+    // Simple Hash Router
+    const Router = {
+      routes: {},
+      currentView: null,
+      data: null,
+
+      slugify(name) {
+        if (!name) return 'unnamed';
+
+        // Handle namespace prefixes
+        const localName = name.includes(':') ? name.split(':').pop() : name;
+
+        // Convert CamelCase to kebab-case
+        return localName
+          .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+          .replace(/([a-z\d])([A-Z])/g, '$1-$2')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/, '');
+      },
+
+      init() {
+        // Get data from Search module
+        this.data = Search.data || [];
+
+        // Register routes
+        this.routes = {
+          '': this.showHome.bind(this),
+          'schema/:id': this.showSchema.bind(this)
+        };
+
+        // Listen for hash changes
+        window.addEventListener('hashchange', () => this.route());
+
+        // Initial route
+        this.route();
+      },
+
+      route() {
+        const hash = window.location.hash.slice(1) || '';
+        const parts = hash.split('/').filter(p => p);
+
+        if (parts.length === 0) {
+          this.showHome();
+        } else if (parts[0] === 'schemas') {
+          if (parts.length === 2) {
+            // /schemas/{schema-name}
+            this.showSchema(parts[1]);
+          } else if (parts.length === 4) {
+            // /schemas/{schema-name}/elements/{element-name}
+            const schemaName = parts[1];
+            const category = parts[2];
+            const itemName = parts[3];
+
+            if (category === 'elements') {
+              this.showElement(schemaName, itemName);
+            } else if (category === 'types' || category === 'simple-types') {
+              this.showType(schemaName, itemName);
+            }
+          }
+        } else if (parts[0] === 'schema' && parts[1]) {
+          // Backward compatibility with old URIs
+          this.showSchema(parts[1]);
+        } else if (parts[0] === 'element' && parts[1] && parts[2]) {
+          // Backward compatibility with old URIs
+          this.showElement(parts[1], parts[2]);
+        } else if (parts[0] === 'type' && parts[1] && parts[2]) {
+          // Backward compatibility with old URIs
+          this.showType(parts[1], parts[2]);
+        } else {
+          this.showHome();
+        }
+
+        // Update active link
+        this.updateActiveLink(hash);
+      },
+
+      showHome() {
+        // Hide all schema details
+        document.querySelectorAll('.schema-detail').forEach(el => {
+          el.style.display = 'none';
+        });
+
+        // Show welcome message
+        const welcome = document.getElementById('no-schema-selected');
+        if (welcome) {
+          welcome.style.display = 'block';
+        }
+
+        // Clear active links
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+          link.classList.remove('active');
+        });
+
+        // Hide detail view container, show schema list
+        const detailContainer = document.getElementById('detail-view-container');
+        const schemaContainer = document.getElementById('schema-list-container');
+
+        if (detailContainer) detailContainer.style.display = 'none';
+        if (schemaContainer) schemaContainer.style.display = 'block';
+      },
+
+      showSchema(schemaId) {
+        // Hide detail view container, show schema list
+        const detailContainer = document.getElementById('detail-view-container');
+        const schemaContainer = document.getElementById('schema-list-container');
+
+        if (detailContainer) detailContainer.style.display = 'none';
+        if (schemaContainer) schemaContainer.style.display = 'block';
+
+        // Hide welcome message
+        const welcome = document.getElementById('no-schema-selected');
+        if (welcome) {
+          welcome.style.display = 'none';
+        }
+
+        // Hide all schema details
+        document.querySelectorAll('.schema-detail').forEach(el => {
+          el.style.display = 'none';
+        });
+
+        // Show selected schema using getElementById (safer than querySelector for IDs with special chars)
+        const schemaEl = document.getElementById(`schema-${schemaId}`);
+        if (schemaEl) {
+          schemaEl.style.display = 'block';
+
+          // Update active link in sidebar using attribute selector
+          document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.classList.remove('active');
+          });
+
+          // Find and activate the matching link
+          const activeLink = Array.from(document.querySelectorAll('.sidebar-link'))
+            .find(link => link.getAttribute('data-schema-id') === schemaId);
+          if (activeLink) {
+            activeLink.classList.add('active');
+          }
+        } else {
+          this.showHome();
+        }
+      },
+
+      showElement(schemaId, elementId) {
+        // Find the schema and element data
+        const schema = this.data.find(s => s.id === schemaId);
+        if (!schema) {
+          this.showHome();
+          return;
+        }
+
+        const element = schema.elements ? schema.elements.find(e => e.id === elementId) : null;
+        if (!element) {
+          // Fallback to showing schema with element highlighted
+          this.showSchema(schemaId);
+          setTimeout(() => {
+            const link = document.querySelector(`a[href="#/schemas/${schemaId}/elements/${elementId}"]`);
+            if (link) {
+              link.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+          return;
+        }
+
+        // Render element detail view
+        this.renderElementDetail(schema, element);
+      },
+
+      renderElementDetail(schema, element) {
+        // Hide schema list, show detail container
+        const schemaContainer = document.getElementById('schema-list-container');
+        const detailContainer = document.getElementById('detail-view-container');
+
+        if (schemaContainer) schemaContainer.style.display = 'none';
+        if (!detailContainer) return;
+
+        detailContainer.style.display = 'block';
+
+        // Build namespace prefix
+        const nsPrefix = this.getNamespacePrefix(schema.namespace);
+
+        detailContainer.innerHTML = `
+          <div class="component-detail element-detail">
+            <nav class="breadcrumb">
+              <a href="#/schemas/${schema.id}">${schema.name}</a> ›
+              Elements ›
+              <strong>${element.name}</strong>
+            </nav>
+
+            <section class="detail-overview">
+              <h2>Element: ${element.name}</h2>
+
+              <div class="meta-grid">
+                <div class="meta-item">
+                  <label>Qualified Name:</label>
+                  <span><code>${nsPrefix}:${element.name}</code></span>
+                </div>
+
+                <div class="meta-item">
+                  <label>Schema:</label>
+                  <span><a href="#/schemas/${schema.id}" class="schema-link">${schema.name}</a> <small>(${schema.namespace || 'N/A'})</small></span>
+                </div>
+
+                <div class="meta-item">
+                  <label>File:</label>
+                  <span><code>${schema.file_path || 'N/A'}</code></span>
+                </div>
+
+                ${element.type ? `
+                <div class="meta-item">
+                  <label>Type:</label>
+                  <span><a href="#/schemas/${schema.id}/types/type-${this.slugify(element.type)}" class="type-link"><code>${element.type}</code></a></span>
+                </div>
+                ` : ''}
+
+                <div class="meta-item">
+                  <label>Occurs:</label>
+                  <span>${element.min_occurs || '1'}..${element.max_occurs || '1'}</span>
+                </div>
+              </div>
+
+              ${element.documentation ? `
+              <div class="documentation-box">
+                <h3>Documentation</h3>
+                <p>${element.documentation}</p>
+              </div>
+              ` : ''}
+            </section>
+
+            ${element.instance_xml ? `
+            <section class="instance-section">
+              <h3>XML Instance Representation</h3>
+              <div class="xml-instance">
+                <pre><code>${this.formatInstanceXml(element.instance_xml, schema.id)}</code></pre>
+              </div>
+            </section>
+            ` : ''}
+
+            ${element.diagram_svg ? `
+            <section class="diagram-section">
+              <h3>Structure Diagram</h3>
+              <div class="svg-container">
+                ${element.diagram_svg}
+              </div>
+            </section>
+            ` : ''}
+
+            <div class="actions">
+              <a href="#/schemas/${schema.id}" class="btn-back">← Back to ${schema.name}</a>
+            </div>
+          </div>
+        `;
+      },
+
+      formatInstanceXml(xml, schemaId) {
+        if (!xml) return '';
+
+        // Get current schema ID if not provided
+        if (!schemaId) {
+          schemaId = this.getCurrentSchemaId();
+        }
+
+        // Escape HTML first (note: escapeHtml only escapes <, >, & but not quotes)
+        const escaped = this.escapeHtml(xml);
+        let formatted = escaped;
+
+        // Step 1: Remove all data-element-link attributes completely
+        // Match: data-element-link="value" (quotes are NOT escaped by escapeHtml)
+        formatted = formatted.replace(
+          /\s*data-element-link="[^"]+"\s*/g,
+          ' '
+        );
+
+        // Step 2: Convert opening tags with data-element-ref and data-element-schema to clickable links
+        // Pattern: <elementName data-element-ref="remarks" data-element-schema="urban-object">
+        formatted = formatted.replace(
+          /&lt;([\w:-]+)\s+data-element-ref="([\w-]+)"\s+data-element-schema="([\w-]+)"&gt;/g,
+          (match, tagName, ref, targetSchema) => {
+            const refSlug = this.slugify(ref);
+            // Use targetSchema instead of current schemaId for cross-schema links
+            return `&lt;<a href="#/schemas/${targetSchema}/elements/${refSlug}" class="element-link" title="Go to ${ref}">${tagName}</a>&gt;`;
+          }
+        );
+
+        // Step 3: Convert closing tags with data-element-ref and data-element-schema to clickable links
+        // Pattern: </elementName data-element-ref="remarks" data-element-schema="urban-object">
+        formatted = formatted.replace(
+          /&lt;\/([\w:-]+)\s+data-element-ref="([\w-]+)"\s+data-element-schema="([\w-]+)"&gt;/g,
+          (match, tagName, ref, targetSchema) => {
+            const refSlug = this.slugify(ref);
+            // Use targetSchema instead of current schemaId for cross-schema links
+            return `&lt;/<a href="#/schemas/${targetSchema}/elements/${refSlug}" class="element-link" title="Go to ${ref}">${tagName}</a>&gt;`;
+          }
+        );
+
+        // Convert data-type-ref markers in attribute values (remove the data markup)
+        // Pattern: attrName="typeName data-type-ref="type-slug""
+        formatted = formatted.replace(
+          /([\w:]+)=&quot;([\w:]+)\s+data-type-ref=&quot;([\w-]+)&quot;&quot;/g,
+          (match, attrName, typeName, typeRef) => {
+            return `<span class="attr-name">${attrName}</span>=<span class="attr-value">&quot;<a href="#/schemas/${schemaId}/types/type-${typeRef}" class="type-link" title="Go to ${typeName}">${typeName}</a>&quot;</span>`;
+          }
+        );
+
+        // Apply syntax highlighting to remaining parts
+        // Element tags (without data attributes already handled)
+        formatted = formatted.replace(/&lt;(\/?)([\w:-]+)/g, (match, slash, tag) => {
+          // Skip if already contains anchor or styled span
+          const lookBehind = formatted.substring(Math.max(0, formatted.indexOf(match) - 20), formatted.indexOf(match));
+          if (lookBehind.includes('href') || lookBehind.includes('element-tag')) return match;
+          return `&lt;${slash}<span class="element-tag">${tag}</span>`;
+        });
+
+        formatted = formatted.replace(/&gt;/g, '<span class="element-tag">&gt;</span>');
+
+        // Attribute names and values (not already converted)
+        formatted = formatted.replace(
+          /([\w:]+)=&quot;([^&]*)&quot;/g,
+          (match, name, value) => {
+            // Skip if already wrapped
+            if (match.includes('class=') || value.includes('href')) return match;
+            return `<span class="attr-name">${name}</span>=<span class="attr-value">&quot;${value}&quot;</span>`;
+          }
+        );
+
+        // Cardinality markers
+        formatted = formatted.replace(
+          /\[(\d+\.\.[\d\*]+)\]/g,
+          '<span class="cardinality">[$1]</span>'
+        );
+        formatted = formatted.replace(
+          /\[(\d+)\]/g,
+          '<span class="cardinality">[$1]</span>'
+        );
+
+        // Model group indicators
+        formatted = formatted.replace(
+          /(Start|End)\s+(Sequence|Choice|All)(\s+\[[^\]]+\])?/g,
+          '<span class="model-group">$1 $2$3</span>'
+        );
+
+        // Content placeholder
+        formatted = formatted.replace(/\.\.\./g, '<span class="content-placeholder">...</span>');
+
+        return formatted;
+      },
+
+      getCurrentSchemaId() {
+        // Extract current schema ID from the hash
+        const hash = window.location.hash.slice(1) || '';
+        const parts = hash.split('/').filter(p => p);
+
+        if (parts.length >= 2 && parts[0] === 'schemas') {
+          return parts[1];
+        }
+
+        // Default fallback
+        return this.data[0]?.id || '';
+      },
+
+      escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      },
+
+      getNamespacePrefix(uri) {
+        const prefixes = {
+          'http://www.opengis.net/gml/3.2': 'gml',
+          'http://www.w3.org/1999/xlink': 'xlink',
+          'http://www.isotc211.org/2005/gco': 'gco',
+          'https://www.geospatial.jp/iur/urf/3.2': 'urf',
+          'https://www.geospatial.jp/iur/uro/3.2': 'uro'
+        };
+        return prefixes[uri] || 'xs';
+      },
+
+      showType(schemaId, typeId) {
+        // Find the schema and type data
+        const schema = this.data.find(s => s.id === schemaId);
+        if (!schema) {
+          this.showHome();
+          return;
+        }
+
+        // Check both complex and simple types
+        let type = schema.complex_types ? schema.complex_types.find(t => t.id === typeId) : null;
+        let isSimple = false;
+
+        if (!type && schema.simple_types) {
+          type = schema.simple_types.find(t => t.id === typeId);
+          isSimple = true;
+        }
+
+        if (!type) {
+          // Fallback to showing schema
+          this.showSchema(schemaId);
+          return;
+        }
+
+        // Render type detail view
+        this.renderTypeDetail(schema, type, isSimple);
+      },
+
+      renderTypeDetail(schema, type, isSimple) {
+        // Hide schema list, show detail container
+        const schemaContainer = document.getElementById('schema-list-container');
+        const detailContainer = document.getElementById('detail-view-container');
+
+        if (schemaContainer) schemaContainer.style.display = 'none';
+        if (!detailContainer) return;
+
+        detailContainer.style.display = 'block';
+
+        const nsPrefix = this.getNamespacePrefix(schema.namespace);
+        const category = isSimple ? 'Simple Type' : 'Complex Type';
+
+        detailContainer.innerHTML = `
+          <div class="component-detail type-detail">
+            <nav class="breadcrumb">
+              <a href="#/schemas/${schema.id}">${schema.name}</a> ›
+              Types ›
+              <strong>${type.name}</strong>
+            </nav>
+
+            <section class="detail-overview">
+              <h2>Type: ${type.name}</h2>
+
+              <div class="meta-grid">
+                <div class="meta-item">
+                  <label>Qualified Name:</label>
+                  <span><code>${nsPrefix}:${type.name}</code></span>
+                </div>
+
+                <div class="meta-item">
+                  <label>Category:</label>
+                  <span>${category}</span>
+                </div>
+
+                <div class="meta-item">
+                  <label>Schema:</label>
+                  <span><a href="#/schemas/${schema.id}" class="schema-link">${schema.name}</a> <small>(${schema.namespace || 'N/A'})</small></span>
+                </div>
+
+                ${type.base ? `
+                <div class="meta-item">
+                  <label>Base Type:</label>
+                  <span><a href="#/schemas/${schema.id}/types/type-${this.slugify(type.base)}" class="type-link"><code>${type.base}</code></a></span>
+                </div>
+                ` : ''}
+
+                ${type.content_model ? `
+                <div class="meta-item">
+                  <label>Content Model:</label>
+                  <span>${type.content_model}</span>
+                </div>
+                ` : ''}
+              </div>
+
+              ${type.documentation ? `
+              <div class="documentation-box">
+                <h3>Documentation</h3>
+                <p>${type.documentation}</p>
+              </div>
+              ` : ''}
+            </section>
+
+            ${!isSimple && type.elements && type.elements.length > 0 ? `
+            <section class="detail-section">
+              <h3>Child Elements (${type.elements.length})</h3>
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Occurs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${type.elements.map(elem => `
+                  <tr>
+                    <td><strong>${elem.name}</strong></td>
+                    <td><code>${elem.type || '—'}</code></td>
+                    <td>${elem.min_occurs || '1'}..${elem.max_occurs || '1'}</td>
+                  </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </section>
+            ` : ''}
+
+            ${!isSimple && type.attributes && type.attributes.length > 0 ? `
+            <section class="detail-section">
+              <h3>Attributes (${type.attributes.length})</h3>
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Use</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${type.attributes.map(attr => `
+                  <tr>
+                    <td><strong>${attr.name}</strong></td>
+                    <td><code>${attr.type || '—'}</code></td>
+                    <td>${attr.use || 'optional'}</td>
+                  </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </section>
+            ` : ''}
+
+            ${type.instance_xml ? `
+            <section class="instance-section">
+              <h3>XML Instance Representation</h3>
+              <div class="xml-instance">
+                <pre><code>${this.formatInstanceXml(type.instance_xml, schema.id)}</code></pre>
+              </div>
+            </section>
+            ` : ''}
+
+            ${type.diagram_svg ? `
+            <section class="diagram-section">
+              <h3>Structure Diagram</h3>
+              <div class="svg-container">
+                ${type.diagram_svg}
+              </div>
+            </section>
+            ` : ''}
+
+            <div class="actions">
+              <a href="#/schemas/${schema.id}" class="btn-back">← Back to ${schema.name}</a>
+            </div>
+          </div>
+        `;
+      },
+
+      updateActiveLink(hash) {
+        // Remove active class from all links
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+          link.classList.remove('active');
+        });
+
+        // Add active class to current link
+        const activeLink = document.querySelector(`a[href="#${hash}"]`);
+        if (activeLink) {
+          activeLink.classList.add('active');
+        }
+      }
+    };
+
+    // Initialize on DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', () => {
+      Theme.init();
+      Search.init();
+      Navigation.init();
+      Router.init();
+    });
+  </script>
+</body>
+</html>

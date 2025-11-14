@@ -135,7 +135,10 @@ module Lutaml
           next unless schema_location.start_with?("http://", "https://")
 
           resolved_path = resolve_schema_location(schema_location, glob_mappings)
-          url_to_basename[schema_location] = path_to_basename[File.absolute_path(resolved_path)] if resolved_path && path_to_basename.key?(File.absolute_path(resolved_path))
+          if resolved_path && path_to_basename.key?(File.absolute_path(resolved_path))
+            url_to_basename[schema_location] =
+              path_to_basename[File.absolute_path(resolved_path)]
+          end
         end
 
         # Rewrite each file's schemaLocation attributes

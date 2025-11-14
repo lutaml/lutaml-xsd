@@ -2,7 +2,6 @@
 
 module Lutaml
   module Xsd
-    # rubocop:disable Metrics/ClassLength
     class Schema < Base
       attribute :id, :string
       attribute :lang, :string
@@ -95,7 +94,86 @@ module Lutaml
         end
       end
 
+      # Find a type definition by local name
+      # @param local_name [String] The local name of the type
+      # @return [SimpleType, ComplexType, nil] The type definition or nil
+      def find_type(local_name)
+        return nil if local_name.nil?
+
+        # Search simple types
+        found = simple_type.find { |t| t.name == local_name }
+        return found if found
+
+        # Search complex types
+        complex_type.find { |t| t.name == local_name }
+      end
+
+      # Find an element definition by local name
+      # @param local_name [String] The local name of the element
+      # @return [Element, nil] The element definition or nil
+      def find_element(local_name)
+        return nil if local_name.nil?
+
+        element.find { |e| e.name == local_name }
+      end
+
+      # Find complex type by name
+      # @param name [String] The local name of the complex type
+      # @return [ComplexType, nil] The complex type definition or nil
+      def find_complex_type(name)
+        return nil if name.nil?
+
+        complex_type.find { |t| t.name == name }
+      end
+
+      # Find simple type by name
+      # @param name [String] The local name of the simple type
+      # @return [SimpleType, nil] The simple type definition or nil
+      def find_simple_type(name)
+        return nil if name.nil?
+
+        simple_type.find { |t| t.name == name }
+      end
+
+      # Quick statistics about the schema
+      # @return [Hash] Statistics including counts of various schema components
+      def stats
+        {
+          elements: element.size,
+          complex_types: complex_type.size,
+          simple_types: simple_type.size,
+          attributes: attribute.size,
+          groups: group.size,
+          attribute_groups: attribute_group.size,
+          imports: import.size,
+          includes: include.size,
+          namespaces: all_namespaces.size
+        }
+      end
+
+      # Quick validation check
+      # @return [Boolean] True if the schema has a target namespace
+      def valid?
+        # Basic validation - can be enhanced
+        !target_namespace.nil? && !target_namespace.empty?
+      end
+
+      # Human-readable summary
+      # @return [String] A summary of the schema
+      def summary
+        ns = target_namespace || "(no namespace)"
+        "#{ns}: #{stats[:elements]} elements, " \
+          "#{stats[:complex_types]} complex types, " \
+          "#{stats[:simple_types]} simple types"
+      end
+
       private
+
+      def all_namespaces
+        namespaces = [target_namespace].compact
+        import.each { |i| namespaces << i.namespace if i&.namespace }
+        namespaces.uniq
+      end
 
       def setup_import_and_include(klass, model, schema, args = {})
         instance = init_instance_of(klass, schema.attributes || {}, args)
@@ -150,29 +228,6 @@ module Lutaml
         )
       end
 
-      # Find a type definition by local name
-      # @param local_name [String] The local name of the type
-      # @return [SimpleType, ComplexType, nil] The type definition or nil
-      def find_type(local_name)
-        return nil if local_name.nil?
-
-        # Search simple types
-        found = simple_type.find { |t| t.name == local_name }
-        return found if found
-
-        # Search complex types
-        complex_type.find { |t| t.name == local_name }
-      end
-
-      # Find an element definition by local name
-      # @param local_name [String] The local name of the element
-      # @return [Element, nil] The element definition or nil
-      def find_element(local_name)
-        return nil if local_name.nil?
-
-        element.find { |e| e.name == local_name }
-      end
-
       class << self
         def reset_processed_schemas
           @processed_schemas = {}
@@ -211,6 +266,5 @@ module Lutaml
 
       Lutaml::Xsd.register_model(self, :schema)
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end
