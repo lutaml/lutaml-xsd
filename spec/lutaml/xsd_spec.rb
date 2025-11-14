@@ -10,6 +10,15 @@ LOCATIONS = {
   "unitsml-v1.0-csd03": nil
 }.freeze
 
+SCHEMA_ELEMENTS_REGEXES = {
+  imports: /<\w+:import /,
+  includes: /<\w+:include /,
+  group: /<\w+:group name=/,
+  simple_type: /<\w+:simpleType /,
+  element: /^\s{0,2}<\w+:element /,
+  complex_type: /<\w+:complexType /
+}.freeze
+
 RSpec.describe Lutaml::Xsd do
   subject(:parsed_schema) { described_class.parse(schema, location: location) }
 
@@ -25,15 +34,7 @@ RSpec.describe Lutaml::Xsd do
       end
 
       it "matches count of direct child elements of the root" do
-        expected_counts = {
-          imports: /<\w+:import /,
-          includes: /<\w+:include /,
-          group: /<\w+:group name=/,
-          simple_type: /<\w+:simpleType /,
-          element: /^\s{0,2}<\w+:element /,
-          complex_type: /<\w+:complexType /
-        }
-        expected_counts.each_pair do |key, regex|
+        SCHEMA_ELEMENTS_REGEXES.each_pair do |key, regex|
           value = parsed_schema.send(key)
           count = value.nil? ? 0 : value.count
           expect(count).to eql(schema.scan(regex).count)

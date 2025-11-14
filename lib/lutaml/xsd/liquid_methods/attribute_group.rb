@@ -20,7 +20,7 @@ module Lutaml
         end
 
         def find_used_by(object)
-          object.resolved_element_order.any? do |child|
+          object&.resolved_element_order&.any? do |child|
             if child.is_a?(Xsd::AttributeGroup)
               child.ref == name
             else

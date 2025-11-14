@@ -9,7 +9,7 @@ module Lutaml
         end
 
         def attributes
-          referenced_complex_type.attribute_elements
+          referenced_complex_type&.attribute_elements
         end
 
         def child_elements(array = [])

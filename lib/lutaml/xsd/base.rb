@@ -15,46 +15,46 @@ module Lutaml
       end
 
       def resolved_element_order
-        element_order.each_with_object(element_order.dup) do |element, array|
+        element_order&.each_with_object(element_order.dup) do |element, array|
           next delete_deletables(array, element) if deletable?(element)
 
           update_element_array(array, element)
         end
       end
 
-      def is_sequence?
+      def sequence?
         is_a?(Sequence)
       end
 
-      def is_any?
+      def any?
         is_a?(Any)
       end
 
-      def is_all?
+      def all?
         is_a?(All)
       end
 
-      def is_choice?
+      def choice?
         is_a?(Choice)
       end
 
-      def is_annotation?
+      def annotation?
         is_a?(Annotation)
       end
 
-      def is_attribute?
+      def attribute?
         is_a?(Attribute)
       end
 
-      def is_attribute_group?
+      def attribute_group?
         is_a?(AttributeGroup)
       end
 
-      def is_simple_content?
+      def simple_content?
         is_a?(SimpleContent)
       end
 
-      def is_element?
+      def element?
         is_a?(Element)
       end
 
@@ -73,18 +73,18 @@ module Lutaml
 
       liquid do
         map "to_xml", to: :to_xml
-        map "is_any?", to: :is_any?
-        map "is_all?", to: :is_all?
-        map "is_choice?", to: :is_choice?
-        map "is_element?", to: :is_element?
-        map "is_sequence?", to: :is_sequence?
-        map "is_attribute?", to: :is_attribute?
-        map "is_annotation?", to: :is_annotation?
+        map "any?", to: :any?
+        map "all?", to: :all?
+        map "choice?", to: :choice?
+        map "element?", to: :element?
+        map "sequence?", to: :sequence?
+        map "attribute?", to: :attribute?
+        map "annotation?", to: :annotation?
         map "min_occurrences", to: :min_occurrences
         map "max_occurrences", to: :max_occurrences
         map "to_formatted_xml", to: :to_formatted_xml
-        map "is_simple_content?", to: :is_simple_content?
-        map "is_attribute_group?", to: :is_attribute_group?
+        map "simple_content?", to: :simple_content?
+        map "attribute_group?", to: :attribute_group?
         map "resolved_element_order", to: :resolved_element_order
       end
 

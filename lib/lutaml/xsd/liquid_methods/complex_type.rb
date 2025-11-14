@@ -27,11 +27,12 @@ module Lutaml
         end
 
         def direct_child_elements(array = [], except: DIRECT_CHILD_ELEMENTS_EXCEPTION)
-          resolved_element_order.each_with_object(array) do |child|
+          resolved_element_order.each do |child|
             next if except.any? { |klass| child.class.name.include?("::#{klass}") }
 
             array << child
           end
+          array
         end
 
         def child_elements(array = [])

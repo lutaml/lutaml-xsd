@@ -249,15 +249,15 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 The following methods are available on all XSD objects via the base class:
 
 Type checking methods:
-- `is_any?` — Returns `true` if the object is an `Any` instance.
-- `is_all?` — Returns `true` if the object is an `All` instance.
-- `is_choice?` — Returns `true` if the object is a `Choice` instance.
-- `is_element?` — Returns `true` if the object is an `Element` instance.
-- `is_sequence?` — Returns `true` if the object is a `Sequence` instance.
-- `is_attribute?` — Returns `true` if the object is an `Attribute` instance.
-- `is_annotation?` — Returns `true` if the object is an `Annotation` instance.
-- `is_simple_content?` — Returns `true` if the object is a `SimpleContent` instance.
-- `is_attribute_group?` — Returns `true` if the object is an `AttributeGroup` instance.
+- `any?` — Returns `true` if the object is an `Any` instance.
+- `all?` — Returns `true` if the object is an `All` instance.
+- `choice?` — Returns `true` if the object is a `Choice` instance.
+- `element?` — Returns `true` if the object is an `Element` instance.
+- `sequence?` — Returns `true` if the object is a `Sequence` instance.
+- `attribute?` — Returns `true` if the object is an `Attribute` instance.
+- `annotation?` — Returns `true` if the object is an `Annotation` instance.
+- `simple_content?` — Returns `true` if the object is a `SimpleContent` instance.
+- `attribute_group?` — Returns `true` if the object is an `AttributeGroup` instance.
 
 Other methods:
 - `min_occurrences` — Returns the minimum occurrences as Integer (default 1). Only available on objects that respond to `min_occurs`.
@@ -269,7 +269,7 @@ Other methods:
 [source,liquid]
 ----
 {% for item in schema.element %}
-  {% if item.is_element? %}
+  {% if item.element? %}
     Element: {{ item.name }}
     {% if item.min_occurrences %}
       Min: {{ item.min_occurrences }}, Max: {{ item.max_occurrences }}
