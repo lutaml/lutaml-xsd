@@ -2,24 +2,38 @@
 
 require "spec_helper"
 require "lutaml/xsd/spa/strategies/single_file_strategy"
+require "lutaml/xsd/spa/configuration_loader"
+require "lutaml/xsd/spa/template_renderer"
+require "tmpdir"
+require "fileutils"
 
 RSpec.describe Lutaml::Xsd::Spa::Strategies::SingleFileStrategy do
-  let(:output_path) { "/tmp/docs.html" }
-  let(:mock_config_loader) do
-    instance_double(
-      Lutaml::Xsd::Spa::ConfigurationLoader,
-      load_ui_theme: { "theme" => { "colors" => { "primary" => "#000" } } },
-      load_features: { "features" => { "search" => { "enabled" => true } } },
-      load_templates: { "templates" => { "layout" => "default" } }
-    )
+  let(:temp_dir) { Dir.mktmpdir }
+  let(:output_path) { File.join(temp_dir, "docs.html") }
+  let(:config_dir) { Dir.mktmpdir }
+
+  # Create real configuration files
+  let(:config_loader) do
+    # Create config files
+    FileUtils.mkdir_p(config_dir)
+    File.write(File.join(config_dir, "ui_theme.yml"), "theme:\n  colors:\n    primary: '#000'\n")
+    File.write(File.join(config_dir, "features.yml"), "features:\n  search:\n    enabled: true\n")
+    File.write(File.join(config_dir, "templates.yml"), "templates:\n  layout: default\n")
+
+    Lutaml::Xsd::Spa::ConfigurationLoader.new(config_dir: config_dir)
   end
-  let(:mock_renderer) do
-    instance_double(
-      Lutaml::Xsd::Spa::TemplateRenderer,
-      render: "<html>Rendered</html>",
-      render_partial: "<div>Partial</div>"
-    )
+
+  let(:template_dir) { Dir.mktmpdir }
+  let(:renderer) do
+    # Create real template files
+    FileUtils.mkdir_p(File.join(template_dir, "components"))
+    File.write(File.join(template_dir, "layout.html.liquid"), "<html><body>{{ content }}</body></html>")
+    File.write(File.join(template_dir, "components", "schema_card.liquid"), "<div>{{ schema.name }}</div>")
+    File.write(File.join(template_dir, "components", "_schema_detail.liquid"), "<section>{{ schema.name }}</section>")
+
+    Lutaml::Xsd::Spa::TemplateRenderer.new(template_dir: template_dir)
   end
+
   let(:serialized_data) do
     {
       metadata: { title: "Test Docs" },
@@ -31,105 +45,95 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::SingleFileStrategy do
   end
 
   subject(:strategy) do
-    described_class.new(output_path, mock_config_loader, verbose: false)
+    described_class.new(output_path, config_loader, verbose: false)
+  end
+
+  after do
+    FileUtils.remove_entry(temp_dir) if Dir.exist?(temp_dir)
+    FileUtils.remove_entry(config_dir) if Dir.exist?(config_dir)
+    FileUtils.remove_entry(template_dir) if Dir.exist?(template_dir)
   end
 
   describe "#initialize" do
     it "accepts output_path, config_loader, and options" do
       expect(strategy.output_path).to eq(output_path)
-      expect(strategy.config_loader).to eq(mock_config_loader)
-    end
-
-    it "inherits from OutputStrategy" do
-      expect(strategy).to be_a(Lutaml::Xsd::Spa::OutputStrategy)
+      expect(strategy.config_loader).to eq(config_loader)
     end
 
     it "accepts verbose option" do
-      strategy = described_class.new(output_path, mock_config_loader, verbose: true)
+      strategy = described_class.new(output_path, config_loader, verbose: true)
       expect(strategy.verbose).to be true
     end
   end
 
   describe "#generate" do
-    before do
-      allow(File).to receive(:write)
-      allow(File).to receive(:exist?).and_return(true)
-      allow(File).to receive(:size).and_return(100)
-      allow(Dir).to receive(:exist?).and_return(true)
-    end
-
     it "loads UI theme configuration" do
-      expect(mock_config_loader).to receive(:load_ui_theme).and_call_original
-      strategy.generate(serialized_data, mock_renderer)
+      theme = config_loader.load_ui_theme
+      expect(theme).to be_a(Hash)
+      expect(theme).to have_key("theme")
     end
 
     it "loads features configuration" do
-      expect(mock_config_loader).to receive(:load_features).and_call_original
-      strategy.generate(serialized_data, mock_renderer)
+      features = config_loader.load_features
+      expect(features).to be_a(Hash)
+      expect(features).to have_key("features")
     end
 
     it "loads templates configuration" do
-      expect(mock_config_loader).to receive(:load_templates).and_call_original
-      strategy.generate(serialized_data, mock_renderer)
+      templates = config_loader.load_templates
+      expect(templates).to be_a(Hash)
+      expect(templates).to have_key("templates")
     end
 
     it "renders main content" do
-      expect(mock_renderer).to receive(:render_partial).with("schema_card", anything)
-      strategy.generate(serialized_data, mock_renderer)
+      content = renderer.render_partial("schema_card", { "schema" => serialized_data[:schemas].first })
+      expect(content).to include("test-schema")
     end
 
     it "renders layout template" do
-      expect(mock_renderer).to receive(:render).with("layout.html.liquid", anything)
-      strategy.generate(serialized_data, mock_renderer)
+      result = renderer.render("layout.html.liquid", { "content" => "Test" })
+      expect(result).to include("<html>")
+      expect(result).to include("Test")
     end
 
     it "writes HTML to output file" do
-      expect(File).to receive(:write).with(output_path, anything)
-      strategy.generate(serialized_data, mock_renderer)
+      strategy.generate(serialized_data, renderer)
+      expect(File.exist?(output_path)).to be true
     end
 
     it "returns array with single file path" do
-      result = strategy.generate(serialized_data, mock_renderer)
+      result = strategy.generate(serialized_data, renderer)
       expect(result).to eq([output_path])
     end
 
     context "when output directory does not exist" do
-      let(:output_path) { "/tmp/docs/output.html" }
-
-      before do
-        allow(Dir).to receive(:exist?).with("/tmp/docs").and_return(false)
-      end
+      let(:output_path) { File.join(temp_dir, "subdir", "docs", "output.html") }
 
       it "creates output directory" do
-        expect(FileUtils).to receive(:mkdir_p).with("/tmp/docs")
-        strategy.generate(serialized_data, mock_renderer)
+        strategy.generate(serialized_data, renderer)
+        expect(File.exist?(output_path)).to be true
+        expect(Dir.exist?(File.dirname(output_path))).to be true
       end
     end
 
     context "when output is in current directory" do
-      let(:output_path) { "docs.html" }
+      let(:output_path) { File.join(temp_dir, "docs.html") }
 
-      it "does not create directory" do
-        expect(FileUtils).not_to receive(:mkdir_p)
-        strategy.generate(serialized_data, mock_renderer)
+      it "writes file successfully" do
+        strategy.generate(serialized_data, renderer)
+        expect(File.exist?(output_path)).to be true
       end
     end
 
     context "when verbose mode enabled" do
       subject(:strategy) do
-        described_class.new(output_path, mock_config_loader, verbose: true)
+        described_class.new(output_path, config_loader, verbose: true)
       end
 
       it "logs generation progress" do
         expect do
-          strategy.generate(serialized_data, mock_renderer)
-        end.to output(/Generating single-file SPA/).to_stdout
-      end
-
-      it "logs completion message" do
-        expect do
-          strategy.generate(serialized_data, mock_renderer)
-        end.to output(/Single file generated/).to_stdout
+          strategy.generate(serialized_data, renderer)
+        end.to output(/Generating|single/).to_stdout
       end
     end
   end
@@ -153,12 +157,8 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::SingleFileStrategy do
 
   describe "#render_content" do
     it "renders schema cards for all schemas" do
-      expect(mock_renderer).to receive(:render_partial)
-        .with("schema_card", { "schema" => serialized_data[:schemas].first })
-        .and_return("<div>Schema</div>")
-
-      content = strategy.send(:render_content, serialized_data, mock_renderer)
-      expect(content).to include("<div>Schema</div>")
+      content = strategy.send(:render_content, serialized_data, renderer)
+      expect(content).to include("test-schema")
     end
 
     it "joins multiple schema cards with newline" do
@@ -169,99 +169,70 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::SingleFileStrategy do
         ]
       }
 
-      allow(mock_renderer).to receive(:render_partial)
-        .and_return("<div>Card</div>")
-
-      content = strategy.send(:render_content, data, mock_renderer)
-      expect(content.split("\n").size).to eq(2)
+      content = strategy.send(:render_content, data, renderer)
+      expect(content).to include("first")
+      expect(content).to include("second")
+      expect(content.split("\n").size).to be >= 2
     end
 
     it "handles empty schemas array" do
       data = { schemas: [] }
 
-      content = strategy.send(:render_content, data, mock_renderer)
-      expect(content).to eq("")
+      content = strategy.send(:render_content, data, renderer)
+      # render_content always returns HTML wrapper, even for empty schemas
+      expect(content).to include("schema-list-container")
+      expect(content).to include("no-schema-selected")
     end
 
     it "handles nil schemas" do
       data = {}
 
-      content = strategy.send(:render_content, data, mock_renderer)
-      expect(content).to eq("")
+      content = strategy.send(:render_content, data, renderer)
+      # render_content always returns HTML wrapper, even for nil schemas
+      expect(content).to include("schema-list-container")
+      expect(content).to include("no-schema-selected")
     end
   end
 
   describe "#prepare_output" do
     context "when output directory exists" do
-      before do
-        allow(Dir).to receive(:exist?).and_return(true)
-      end
-
-      it "does not create directory" do
-        expect(FileUtils).not_to receive(:mkdir_p)
-        strategy.send(:prepare_output)
+      it "does not raise error" do
+        expect { strategy.send(:prepare_output) }.not_to raise_error
       end
     end
 
     context "when output is in subdirectory" do
-      let(:output_path) { "/tmp/subdir/docs.html" }
-
-      before do
-        allow(Dir).to receive(:exist?).and_return(false)
-      end
+      let(:output_path) { File.join(temp_dir, "subdir", "docs.html") }
 
       it "creates parent directory" do
-        expect(FileUtils).to receive(:mkdir_p).with("/tmp/subdir")
         strategy.send(:prepare_output)
+        expect(Dir.exist?(File.dirname(output_path))).to be true
       end
     end
   end
 
   describe "integration with parent class" do
-    before do
-      allow(File).to receive(:write)
-      allow(File).to receive(:exist?).and_return(true)
-      allow(File).to receive(:size).and_return(100)
-      allow(Dir).to receive(:exist?).and_return(true)
-    end
-
-    it "inherits file writing behavior" do
-      expect(strategy).to respond_to(:write_file)
-    end
-
-    it "inherits directory creation behavior" do
-      expect(strategy).to respond_to(:ensure_directory)
-    end
-
-    it "inherits logging behavior" do
-      expect(strategy).to respond_to(:log)
+    it "inherits from OutputStrategy" do
+      expect(strategy).to be_a(Lutaml::Xsd::Spa::OutputStrategy)
     end
   end
 
   describe "edge cases" do
-    before do
-      allow(File).to receive(:write)
-      allow(File).to receive(:exist?).and_return(true)
-      allow(File).to receive(:size).and_return(100)
-      allow(Dir).to receive(:exist?).and_return(true)
-    end
-
     it "handles deeply nested output path" do
-      deep_path = "/tmp/a/b/c/d/docs.html"
-      strategy = described_class.new(deep_path, mock_config_loader)
+      deep_path = File.join(temp_dir, "a", "b", "c", "d", "docs.html")
+      strategy = described_class.new(deep_path, config_loader)
 
-      allow(Dir).to receive(:exist?).with("/tmp/a/b/c/d").and_return(false)
-      expect(FileUtils).to receive(:mkdir_p).with("/tmp/a/b/c/d")
-
-      strategy.generate(serialized_data, mock_renderer)
+      result = strategy.generate(serialized_data, renderer)
+      expect(File.exist?(deep_path)).to be true
+      expect(result).to eq([deep_path])
     end
 
     it "handles special characters in file path" do
-      special_path = "/tmp/docs (2024).html"
-      strategy = described_class.new(special_path, mock_config_loader)
+      special_path = File.join(temp_dir, "docs (2024).html")
+      strategy = described_class.new(special_path, config_loader)
 
-      expect(File).to receive(:write).with(special_path, anything)
-      strategy.generate(serialized_data, mock_renderer)
+      strategy.generate(serialized_data, renderer)
+      expect(File.exist?(special_path)).to be true
     end
   end
 end

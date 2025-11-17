@@ -1,15 +1,14 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "lutaml/xsd"
 require "lutaml/xsd/validation/rules/attribute_validation_rule"
 require "lutaml/xsd/validation/result_collector"
 require "lutaml/xsd/validation/validation_configuration"
 require "lutaml/xsd/validation/xml_element"
 require "lutaml/xsd/validation/xml_attribute"
 require "lutaml/xsd/validation/xml_navigator"
-require "lutaml/xsd/element"
-require "lutaml/xsd/attribute"
-require "lutaml/xsd/complex_type"
+require "ostruct"
 
 RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
   let(:config) { Lutaml::Xsd::Validation::ValidationConfiguration.new }
@@ -91,40 +90,52 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
     end
 
     context "with missing required attribute" do
+      # Create a simple struct for moxml element
+      let(:moxml_namespace) { Struct.new(:href, :prefix).new(nil, nil) }
       let(:moxml_element) do
-        instance_double("Moxml::Element", name: "person", attributes: [], namespace: nil)
+        Struct.new(:name, :attributes, :namespace).new("person", [], moxml_namespace)
       end
       let(:xml_element) { Lutaml::Xsd::Validation::XmlElement.new(moxml_element, navigator) }
 
+      # Create simple test objects that mimic the XSD structure
       let(:required_attr) do
-        instance_double(
-          Lutaml::Xsd::Attribute,
-          name: "id",
-          use: "required"
-        )
+        obj = Object.new
+        obj.define_singleton_method(:name) { "id" }
+        obj.define_singleton_method(:use) { "required" }
+        obj.define_singleton_method(:respond_to?) do |method, include_private = false|
+          [:name, :use].include?(method) || super(method, include_private)
+        end
+        obj
       end
 
       let(:complex_type) do
-        instance_double(
-          Lutaml::Xsd::ComplexType,
-          attribute: [required_attr]
-        )
+        attr = required_attr
+        obj = Object.new
+        obj.define_singleton_method(:attribute) { [attr] }
+        obj.define_singleton_method(:attribute_group) { [] }
+        obj.define_singleton_method(:complex_content) { nil }
+        obj.define_singleton_method(:simple_content) { nil }
+        obj.define_singleton_method(:respond_to?) do |method, include_private = false|
+          [:attribute, :attribute_group, :complex_content, :simple_content].include?(method) || super(method, include_private)
+        end
+        obj
       end
 
       let(:schema_element) do
-        instance_double(
-          Lutaml::Xsd::Element,
-          name: "person",
-          complex_type: complex_type
-        )
+        ct = complex_type
+        obj = Object.new
+        obj.define_singleton_method(:name) { "person" }
+        obj.define_singleton_method(:complex_type) { ct }
+        obj.define_singleton_method(:is_a?) do |klass|
+          klass == Lutaml::Xsd::Element || super(klass)
+        end
+        obj.define_singleton_method(:respond_to?) do |method, include_private = false|
+          [:name, :complex_type].include?(method) || super(method, include_private)
+        end
+        obj
       end
 
       it "reports required attribute missing error" do
-        allow(complex_type).to receive(:respond_to?).with(:attribute).and_return(true)
-        allow(complex_type).to receive(:respond_to?).with(:attribute_group).and_return(false)
-        allow(complex_type).to receive(:respond_to?).with(:complex_content).and_return(false)
-        allow(complex_type).to receive(:respond_to?).with(:simple_content).and_return(false)
-
         rule.validate(xml_element, schema_element, collector)
 
         expect(collector.errors.size).to be > 0
@@ -134,11 +145,6 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
       end
 
       it "includes suggestion" do
-        allow(complex_type).to receive(:respond_to?).with(:attribute).and_return(true)
-        allow(complex_type).to receive(:respond_to?).with(:attribute_group).and_return(false)
-        allow(complex_type).to receive(:respond_to?).with(:complex_content).and_return(false)
-        allow(complex_type).to receive(:respond_to?).with(:simple_content).and_return(false)
-
         rule.validate(xml_element, schema_element, collector)
 
         error = collector.errors.find { |e| e.code == "required_attribute_missing" }

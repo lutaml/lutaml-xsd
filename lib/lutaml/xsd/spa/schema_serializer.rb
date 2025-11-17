@@ -89,7 +89,7 @@ module Lutaml
         def serialize_schemas
           get_schemas.map.with_index do |(file_path, schema), index|
             serialize_schema(schema, index, file_path)
-          end
+          end.compact
         end
 
         # Serialize single schema (template method hook)
@@ -101,6 +101,8 @@ module Lutaml
         # @param file_path [String] Schema file path
         # @return [Hash] Serialized schema
         def serialize_schema(schema, index, file_path = nil)
+          return nil unless schema
+
           {
             id: schema_id(index, schema, file_path),
             name: schema_name(schema, file_path),
@@ -133,9 +135,10 @@ module Lutaml
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized elements
         def serialize_elements(schema)
-          return [] unless schema.respond_to?(:element)
+          return [] unless schema.respond_to?(:elements) || schema.respond_to?(:element)
 
-          schema.element.map.with_index do |element, index|
+          elements = schema.respond_to?(:elements) ? schema.elements : schema.element
+          elements.map.with_index do |element, index|
             serialize_element(element, index)
           end
         end
@@ -167,9 +170,10 @@ module Lutaml
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized complex types
         def serialize_complex_types(schema)
-          return [] unless schema.respond_to?(:complex_type)
+          return [] unless schema.respond_to?(:complex_types) || schema.respond_to?(:complex_type)
 
-          schema.complex_type.map.with_index do |type, index|
+          types = schema.respond_to?(:complex_types) ? schema.complex_types : schema.complex_type
+          types.map.with_index do |type, index|
             serialize_complex_type(type, index)
           end
         end
@@ -202,9 +206,10 @@ module Lutaml
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized simple types
         def serialize_simple_types(schema)
-          return [] unless schema.respond_to?(:simple_type)
+          return [] unless schema.respond_to?(:simple_types) || schema.respond_to?(:simple_type)
 
-          schema.simple_type.map.with_index do |type, index|
+          types = schema.respond_to?(:simple_types) ? schema.simple_types : schema.simple_type
+          types.map.with_index do |type, index|
             serialize_simple_type(type, index)
           end
         end
@@ -230,9 +235,10 @@ module Lutaml
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized attributes
         def serialize_attributes(schema)
-          return [] unless schema.respond_to?(:attribute)
+          return [] unless schema.respond_to?(:attributes) || schema.respond_to?(:attribute)
 
-          schema.attribute.map.with_index do |attr, index|
+          attrs = schema.respond_to?(:attributes) ? schema.attributes : schema.attribute
+          attrs.map.with_index do |attr, index|
             serialize_attribute(attr, index)
           end
         end
@@ -258,9 +264,10 @@ module Lutaml
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized groups
         def serialize_groups(schema)
-          return [] unless schema.respond_to?(:group)
+          return [] unless schema.respond_to?(:groups) || schema.respond_to?(:group)
 
-          schema.group.map.with_index do |group, index|
+          grps = schema.respond_to?(:groups) ? schema.groups : schema.group
+          grps.map.with_index do |group, index|
             serialize_group(group, index)
           end
         end
@@ -511,7 +518,7 @@ module Lutaml
           end
 
           # Fallback to filename only if namespace not available
-          if file_path && !file_path.empty?
+          if file_path && file_path.is_a?(String) && !file_path.empty?
             return File.basename(file_path, ".*")
           end
 

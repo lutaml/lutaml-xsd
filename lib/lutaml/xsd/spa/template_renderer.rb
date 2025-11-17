@@ -28,6 +28,11 @@ module Lutaml
 
         attr_reader :template_dir, :environment
 
+        # Get file system from environment
+        def file_system
+          @environment.file_system
+        end
+
         # Initialize template renderer
         #
         # @param template_dir [String] Directory containing template files
@@ -36,6 +41,7 @@ module Lutaml
           @template_dir = template_dir
           @cache_enabled = cache_enabled
           @template_cache = {}
+          @filters = []
           @environment = create_liquid_environment
 
           configure_liquid
@@ -70,7 +76,10 @@ module Lutaml
         # @param filter_module [Module] Module containing filter methods
         # @return [void]
         def register_filter(filter_module)
+          @filters << filter_module unless @filters.include?(filter_module)
           @environment.register_filter(filter_module)
+          # Also register on Liquid::Template for render_string to work
+          Liquid::Template.register_filter(filter_module)
         end
 
         # Clear template cache

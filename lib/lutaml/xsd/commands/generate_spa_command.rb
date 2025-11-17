@@ -79,7 +79,8 @@ module Lutaml
             end
           when "multi_file", "api"
             unless output_dir
-              error "#{mode.capitalize} mode requires --output-dir option"
+              mode_name = mode.tr("_", "-").capitalize
+              error "#{mode_name} mode requires --output-dir option"
               exit 1
             end
           else
@@ -94,8 +95,7 @@ module Lutaml
         def load_package
           verbose_output "Loading package: #{package_path}"
 
-          package_obj = SchemaRepositoryPackage.new(package_path)
-          package_obj.load_repository
+          package_obj = SchemaRepositoryPackage.load(package_path)
 
           verbose_output "✓ Package loaded successfully"
           package_obj

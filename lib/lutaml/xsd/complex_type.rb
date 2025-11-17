@@ -9,6 +9,7 @@ module Lutaml
 
       attribute :id, :string
       attribute :name, :string
+      attribute :base, :string
       attribute :final, :string
       attribute :block, :string
       attribute :mixed, :boolean, default: -> { false }
@@ -29,6 +30,7 @@ module Lutaml
 
         map_attribute :id, to: :id
         map_attribute :name, to: :name
+        map_attribute :base, to: :base
         map_attribute :final, to: :final
         map_attribute :block, to: :block
         map_attribute :mixed, to: :mixed
@@ -53,6 +55,18 @@ module Lutaml
       #         map "attribute_elements", to: :attribute_elements
 
       #       end
+
+      # Get elements from content model (sequence, choice, or all)
+      # @return [Array<Element>] Elements from content model
+      def elements
+        return sequence.element if sequence&.respond_to?(:element)
+        return choice.element if choice&.respond_to?(:element)
+        return all.element if all&.respond_to?(:element)
+        []
+      end
+
+      # Convenience plural accessor for attributes
+      alias attributes attribute
 
       Lutaml::Xsd.register_model(self, :complex_type)
     end

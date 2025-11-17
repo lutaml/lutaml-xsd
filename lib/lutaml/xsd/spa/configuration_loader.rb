@@ -202,7 +202,12 @@ module Lutaml
           {
             "templates" => {
               "layout" => "default",
-              "components" => %w[head header navigation search content footer scripts],
+              "layouts" => {
+                "default" => {
+                  "components" => %w[head header navigation search content footer scripts]
+                }
+              },
+              "partials" => {},
               "single_file" => {
                 "embed_resources" => true,
                 "inline_css" => true,

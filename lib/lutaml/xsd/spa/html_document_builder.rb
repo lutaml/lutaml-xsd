@@ -296,7 +296,11 @@ module Lutaml
         # @return [String] Complete body section
         def build_body
           attrs = build_body_attributes
-          ["<body#{attrs}>", @body_content, "</body>"].join("\n")
+          parts = ["<body#{attrs}>"]
+          parts << @body_content
+          parts << build_scripts unless @scripts.empty? && @inline_scripts.empty?
+          parts << "</body>"
+          parts.join("\n")
         end
 
         # Build body tag attributes

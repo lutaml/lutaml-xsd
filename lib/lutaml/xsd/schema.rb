@@ -167,6 +167,23 @@ module Lutaml
           "#{stats[:simple_types]} simple types"
       end
 
+      # Get a human-readable name for the schema
+      # @return [String, nil] Schema name derived from target namespace or nil
+      def name
+        return nil unless target_namespace
+
+        # Extract the last part of the namespace URI as the name
+        # e.g., "http://example.com/test" => "test"
+        target_namespace.split('/').last || target_namespace
+      end
+
+      # Convenience plural accessors for collections
+      alias elements element
+      alias complex_types complex_type
+      alias simple_types simple_type
+      alias attributes attribute
+      alias groups group
+
       private
 
       def all_namespaces

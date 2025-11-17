@@ -244,9 +244,9 @@ RSpec.describe Lutaml::Xsd::Spa::TemplateRenderer do
 
   describe "#render_partial" do
     before do
-      FileUtils.mkdir_p(File.join(temp_template_dir, "partials"))
+      FileUtils.mkdir_p(File.join(temp_template_dir, "components"))
       File.write(
-        File.join(temp_template_dir, "partials", "header.liquid"),
+        File.join(temp_template_dir, "components", "header.liquid"),
         partial_content
       )
     end
@@ -313,11 +313,11 @@ RSpec.describe Lutaml::Xsd::Spa::TemplateRenderer do
 
   describe "Liquid configuration" do
     it "sets file system" do
-      expect(Liquid::Template.file_system).to be_a(Liquid::LocalFileSystem)
+      expect(renderer.environment.file_system).to be_a(Liquid::LocalFileSystem)
     end
 
     it "sets error mode to strict" do
-      expect(Liquid::Template.error_mode).to eq(:strict)
+      expect(renderer.environment.error_mode).to eq(:strict)
     end
   end
 
