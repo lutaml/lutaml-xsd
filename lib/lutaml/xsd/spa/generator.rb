@@ -63,7 +63,9 @@ module Lutaml
 
           # Create output strategy
           strategy = create_strategy
-          log "✓ Using #{strategy.class.name}"
+          mode = options[:mode] || "single_file"
+          strategy_name = mode.split('_').map(&:capitalize).join(' ') + " Strategy"
+          log "✓ Using #{strategy_name}"
 
           # Serialize schema data
           serialized_data = @serializer.serialize
@@ -71,7 +73,7 @@ module Lutaml
 
           # Generate output using strategy
           output_files = strategy.generate(serialized_data, @renderer)
-          log "✓ Generated #{output_files.size} file(s)"
+          log "✓ Generated #{output_files&.size || 0} file(s)"
 
           output_files
         end

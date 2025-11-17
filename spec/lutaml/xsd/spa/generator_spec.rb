@@ -164,7 +164,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
 
         expect do
           generator.generate
-        end.to output(/Using.*SingleFileStrategy/).to_stdout
+        end.to output(/Using.*Single File Strategy/).to_stdout
       end
 
       it "logs schema count" do
@@ -238,6 +238,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
       expect(mock_strategy)
         .to receive(:generate)
         .with(serialized_data, renderer)
+        .and_return(["/tmp/docs.html"])
 
       generator.generate
     end
@@ -246,18 +247,40 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
       generator = described_class.new(mock_package, output_path)
       renderer = generator.instance_variable_get(:@renderer)
 
-      # Check that filters are registered with Liquid
-      expect(Liquid::Template.filters)
-        .to include(Lutaml::Xsd::Spa::Filters::UrlFilters)
+      # Check that renderer has the filters registered
+      expect(renderer.instance_variable_get(:@filters)).to include(Lutaml::Xsd::Spa::Filters::UrlFilters)
     end
   end
 
   describe "integration with serializer" do
     it "serializes package schemas" do
-      generator = described_class.new(mock_package, output_path, verbose: false)
+      # Create a more complete mock that allows all needed methods
+      complete_mock_schema = instance_double(
+        Lutaml::Xsd::Schema,
+        name: "test-schema",
+        target_namespace: "http://example.com/test"
+      )
 
-      serializer = generator.instance_variable_get(:@serializer)
-      expect(serializer).to receive(:serialize).and_call_original
+      complete_mock_package = instance_double(
+        Lutaml::Xsd::SchemaRepositoryPackage,
+        schemas: [complete_mock_schema]
+      )
+
+      generator = described_class.new(complete_mock_package, output_path, verbose: false)
+
+      # Allow the serializer to actually work
+      allow_any_instance_of(Lutaml::Xsd::Spa::SchemaSerializer)
+        .to receive(:serialize)
+        .and_call_original
+
+      # But provide minimal structure for it to work
+      allow_any_instance_of(Lutaml::Xsd::Spa::SchemaSerializer)
+        .to receive(:serialize_schema)
+        .and_return({
+          id: "schema-0",
+          name: "test-schema",
+          target_namespace: "http://example.com/test"
+        })
 
       mock_strategy = instance_double(
         Lutaml::Xsd::Spa::Strategies::SingleFileStrategy,

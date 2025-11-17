@@ -16,6 +16,9 @@ module Lutaml
         map_element :appinfo, to: :appinfo
       end
 
+      # Convenience plural accessor for collections
+      alias documentations documentation
+
       Lutaml::Xsd.register_model(self, :annotation)
     end
   end

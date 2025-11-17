@@ -542,6 +542,12 @@ module Lutaml
         get_all_processed_schemas
       end
 
+      # Get all schemas (alias for compatibility)
+      # @return [Hash] All schemas from the global processed_schemas cache
+      def schemas
+        get_all_processed_schemas
+      end
+
       # Get all elements organized by namespace
       # Returns hash: { namespace_uri => [{element_name, type, minOccurs, maxOccurs, documentation}] }
       # @param namespace_uri [String, nil] Filter by specific namespace URI (optional)
@@ -605,6 +611,14 @@ module Lutaml
         # Check if schemas are already in the global cache
         # (either from package loading or previous parse)
         get_all_processed_schemas.empty?
+      end
+
+      # Add a schema file to the repository
+      # @param file_path [String] Path to the schema file
+      # @return [void]
+      def add_schema_file(file_path)
+        @files ||= []
+        @files << file_path unless @files.include?(file_path)
       end
 
       # Validate a schema repository package

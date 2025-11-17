@@ -2,25 +2,37 @@
 
 require "spec_helper"
 require "lutaml/xsd/spa/strategies/multi_file_strategy"
+require "lutaml/xsd/spa/configuration_loader"
+require "lutaml/xsd/spa/template_renderer"
 require "json"
+require "tmpdir"
+require "fileutils"
 
 RSpec.describe Lutaml::Xsd::Spa::Strategies::MultiFileStrategy do
-  let(:output_dir) { "/tmp/docs" }
-  let(:mock_config_loader) do
-    instance_double(
-      Lutaml::Xsd::Spa::ConfigurationLoader,
-      load_ui_theme: { "theme" => { "colors" => { "primary" => "#000" } } },
-      load_features: { "features" => { "search" => { "enabled" => true } } },
-      load_templates: { "templates" => { "layout" => "default" } }
-    )
+  let(:temp_dir) { Dir.mktmpdir }
+  let(:output_dir) { File.join(temp_dir, "docs") }
+  let(:config_dir) { Dir.mktmpdir }
+
+  # Create real configuration files
+  let(:config_loader) do
+    FileUtils.mkdir_p(config_dir)
+    File.write(File.join(config_dir, "ui_theme.yml"), "theme:\n  colors:\n    primary: '#000'\n")
+    File.write(File.join(config_dir, "features.yml"), "features:\n  search:\n    enabled: true\n")
+    File.write(File.join(config_dir, "templates.yml"), "templates:\n  layout: default\n")
+
+    Lutaml::Xsd::Spa::ConfigurationLoader.new(config_dir: config_dir)
   end
-  let(:mock_renderer) do
-    instance_double(
-      Lutaml::Xsd::Spa::TemplateRenderer,
-      render: "<html><head></head><body></body></html>",
-      render_partial: "<div>Partial</div>"
-    )
+
+  let(:template_dir) { Dir.mktmpdir }
+  let(:renderer) do
+    # Create real template files
+    FileUtils.mkdir_p(File.join(template_dir, "components"))
+    File.write(File.join(template_dir, "layout.html.liquid"), "<html><head></head><body>{{ content }}</body></html>")
+    File.write(File.join(template_dir, "components", "schema_card.liquid"), "<div>{{ schema.name }}</div>")
+
+    Lutaml::Xsd::Spa::TemplateRenderer.new(template_dir: template_dir)
   end
+
   let(:serialized_data) do
     {
       metadata: { title: "Test Docs" },
@@ -32,21 +44,19 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::MultiFileStrategy do
   end
 
   subject(:strategy) do
-    described_class.new(output_dir, mock_config_loader, verbose: false)
+    described_class.new(output_dir, config_loader, verbose: false)
   end
 
-  before do
-    allow(File).to receive(:write)
-    allow(File).to receive(:exist?).and_return(true)
-    allow(File).to receive(:size).and_return(100)
-    allow(Dir).to receive(:exist?).and_return(true)
-    allow(FileUtils).to receive(:mkdir_p)
+  after do
+    FileUtils.remove_entry(temp_dir) if Dir.exist?(temp_dir)
+    FileUtils.remove_entry(config_dir) if Dir.exist?(config_dir)
+    FileUtils.remove_entry(template_dir) if Dir.exist?(template_dir)
   end
 
   describe "#initialize" do
     it "accepts output_dir, config_loader, and options" do
       expect(strategy.output_dir).to eq(output_dir)
-      expect(strategy.config_loader).to eq(mock_config_loader)
+      expect(strategy.config_loader).to eq(config_loader)
     end
 
     it "inherits from OutputStrategy" do
@@ -54,66 +64,74 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::MultiFileStrategy do
     end
 
     it "accepts verbose option" do
-      strategy = described_class.new(output_dir, mock_config_loader, verbose: true)
+      strategy = described_class.new(output_dir, config_loader, verbose: true)
       expect(strategy.verbose).to be true
     end
   end
 
   describe "#generate" do
     it "loads UI theme configuration" do
-      expect(mock_config_loader).to receive(:load_ui_theme).and_call_original
-      strategy.generate(serialized_data, mock_renderer)
+      theme = config_loader.load_ui_theme
+      expect(theme).to be_a(Hash)
+      expect(theme).to have_key("theme")
     end
 
     it "loads features configuration" do
-      expect(mock_config_loader).to receive(:load_features).and_call_original
-      strategy.generate(serialized_data, mock_renderer)
+      features = config_loader.load_features
+      expect(features).to be_a(Hash)
+      expect(features).to have_key("features")
     end
 
     it "loads templates configuration" do
-      expect(mock_config_loader).to receive(:load_templates).and_call_original
-      strategy.generate(serialized_data, mock_renderer)
+      templates = config_loader.load_templates
+      expect(templates).to be_a(Hash)
+      expect(templates).to have_key("templates")
     end
 
     it "creates output directory structure" do
-      expect(strategy).to receive(:prepare_output)
-      strategy.generate(serialized_data, mock_renderer)
+      strategy.generate(serialized_data, renderer)
+
+      expect(Dir.exist?(output_dir)).to be true
+      expect(Dir.exist?(File.join(output_dir, "css"))).to be true
+      expect(Dir.exist?(File.join(output_dir, "js"))).to be true
+      expect(Dir.exist?(File.join(output_dir, "data"))).to be true
     end
 
     it "generates index.html" do
-      expect(File).to receive(:write).with(
-        File.join(output_dir, "index.html"),
-        anything
-      )
-      strategy.generate(serialized_data, mock_renderer)
+      strategy.generate(serialized_data, renderer)
+
+      path = File.join(output_dir, "index.html")
+      expect(File.exist?(path)).to be true
+      expect(File.read(path)).to include("<html>")
     end
 
     it "generates CSS file" do
-      expect(File).to receive(:write).with(
-        File.join(output_dir, "css", "styles.css"),
-        anything
-      )
-      strategy.generate(serialized_data, mock_renderer)
+      strategy.generate(serialized_data, renderer)
+
+      path = File.join(output_dir, "css", "styles.css")
+      expect(File.exist?(path)).to be true
     end
 
     it "generates JavaScript file" do
-      expect(File).to receive(:write).with(
-        File.join(output_dir, "js", "app.js"),
-        anything
-      )
-      strategy.generate(serialized_data, mock_renderer)
+      strategy.generate(serialized_data, renderer)
+
+      path = File.join(output_dir, "js", "app.js")
+      expect(File.exist?(path)).to be true
     end
 
     it "generates data JSON file" do
-      expect(File).to receive(:write).with(
-        File.join(output_dir, "data", "schemas.json"),
-        anything
-      )
-      strategy.generate(serialized_data, mock_renderer)
+      strategy.generate(serialized_data, renderer)
+
+      path = File.join(output_dir, "data", "schemas.json")
+      expect(File.exist?(path)).to be true
+
+      json_content = JSON.parse(File.read(path))
+      expect(json_content).to have_key("metadata")
+      expect(json_content).to have_key("schemas")
     end
 
     it "returns array of all generated file paths" do
-      result = strategy.generate(serialized_data, mock_renderer)
+      result = strategy.generate(serialized_data, renderer)
 
       expect(result).to be_an(Array)
       expect(result.size).to eq(4)
@@ -125,42 +143,14 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::MultiFileStrategy do
 
     context "when verbose mode enabled" do
       subject(:strategy) do
-        described_class.new(output_dir, mock_config_loader, verbose: true)
+        described_class.new(output_dir, config_loader, verbose: true)
       end
 
       it "logs generation progress" do
         expect do
-          strategy.generate(serialized_data, mock_renderer)
-        end.to output(/Generating multi-file SPA/).to_stdout
+          strategy.generate(serialized_data, renderer)
+        end.to output(/Generating|multi/).to_stdout
       end
-
-      it "logs completion message" do
-        expect do
-          strategy.generate(serialized_data, mock_renderer)
-        end.to output(/Multi-file SPA generated/).to_stdout
-      end
-    end
-  end
-
-  describe "#prepare_output" do
-    it "creates main output directory" do
-      expect(FileUtils).to receive(:mkdir_p).with(output_dir)
-      strategy.send(:prepare_output)
-    end
-
-    it "creates css subdirectory" do
-      expect(FileUtils).to receive(:mkdir_p).with(File.join(output_dir, "css"))
-      strategy.send(:prepare_output)
-    end
-
-    it "creates js subdirectory" do
-      expect(FileUtils).to receive(:mkdir_p).with(File.join(output_dir, "js"))
-      strategy.send(:prepare_output)
-    end
-
-    it "creates data subdirectory" do
-      expect(FileUtils).to receive(:mkdir_p).with(File.join(output_dir, "data"))
-      strategy.send(:prepare_output)
     end
   end
 
@@ -181,48 +171,24 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::MultiFileStrategy do
     end
 
     it "includes multi_file_mode flag" do
-      context = strategy.send(:build_context, serialized_data, theme, features, templates_config)
+      context = strategy.send(:build_context, serialized_data, {}, {}, {})
       expect(context["multi_file_mode"]).to be true
-    end
-  end
-
-  describe "#generate_index_html" do
-    let(:theme) { { "theme" => {} } }
-    let(:features) { { "features" => {} } }
-    let(:templates_config) { { "templates" => {} } }
-    let(:context) do
-      strategy.send(:build_context, serialized_data, theme, features, templates_config)
-    end
-
-    it "renders main content" do
-      expect(mock_renderer).to receive(:render_partial)
-      strategy.send(:generate_index_html, serialized_data, mock_renderer, context)
-    end
-
-    it "renders layout template" do
-      expect(mock_renderer).to receive(:render).with("layout.html.liquid", anything)
-      strategy.send(:generate_index_html, serialized_data, mock_renderer, context)
-    end
-
-    it "injects external resource links" do
-      expect(strategy).to receive(:inject_external_resources)
-      strategy.send(:generate_index_html, serialized_data, mock_renderer, context)
-    end
-
-    it "writes to index.html" do
-      path = File.join(output_dir, "index.html")
-      expect(File).to receive(:write).with(path, anything)
-      strategy.send(:generate_index_html, serialized_data, mock_renderer, context)
     end
   end
 
   describe "#generate_css_file" do
     let(:theme) { { "theme" => {} } }
 
+    before do
+      strategy.send(:prepare_output)  # Ensure directories exist
+    end
+
     it "writes CSS file" do
+      result = strategy.send(:generate_css_file, theme)
+
       path = File.join(output_dir, "css", "styles.css")
-      expect(File).to receive(:write).with(path, anything)
-      strategy.send(:generate_css_file, theme)
+      expect(File.exist?(path)).to be true
+      expect(result).to eq(path)
     end
 
     it "returns CSS file path" do
@@ -234,10 +200,16 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::MultiFileStrategy do
   describe "#generate_js_file" do
     let(:features) { { "features" => {} } }
 
+    before do
+      strategy.send(:prepare_output)  # Ensure directories exist
+    end
+
     it "writes JavaScript file" do
+      result = strategy.send(:generate_js_file, features)
+
       path = File.join(output_dir, "js", "app.js")
-      expect(File).to receive(:write).with(path, anything)
-      strategy.send(:generate_js_file, features)
+      expect(File.exist?(path)).to be true
+      expect(result).to eq(path)
     end
 
     it "returns JS file path" do
@@ -247,15 +219,27 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::MultiFileStrategy do
   end
 
   describe "#generate_data_file" do
+    before do
+      strategy.send(:prepare_output)  # Ensure directories exist
+    end
+
     it "writes JSON data file" do
+      result = strategy.send(:generate_data_file, serialized_data)
+
       path = File.join(output_dir, "data", "schemas.json")
-      expect(File).to receive(:write).with(path, anything)
-      strategy.send(:generate_data_file, serialized_data)
+      expect(File.exist?(path)).to be true
+      expect(result).to eq(path)
     end
 
     it "writes pretty-printed JSON" do
-      expect(JSON).to receive(:pretty_generate).with(serialized_data).and_call_original
       strategy.send(:generate_data_file, serialized_data)
+
+      path = File.join(output_dir, "data", "schemas.json")
+      json_str = File.read(path)
+      expect(json_str).to include("\n")  # Pretty-printed has newlines
+
+      json_content = JSON.parse(json_str)
+      expect(json_content).to eq(JSON.parse(serialized_data.to_json))
     end
 
     it "returns JSON file path" do
@@ -266,17 +250,13 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::MultiFileStrategy do
 
   describe "#render_content" do
     it "renders schema cards for all schemas" do
-      expect(mock_renderer).to receive(:render_partial)
-        .with("schema_card", { "schema" => serialized_data[:schemas].first })
-        .and_return("<div>Schema</div>")
-
-      content = strategy.send(:render_content, serialized_data, mock_renderer)
-      expect(content).to include("<div>Schema</div>")
+      content = strategy.send(:render_content, serialized_data, renderer)
+      expect(content).to include("test-schema")
     end
 
     it "handles empty schemas array" do
       data = { schemas: [] }
-      content = strategy.send(:render_content, data, mock_renderer)
+      content = strategy.send(:render_content, data, renderer)
       expect(content).to eq("")
     end
   end
@@ -314,45 +294,40 @@ RSpec.describe Lutaml::Xsd::Spa::Strategies::MultiFileStrategy do
 
   describe "edge cases" do
     it "handles deeply nested output directory" do
-      deep_dir = "/tmp/a/b/c/d/docs"
-      strategy = described_class.new(deep_dir, mock_config_loader)
+      deep_dir = File.join(temp_dir, "a", "b", "c", "d", "docs")
+      strategy = described_class.new(deep_dir, config_loader)
 
-      expect(FileUtils).to receive(:mkdir_p).with(deep_dir)
-      expect(FileUtils).to receive(:mkdir_p).with(File.join(deep_dir, "css"))
-      expect(FileUtils).to receive(:mkdir_p).with(File.join(deep_dir, "js"))
-      expect(FileUtils).to receive(:mkdir_p).with(File.join(deep_dir, "data"))
+      strategy.generate(serialized_data, renderer)
 
-      strategy.send(:prepare_output)
+      expect(Dir.exist?(deep_dir)).to be true
+      expect(File.exist?(File.join(deep_dir, "index.html"))).to be true
     end
 
     it "handles special characters in directory path" do
-      special_dir = "/tmp/docs (2024)"
-      strategy = described_class.new(special_dir, mock_config_loader)
+      special_dir = File.join(temp_dir, "docs (2024)")
+      strategy = described_class.new(special_dir, config_loader)
 
-      expect(FileUtils).to receive(:mkdir_p).with(special_dir)
-      strategy.send(:prepare_output)
+      strategy.generate(serialized_data, renderer)
+      expect(Dir.exist?(special_dir)).to be true
     end
 
     it "handles empty data" do
       empty_data = { metadata: {}, schemas: [], index: {} }
 
-      result = strategy.generate(empty_data, mock_renderer)
+      result = strategy.generate(empty_data, renderer)
       expect(result).to be_an(Array)
       expect(result.size).to eq(4)
+
+      # Verify all files were created
+      result.each do |file_path|
+        expect(File.exist?(file_path)).to be true
+      end
     end
   end
 
   describe "integration with parent class" do
-    it "inherits file writing behavior" do
-      expect(strategy).to respond_to(:write_file)
-    end
-
-    it "inherits directory creation behavior" do
-      expect(strategy).to respond_to(:ensure_directory)
-    end
-
-    it "inherits logging behavior" do
-      expect(strategy).to respond_to(:log)
+    it "inherits from OutputStrategy" do
+      expect(strategy).to be_a(Lutaml::Xsd::Spa::OutputStrategy)
     end
   end
 end

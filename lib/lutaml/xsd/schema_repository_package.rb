@@ -47,6 +47,15 @@ module Lutaml
         @repository = nil
       end
 
+      # Load a package and its repository
+      # @param zip_path [String] Path to the ZIP package file
+      # @return [SchemaRepositoryPackage] Package instance with loaded repository
+      def self.load(zip_path)
+        package = new(zip_path)
+        package.load_repository
+        package
+      end
+
       # Create a package from a schema repository
       # @param repository [SchemaRepository] Repository to package
       # @param output_path [String] Path for output ZIP file
@@ -128,6 +137,12 @@ module Lutaml
 
         @metadata = validation.metadata
         @repository = extract_and_build_repository
+      end
+
+      # Get schemas from the repository
+      # @return [Array<Schema>] Array of schemas
+      def schemas
+        repository&.schemas || []
       end
 
       # Write package from repository
