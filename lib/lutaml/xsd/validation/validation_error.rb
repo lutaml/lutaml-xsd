@@ -106,7 +106,7 @@ module Lutaml
         #
         # @return [Boolean]
         def has_location?
-          @location || @line_number
+          !@location.nil? || !@line_number.nil?
         end
 
         # Check if error has a suggestion

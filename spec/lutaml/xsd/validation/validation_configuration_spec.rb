@@ -6,12 +6,26 @@ require "lutaml/xsd/validation/validation_configuration"
 RSpec.describe Lutaml::Xsd::Validation::ValidationConfiguration do
   describe ".from_file" do
     context "with valid YAML file" do
-      let(:config_file) { "config/validation.yml" }
+      let(:config_file) { "spec/fixtures/valid_config.yml" }
 
       it "loads configuration from file" do
-        pending "Requires config file to exist"
-        # config = described_class.from_file(config_file)
-        # expect(config).to be_a(described_class)
+        # Create a temporary config file for testing
+        require "fileutils"
+        FileUtils.mkdir_p("spec/fixtures")
+        File.write(config_file, {
+          "validation" => {
+            "strict_mode" => true,
+            "max_errors" => 50
+          }
+        }.to_yaml)
+
+        config = described_class.from_file(config_file)
+        expect(config).to be_a(described_class)
+        expect(config.strict_mode?).to be true
+        expect(config.max_errors).to eq(50)
+
+        # Clean up
+        FileUtils.rm_f(config_file)
       end
     end
 
@@ -30,13 +44,20 @@ RSpec.describe Lutaml::Xsd::Validation::ValidationConfiguration do
       let(:invalid_yaml_file) { "spec/fixtures/invalid.yml" }
 
       it "raises ConfigurationError" do
-        pending "Requires invalid YAML fixture file"
-        # expect do
-        #   described_class.from_file(invalid_yaml_file)
-        # end.to raise_error(
-        #   Lutaml::Xsd::ConfigurationError,
-        #   /Invalid YAML/
-        # )
+        # Create a temporary invalid YAML file for testing
+        require "fileutils"
+        FileUtils.mkdir_p("spec/fixtures")
+        File.write(invalid_yaml_file, "invalid: yaml: content: [")
+
+        expect do
+          described_class.from_file(invalid_yaml_file)
+        end.to raise_error(
+          Lutaml::Xsd::ConfigurationError,
+          /Invalid YAML/
+        )
+
+        # Clean up
+        FileUtils.rm_f(invalid_yaml_file)
       end
     end
   end

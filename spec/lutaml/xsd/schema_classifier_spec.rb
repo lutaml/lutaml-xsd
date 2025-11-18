@@ -14,6 +14,11 @@ RSpec.describe Lutaml::Xsd::SchemaClassifier do
 
   describe "#classify" do
     context "with empty repository" do
+      before do
+        # Clear global schema cache to ensure truly empty repository
+        Lutaml::Xsd::Schema.reset_processed_schemas
+      end
+
       it "returns classification structure with empty categories" do
         result = classifier.classify
 
