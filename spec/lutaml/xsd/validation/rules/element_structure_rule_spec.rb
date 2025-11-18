@@ -64,11 +64,10 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::ElementStructureRule do
 
     context "when element name matches" do
       let(:schema_element) do
-        instance_double(
-          Lutaml::Xsd::Element,
-          name: "person",
-          target_namespace: "http://example.com"
-        )
+        Object.new.tap do |obj|
+          obj.define_singleton_method(:name) { "person" }
+          obj.define_singleton_method(:target_namespace) { "http://example.com" }
+        end
       end
 
       it "does not report name mismatch error" do
@@ -81,11 +80,10 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::ElementStructureRule do
 
     context "when element name does not match" do
       let(:schema_element) do
-        instance_double(
-          Lutaml::Xsd::Element,
-          name: "employee",
-          target_namespace: "http://example.com"
-        )
+        Object.new.tap do |obj|
+          obj.define_singleton_method(:name) { "employee" }
+          obj.define_singleton_method(:target_namespace) { "http://example.com" }
+        end
       end
 
       it "reports name mismatch error" do
@@ -101,11 +99,10 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::ElementStructureRule do
 
     context "when namespace matches" do
       let(:schema_element) do
-        instance_double(
-          Lutaml::Xsd::Element,
-          name: "person",
-          target_namespace: "http://example.com"
-        )
+        Object.new.tap do |obj|
+          obj.define_singleton_method(:name) { "person" }
+          obj.define_singleton_method(:target_namespace) { "http://example.com" }
+        end
       end
 
       it "does not report namespace error" do
@@ -118,11 +115,10 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::ElementStructureRule do
 
     context "when namespace does not match" do
       let(:schema_element) do
-        instance_double(
-          Lutaml::Xsd::Element,
-          name: "person",
-          target_namespace: "http://different.com"
-        )
+        Object.new.tap do |obj|
+          obj.define_singleton_method(:name) { "person" }
+          obj.define_singleton_method(:target_namespace) { "http://different.com" }
+        end
       end
 
       it "reports namespace mismatch error" do
@@ -159,11 +155,10 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::ElementStructureRule do
       end
       let(:xml_element_no_ns) { Lutaml::Xsd::Validation::XmlElement.new(moxml_element_no_ns, navigator) }
       let(:schema_element_no_ns) do
-        instance_double(
-          Lutaml::Xsd::Element,
-          name: "person",
-          target_namespace: nil
-        )
+        Object.new.tap do |obj|
+          obj.define_singleton_method(:name) { "person" }
+          obj.define_singleton_method(:target_namespace) { nil }
+        end
       end
 
       it "does not report namespace error" do

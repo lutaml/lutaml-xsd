@@ -168,10 +168,37 @@ module Lutaml
         #
         # @return [Hash]
         def to_h
-          @config_hash.dup
+          deep_dup(@config_hash)
         end
 
         private
+
+        # Deep duplicate a hash structure
+        #
+        # @param obj [Object] Object to duplicate
+        # @return [Object] Duplicated object
+        def deep_dup(obj)
+          case obj
+          when Hash
+            obj.each_with_object({}) do |(key, value), result|
+              result[key] = deep_dup(value)
+            end
+          when Array
+            obj.map { |item| deep_dup(item) }
+          when String
+            obj.dup
+          when Symbol, Numeric, TrueClass, FalseClass, NilClass
+            # These objects are immutable or frozen, return as-is
+            obj
+          else
+            # Try to duplicate, if it fails return the object as-is
+            begin
+              obj.dup
+            rescue TypeError
+              obj
+            end
+          end
+        end
 
         # Get nested configuration value
         #
@@ -181,7 +208,16 @@ module Lutaml
           keys.reduce(@config_hash) do |hash, key|
             return nil unless hash.is_a?(Hash)
 
-            hash[key] || hash[key.to_s] || hash[key.to_sym]
+            # Check for key existence to handle false values properly
+            if hash.key?(key)
+              hash[key]
+            elsif hash.key?(key.to_s)
+              hash[key.to_s]
+            elsif hash.key?(key.to_sym)
+              hash[key.to_sym]
+            else
+              nil
+            end
           end
         end
 

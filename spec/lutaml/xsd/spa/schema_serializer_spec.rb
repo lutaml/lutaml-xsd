@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "lutaml/xsd"  # Explicitly load all XSD types including group
 require "lutaml/xsd/spa/schema_serializer"
 require "json"
 
@@ -21,7 +22,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
     XML
   end
 
-  let(:real_schema) { Lutaml::Xsd::Schema.from_xml(test_schema_xml) }
+  let(:real_schema) { Lutaml::Xsd.parse(test_schema_xml) }
   let(:real_element) { real_schema.element.first }
   let(:real_complex_type) { real_schema.complex_type.first }
   let(:real_simple_type) { real_schema.simple_type.first }
@@ -147,7 +148,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       empty_schema_xml = <<~XML
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>
       XML
-      empty_schema = Lutaml::Xsd::Schema.from_xml(empty_schema_xml)
+      empty_schema = Lutaml::Xsd.parse(empty_schema_xml)
 
       elements = serializer.send(:serialize_elements, empty_schema)
       expect(elements).to eq([])
@@ -179,7 +180,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       empty_schema_xml = <<~XML
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>
       XML
-      empty_schema = Lutaml::Xsd::Schema.from_xml(empty_schema_xml)
+      empty_schema = Lutaml::Xsd.parse(empty_schema_xml)
 
       types = serializer.send(:serialize_complex_types, empty_schema)
       expect(types).to eq([])
@@ -212,7 +213,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       empty_schema_xml = <<~XML
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>
       XML
-      empty_schema = Lutaml::Xsd::Schema.from_xml(empty_schema_xml)
+      empty_schema = Lutaml::Xsd.parse(empty_schema_xml)
 
       types = serializer.send(:serialize_simple_types, empty_schema)
       expect(types).to eq([])
@@ -242,7 +243,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       empty_schema_xml = <<~XML
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>
       XML
-      empty_schema = Lutaml::Xsd::Schema.from_xml(empty_schema_xml)
+      empty_schema = Lutaml::Xsd.parse(empty_schema_xml)
 
       attributes = serializer.send(:serialize_attributes, empty_schema)
       expect(attributes).to eq([])
@@ -274,7 +275,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
         XML
       end
 
-      let(:schema_with_doc) { Lutaml::Xsd::Schema.from_xml(element_with_doc_xml) }
+      let(:schema_with_doc) { Lutaml::Xsd.parse(element_with_doc_xml) }
       let(:element_with_doc) { schema_with_doc.element.first }
 
       it "extracts documentation content" do
@@ -310,7 +311,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
           </xs:complexType>
         </xs:schema>
       XML
-      schema = Lutaml::Xsd::Schema.from_xml(type_xml)
+      schema = Lutaml::Xsd.parse(type_xml)
       type = schema.complex_type.first
 
       model = serializer.send(:extract_content_model, type)
@@ -327,7 +328,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
           </xs:complexType>
         </xs:schema>
       XML
-      schema = Lutaml::Xsd::Schema.from_xml(type_xml)
+      schema = Lutaml::Xsd.parse(type_xml)
       type = schema.complex_type.first
 
       model = serializer.send(:extract_content_model, type)
@@ -389,7 +390,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
     it "returns 'unnamed' for schema without name" do
       minimal_xml = '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>'
-      schema = Lutaml::Xsd::Schema.from_xml(minimal_xml)
+      schema = Lutaml::Xsd.parse(minimal_xml)
       name = serializer.send(:schema_name, schema)
       expect(name).to eq("unnamed")
     end
@@ -416,7 +417,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
     context "when schema has nil collections" do
       let(:minimal_xml) { '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>' }
-      let(:minimal_schema) { Lutaml::Xsd::Schema.from_xml(minimal_xml) }
+      let(:minimal_schema) { Lutaml::Xsd.parse(minimal_xml) }
 
       let(:minimal_repository) do
         Lutaml::Xsd::SchemaRepository.new.tap do |repo|
