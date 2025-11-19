@@ -378,7 +378,16 @@ module Lutaml
 
             # Check namespace
             target_ns = resolve_target_namespace(schema_element)
-            namespaces_match?(xml_element.namespace_uri, target_ns)
+
+            # Get XML element namespace, treating nil and empty string as equivalent
+            xml_ns = xml_element.namespace_uri
+            xml_ns = nil if xml_ns.to_s.empty?
+            target_ns = nil if target_ns.to_s.empty?
+
+            # For inline elements with no explicit namespace, match if both are nil
+            # This handles the common case where elements are defined without
+            # a target namespace in the schema and XML has no namespace declarations
+            xml_ns == target_ns
           end
 
           # Get particle name for error messages
