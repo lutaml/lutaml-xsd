@@ -1,0 +1,44 @@
+# Urban Function Example Configuration
+# Purpose: Demonstrates handling complex schemas with many imports/includes
+# This example uses the i-UR (international Urban Revitalization) standard
+
+files:
+  - ../../spec/fixtures/i-ur/urbanFunction.xsd
+
+schema_location_mappings:
+  # Map specific relative path to local file
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: ../../spec/fixtures/i-ur/urbanObject.xsd
+    pattern: false
+
+  # Map GML bare filenames (no gml/ prefix)
+  - from: '^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects|geometryComplexes)\.xsd$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd
+    pattern: true
+
+  # Map GML relative paths with gml/ prefix
+  - from: '(?:\.\./)+(gml/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+  # Map ISO relative paths
+  - from: '(?:\.\./)+(iso/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+  # Map xlink relative paths
+  - from: '(?:\.\./)+(xlink/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+namespace_mappings:
+  - prefix: "xs"
+    uri: "http://www.w3.org/2001/XMLSchema"
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+  - prefix: "uro"
+    uri: "https://www.geospatial.jp/iur/uro/3.2"
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"

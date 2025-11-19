@@ -1,0 +1,111 @@
+<div class="schema-detail" id="schema-{{ schema.id }}">
+  <!-- Overview -->
+  <section class="schema-overview">
+    <h2>{{ schema.name }}</h2>
+    <div class="schema-meta">
+      <p><strong>Namespace:</strong> <code>{{ schema.namespace }}</code></p>
+      <p><strong>File:</strong> {{ schema.file_path }}</p>
+    </div>
+  </section>
+
+   <!-- Elements -->
+  {% if schema.elements.size > 0 %}
+  <section class="schema-section">
+    <h3>Elements ({{ schema.elements.size }})</h3>
+    <div class="component-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Occurs</th>
+            <th>Documentation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for element in schema.elements %}
+          <tr>
+            <td><a href="#/schemas/{{ schema.id }}/elements/{{ element.id }}" class="component-link">{{ element.name }}</a></td>
+            <td>
+              {% if element.type %}
+                <a href="#/schemas/{{ schema.id }}/types/type-{{ element.type | slugify }}" class="type-link">
+                  <code>{{ element.type }}</code>
+                </a>
+              {% else %}
+                <code>—</code>
+              {% endif %}
+            </td>
+            <td>{{ element.min_occurs }}..{{ element.max_occurs }}</td>
+            <td>{{ element.documentation | truncate: 100 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Complex Types -->
+  {% if schema.complex_types.size > 0 %}
+  <section class="schema-section">
+    <h3>Complex Types ({{ schema.complex_types.size }})</h3>
+    <div class="component-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Base</th>
+            <th>Content</th>
+            <th>Documentation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for type in schema.complex_types %}
+          <tr>
+            <td><a href="#/schemas/{{ schema.id }}/types/{{ type.id }}" class="component-link">{{ type.name }}</a></td>
+            <td>
+              {% if type.base %}
+                <a href="#/schemas/{{ schema.id }}/types/type-{{ type.base | slugify }}" class="type-link">
+                  <code>{{ type.base }}</code>
+                </a>
+              {% else %}
+                <code>—</code>
+              {% endif %}
+            </td>
+            <td>{{ type.content_model }}</td>
+            <td>{{ type.documentation | truncate: 100 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Simple Types -->
+  {% if schema.simple_types.size > 0 %}
+  <section class="schema-section">
+    <h3>Simple Types ({{ schema.simple_types.size }})</h3>
+    <div class="component-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Base</th>
+            <th>Restriction</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for type in schema.simple_types %}
+          <tr>
+            <td><a href="#/schemas/{{ schema.id }}/simple-types/{{ type.id }}" class="component-link">{{ type.name }}</a></td>
+            <td><code>{{ type.base }}</code></td>
+            <td>{{ type.restriction.base }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+</div>

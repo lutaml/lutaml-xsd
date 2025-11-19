@@ -34,5 +34,12 @@ Gem::Specification.new do |spec|
 
   # TODO: Remove "activesupport" once lutaml-model > 0.7.7 is available.
   spec.add_dependency "activesupport"
+  spec.add_dependency "liquid", "~> 5.0"
   spec.add_dependency "lutaml-model", "~> 0.7"
+  spec.add_dependency "moxml"
+  spec.add_dependency "paint", "~> 2.3"
+  spec.add_dependency "rubyzip", "~> 3.2"
+  spec.add_dependency "table_tennis", "~> 0.0.7"
+  spec.add_dependency "thor", "~> 1.0"
+  spec.add_dependency "tty-prompt", "~> 0.23"
 end
