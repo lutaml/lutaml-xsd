@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../validation_rule"
+require_relative '../validation_rule'
 
 module Lutaml
   module Xsd
@@ -33,7 +33,7 @@ module Lutaml
           #
           # @return [String]
           def description
-            "Validates element content against XSD type definitions"
+            'Validates element content against XSD type definitions'
           end
 
           # Validate element type
@@ -194,8 +194,11 @@ module Lutaml
             return if patterns.empty?
 
             patterns.each do |pattern|
-              pattern_value = pattern.respond_to?(:value) ?
-                              pattern.value : pattern.to_s
+              pattern_value = if pattern.respond_to?(:value)
+                                pattern.value
+                              else
+                                pattern.to_s
+                              end
 
               begin
                 regex = Regexp.new(pattern_value)
@@ -203,7 +206,7 @@ module Lutaml
 
                 report_error(
                   collector,
-                  code: "pattern_mismatch",
+                  code: 'pattern_mismatch',
                   message: "Value '#{value}' does not match pattern " \
                            "'#{pattern_value}'",
                   location: xml_element.xpath,
@@ -215,7 +218,7 @@ module Lutaml
               rescue RegexpError => e
                 report_warning(
                   collector,
-                  code: "invalid_pattern",
+                  code: 'invalid_pattern',
                   message: "Invalid pattern in schema: #{e.message}",
                   location: xml_element.xpath
                 )
@@ -240,7 +243,7 @@ module Lutaml
               if value_length != expected_length
                 report_error(
                   collector,
-                  code: "length_mismatch",
+                  code: 'length_mismatch',
                   message: "Value length #{value_length} does not equal " \
                            "required length #{expected_length}",
                   location: xml_element.xpath,
@@ -259,7 +262,7 @@ module Lutaml
               if value_length < min_length
                 report_error(
                   collector,
-                  code: "min_length_violation",
+                  code: 'min_length_violation',
                   message: "Value length #{value_length} is less than " \
                            "minimum #{min_length}",
                   location: xml_element.xpath,
@@ -273,23 +276,23 @@ module Lutaml
             end
 
             # Check maximum length
-            if restriction.respond_to?(:max_length) && restriction.max_length
-              max_length = restriction.max_length.value.to_i
-              if value_length > max_length
-                report_error(
-                  collector,
-                  code: "max_length_violation",
-                  message: "Value length #{value_length} exceeds maximum " \
-                           "#{max_length}",
-                  location: xml_element.xpath,
-                  context: {
-                    value: value,
-                    max_length: max_length,
-                    actual_length: value_length
-                  }
-                )
-              end
-            end
+            return unless restriction.respond_to?(:max_length) && restriction.max_length
+
+            max_length = restriction.max_length.value.to_i
+            return unless value_length > max_length
+
+            report_error(
+              collector,
+              code: 'max_length_violation',
+              message: "Value length #{value_length} exceeds maximum " \
+                       "#{max_length}",
+              location: xml_element.xpath,
+              context: {
+                value: value,
+                max_length: max_length,
+                actual_length: value_length
+              }
+            )
           end
 
           # Validate range facets
@@ -326,7 +329,7 @@ module Lutaml
 
             report_error(
               collector,
-              code: "enumeration_violation",
+              code: 'enumeration_violation',
               message: "Value '#{value}' is not in enumeration",
               location: xml_element.xpath,
               context: {

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "thor"
-require_relative "base_command"
-require_relative "../dependency_grapher"
-require_relative "../batch_type_query"
+require 'thor'
+require_relative 'base_command'
+require_relative '../dependency_grapher'
+require_relative '../batch_type_query'
 
 module Lutaml
   module Xsd
@@ -12,15 +12,15 @@ module Lutaml
       # Handles finding and listing schema types
       class TypeCommand < Thor
         # Command aliases
-        map "f" => :find
-        map "ls" => :list
+        map 'f' => :find
+        map 'ls' => :list
 
         class_option :verbose,
                      type: :boolean,
                      default: false,
-                     desc: "Enable verbose output"
+                     desc: 'Enable verbose output'
 
-        desc "find QNAME PACKAGE", "Find type(s) - supports batch mode"
+        desc 'find QNAME PACKAGE', 'Find type(s) - supports batch mode'
         long_desc <<~DESC
           Find and display type information.
 
@@ -33,13 +33,13 @@ module Lutaml
           Batch mode from stdin:
             echo "Type1\\nType2" | lutaml-xsd type find --batch schemas.lxr
         DESC
-        option :batch, type: :boolean, desc: "Read types from stdin"
-        option :batch_file, type: :string, desc: "Read types from file"
+        option :batch, type: :boolean, desc: 'Read types from stdin'
+        option :batch_file, type: :string, desc: 'Read types from file'
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def find(qname_or_package = nil, package_path = nil)
           # Handle both single and batch modes
           if options[:batch] || options[:batch_file]
@@ -51,7 +51,7 @@ module Lutaml
           end
         end
 
-        desc "list PACKAGE_FILE", "List all types in the repository"
+        desc 'list PACKAGE_FILE', 'List all types in the repository'
         long_desc <<~DESC
           List all types in a schema repository package.
 
@@ -67,21 +67,21 @@ module Lutaml
         DESC
         option :namespace,
                type: :string,
-               desc: "Filter by namespace URI"
+               desc: 'Filter by namespace URI'
         option :category,
                type: :string,
                enum: %w[element complex_type simple_type attribute_group group],
-               desc: "Filter by type category"
+               desc: 'Filter by type category'
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def list(package_file)
           ListCommand.new(package_file, options).run
         end
 
-        desc "dependencies QNAME PACKAGE", "Show what a type depends on"
+        desc 'dependencies QNAME PACKAGE', 'Show what a type depends on'
         long_desc <<~DESC
           Analyze and display the dependency graph for a type, showing what other
           types it depends on. Supports multiple output formats including text,
@@ -103,22 +103,22 @@ module Lutaml
         option :depth,
                type: :numeric,
                default: 3,
-               desc: "Maximum recursion depth for dependency traversal"
+               desc: 'Maximum recursion depth for dependency traversal'
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text mermaid dot json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         option :direction,
                type: :string,
-               default: "both",
+               default: 'both',
                enum: %w[both up down],
-               desc: "Direction to show (both=full graph, down=dependencies only)"
+               desc: 'Direction to show (both=full graph, down=dependencies only)'
         def dependencies(qname, package_path)
           DependenciesCommand.new(qname, package_path, options).run
         end
 
-        desc "dependents QNAME PACKAGE", "Show what depends on a type"
+        desc 'dependents QNAME PACKAGE', 'Show what depends on a type'
         long_desc <<~DESC
           Find and display all types that depend on (reference) the specified type.
           This reverse dependency analysis helps understand the impact of changes.
@@ -135,14 +135,14 @@ module Lutaml
         DESC
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def dependents(qname, package_path)
           DependentsCommand.new(qname, package_path, options).run
         end
 
-        desc "hierarchy QNAME PACKAGE", "Show type inheritance hierarchy"
+        desc 'hierarchy QNAME PACKAGE', 'Show type inheritance hierarchy'
         long_desc <<~DESC
           Display the inheritance hierarchy for a type, showing both ancestors
           (base types) and descendants (derived types).
@@ -166,25 +166,25 @@ module Lutaml
         option :depth,
                type: :numeric,
                default: 10,
-               desc: "Maximum depth to traverse"
+               desc: 'Maximum depth to traverse'
         option :direction,
                type: :string,
-               default: "both",
+               default: 'both',
                enum: %w[ancestors descendants both],
-               desc: "Direction to show (ancestors=base types, descendants=derived types, both=full hierarchy)"
+               desc: 'Direction to show (ancestors=base types, descendants=derived types, both=full hierarchy)'
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text mermaid json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def hierarchy(qname, package_path)
           HierarchyCommand.new(qname, package_path, options).run
         end
 
         # Command aliases
-        map "deps" => :dependencies
-        map "uses" => :dependents
-        map "h" => :hierarchy
+        map 'deps' => :dependencies
+        map 'uses' => :dependents
+        map 'h' => :hierarchy
 
         # Find command implementation
         class FindCommand < BaseCommand
@@ -206,16 +206,16 @@ module Lutaml
           def find_and_display_type(repository)
             if verbose?
               output "🔍 Resolving type: #{@qname}"
-              output "  Parsing qualified name..."
-              output "  Checking namespace registry..."
-              output "  Searching type index..."
-              output ""
+              output '  Parsing qualified name...'
+              output '  Checking namespace registry...'
+              output '  Searching type index...'
+              output ''
             end
 
             result = repository.find_type(@qname)
 
             if verbose? && result.resolved?
-              output "📊 Resolution Details:"
+              output '📊 Resolution Details:'
               output "  Found in type index: #{result.definition.class.name}"
               output "  Namespace: #{result.namespace}"
               output "  Schema: #{result.schema_file}"
@@ -225,13 +225,13 @@ module Lutaml
                   output "    #{i + 1}. #{step}"
                 end
               end
-              output ""
+              output ''
             end
 
-            format = options[:format] || "text"
+            format = options[:format] || 'text'
 
             case format
-            when "json", "yaml"
+            when 'json', 'yaml'
               output format_output(result_to_hash(result), format)
             else
               display_text_result(result)
@@ -261,10 +261,10 @@ module Lutaml
           end
 
           def display_text_result(result)
-            output "=" * 80
+            output '=' * 80
             output "Type Resolution: #{@qname}"
-            output "=" * 80
-            output ""
+            output '=' * 80
+            output ''
 
             if result.resolved?
               display_resolved_type(result)
@@ -274,29 +274,29 @@ module Lutaml
           end
 
           def display_resolved_type(result)
-            require "table_tennis"
+            require 'table_tennis'
 
-            output "✓ Type found"
-            output ""
+            output '✓ Type found'
+            output ''
 
             # Extract documentation first
             doc = extract_documentation(result.definition)
-            doc = "(no documentation)" if doc.nil? || doc.strip.empty?
+            doc = '(no documentation)' if doc.nil? || doc.strip.empty?
 
             # Metadata table with documentation included
             metadata_table = TableTennis.new(
               [
-                { "Property" => "Qualified Name", "Value" => result.qname },
-                { "Property" => "Namespace", "Value" => result.namespace || "(none)" },
-                { "Property" => "Local Name", "Value" => result.local_name },
-                { "Property" => "Schema File", "Value" => File.basename(result.schema_file) },
-                { "Property" => "Type Class", "Value" => result.definition.class.name },
-                { "Property" => "Documentation", "Value" => doc }
+                { 'Property' => 'Qualified Name', 'Value' => result.qname },
+                { 'Property' => 'Namespace', 'Value' => result.namespace || '(none)' },
+                { 'Property' => 'Local Name', 'Value' => result.local_name },
+                { 'Property' => 'Schema File', 'Value' => File.basename(result.schema_file) },
+                { 'Property' => 'Type Class', 'Value' => result.definition.class.name },
+                { 'Property' => 'Documentation', 'Value' => doc }
               ]
             )
 
             output metadata_table
-            output ""
+            output ''
 
             # Always show complete type structure
             display_type_structure(result.definition, @repository)
@@ -306,29 +306,37 @@ module Lutaml
           end
 
           def display_failed_resolution(result)
-            output "✗ Type not found"
-            output ""
+            output '✗ Type not found'
+            output ''
             output "Error: #{result.error_message}"
 
             return unless result.resolution_path && !result.resolution_path.empty?
 
-            output ""
-            output "Resolution Path:"
+            output ''
+            output 'Resolution Path:'
             result.resolution_path.each_with_index do |step, idx|
               output "  #{idx + 1}. #{step}"
             end
           end
 
-
           def display_type_structure(definition, repository)
             # Display simple content
-            display_simple_content(definition.simple_content, repository) if definition.respond_to?(:simple_content) && definition.simple_content
+            if definition.respond_to?(:simple_content) && definition.simple_content
+              display_simple_content(definition.simple_content,
+                                     repository)
+            end
 
             # Display complex content
-            display_complex_content(definition.complex_content, repository) if definition.respond_to?(:complex_content) && definition.complex_content
+            if definition.respond_to?(:complex_content) && definition.complex_content
+              display_complex_content(definition.complex_content,
+                                      repository)
+            end
 
             # Display sequence elements
-            display_sequence(definition.sequence, repository) if definition.respond_to?(:sequence) && definition.sequence
+            if definition.respond_to?(:sequence) && definition.sequence
+              display_sequence(definition.sequence,
+                               repository)
+            end
 
             # Display choice elements
             display_choice(definition.choice, repository) if definition.respond_to?(:choice) && definition.choice
@@ -337,61 +345,79 @@ module Lutaml
             display_all(definition.all, repository) if definition.respond_to?(:all) && definition.all
 
             # Display direct attributes
-            display_attributes(definition.attribute, repository, "Attributes") if definition.respond_to?(:attribute) && definition.attribute
+            if definition.respond_to?(:attribute) && definition.attribute
+              display_attributes(definition.attribute, repository,
+                                 'Attributes')
+            end
 
             # Display attribute groups
             display_attribute_groups(definition.attribute_group) if definition.respond_to?(:attribute_group) && definition.attribute_group
           end
 
           def display_simple_content(simple_content, repository)
-            output "Simple Content:"
+            output 'Simple Content:'
 
             return unless simple_content.respond_to?(:extension) && simple_content.extension
 
             extension = simple_content.extension
-            output "  Extension:"
+            output '  Extension:'
             output "    Base: #{extension.base}" if extension.respond_to?(:base)
 
             return unless extension.respond_to?(:attribute) && extension.attribute
 
-            display_attributes(extension.attribute, repository, "    Attributes", indent: "    ")
+            display_attributes(extension.attribute, repository, '    Attributes', indent: '    ')
           end
 
           def display_complex_content(complex_content, repository)
-            output "Complex Content:"
+            output 'Complex Content:'
 
             if complex_content.respond_to?(:extension) && complex_content.extension
               extension = complex_content.extension
-              output "  Extension:"
+              output '  Extension:'
               output "    Base: #{extension.base}" if extension.respond_to?(:base)
 
               # Display sequence from extension
-              display_sequence(extension.sequence, repository, indent: "    ") if extension.respond_to?(:sequence) && extension.sequence
+              if extension.respond_to?(:sequence) && extension.sequence
+                display_sequence(extension.sequence, repository,
+                                 indent: '    ')
+              end
 
               # Display attributes from extension
-              display_attributes(extension.attribute, repository, "    Attributes", indent: "    ") if extension.respond_to?(:attribute) && extension.attribute
+              if extension.respond_to?(:attribute) && extension.attribute
+                display_attributes(extension.attribute, repository, '    Attributes',
+                                   indent: '    ')
+              end
 
               # Display attribute groups from extension
-              display_attribute_groups(extension.attribute_group, indent: "    ") if extension.respond_to?(:attribute_group) && extension.attribute_group
+              if extension.respond_to?(:attribute_group) && extension.attribute_group
+                display_attribute_groups(extension.attribute_group,
+                                         indent: '    ')
+              end
             end
 
-            if complex_content.respond_to?(:restriction) && complex_content.restriction
-              restriction = complex_content.restriction
-              output "  Restriction:"
-              output "    Base: #{restriction.base}" if restriction.respond_to?(:base)
+            return unless complex_content.respond_to?(:restriction) && complex_content.restriction
 
-              # Display sequence from restriction
-              display_sequence(restriction.sequence, repository, indent: "    ") if restriction.respond_to?(:sequence) && restriction.sequence
+            restriction = complex_content.restriction
+            output '  Restriction:'
+            output "    Base: #{restriction.base}" if restriction.respond_to?(:base)
 
-              # Display attributes from restriction
-              display_attributes(restriction.attribute, repository, "    Attributes", indent: "    ") if restriction.respond_to?(:attribute) && restriction.attribute
+            # Display sequence from restriction
+            if restriction.respond_to?(:sequence) && restriction.sequence
+              display_sequence(restriction.sequence, repository,
+                               indent: '    ')
             end
+
+            # Display attributes from restriction
+            return unless restriction.respond_to?(:attribute) && restriction.attribute
+
+            display_attributes(restriction.attribute, repository, '    Attributes',
+                               indent: '    ')
           end
 
-          def display_sequence(sequence, repository, indent: "")
-            return unless sequence && sequence.element && !sequence.element.empty?
+          def display_sequence(sequence, repository, indent: '')
+            return unless sequence&.element && !sequence.element.empty?
 
-            require "table_tennis"
+            require 'table_tennis'
 
             output "#{indent}Sequence:"
 
@@ -399,38 +425,38 @@ module Lutaml
             elements = elements.compact
 
             elements_data = elements.map do |elem|
-              name = elem.ref || elem.name || "(unknown)"
+              name = elem.ref || elem.name || '(unknown)'
               resolution = resolve_element_with_path(elem, repository)
-              min = elem.min_occurs || "1"
-              max = elem.max_occurs || "1"
-              max = "*" if max == "unbounded"
+              min = elem.min_occurs || '1'
+              max = elem.max_occurs || '1'
+              max = '*' if max == 'unbounded'
               doc = extract_documentation(elem)
 
               # Build type display
-              if resolution[:resolved]
-                type_display = resolution[:type] || "(inline)"
-              else
-                type_display = "\e[31m⚠️  UNRESOLVED\e[0m"
-              end
+              type_display = if resolution[:resolved]
+                               resolution[:type] || '(inline)'
+                             else
+                               "\e[31m⚠️  UNRESOLVED\e[0m"
+                             end
 
               # Combine documentation + path
               combined_doc = if doc && !doc.empty?
-                doc
-              else
-                ""
-              end
+                               doc
+                             else
+                               ''
+                             end
 
               # Add path info on new line
-              if resolution[:path_info] && resolution[:path_info] != "inline"
+              if resolution[:path_info] && resolution[:path_info] != 'inline'
                 path_line = "Path: #{resolution[:path_info]}"
                 combined_doc = combined_doc.empty? ? path_line : "#{combined_doc}\n#{path_line}"
               end
 
               {
-                "Element" => name,
-                "Type" => type_display,
-                "Cardinality" => "[#{min}..#{max}]",
-                "Documentation" => combined_doc
+                'Element' => name,
+                'Type' => type_display,
+                'Cardinality' => "[#{min}..#{max}]",
+                'Documentation' => combined_doc
               }
             end
 
@@ -439,13 +465,13 @@ module Lutaml
             table.to_s.split("\n").each do |line|
               output "#{indent}#{line}"
             end
-            output ""
+            output ''
           end
 
-          def display_choice(choice, repository, indent: "")
-            return unless choice && choice.element && !choice.element.empty?
+          def display_choice(choice, repository, indent: '')
+            return unless choice&.element && !choice.element.empty?
 
-            require "table_tennis"
+            require 'table_tennis'
 
             output "#{indent}Choice:"
 
@@ -453,38 +479,38 @@ module Lutaml
             elements = elements.compact
 
             elements_data = elements.map do |elem|
-              name = elem.ref || elem.name || "(unknown)"
+              name = elem.ref || elem.name || '(unknown)'
               resolution = resolve_element_with_path(elem, repository)
-              min = elem.min_occurs || "1"
-              max = elem.max_occurs || "1"
-              max = "*" if max == "unbounded"
+              min = elem.min_occurs || '1'
+              max = elem.max_occurs || '1'
+              max = '*' if max == 'unbounded'
               doc = extract_documentation(elem)
 
               # Build type display
-              if resolution[:resolved]
-                type_display = resolution[:type] || "(inline)"
-              else
-                type_display = "\e[31m⚠️  UNRESOLVED\e[0m"
-              end
+              type_display = if resolution[:resolved]
+                               resolution[:type] || '(inline)'
+                             else
+                               "\e[31m⚠️  UNRESOLVED\e[0m"
+                             end
 
               # Combine documentation + path
               combined_doc = if doc && !doc.empty?
-                doc
-              else
-                ""
-              end
+                               doc
+                             else
+                               ''
+                             end
 
               # Add path info on new line
-              if resolution[:path_info] && resolution[:path_info] != "inline"
+              if resolution[:path_info] && resolution[:path_info] != 'inline'
                 path_line = "Path: #{resolution[:path_info]}"
                 combined_doc = combined_doc.empty? ? path_line : "#{combined_doc}\n#{path_line}"
               end
 
               {
-                "Element" => name,
-                "Type" => type_display,
-                "Cardinality" => "[#{min}..#{max}]",
-                "Documentation" => combined_doc
+                'Element' => name,
+                'Type' => type_display,
+                'Cardinality' => "[#{min}..#{max}]",
+                'Documentation' => combined_doc
               }
             end
 
@@ -493,13 +519,13 @@ module Lutaml
             table.to_s.split("\n").each do |line|
               output "#{indent}#{line}"
             end
-            output ""
+            output ''
           end
 
-          def display_all(all, repository, indent: "")
-            return unless all && all.element && !all.element.empty?
+          def display_all(all, repository, indent: '')
+            return unless all&.element && !all.element.empty?
 
-            require "table_tennis"
+            require 'table_tennis'
 
             output "#{indent}All:"
 
@@ -507,38 +533,38 @@ module Lutaml
             elements = elements.compact
 
             elements_data = elements.map do |elem|
-              name = elem.ref || elem.name || "(unknown)"
+              name = elem.ref || elem.name || '(unknown)'
               resolution = resolve_element_with_path(elem, repository)
-              min = elem.min_occurs || "1"
-              max = elem.max_occurs || "1"
-              max = "*" if max == "unbounded"
+              min = elem.min_occurs || '1'
+              max = elem.max_occurs || '1'
+              max = '*' if max == 'unbounded'
               doc = extract_documentation(elem)
 
               # Build type display
-              if resolution[:resolved]
-                type_display = resolution[:type] || "(inline)"
-              else
-                type_display = "\e[31m⚠️  UNRESOLVED\e[0m"
-              end
+              type_display = if resolution[:resolved]
+                               resolution[:type] || '(inline)'
+                             else
+                               "\e[31m⚠️  UNRESOLVED\e[0m"
+                             end
 
               # Combine documentation + path
               combined_doc = if doc && !doc.empty?
-                doc
-              else
-                ""
-              end
+                               doc
+                             else
+                               ''
+                             end
 
               # Add path info on new line
-              if resolution[:path_info] && resolution[:path_info] != "inline"
+              if resolution[:path_info] && resolution[:path_info] != 'inline'
                 path_line = "Path: #{resolution[:path_info]}"
                 combined_doc = combined_doc.empty? ? path_line : "#{combined_doc}\n#{path_line}"
               end
 
               {
-                "Element" => name,
-                "Type" => type_display,
-                "Cardinality" => "[#{min}..#{max}]",
-                "Documentation" => combined_doc
+                'Element' => name,
+                'Type' => type_display,
+                'Cardinality' => "[#{min}..#{max}]",
+                'Documentation' => combined_doc
               }
             end
 
@@ -547,28 +573,28 @@ module Lutaml
             table.to_s.split("\n").each do |line|
               output "#{indent}#{line}"
             end
-            output ""
+            output ''
           end
 
-          def display_attributes(attributes, repository, label = "Attributes", indent: "")
+          def display_attributes(attributes, repository, label = 'Attributes', indent: '')
             attrs = attributes.is_a?(Array) ? attributes : [attributes]
             attrs = attrs.compact
             return if attrs.empty?
 
-            require "table_tennis"
+            require 'table_tennis'
 
             output "#{indent}#{label}:"
 
             attrs_data = attrs.map do |attr|
-              attr_name = attr.ref || attr.name || "(unknown)"
+              attr_name = attr.ref || attr.name || '(unknown)'
               resolution = resolve_attribute_with_path(attr, repository)
-              use = attr.use || "optional"
+              use = attr.use || 'optional'
               doc = extract_documentation(attr)
 
               # Type display with source info
               if resolution[:resolved]
                 type_display = resolution[:type]
-                if resolution[:source_schema] != "inline" && resolution[:source_schema] != "unknown"
+                if resolution[:source_schema] != 'inline' && resolution[:source_schema] != 'unknown'
                   source = File.basename(resolution[:source_schema])
                   type_display = "#{resolution[:type]} (from #{source})"
                 end
@@ -577,17 +603,17 @@ module Lutaml
               end
 
               # Combine doc + path
-              combined_doc = doc || ""
-              if resolution[:path_info] && resolution[:path_info] != "inline definition"
+              combined_doc = doc || ''
+              if resolution[:path_info] && resolution[:path_info] != 'inline definition'
                 path_line = "Path: #{resolution[:path_info]}"
                 combined_doc = combined_doc.empty? ? path_line : "#{combined_doc}\n#{path_line}"
               end
 
               {
-                "Attribute" => attr_name,
-                "Type" => type_display,
-                "Usage" => use,
-                "Documentation" => combined_doc
+                'Attribute' => attr_name,
+                'Type' => type_display,
+                'Usage' => use,
+                'Documentation' => combined_doc
               }
             end
 
@@ -596,7 +622,7 @@ module Lutaml
             table.to_s.split("\n").each do |line|
               output "#{indent}#{line}"
             end
-            output ""
+            output ''
           end
 
           def resolve_attribute_type(attr, repository)
@@ -613,7 +639,7 @@ module Lutaml
                 source_schema = find_schema_for_attribute(attr_def, repository)
 
                 # Build path info
-                if source_schema&.location && source_schema.location != "unknown"
+                if source_schema&.location && source_schema.location != 'unknown'
                   source = File.basename(source_schema.location)
                   path_info = "ref '#{attr.ref}' → #{source} → type '#{attr_def.type}'"
                 else
@@ -623,8 +649,8 @@ module Lutaml
                 {
                   type: attr_def.type,
                   resolved: true,
-                  source_schema: source_schema&.location || "unknown",
-                  resolution_method: "cross-schema import",
+                  source_schema: source_schema&.location || 'unknown',
+                  resolution_method: 'cross-schema import',
                   ref: attr.ref,
                   path_info: path_info
                 }
@@ -632,18 +658,18 @@ module Lutaml
                 {
                   type: nil,
                   resolved: false,
-                  resolution_method: "not found",
+                  resolution_method: 'not found',
                   ref: attr.ref,
-                  path_info: "NOT FOUND"
+                  path_info: 'NOT FOUND'
                 }
               end
             else
               {
                 type: attr.type,
                 resolved: true,
-                source_schema: "inline",
-                resolution_method: "direct",
-                path_info: "inline definition"
+                source_schema: 'inline',
+                resolution_method: 'direct',
+                path_info: 'inline definition'
               }
             end
           end
@@ -662,7 +688,6 @@ module Lutaml
             nil
           end
 
-
           def resolve_element_with_path(elem, repository)
             if elem.ref
               # It's a reference to a global element
@@ -672,25 +697,25 @@ module Lutaml
                 source_schema = find_schema_for_element(elem_def, repository)
 
                 # Build path info
-                if elem_def.type && source_schema&.location != "inline"
-                  path_info = "ref '#{elem.ref}' → element → type '#{elem_def.type}'"
-                else
-                  path_info = "inline"
-                end
+                path_info = if elem_def.type && source_schema&.location != 'inline'
+                              "ref '#{elem.ref}' → element → type '#{elem_def.type}'"
+                            else
+                              'inline'
+                            end
 
                 {
-                  type: elem_def.type || "(inline complex type)",
+                  type: elem_def.type || '(inline complex type)',
                   resolved: true,
-                  source_schema: source_schema&.location || "unknown",
-                  resolution_method: elem_def.type ? "element reference" : "inline definition",
+                  source_schema: source_schema&.location || 'unknown',
+                  resolution_method: elem_def.type ? 'element reference' : 'inline definition',
                   path_info: path_info
                 }
               else
                 {
                   type: nil,
                   resolved: false,
-                  resolution_method: "element not found",
-                  path_info: "NOT FOUND"
+                  resolution_method: 'element not found',
+                  path_info: 'NOT FOUND'
                 }
               end
             elsif elem.type
@@ -698,18 +723,18 @@ module Lutaml
               {
                 type: elem.type,
                 resolved: true,
-                source_schema: "inline",
-                resolution_method: "direct",
-                path_info: "inline"
+                source_schema: 'inline',
+                resolution_method: 'direct',
+                path_info: 'inline'
               }
             else
               # Inline complex or simple type
               {
-                type: "(inline type definition)",
+                type: '(inline type definition)',
                 resolved: true,
-                source_schema: "inline",
-                resolution_method: "inline",
-                path_info: "inline"
+                source_schema: 'inline',
+                resolution_method: 'inline',
+                path_info: 'inline'
               }
             end
           end
@@ -728,10 +753,10 @@ module Lutaml
             nil
           end
 
-          def display_attribute_groups(groups, indent: "")
+          def display_attribute_groups(groups, indent: '')
             return unless groups && !groups.empty?
 
-            require "table_tennis"
+            require 'table_tennis'
 
             groups = [groups] unless groups.is_a?(Array)
             groups = groups.compact
@@ -740,12 +765,12 @@ module Lutaml
             output "#{indent}Attribute Groups:"
 
             groups_data = groups.map do |group|
-              name = group.ref || group.name || "(unknown)"
+              name = group.ref || group.name || '(unknown)'
               doc = extract_documentation(group)
 
               {
-                "Group" => name,
-                "Documentation" => doc
+                'Group' => name,
+                'Documentation' => doc
               }
             end
 
@@ -754,11 +779,11 @@ module Lutaml
             table.to_s.split("\n").each do |line|
               output "#{indent}#{line}"
             end
-            output ""
+            output ''
           end
 
           def extract_documentation(obj)
-            return "" unless obj.annotation&.documentation
+            return '' unless obj.annotation&.documentation
 
             docs = obj.annotation.documentation
             docs = [docs] unless docs.is_a?(Array)
@@ -766,13 +791,13 @@ module Lutaml
             docs.map do |doc|
               content = doc.respond_to?(:content) ? doc.content : doc.to_s
               content&.strip
-            end.compact.first || ""
+            end.compact.first || ''
           end
 
           def display_drill_down_hints(definition, repository)
-            output ""
-            output "💡 Explore further:"
-            output ""
+            output ''
+            output '💡 Explore further:'
+            output ''
 
             hints = []
 
@@ -788,10 +813,10 @@ module Lutaml
                 elsif elem.ref
                   # Look up the referenced element to get its type
                   elem_def = repository.find_element(elem.ref)
-                  type = elem_def.type if elem_def && elem_def.respond_to?(:type)
+                  type = elem_def.type if elem_def.respond_to?(:type)
                 end
 
-                next if !type || type == "(inline)" || type =~ /^xsd?:/
+                next if !type || type == '(inline)' || type =~ /^xsd?:/
 
                 hints << {
                   element: ref,
@@ -813,10 +838,10 @@ module Lutaml
                 elsif elem.ref
                   # Look up the referenced element to get its type
                   elem_def = repository.find_element(elem.ref)
-                  type = elem_def.type if elem_def && elem_def.respond_to?(:type)
+                  type = elem_def.type if elem_def.respond_to?(:type)
                 end
 
-                next if !type || type == "(inline)" || type =~ /^xsd?:/
+                next if !type || type == '(inline)' || type =~ /^xsd?:/
 
                 hints << {
                   element: ref,
@@ -827,45 +852,41 @@ module Lutaml
             end
 
             # Collect hints from complex content extensions
-            if definition.respond_to?(:complex_content) && definition.complex_content
-              if definition.complex_content.respond_to?(:extension) && definition.complex_content.extension
-                extension = definition.complex_content.extension
-                if extension.respond_to?(:base) && extension.base && !(extension.base =~ /^xsd?:/)
+            if definition.respond_to?(:complex_content) && (definition.complex_content.respond_to?(:extension) && definition.complex_content.extension)
+              extension = definition.complex_content.extension
+              if extension.respond_to?(:base) && extension.base && extension.base !~ /^xsd?:/
+                hints << {
+                  element: 'base type',
+                  type: extension.base,
+                  command: "lutaml-xsd type find \"#{extension.base}\" <package-file>"
+                }
+              end
+
+              # Also check sequence in extension
+              if extension.respond_to?(:sequence) && extension.sequence
+                extension.sequence.element.first(2).each do |elem|
+                  ref = elem.ref || elem.name
+                  type = elem.type || '(inline)'
+                  next if type == '(inline)' || type =~ /^xsd?:/
+
                   hints << {
-                    element: "base type",
-                    type: extension.base,
-                    command: "lutaml-xsd type find \"#{extension.base}\" <package-file>"
+                    element: ref,
+                    type: type,
+                    command: "lutaml-xsd type find \"#{type}\" <package-file>"
                   }
-                end
-
-                # Also check sequence in extension
-                if extension.respond_to?(:sequence) && extension.sequence
-                  extension.sequence.element.first(2).each do |elem|
-                    ref = elem.ref || elem.name
-                    type = elem.type || "(inline)"
-                    next if type == "(inline)" || type =~ /^xsd?:/
-
-                    hints << {
-                      element: ref,
-                      type: type,
-                      command: "lutaml-xsd type find \"#{type}\" <package-file>"
-                    }
-                  end
                 end
               end
             end
 
             # Collect hints from simple content extensions
-            if definition.respond_to?(:simple_content) && definition.simple_content
-              if definition.simple_content.respond_to?(:extension) && definition.simple_content.extension
-                extension = definition.simple_content.extension
-                if extension.respond_to?(:base) && extension.base && !(extension.base =~ /^xsd?:/)
-                  hints << {
-                    element: "base type",
-                    type: extension.base,
-                    command: "lutaml-xsd type find \"#{extension.base}\" <package-file>"
-                  }
-                end
+            if definition.respond_to?(:simple_content) && (definition.simple_content.respond_to?(:extension) && definition.simple_content.extension)
+              extension = definition.simple_content.extension
+              if extension.respond_to?(:base) && extension.base && extension.base !~ /^xsd?:/
+                hints << {
+                  element: 'base type',
+                  type: extension.base,
+                  command: "lutaml-xsd type find \"#{extension.base}\" <package-file>"
+                }
               end
             end
 
@@ -873,13 +894,13 @@ module Lutaml
             hints.uniq { |h| h[:type] }.first(5).each do |hint|
               output "  To explore #{hint[:element]} (#{hint[:type]}):"
               output "    #{hint[:command]}"
-              output ""
+              output ''
             end
 
             return unless hints.empty?
 
-            output "  (No explorable types found in this definition)"
-            output ""
+            output '  (No explorable types found in this definition)'
+            output ''
           end
         end
 
@@ -913,10 +934,10 @@ module Lutaml
                                   end
             end
 
-            format = options[:format] || "text"
+            format = options[:format] || 'text'
 
             case format
-            when "json", "yaml"
+            when 'json', 'yaml'
               output format_output(types_by_category, format)
             else
               display_text_list(types_by_category, stats)
@@ -924,11 +945,11 @@ module Lutaml
           end
 
           def display_text_list(types_by_category, stats)
-            require "table_tennis"
+            require 'table_tennis'
 
-            output "Schema Repository Type Listing"
-            output "=" * 80
-            output ""
+            output 'Schema Repository Type Listing'
+            output '=' * 80
+            output ''
             output "Total Types: #{stats[:total_types]}"
             output "Total Namespaces: #{stats[:total_namespaces]}"
 
@@ -936,19 +957,19 @@ module Lutaml
 
             output "Filtered by Category: #{options[:category]}" if options[:category]
 
-            output ""
-            output "Types by Category:"
-            output "-" * 80
+            output ''
+            output 'Types by Category:'
+            output '-' * 80
 
             # Build table data as array of hashes
             category_data = types_by_category.sort.map do |category, count|
-              { "Category" => category.to_s, "Count" => count }
+              { 'Category' => category.to_s, 'Count' => count }
             end
 
             category_table = TableTennis.new(category_data)
             output category_table
 
-            output ""
+            output ''
             output "Note: Use 'lutaml-xsd type find <qname> <package>' to get details about a specific type"
           end
         end
@@ -977,61 +998,61 @@ module Lutaml
 
             unless graph[:resolved]
               error "Failed to resolve type: #{@qname}"
-              output ""
+              output ''
               output graph[:error]
               exit 1
             end
 
-            format = options[:format] || "text"
-            direction = options[:direction] || "both"
+            format = options[:format] || 'text'
+            direction = options[:direction] || 'both'
 
             case format
-            when "json"
+            when 'json'
               output JSON.pretty_generate(graph)
-            when "yaml"
+            when 'yaml'
               output graph.to_yaml
-            when "mermaid"
+            when 'mermaid'
               output grapher.to_mermaid(graph)
-            when "dot"
+            when 'dot'
               output grapher.to_dot(graph)
             else
               display_text_graph(graph, grapher, direction)
             end
           end
 
-          def display_text_graph(graph, grapher, direction)
-            require "table_tennis"
+          def display_text_graph(graph, _grapher, _direction)
+            require 'table_tennis'
 
-            output "=" * 80
+            output '=' * 80
             output "Type Dependency Analysis: #{graph[:root]}"
-            output "=" * 80
-            output ""
+            output '=' * 80
+            output ''
 
             metadata = [
-              { "Property" => "Type", "Value" => graph[:root] },
-              { "Property" => "Namespace", "Value" => graph[:namespace] || "(none)" },
-              { "Property" => "Category", "Value" => graph[:type_category] },
-              { "Property" => "Dependencies Found", "Value" => count_dependencies(graph[:dependencies]).to_s }
+              { 'Property' => 'Type', 'Value' => graph[:root] },
+              { 'Property' => 'Namespace', 'Value' => graph[:namespace] || '(none)' },
+              { 'Property' => 'Category', 'Value' => graph[:type_category] },
+              { 'Property' => 'Dependencies Found', 'Value' => count_dependencies(graph[:dependencies]).to_s }
             ]
 
             table = TableTennis.new(metadata)
             output table
-            output ""
+            output ''
 
             if graph[:dependencies].empty?
-              output "No dependencies found (type may be a primitive or self-contained type)"
+              output 'No dependencies found (type may be a primitive or self-contained type)'
             else
-              output "Dependencies (what this type depends on):"
-              output "-" * 80
-              output ""
-              display_dependency_tree(graph[:dependencies], "")
+              output 'Dependencies (what this type depends on):'
+              output '-' * 80
+              output ''
+              display_dependency_tree(graph[:dependencies], '')
             end
 
-            unless graph[:dependencies].empty?
-              output ""
-              output "💡 Tip: Use --format mermaid or --format dot to generate diagrams"
-              output "💡 Tip: Adjust --depth to control recursion level (current: #{options[:depth] || 3})"
-            end
+            return if graph[:dependencies].empty?
+
+            output ''
+            output '💡 Tip: Use --format mermaid or --format dot to generate diagrams'
+            output "💡 Tip: Adjust --depth to control recursion level (current: #{options[:depth] || 3})"
           end
 
           def display_dependency_tree(deps, indent)
@@ -1042,7 +1063,7 @@ module Lutaml
 
               if dep_info[:dependencies] && !dep_info[:dependencies].empty?
                 output "#{indent}│  └─ Dependencies:"
-                display_dependency_tree(dep_info[:dependencies], indent + "│     ")
+                display_dependency_tree(dep_info[:dependencies], "#{indent}│     ")
               end
 
               output "#{indent}│" unless deps.keys.last == dep_name
@@ -1081,17 +1102,17 @@ module Lutaml
 
             unless result[:resolved]
               error "Failed to resolve type: #{@qname}"
-              output ""
+              output ''
               output result[:error]
               exit 1
             end
 
-            format = options[:format] || "text"
+            format = options[:format] || 'text'
 
             case format
-            when "json"
+            when 'json'
               output JSON.pretty_generate(result)
-            when "yaml"
+            when 'yaml'
               output result.to_yaml
             else
               display_text_dependents(result)
@@ -1099,48 +1120,48 @@ module Lutaml
           end
 
           def display_text_dependents(result)
-            require "table_tennis"
+            require 'table_tennis'
 
-            output "=" * 80
+            output '=' * 80
             output "Type Dependents Analysis: #{result[:target]}"
-            output "=" * 80
-            output ""
+            output '=' * 80
+            output ''
 
             output "Target Type: #{result[:target]}"
-            output "Namespace: #{result[:namespace] || "(none)"}"
+            output "Namespace: #{result[:namespace] || '(none)'}"
             output "Dependents Found: #{result[:count]}"
-            output ""
+            output ''
 
             if result[:dependents].empty?
-              output "No types depend on this type."
-              output ""
-              output "This type is either:"
-              output "  - Not referenced by any other types in the repository"
-              output "  - A leaf type in the dependency graph"
-              output "  - An unused type definition"
+              output 'No types depend on this type.'
+              output ''
+              output 'This type is either:'
+              output '  - Not referenced by any other types in the repository'
+              output '  - A leaf type in the dependency graph'
+              output '  - An unused type definition'
             else
               output "Types that depend on #{result[:target]}:"
-              output "-" * 80
-              output ""
+              output '-' * 80
+              output ''
 
               # Group by category
               by_category = result[:dependents].group_by { |d| d[:type_category] }
 
               by_category.sort.each do |category, deps|
                 output "#{category.upcase} (#{deps.size}):"
-                output ""
+                output ''
 
                 deps_data = deps.map do |dep|
                   {
-                    "Qualified Name" => dep[:qname],
-                    "Namespace" => dep[:namespace] || "(none)",
-                    "Schema File" => dep[:schema_file]
+                    'Qualified Name' => dep[:qname],
+                    'Namespace' => dep[:namespace] || '(none)',
+                    'Schema File' => dep[:schema_file]
                   }
                 end
 
                 table = TableTennis.new(deps_data)
                 output table
-                output ""
+                output ''
               end
 
               output "💡 Tip: Use 'lutaml-xsd type dependencies <qname>' to see what each type depends on"
@@ -1173,15 +1194,15 @@ module Lutaml
               exit 1
             end
 
-            format = options[:format] || "text"
-            direction = options[:direction] || "both"
+            format = options[:format] || 'text'
+            direction = options[:direction] || 'both'
 
             case format
-            when "json"
+            when 'json'
               output JSON.pretty_generate(filter_by_direction(hierarchy, direction))
-            when "yaml"
+            when 'yaml'
               output filter_by_direction(hierarchy, direction).to_yaml
-            when "mermaid"
+            when 'mermaid'
               output hierarchy[:formats][:mermaid]
             else
               display_text_hierarchy(hierarchy, direction)
@@ -1189,82 +1210,78 @@ module Lutaml
           end
 
           def display_text_hierarchy(hierarchy, direction)
-            require "table_tennis"
+            require 'table_tennis'
 
-            output "=" * 80
+            output '=' * 80
             output "Type Inheritance Hierarchy: #{hierarchy[:root]}"
-            output "=" * 80
-            output ""
+            output '=' * 80
+            output ''
 
             # Metadata table
             metadata = [
-              { "Property" => "Qualified Name", "Value" => hierarchy[:root] },
-              { "Property" => "Namespace", "Value" => hierarchy[:namespace] || "(none)" },
-              { "Property" => "Local Name", "Value" => hierarchy[:local_name] },
-              { "Property" => "Category", "Value" => hierarchy[:type_category].to_s }
+              { 'Property' => 'Qualified Name', 'Value' => hierarchy[:root] },
+              { 'Property' => 'Namespace', 'Value' => hierarchy[:namespace] || '(none)' },
+              { 'Property' => 'Local Name', 'Value' => hierarchy[:local_name] },
+              { 'Property' => 'Category', 'Value' => hierarchy[:type_category].to_s }
             ]
 
-            if direction == "both" || direction == "ancestors"
-              metadata << { "Property" => "Ancestors Found", "Value" => hierarchy[:ancestors].size.to_s }
-            end
+            metadata << { 'Property' => 'Ancestors Found', 'Value' => hierarchy[:ancestors].size.to_s } if %w[both ancestors].include?(direction)
 
-            if direction == "both" || direction == "descendants"
-              metadata << { "Property" => "Descendants Found", "Value" => hierarchy[:descendants].size.to_s }
-            end
+            metadata << { 'Property' => 'Descendants Found', 'Value' => hierarchy[:descendants].size.to_s } if %w[both descendants].include?(direction)
 
             table = TableTennis.new(metadata)
             output table
-            output ""
+            output ''
 
             # Display ancestors (base types)
-            if (direction == "both" || direction == "ancestors") && !hierarchy[:ancestors].empty?
-              output "Ancestors (Base Types):"
-              output "-" * 80
-              output ""
-              display_type_list(hierarchy[:ancestors], "  ↑")
-              output ""
+            if %w[both ancestors].include?(direction) && !hierarchy[:ancestors].empty?
+              output 'Ancestors (Base Types):'
+              output '-' * 80
+              output ''
+              display_type_list(hierarchy[:ancestors], '  ↑')
+              output ''
             end
 
             # Display descendants (derived types)
-            if (direction == "both" || direction == "descendants") && !hierarchy[:descendants].empty?
-              output "Descendants (Derived Types):"
-              output "-" * 80
-              output ""
-              display_type_list(hierarchy[:descendants], "  ↓")
-              output ""
+            if %w[both descendants].include?(direction) && !hierarchy[:descendants].empty?
+              output 'Descendants (Derived Types):'
+              output '-' * 80
+              output ''
+              display_type_list(hierarchy[:descendants], '  ↓')
+              output ''
             end
 
             # Show tree visualization
-            if direction == "both"
-              output "Tree Visualization:"
-              output "-" * 80
-              output ""
+            if direction == 'both'
+              output 'Tree Visualization:'
+              output '-' * 80
+              output ''
               output hierarchy[:formats][:text]
-              output ""
+              output ''
             end
 
             # Tips
-            output "💡 Tips:"
-            output "  - Use --format mermaid to generate diagram syntax"
-            output "  - Use --direction ancestors to show only base types"
-            output "  - Use --direction descendants to show only derived types"
-            output "  - Use --depth N to control traversal depth"
+            output '💡 Tips:'
+            output '  - Use --format mermaid to generate diagram syntax'
+            output '  - Use --direction ancestors to show only base types'
+            output '  - Use --direction descendants to show only derived types'
+            output '  - Use --depth N to control traversal depth'
           end
 
           def display_type_list(types, prefix)
             types.each do |type_info|
               output "#{prefix} #{type_info[:qualified_name]}"
               output "     Category: #{type_info[:type_category]}"
-              output "     Namespace: #{type_info[:namespace] || "(none)"}"
-              output ""
+              output "     Namespace: #{type_info[:namespace] || '(none)'}"
+              output ''
             end
           end
 
           def filter_by_direction(hierarchy, direction)
             case direction
-            when "ancestors"
+            when 'ancestors'
               hierarchy.slice(:root, :namespace, :local_name, :type_category, :ancestors)
-            when "descendants"
+            when 'descendants'
               hierarchy.slice(:root, :namespace, :local_name, :type_category, :descendants)
             else
               hierarchy
@@ -1281,7 +1298,7 @@ module Lutaml
 
           def run
             unless @package_file
-              error "Package file path is required for batch mode"
+              error 'Package file path is required for batch mode'
               exit 1
             end
 
@@ -1302,17 +1319,17 @@ module Lutaml
                       elsif options[:batch]
                         batch_query.execute_from_stdin
                       else
-                        error "Either --batch or --batch-file must be specified"
+                        error 'Either --batch or --batch-file must be specified'
                         exit 1
                       end
 
             # Display results
-            format = options[:format] || "text"
+            format = options[:format] || 'text'
 
             case format
-            when "json"
+            when 'json'
               display_json_results(results)
-            when "yaml"
+            when 'yaml'
               display_yaml_results(results)
             else
               display_text_results(results)
@@ -1323,47 +1340,47 @@ module Lutaml
           end
 
           def display_text_results(results)
-            require "table_tennis"
+            require 'table_tennis'
 
-            output "=" * 80
-            output "Batch Type Query Results"
-            output "=" * 80
-            output ""
+            output '=' * 80
+            output 'Batch Type Query Results'
+            output '=' * 80
+            output ''
             output "Total Queries: #{results.size}"
             output "Resolved: #{results.count(&:resolved)}"
             output "Failed: #{results.count { |r| !r.resolved }}"
-            output ""
+            output ''
 
             # Create table data
             table_data = results.map do |result|
               {
-                "Query" => result.query,
-                "Status" => result.resolved ? "✓" : "✗",
-                "Qualified Name" => result.result.qname,
-                "Namespace" => result.result.namespace || "(none)",
-                "Type Class" => result.resolved ? result.result.definition.class.name.split("::").last : "N/A"
+                'Query' => result.query,
+                'Status' => result.resolved ? '✓' : '✗',
+                'Qualified Name' => result.result.qname,
+                'Namespace' => result.result.namespace || '(none)',
+                'Type Class' => result.resolved ? result.result.definition.class.name.split('::').last : 'N/A'
               }
             end
 
             table = TableTennis.new(table_data)
             output table
-            output ""
+            output ''
 
             # Show failed queries details
             failed = results.reject(&:resolved)
-            unless failed.empty?
-              output "Failed Queries:"
-              output "-" * 80
-              failed.each do |result|
-                output "  Query: #{result.query}"
-                output "  Error: #{result.result.error_message}"
-                output ""
-              end
+            return if failed.empty?
+
+            output 'Failed Queries:'
+            output '-' * 80
+            failed.each do |result|
+              output "  Query: #{result.query}"
+              output "  Error: #{result.result.error_message}"
+              output ''
             end
           end
 
           def display_json_results(results)
-            require "json"
+            require 'json'
 
             data = {
               total: results.size,
@@ -1376,13 +1393,13 @@ module Lutaml
           end
 
           def display_yaml_results(results)
-            require "yaml"
+            require 'yaml'
 
             data = {
-              "total" => results.size,
-              "resolved" => results.count(&:resolved),
-              "failed" => results.count { |r| !r.resolved },
-              "results" => results.map(&:to_h)
+              'total' => results.size,
+              'resolved' => results.count(&:resolved),
+              'failed' => results.count { |r| !r.resolved },
+              'results' => results.map(&:to_h)
             }
 
             output data.to_yaml

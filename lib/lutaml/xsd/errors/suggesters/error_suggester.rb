@@ -36,7 +36,7 @@ module Lutaml
           # @param error [EnhancedError] The error
           # @return [Boolean] True if suggestions can be generated
           def can_suggest?(error)
-            error.context && error.context.has_repository?
+            error.context&.has_repository?
           end
 
           # Get repository from error context

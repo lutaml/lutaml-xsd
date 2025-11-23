@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../lib/lutaml/xsd"
+require_relative '../lib/lutaml/xsd'
 
-package_path = File.expand_path("../pkg/urban_function_repository.lxr", __dir__)
+package_path = File.expand_path('../pkg/urban_function_repository.lxr', __dir__)
 repository = Lutaml::Xsd::SchemaRepository.from_package(package_path)
 repository.parse if repository.needs_parsing?
 
@@ -25,7 +25,7 @@ end
 repository.resolve
 
 # Check if type can be found
-result = repository.find_type("gml:CodeType")
+result = repository.find_type('gml:CodeType')
 puts "\nType resolution:"
 puts "  Resolved: #{result.resolved?}"
 puts "  Definition: #{result.definition.inspect}"

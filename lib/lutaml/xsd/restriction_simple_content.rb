@@ -24,8 +24,8 @@ module Lutaml
       attribute :fraction_digits, :fraction_digits, collection: true, initialize_empty: true
 
       xml do
-        root "restriction", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'restriction', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :id, to: :id
         map_attribute :base, to: :base

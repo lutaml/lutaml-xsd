@@ -17,10 +17,10 @@ module Lutaml
           return nil if qname.nil? || qname.empty?
 
           # Check for Clark notation: {http://...}LocalName
-          if qname.start_with?("{")
+          if qname.start_with?('{')
             parse_clark_notation(qname)
           # Check for prefixed QName: prefix:LocalName
-          elsif qname.include?(":")
+          elsif qname.include?(':')
             parse_prefixed_qname(qname, namespace_registry)
           # Unprefixed name - use default namespace
           else
@@ -47,7 +47,7 @@ module Lutaml
         # @param namespace_registry [NamespaceRegistry] Registry for prefix lookups
         # @return [Hash] Parsed components
         def self.parse_prefixed_qname(qname, namespace_registry)
-          parts = qname.split(":", 2)
+          parts = qname.split(':', 2)
           return nil if parts.size != 2
 
           prefix = parts[0]

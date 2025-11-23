@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "xml_element"
+require_relative 'xml_element'
 
 module Lutaml
   module Xsd
@@ -53,7 +53,7 @@ module Lutaml
           return [] unless @moxml_document.respond_to?(:xpath)
 
           nodes = @moxml_document.xpath(xpath)
-          nodes.select { |n| n.element? }.map do |node|
+          nodes.select(&:element?).map do |node|
             XmlElement.new(node, @navigator)
           end
         end
@@ -132,15 +132,11 @@ module Lutaml
         # @return [Hash<String, String>]
         def collect_namespaces(element, namespaces = {})
           # Add element's namespace
-          if element.prefix && element.namespace_uri
-            namespaces[element.prefix] = element.namespace_uri
-          end
+          namespaces[element.prefix] = element.namespace_uri if element.prefix && element.namespace_uri
 
           # Add attribute namespaces
           element.attributes.each do |attr|
-            if attr.prefix && attr.namespace_uri
-              namespaces[attr.prefix] = attr.namespace_uri
-            end
+            namespaces[attr.prefix] = attr.namespace_uri if attr.prefix && attr.namespace_uri
           end
 
           # Recurse into children

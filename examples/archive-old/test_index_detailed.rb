@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../lib/lutaml/xsd"
+require_relative '../lib/lutaml/xsd'
 
-package_path = File.expand_path("../pkg/urban_function_repository.lxr", __dir__)
+package_path = File.expand_path('../pkg/urban_function_repository.lxr', __dir__)
 repository = Lutaml::Xsd::SchemaRepository.from_package(package_path)
 repository.parse if repository.needs_parsing?
 
@@ -17,7 +17,7 @@ puts "Total types in index: #{all_types.size}"
 puts "\nLooking for CodeType:"
 
 # Find CodeType entries
-code_types = all_types.select { |k, _v| k.include?("CodeType") }
+code_types = all_types.select { |k, _v| k.include?('CodeType') }
 puts "Found #{code_types.size} CodeType entries:"
 code_types.each do |key, info|
   puts "\n  Key: #{key}"
@@ -29,5 +29,5 @@ end
 
 # Try find_by_namespace_and_name
 puts "\nDirect lookup:"
-result = type_index.find_by_namespace_and_name("http://www.opengis.net/gml/3.2", "CodeType")
+result = type_index.find_by_namespace_and_name('http://www.opengis.net/gml/3.2', 'CodeType')
 puts "Result: #{result.inspect}"

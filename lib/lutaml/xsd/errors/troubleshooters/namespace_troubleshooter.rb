@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "troubleshooting_handler"
+require_relative 'troubleshooting_handler'
 
 module Lutaml
   module Xsd
@@ -34,13 +34,9 @@ module Lutaml
             tips = []
             context = context_from(error)
 
-            if context.namespace
-              tips.concat(namespace_uri_tips(context))
-            end
+            tips.concat(namespace_uri_tips(context)) if context.namespace
 
-            if context.actual_value && context.actual_value.include?(":")
-              tips.concat(namespace_prefix_tips(context))
-            end
+            tips.concat(namespace_prefix_tips(context)) if context.actual_value&.include?(':')
 
             tips.concat(general_namespace_tips)
             tips
@@ -55,7 +51,7 @@ module Lutaml
           def namespace_uri_tips(context)
             [
               "Verify namespace URI is correct: #{context.namespace}",
-              "Check if the namespace is registered in your schema package",
+              'Check if the namespace is registered in your schema package'
             ]
           end
 
@@ -67,7 +63,7 @@ module Lutaml
             prefix = extract_prefix(context.actual_value)
             [
               "Check if namespace prefix '#{prefix}' is registered",
-              "Verify the prefix mapping in your schema configuration",
+              'Verify the prefix mapping in your schema configuration'
             ]
           end
 
@@ -76,9 +72,9 @@ module Lutaml
           # @return [Array<String>] Tips
           def general_namespace_tips
             [
-              "List available namespaces: lutaml-xsd namespace list --from package.lxr",
-              "Check namespace configuration in config/namespace_mapping.yml",
-              "Ensure all required schemas are imported",
+              'List available namespaces: lutaml-xsd namespace list --from package.lxr',
+              'Check namespace configuration in config/namespace_mapping.yml',
+              'Ensure all required schemas are imported'
             ]
           end
 
@@ -87,7 +83,7 @@ module Lutaml
           # @param qualified_name [String] The qualified name (e.g., "gml:CodeType")
           # @return [String] The prefix (e.g., "gml")
           def extract_prefix(qualified_name)
-            qualified_name.to_s.split(":").first
+            qualified_name.to_s.split(':').first
           end
         end
       end

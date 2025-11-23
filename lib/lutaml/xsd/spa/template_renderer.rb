@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "liquid"
+require 'liquid'
 
 module Lutaml
   module Xsd
@@ -24,7 +24,7 @@ module Lutaml
       #   renderer.register_filter(TextFilters)
       class TemplateRenderer
         # Default template directory
-        DEFAULT_TEMPLATE_DIR = File.expand_path("templates", __dir__)
+        DEFAULT_TEMPLATE_DIR = File.expand_path('templates', __dir__)
 
         attr_reader :template_dir, :environment
 
@@ -103,9 +103,7 @@ module Lutaml
         # @return [String] Full path to template file
         def template_path(template_name)
           # Return as-is if already has an extension
-          if template_name.end_with?(".liquid") || template_name.end_with?(".html.liquid")
-            return File.join(template_dir, template_name)
-          end
+          return File.join(template_dir, template_name) if template_name.end_with?('.liquid') || template_name.end_with?('.html.liquid')
 
           # Try .html.liquid first, then .liquid
           html_liquid_path = File.join(template_dir, "#{template_name}.html.liquid")
@@ -148,15 +146,11 @@ module Lutaml
         # @return [Liquid::Template] Compiled template
         # @raise [ArgumentError] if template file not found
         def load_template(template_name)
-          if @cache_enabled && @template_cache.key?(template_name)
-            return @template_cache[template_name]
-          end
+          return @template_cache[template_name] if @cache_enabled && @template_cache.key?(template_name)
 
           path = template_path(template_name)
 
-          unless File.exist?(path)
-            raise ArgumentError, "Template not found: #{path}"
-          end
+          raise ArgumentError, "Template not found: #{path}" unless File.exist?(path)
 
           template_content = File.read(path)
           template = Liquid::Template.parse(

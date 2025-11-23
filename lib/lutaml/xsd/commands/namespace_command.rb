@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "thor"
-require_relative "base_command"
+require 'thor'
+require_relative 'base_command'
 
 module Lutaml
   module Xsd
@@ -10,16 +10,16 @@ module Lutaml
       # Handles listing, showing, and visualizing namespace hierarchies
       class NamespaceCommand < Thor
         # Command aliases
-        map "ls" => :list
-        map "s" => :show
-        map "t" => :tree
+        map 'ls' => :list
+        map 's' => :show
+        map 't' => :tree
 
         class_option :verbose,
                      type: :boolean,
                      default: false,
-                     desc: "Enable verbose output"
+                     desc: 'Enable verbose output'
 
-        desc "list PACKAGE_FILE", "List all namespaces in the repository"
+        desc 'list PACKAGE_FILE', 'List all namespaces in the repository'
         long_desc <<~DESC
           List all namespaces in the schema repository with their prefixes and type counts.
 
@@ -35,18 +35,18 @@ module Lutaml
         DESC
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         option :show_counts,
                type: :boolean,
                default: true,
-               desc: "Show type counts for each namespace"
+               desc: 'Show type counts for each namespace'
         def list(package_file)
           ListCommand.new(package_file, options).run
         end
 
-        desc "show NAMESPACE_URI PACKAGE_FILE", "Show details about a specific namespace"
+        desc 'show NAMESPACE_URI PACKAGE_FILE', 'Show details about a specific namespace'
         long_desc <<~DESC
           Display detailed information about a specific namespace including its prefix,
           type counts, and optionally list all types in the namespace.
@@ -63,18 +63,18 @@ module Lutaml
         DESC
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         option :show_types,
                type: :boolean,
                default: true,
-               desc: "Show types in the namespace"
+               desc: 'Show types in the namespace'
         def show(namespace_uri, package_file)
           ShowCommand.new(namespace_uri, package_file, options).run
         end
 
-        desc "tree PACKAGE_FILE", "Show namespace hierarchy and relationships"
+        desc 'tree PACKAGE_FILE', 'Show namespace hierarchy and relationships'
         long_desc <<~DESC
           Display the namespace hierarchy showing import relationships
           between namespaces.
@@ -92,12 +92,12 @@ module Lutaml
         option :depth,
                type: :numeric,
                default: 3,
-               desc: "Maximum depth to display"
+               desc: 'Maximum depth to display'
         def tree(package_file)
           TreeCommand.new(package_file, options).run
         end
 
-        desc "prefixes PACKAGE_FILE", "List namespace prefixes with details"
+        desc 'prefixes PACKAGE_FILE', 'List namespace prefixes with details'
         long_desc <<~DESC
           Display detailed information about all namespace prefixes in the repository,
           including their URIs, schema locations, and type counts.
@@ -114,14 +114,14 @@ module Lutaml
         DESC
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def prefixes(package_file)
           PrefixesCommand.new(package_file, options).run
         end
 
-        desc "remap PACKAGE_FILE", "Remap namespace prefixes"
+        desc 'remap PACKAGE_FILE', 'Remap namespace prefixes'
         long_desc <<~DESC
           Create a new package with remapped namespace prefixes. This allows you to
           change prefix names while preserving all namespace URIs and type definitions.
@@ -139,12 +139,12 @@ module Lutaml
         option :change,
                type: :array,
                required: true,
-               desc: "Prefix mappings in format old=new"
+               desc: 'Prefix mappings in format old=new'
         option :output,
                type: :string,
-               aliases: "-o",
+               aliases: '-o',
                required: true,
-               desc: "Output package path"
+               desc: 'Output package path'
         def remap(package_file)
           RemapCommand.new(package_file, options).run
         end
@@ -169,10 +169,10 @@ module Lutaml
             namespaces = repository.all_namespaces
             namespace_data = build_namespace_data(repository, namespaces)
 
-            format = options[:format] || "text"
+            format = options[:format] || 'text'
 
             case format
-            when "json", "yaml"
+            when 'json', 'yaml'
               output format_output(namespace_data, format)
             else
               display_text_list(namespace_data)
@@ -205,24 +205,24 @@ module Lutaml
           end
 
           def display_text_list(namespace_data)
-            require "table_tennis"
+            require 'table_tennis'
 
-            output "Namespaces in Repository"
-            output "=" * 80
-            output ""
+            output 'Namespaces in Repository'
+            output '=' * 80
+            output ''
 
             # Build table data as array of hashes for proper headers
             table_data = namespace_data.map do |ns|
               {
-                "Prefix" => ns[:prefix] || "(no prefix)",
-                "Namespace URI" => ns[:uri],
-                "Types" => (ns[:type_count] || 0)
+                'Prefix' => ns[:prefix] || '(no prefix)',
+                'Namespace URI' => ns[:uri],
+                'Types' => ns[:type_count] || 0
               }
             end
 
             table = TableTennis.new(table_data)
             output table
-            output ""
+            output ''
             output "Total: #{namespace_data.size} namespaces"
 
             # In verbose mode, show type category breakdown
@@ -231,12 +231,12 @@ module Lutaml
             namespace_data.each do |ns|
               next unless ns[:types_by_category]&.any?
 
-              output ""
-              prefix_str = ns[:prefix] ? " (#{ns[:prefix]})" : ""
+              output ''
+              prefix_str = ns[:prefix] ? " (#{ns[:prefix]})" : ''
               output "#{ns[:uri]}#{prefix_str} - Type Categories:"
 
               category_data = ns[:types_by_category].sort.map do |category, count|
-                { "Category" => category.to_s, "Count" => count }
+                { 'Category' => category.to_s, 'Count' => count }
               end
 
               category_table = TableTennis.new(category_data)
@@ -270,10 +270,10 @@ module Lutaml
             end
 
             namespace_info = build_namespace_info(repository)
-            format = options[:format] || "text"
+            format = options[:format] || 'text'
 
             case format
-            when "json", "yaml"
+            when 'json', 'yaml'
               output format_output(namespace_info, format)
             else
               display_text_info(namespace_info)
@@ -306,20 +306,20 @@ module Lutaml
           end
 
           def display_text_info(info)
-            require "table_tennis"
+            require 'table_tennis'
 
-            output "=" * 80
+            output '=' * 80
             output "Namespace: #{info[:uri]}"
-            output "=" * 80
-            output ""
-            output "Prefix: #{info[:prefix] || "(none)"}"
+            output '=' * 80
+            output ''
+            output "Prefix: #{info[:prefix] || '(none)'}"
             output "Total Types: #{info[:total_types]}"
-            output ""
-            output "Types by Category:"
+            output ''
+            output 'Types by Category:'
 
             # Build category table data as hashes
             category_data = info[:types_by_category].sort.map do |category, count|
-              { "Category" => category.to_s, "Count" => count }
+              { 'Category' => category.to_s, 'Count' => count }
             end
 
             category_table = TableTennis.new(category_data)
@@ -327,24 +327,24 @@ module Lutaml
 
             return unless options[:show_types] && info[:types]
 
-            output ""
-            output "Types in Namespace:"
-            output "-" * 80
+            output ''
+            output 'Types in Namespace:'
+            output '-' * 80
 
             # Group types by category and display in tables
             info[:types].group_by { |t| t[:category] }.sort.each do |category, types|
-              output ""
+              output ''
               output "#{category}:"
 
-              if verbose?
-                type_data = types.sort_by { |t| t[:name] }.map do |type|
-                  { "Name" => type[:name], "Schema File" => type[:schema_file] }
-                end
-              else
-                type_data = types.sort_by { |t| t[:name] }.map do |type|
-                  { "Name" => type[:name] }
-                end
-              end
+              type_data = if verbose?
+                            types.sort_by { |t| t[:name] }.map do |type|
+                              { 'Name' => type[:name], 'Schema File' => type[:schema_file] }
+                            end
+                          else
+                            types.sort_by { |t| t[:name] }.map do |type|
+                              { 'Name' => type[:name] }
+                            end
+                          end
 
               type_table = TableTennis.new(type_data)
               output type_table
@@ -360,8 +360,8 @@ module Lutaml
 
             return if similar.empty?
 
-            output ""
-            output "Similar namespaces found:"
+            output ''
+            output 'Similar namespaces found:'
             similar.each { |uri| output "  - #{uri}" }
           end
         end
@@ -383,16 +383,16 @@ module Lutaml
           private
 
           def display_namespace_tree(repository)
-            output "Namespace Hierarchy"
-            output "=" * 80
-            output ""
+            output 'Namespace Hierarchy'
+            output '=' * 80
+            output ''
 
             namespaces = repository.all_namespaces
             namespace_data = build_tree_data(repository, namespaces)
 
             namespace_data.each_with_index do |ns, idx|
               is_last = idx == namespace_data.size - 1
-              display_namespace_node(ns, "", is_last)
+              display_namespace_node(ns, '', is_last)
             end
           end
 
@@ -416,12 +416,12 @@ module Lutaml
           end
 
           def display_namespace_node(namespace_data, indent, is_last)
-            connector = is_last ? "└── " : "├── "
-            prefix_str = namespace_data[:prefix] ? " (#{namespace_data[:prefix]})" : ""
+            connector = is_last ? '└── ' : '├── '
+            prefix_str = namespace_data[:prefix] ? " (#{namespace_data[:prefix]})" : ''
 
             output "#{indent}#{connector}#{namespace_data[:uri]}#{prefix_str}"
 
-            child_indent = indent + (is_last ? "    " : "│   ")
+            child_indent = indent + (is_last ? '    ' : '│   ')
 
             # Show type count
             output "#{child_indent}└── #{namespace_data[:type_count]} types"
@@ -432,7 +432,7 @@ module Lutaml
             categories = namespace_data[:types_by_category].sort
             categories.each_with_index do |(category, count), idx|
               cat_is_last = idx == categories.size - 1
-              cat_connector = cat_is_last ? "    └── " : "    ├── "
+              cat_connector = cat_is_last ? '    └── ' : '    ├── '
               output "#{child_indent}#{cat_connector}#{category}: #{count}"
             end
           end
@@ -456,10 +456,10 @@ module Lutaml
 
           def display_prefixes(repository)
             prefix_details = repository.namespace_prefix_details
-            format = options[:format] || "text"
+            format = options[:format] || 'text'
 
             case format
-            when "json", "yaml"
+            when 'json', 'yaml'
               data = prefix_details.map(&:to_h)
               output format_output(data, format)
             else
@@ -468,25 +468,25 @@ module Lutaml
           end
 
           def display_text_prefixes(prefix_details)
-            require "table_tennis"
+            require 'table_tennis'
 
-            output "Namespace Prefix Details"
-            output "=" * 80
-            output ""
+            output 'Namespace Prefix Details'
+            output '=' * 80
+            output ''
 
             # Build table data
             table_data = prefix_details.map do |info|
               {
-                "Prefix" => info.prefix,
-                "Namespace URI" => info.uri,
-                "Types" => info.type_count,
-                "Location" => info.package_location ? File.basename(info.package_location) : "N/A"
+                'Prefix' => info.prefix,
+                'Namespace URI' => info.uri,
+                'Types' => info.type_count,
+                'Location' => info.package_location ? File.basename(info.package_location) : 'N/A'
               }
             end
 
             table = TableTennis.new(table_data)
             output table
-            output ""
+            output ''
             output "Total: #{prefix_details.size} namespace prefixes"
 
             # Show detailed type breakdown in verbose mode
@@ -495,11 +495,11 @@ module Lutaml
             prefix_details.each do |info|
               next unless info.types_by_category.any?
 
-              output ""
+              output ''
               output "#{info.prefix} (#{info.uri}) - Type Categories:"
 
               category_data = info.types_by_category.sort.map do |category, count|
-                { "Category" => category.to_s, "Count" => count }
+                { 'Category' => category.to_s, 'Count' => count }
               end
 
               category_table = TableTennis.new(category_data)
@@ -534,19 +534,19 @@ module Lutaml
           def parse_changes(change_args)
             changes = {}
             change_args.each do |arg|
-              unless arg.include?("=")
+              unless arg.include?('=')
                 error "Invalid change format: #{arg}. Expected format: old=new"
                 exit 1
               end
 
-              old_prefix, new_prefix = arg.split("=", 2)
+              old_prefix, new_prefix = arg.split('=', 2)
               changes[old_prefix] = new_prefix
             end
             changes
           end
 
           def remap_prefixes(repository, changes)
-            output "Remapping namespace prefixes..." if verbose?
+            output 'Remapping namespace prefixes...' if verbose?
 
             changes.each do |old_prefix, new_prefix|
               output "  #{old_prefix} -> #{new_prefix}" if verbose?

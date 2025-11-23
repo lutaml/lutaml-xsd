@@ -9,8 +9,8 @@ module Lutaml
           class Effects
             def initialize(effects_hash)
               @effects = effects_hash
-              @shadow = ShadowEffect.new(@effects["shadow"] || {})
-              @gradient = GradientEffect.new(@effects["gradient"] || {})
+              @shadow = ShadowEffect.new(@effects['shadow'] || {})
+              @gradient = GradientEffect.new(@effects['gradient'] || {})
             end
 
             def shadow_enabled?
@@ -47,11 +47,11 @@ module Lutaml
             attr_reader :blur, :offset_x, :offset_y, :opacity
 
             def initialize(shadow_hash)
-              @enabled = shadow_hash["enabled"].nil? ? true : shadow_hash["enabled"]
-              @blur = shadow_hash["blur"] || 2
-              @offset_x = shadow_hash["offset_x"] || 2
-              @offset_y = shadow_hash["offset_y"] || 2
-              @opacity = shadow_hash["opacity"] || 0.3
+              @enabled = shadow_hash['enabled'].nil? || shadow_hash['enabled']
+              @blur = shadow_hash['blur'] || 2
+              @offset_x = shadow_hash['offset_x'] || 2
+              @offset_y = shadow_hash['offset_y'] || 2
+              @opacity = shadow_hash['opacity'] || 0.3
             end
 
             def enabled?
@@ -64,8 +64,8 @@ module Lutaml
             attr_reader :direction
 
             def initialize(gradient_hash)
-              @enabled = gradient_hash["enabled"].nil? ? true : gradient_hash["enabled"]
-              @direction = gradient_hash["direction"] || "vertical"
+              @enabled = gradient_hash['enabled'].nil? || gradient_hash['enabled']
+              @direction = gradient_hash['direction'] || 'vertical'
             end
 
             def enabled?

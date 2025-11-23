@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../layout_engine"
+require_relative '../layout_engine'
 
 module Lutaml
   module Xsd
@@ -47,49 +47,49 @@ module Lutaml
               children = []
 
               # Add type as child if present
-              if component_data["type"]
+              if component_data['type']
                 children << {
-                  data: { "name" => component_data["type"], "kind" => "type" },
+                  data: { 'name' => component_data['type'], 'kind' => 'type' },
                   type: :type,
                   children: [],
-                  connector_type: "containment"
+                  connector_type: 'containment'
                 }
               end
 
               # Add base type if present
-              if component_data["base_type"]
+              if component_data['base_type']
                 children << {
                   data: {
-                    "name" => component_data["base_type"],
-                    "kind" => "type"
+                    'name' => component_data['base_type'],
+                    'kind' => 'type'
                   },
                   type: :type,
                   children: [],
-                  connector_type: "inheritance"
+                  connector_type: 'inheritance'
                 }
               end
 
               # Add attributes
-              if component_data["attributes"]&.any?
-                component_data["attributes"].each do |attr|
+              if component_data['attributes']&.any?
+                component_data['attributes'].each do |attr|
                   children << {
-                    data: attr.merge("kind" => "attribute"),
+                    data: attr.merge('kind' => 'attribute'),
                     type: :attribute,
                     children: [],
-                    connector_type: "containment"
+                    connector_type: 'containment'
                   }
                 end
               end
 
               # Add content model elements
-              if component_data["content_model"]&.is_a?(Hash)
-                elements = component_data["content_model"]["elements"] || []
+              if component_data['content_model'].is_a?(Hash)
+                elements = component_data['content_model']['elements'] || []
                 elements.each do |elem|
                   children << {
-                    data: elem.merge("kind" => "element"),
+                    data: elem.merge('kind' => 'element'),
                     type: :element,
                     children: [],
-                    connector_type: "containment"
+                    connector_type: 'containment'
                   }
                 end
               end
@@ -109,7 +109,7 @@ module Lutaml
 
               # Create connection to parent if exists
               if parent_node
-                connector_type = tree[:connector_type] || "containment"
+                connector_type = tree[:connector_type] || 'containment'
                 connections << LayoutConnection.new(
                   parent_node,
                   node,
@@ -118,24 +118,24 @@ module Lutaml
               end
 
               # Position children
-              unless tree[:children].empty?
-                child_x = x + config.dimensions.spacing_indent
-                child_y = y + config.dimensions.box_height +
-                          config.dimensions.spacing_vertical
+              return if tree[:children].empty?
 
-                tree[:children].each do |child|
-                  position_tree(
-                    child,
-                    child_x,
-                    child_y,
-                    nodes,
-                    connections,
-                    level + 1,
-                    node
-                  )
-                  child_y += config.dimensions.box_height +
-                             config.dimensions.spacing_vertical
-                end
+              child_x = x + config.dimensions.spacing_indent
+              child_y = y + config.dimensions.box_height +
+                        config.dimensions.spacing_vertical
+
+              tree[:children].each do |child|
+                position_tree(
+                  child,
+                  child_x,
+                  child_y,
+                  nodes,
+                  connections,
+                  level + 1,
+                  node
+                )
+                child_y += config.dimensions.box_height +
+                           config.dimensions.spacing_vertical
               end
             end
           end

@@ -6,8 +6,8 @@ module Lutaml
       module Attribute
         def cardinality
           case use
-          when "required" then "1"
-          when "optional" then "0..1"
+          when 'required' then '1'
+          when 'optional' then '0..1'
           end
         end
 

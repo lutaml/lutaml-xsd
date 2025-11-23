@@ -16,15 +16,15 @@ module Lutaml
             end
 
             def abstract
-              rule_for("abstract")
+              rule_for('abstract')
             end
 
             def optional
-              rule_for("optional")
+              rule_for('optional')
             end
 
             def required
-              rule_for("required")
+              rule_for('required')
             end
           end
 
@@ -33,11 +33,11 @@ module Lutaml
             attr_reader :text, :position, :style, :offset_x, :offset_y
 
             def initialize(rule_hash)
-              @text = rule_hash["text"] || ""
-              @position = rule_hash["position"] || "top_right"
-              @style = rule_hash["style"] || "normal"
-              @offset_x = rule_hash["offset_x"] || -5
-              @offset_y = rule_hash["offset_y"] || 12
+              @text = rule_hash['text'] || ''
+              @position = rule_hash['position'] || 'top_right'
+              @style = rule_hash['style'] || 'normal'
+              @offset_x = rule_hash['offset_x'] || -5
+              @offset_y = rule_hash['offset_y'] || 12
             end
           end
         end

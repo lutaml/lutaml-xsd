@@ -7,7 +7,7 @@ module Lutaml
     class XsdSpecValidator
       attr_reader :repository, :version
 
-      def initialize(repository, version: "1.0")
+      def initialize(repository, version: '1.0')
         @repository = repository
         @version = version # '1.0' or '1.1'
       end
@@ -59,7 +59,7 @@ module Lutaml
         @version = version
       end
 
-      def validate(repository)
+      def validate(_repository)
         { errors: [], warnings: [] }
       end
 
@@ -81,7 +81,7 @@ module Lutaml
           # Check if target namespace is properly defined
           if schema.target_namespace.nil? || schema.target_namespace.empty?
             warnings << "Schema #{File.basename(schema_file)} has no target namespace"
-          elsif schema.target_namespace !~ /^https?:\/\//
+          elsif schema.target_namespace !~ %r{^https?://}
             warnings << "Schema #{File.basename(schema_file)} target namespace '#{schema.target_namespace}' is not a URI"
           end
         end
@@ -98,9 +98,7 @@ module Lutaml
 
         get_schemas(repository).each do |schema_file, schema|
           # XSD best practice: explicitly set elementFormDefault
-          unless schema.element_form_default
-            warnings << "Schema #{File.basename(schema_file)} does not explicitly set elementFormDefault (defaults to 'unqualified')"
-          end
+          warnings << "Schema #{File.basename(schema_file)} does not explicitly set elementFormDefault (defaults to 'unqualified')" unless schema.element_form_default
         end
 
         { errors: errors, warnings: warnings }
@@ -115,9 +113,7 @@ module Lutaml
 
         get_schemas(repository).each do |schema_file, schema|
           # XSD best practice: explicitly set attributeFormDefault
-          unless schema.attribute_form_default
-            warnings << "Schema #{File.basename(schema_file)} does not explicitly set attributeFormDefault (defaults to 'unqualified')"
-          end
+          warnings << "Schema #{File.basename(schema_file)} does not explicitly set attributeFormDefault (defaults to 'unqualified')" unless schema.attribute_form_default
         end
 
         { errors: errors, warnings: warnings }
@@ -136,9 +132,7 @@ module Lutaml
         # Check for circular dependencies
         visited = {}
         dependencies.each_key do |file|
-          if has_circular_dependency?(file, dependencies, visited, [])
-            errors << "Circular import chain detected involving schema: #{File.basename(file)}"
-          end
+          errors << "Circular import chain detected involving schema: #{File.basename(file)}" if has_circular_dependency?(file, dependencies, visited, [])
         end
 
         { errors: errors, warnings: warnings }
@@ -200,7 +194,7 @@ module Lutaml
         definitions = {}
 
         get_schemas(repository).each do |schema_file, schema|
-          namespace = schema.target_namespace || "(no namespace)"
+          namespace = schema.target_namespace || '(no namespace)'
 
           # Check complex types
           (schema.complex_type || []).each do |type|
@@ -267,17 +261,13 @@ module Lutaml
           (imports || []).each do |import|
             next unless import.respond_to?(:namespace) && import.namespace
 
-            if !import.respond_to?(:schema_path) || !import.schema_path || import.schema_path.empty?
-              warnings << "Import in #{File.basename(schema_file)} for namespace '#{import.namespace}' has no schemaLocation"
-            end
+            warnings << "Import in #{File.basename(schema_file)} for namespace '#{import.namespace}' has no schemaLocation" if !import.respond_to?(:schema_path) || !import.schema_path || import.schema_path.empty?
           end
 
           # Check includes
           includes = schema.respond_to?(:include) ? schema.include : []
           (includes || []).each do |include|
-            if !include.respond_to?(:schema_path) || !include.schema_path || include.schema_path.empty?
-              errors << "Include in #{File.basename(schema_file)} has no schemaLocation"
-            end
+            errors << "Include in #{File.basename(schema_file)} has no schemaLocation" if !include.respond_to?(:schema_path) || !include.schema_path || include.schema_path.empty?
           end
         end
 
@@ -304,9 +294,11 @@ module Lutaml
 
         # Check for namespaces defined in multiple files
         namespace_files.each do |namespace, files|
-          if files.size > 1
-            warnings << "Namespace '#{namespace}' is defined in #{files.size} schemas: #{files.map { |f| File.basename(f) }.join(", ")}"
-          end
+          next unless files.size > 1
+
+          warnings << "Namespace '#{namespace}' is defined in #{files.size} schemas: #{files.map do |f|
+            File.basename(f)
+          end.join(', ')}"
         end
 
         { errors: errors, warnings: warnings }

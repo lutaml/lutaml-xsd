@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
-require_relative "facet_validator"
-require_relative "pattern_facet_validator"
-require_relative "length_facet_validator"
-require_relative "min_length_facet_validator"
-require_relative "max_length_facet_validator"
-require_relative "enumeration_facet_validator"
-require_relative "min_inclusive_facet_validator"
-require_relative "max_inclusive_facet_validator"
-require_relative "min_exclusive_facet_validator"
-require_relative "max_exclusive_facet_validator"
-require_relative "total_digits_facet_validator"
-require_relative "fraction_digits_facet_validator"
-require_relative "white_space_facet_validator"
+require_relative 'facet_validator'
+require_relative 'pattern_facet_validator'
+require_relative 'length_facet_validator'
+require_relative 'min_length_facet_validator'
+require_relative 'max_length_facet_validator'
+require_relative 'enumeration_facet_validator'
+require_relative 'min_inclusive_facet_validator'
+require_relative 'max_inclusive_facet_validator'
+require_relative 'min_exclusive_facet_validator'
+require_relative 'max_exclusive_facet_validator'
+require_relative 'total_digits_facet_validator'
+require_relative 'fraction_digits_facet_validator'
+require_relative 'white_space_facet_validator'
 
 module Lutaml
   module Xsd
@@ -31,18 +31,18 @@ module Lutaml
         class FacetValidatorRegistry
           # Map of facet classes to validator classes
           VALIDATORS = {
-            "Lutaml::Xsd::Pattern" => PatternFacetValidator,
-            "Lutaml::Xsd::Length" => LengthFacetValidator,
-            "Lutaml::Xsd::MinLength" => MinLengthFacetValidator,
-            "Lutaml::Xsd::MaxLength" => MaxLengthFacetValidator,
-            "Lutaml::Xsd::Enumeration" => EnumerationFacetValidator,
-            "Lutaml::Xsd::MinInclusive" => MinInclusiveFacetValidator,
-            "Lutaml::Xsd::MaxInclusive" => MaxInclusiveFacetValidator,
-            "Lutaml::Xsd::MinExclusive" => MinExclusiveFacetValidator,
-            "Lutaml::Xsd::MaxExclusive" => MaxExclusiveFacetValidator,
-            "Lutaml::Xsd::TotalDigits" => TotalDigitsFacetValidator,
-            "Lutaml::Xsd::FractionDigits" => FractionDigitsFacetValidator,
-            "Lutaml::Xsd::WhiteSpace" => WhiteSpaceFacetValidator,
+            'Lutaml::Xsd::Pattern' => PatternFacetValidator,
+            'Lutaml::Xsd::Length' => LengthFacetValidator,
+            'Lutaml::Xsd::MinLength' => MinLengthFacetValidator,
+            'Lutaml::Xsd::MaxLength' => MaxLengthFacetValidator,
+            'Lutaml::Xsd::Enumeration' => EnumerationFacetValidator,
+            'Lutaml::Xsd::MinInclusive' => MinInclusiveFacetValidator,
+            'Lutaml::Xsd::MaxInclusive' => MaxInclusiveFacetValidator,
+            'Lutaml::Xsd::MinExclusive' => MinExclusiveFacetValidator,
+            'Lutaml::Xsd::MaxExclusive' => MaxExclusiveFacetValidator,
+            'Lutaml::Xsd::TotalDigits' => TotalDigitsFacetValidator,
+            'Lutaml::Xsd::FractionDigits' => FractionDigitsFacetValidator,
+            'Lutaml::Xsd::WhiteSpace' => WhiteSpaceFacetValidator
           }.freeze
 
           class << self

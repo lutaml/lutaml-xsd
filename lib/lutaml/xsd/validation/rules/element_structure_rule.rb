@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../validation_rule"
+require_relative '../validation_rule'
 
 module Lutaml
   module Xsd
@@ -33,7 +33,7 @@ module Lutaml
           #
           # @return [String]
           def description
-            "Validates element existence, name, and namespace correctness"
+            'Validates element existence, name, and namespace correctness'
           end
 
           # Validate element structure
@@ -75,9 +75,9 @@ module Lutaml
 
             report_error(
               collector,
-              code: "element_not_allowed",
+              code: 'element_not_allowed',
               message: "Element '#{xml_element.qualified_name}' is not " \
-                       "allowed here",
+                       'allowed here',
               location: xml_element.xpath,
               context: {
                 element: xml_element.qualified_name,
@@ -100,7 +100,7 @@ module Lutaml
 
             report_error(
               collector,
-              code: "element_name_mismatch",
+              code: 'element_name_mismatch',
               message: "Expected element '#{schema_element.name}', " \
                        "found '#{xml_element.name}'",
               location: xml_element.xpath,
@@ -130,13 +130,13 @@ module Lutaml
 
             report_error(
               collector,
-              code: "namespace_mismatch",
+              code: 'namespace_mismatch',
               message: "Element '#{xml_element.name}' has incorrect " \
-                       "namespace",
+                       'namespace',
               location: xml_element.xpath,
               context: {
-                expected_namespace: expected_ns || "(no namespace)",
-                actual_namespace: actual_ns || "(no namespace)",
+                expected_namespace: expected_ns || '(no namespace)',
+                actual_namespace: actual_ns || '(no namespace)',
                 element: xml_element.name
               },
               suggestion: build_namespace_suggestion(expected_ns, actual_ns)
@@ -189,7 +189,7 @@ module Lutaml
             if expected && !actual
               "Add namespace declaration: xmlns=\"#{expected}\""
             elsif !expected && actual
-              "Remove namespace or use a different element"
+              'Remove namespace or use a different element'
             else
               "Use namespace: #{expected}"
             end
@@ -202,11 +202,11 @@ module Lutaml
           #
           # @param xml_element [XmlElement] The XML element
           # @return [String, nil]
-          def suggest_similar_elements(xml_element)
+          def suggest_similar_elements(_xml_element)
             # TODO: Implement fuzzy matching against schema repository
             # For now, return generic suggestion
-            "Check if element name is spelled correctly or consult " \
-              "schema documentation"
+            'Check if element name is spelled correctly or consult ' \
+              'schema documentation'
           end
         end
       end

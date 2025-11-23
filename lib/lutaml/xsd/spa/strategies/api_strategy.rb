@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "../output_strategy"
-require "json"
+require_relative '../output_strategy'
+require 'json'
 
 module Lutaml
   module Xsd
@@ -51,7 +51,7 @@ module Lutaml
           # @param renderer [TemplateRenderer] Template renderer
           # @return [Array<String>] List of generated file paths
           def generate(data, renderer)
-            log "Generating API-based SPA with Sinatra server..."
+            log 'Generating API-based SPA with Sinatra server...'
 
             # Load configurations
             theme = config_loader.load_ui_theme
@@ -97,9 +97,9 @@ module Lutaml
           # @return [void]
           def prepare_output
             ensure_directory(output_dir)
-            ensure_directory(File.join(output_dir, "public"))
-            ensure_directory(File.join(output_dir, "lib"))
-            ensure_directory(File.join(output_dir, "data"))
+            ensure_directory(File.join(output_dir, 'public'))
+            ensure_directory(File.join(output_dir, 'lib'))
+            ensure_directory(File.join(output_dir, 'data'))
           end
 
           # Build template context
@@ -111,12 +111,12 @@ module Lutaml
           # @return [Hash] Template context
           def build_context(data, theme, features, templates_config)
             {
-              "metadata" => data[:metadata],
-              "schemas" => [], # No schemas embedded in API mode
-              "theme" => theme["theme"],
-              "features" => features["features"],
-              "templates" => templates_config["templates"],
-              "api_mode" => true
+              'metadata' => data[:metadata],
+              'schemas' => [], # No schemas embedded in API mode
+              'theme' => theme['theme'],
+              'features' => features['features'],
+              'templates' => templates_config['templates'],
+              'api_mode' => true
             }
           end
 
@@ -126,19 +126,19 @@ module Lutaml
           # @param renderer [TemplateRenderer] Renderer
           # @param context [Hash] Template context
           # @return [String] Path to index.html
-          def generate_frontend_html(data, renderer, context)
+          def generate_frontend_html(_data, renderer, context)
             # Render main content placeholder
             content_html = '<div id="app-content">Loading schemas...</div>'
 
             # Render layout with API fetch script
-            html = renderer.render("layout.html.liquid", context.merge(
-              content: content_html
-            ))
+            html = renderer.render('layout.html.liquid', context.merge(
+                                                           content: content_html
+                                                         ))
 
             # Inject API fetch logic
             html = inject_api_fetch_script(html)
 
-            path = File.join(output_dir, "public", "index.html")
+            path = File.join(output_dir, 'public', 'index.html')
             write_file(path, html)
           end
 
@@ -149,7 +149,7 @@ module Lutaml
           def generate_data_file(data)
             json = JSON.pretty_generate(data)
 
-            path = File.join(output_dir, "data", "schemas.json")
+            path = File.join(output_dir, 'data', 'schemas.json')
             write_file(path, json)
           end
 
@@ -234,7 +234,7 @@ module Lutaml
               end
             RUBY
 
-            path = File.join(output_dir, "lib", "app.rb")
+            path = File.join(output_dir, 'lib', 'app.rb')
             write_file(path, app_code)
           end
 
@@ -250,7 +250,7 @@ module Lutaml
               run Sinatra::Application
             RUBY
 
-            path = File.join(output_dir, "config.ru")
+            path = File.join(output_dir, 'config.ru')
             write_file(path, config_code)
           end
 
@@ -268,7 +268,7 @@ module Lutaml
               gem 'webrick', '~> 1.8'
             RUBY
 
-            path = File.join(output_dir, "Gemfile")
+            path = File.join(output_dir, 'Gemfile')
             write_file(path, gemfile_content)
           end
 
@@ -369,7 +369,7 @@ module Lutaml
               Same license as the source XSD schemas.
             MARKDOWN
 
-            path = File.join(output_dir, "README.md")
+            path = File.join(output_dir, 'README.md')
             write_file(path, readme_content)
           end
 
@@ -446,7 +446,7 @@ module Lutaml
             JAVASCRIPT
 
             # Insert before closing body tag
-            html.sub("</body>", "#{api_script}\n</body>")
+            html.sub('</body>', "#{api_script}\n</body>")
           end
         end
       end

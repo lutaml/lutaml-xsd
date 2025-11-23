@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require_relative "base_type_validator"
-require_relative "string_validator"
-require_relative "boolean_validator"
-require_relative "integer_validator"
-require_relative "decimal_validator"
-require_relative "date_time_validator"
-require_relative "date_validator"
-require_relative "time_validator"
-require_relative "any_uri_validator"
-require_relative "qname_validator"
+require_relative 'base_type_validator'
+require_relative 'string_validator'
+require_relative 'boolean_validator'
+require_relative 'integer_validator'
+require_relative 'decimal_validator'
+require_relative 'date_time_validator'
+require_relative 'date_validator'
+require_relative 'time_validator'
+require_relative 'any_uri_validator'
+require_relative 'qname_validator'
 
 module Lutaml
   module Xsd
@@ -31,41 +31,41 @@ module Lutaml
           # Map of type names to validator classes
           VALIDATOR_CLASSES = {
             # String types
-            "string" => StringValidator,
-            "normalizedString" => StringValidator,
-            "token" => StringValidator,
+            'string' => StringValidator,
+            'normalizedString' => StringValidator,
+            'token' => StringValidator,
 
             # Boolean type
-            "boolean" => BooleanValidator,
+            'boolean' => BooleanValidator,
 
             # Numeric types
-            "decimal" => DecimalValidator,
-            "integer" => IntegerValidator,
-            "positiveInteger" => IntegerValidator,
-            "negativeInteger" => IntegerValidator,
-            "nonPositiveInteger" => IntegerValidator,
-            "nonNegativeInteger" => IntegerValidator,
-            "long" => IntegerValidator,
-            "int" => IntegerValidator,
-            "short" => IntegerValidator,
-            "byte" => IntegerValidator,
-            "unsignedLong" => IntegerValidator,
-            "unsignedInt" => IntegerValidator,
-            "unsignedShort" => IntegerValidator,
-            "unsignedByte" => IntegerValidator,
-            "float" => DecimalValidator,
-            "double" => DecimalValidator,
+            'decimal' => DecimalValidator,
+            'integer' => IntegerValidator,
+            'positiveInteger' => IntegerValidator,
+            'negativeInteger' => IntegerValidator,
+            'nonPositiveInteger' => IntegerValidator,
+            'nonNegativeInteger' => IntegerValidator,
+            'long' => IntegerValidator,
+            'int' => IntegerValidator,
+            'short' => IntegerValidator,
+            'byte' => IntegerValidator,
+            'unsignedLong' => IntegerValidator,
+            'unsignedInt' => IntegerValidator,
+            'unsignedShort' => IntegerValidator,
+            'unsignedByte' => IntegerValidator,
+            'float' => DecimalValidator,
+            'double' => DecimalValidator,
 
             # Date/Time types
-            "dateTime" => DateTimeValidator,
-            "date" => DateValidator,
-            "time" => TimeValidator,
+            'dateTime' => DateTimeValidator,
+            'date' => DateValidator,
+            'time' => TimeValidator,
 
             # URI type
-            "anyURI" => AnyURIValidator,
+            'anyURI' => AnyURIValidator,
 
             # QName type
-            "QName" => QNameValidator,
+            'QName' => QNameValidator
           }.freeze
 
           class << self

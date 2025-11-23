@@ -19,7 +19,7 @@ module Lutaml
       #   # => "schema.xsd"
       class SchemaLocationExtractor
         # XML Schema instance namespace
-        XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
+        XSI_NAMESPACE = 'http://www.w3.org/2001/XMLSchema-instance'
 
         # @return [XmlDocument] The XML document to extract from
         attr_reader :document
@@ -49,7 +49,7 @@ module Lutaml
           return {} unless root
 
           schema_location_attr = root.attribute(
-            "schemaLocation",
+            'schemaLocation',
             namespace: XSI_NAMESPACE
           )
 
@@ -73,7 +73,7 @@ module Lutaml
           return nil unless root
 
           no_ns_attr = root.attribute(
-            "noNamespaceSchemaLocation",
+            'noNamespaceSchemaLocation',
             namespace: XSI_NAMESPACE
           )
 

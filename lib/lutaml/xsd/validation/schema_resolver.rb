@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "schema_location_extractor"
+require_relative 'schema_location_extractor'
 
 module Lutaml
   module Xsd
@@ -73,7 +73,7 @@ module Lutaml
         #
         # @param location [String] The schema location
         # @return [Schema, nil] The resolved schema or nil
-        def resolve_by_location(location)
+        def resolve_by_location(_location)
           # This is a simplified implementation
           # In a real implementation, this would:
           # 1. Check if location is in repository

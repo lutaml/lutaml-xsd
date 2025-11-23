@@ -20,12 +20,12 @@ module Lutaml
         validation = package.validate
         metadata = validation.metadata
 
-        entrypoint_files = metadata&.[]("files") || []
+        entrypoint_files = metadata&.[]('files') || []
 
         # Now load repository to get schemas
         repository = package.load_repository
 
-        entrypoints = entrypoint_files.map do |file_path|
+        entrypoint_files.map do |file_path|
           schema = find_schema_by_path(repository, file_path)
           next unless schema
 
@@ -34,11 +34,9 @@ module Lutaml
             path: file_path,
             namespace: schema.target_namespace,
             schema: schema,
-            role: "Root schema"
+            role: 'Root schema'
           }
         end.compact
-
-        entrypoints
       end
 
       # Get all dependencies for entrypoints
@@ -48,11 +46,11 @@ module Lutaml
         validation = package.validate
         metadata = validation.metadata
 
-        repository = package.load_repository
+        package.load_repository
         all_schemas = Schema.processed_schemas
 
         # Exclude entrypoint files from dependencies
-        entrypoint_files = metadata&.[]("files") || []
+        entrypoint_files = metadata&.[]('files') || []
         entrypoint_paths = Set.new(entrypoint_files.map do |f|
           File.basename(f)
         end)
@@ -79,7 +77,7 @@ module Lutaml
       # @param repository [SchemaRepository] Repository to search
       # @param file_path [String] File path to find
       # @return [Schema, nil] Found schema or nil
-      def find_schema_by_path(repository, file_path)
+      def find_schema_by_path(_repository, file_path)
         all_schemas = Schema.processed_schemas
 
         # Try exact match first

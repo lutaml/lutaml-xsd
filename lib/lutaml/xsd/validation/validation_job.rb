@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "validation_result"
-require_relative "validation_error"
-require_relative "xml_navigator"
-require_relative "result_collector"
-require_relative "rule_engine"
+require_relative 'validation_result'
+require_relative 'validation_error'
+require_relative 'xml_navigator'
+require_relative 'result_collector'
+require_relative 'rule_engine'
 
 module Lutaml
   module Xsd
@@ -83,7 +83,7 @@ module Lutaml
         rescue Moxml::ParseError => e
           @result_collector.add_error(
             ValidationError.new(
-              code: "xml_parse_error",
+              code: 'xml_parse_error',
               message: "Failed to parse XML: #{e.message}",
               severity: :error,
               location: nil
@@ -92,7 +92,7 @@ module Lutaml
         rescue StandardError => e
           @result_collector.add_error(
             ValidationError.new(
-              code: "xml_parse_error",
+              code: 'xml_parse_error',
               message: "Unexpected error parsing XML: #{e.message}",
               severity: :error,
               location: nil
@@ -176,8 +176,8 @@ module Lutaml
         def early_result
           @result_collector.add_error(
             ValidationError.new(
-              code: "invalid_input",
-              message: "XML content cannot be nil or empty",
+              code: 'invalid_input',
+              message: 'XML content cannot be nil or empty',
               severity: :error,
               location: nil
             )

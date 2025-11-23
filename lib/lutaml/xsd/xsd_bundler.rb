@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "set"
+require 'set'
 
 module Lutaml
   module Xsd
@@ -132,7 +132,7 @@ module Lutaml
 
         all_schemas.each_key do |schema_location|
           # For HTTP URLs, resolve to file path and map to basename
-          next unless schema_location.start_with?("http://", "https://")
+          next unless schema_location.start_with?('http://', 'https://')
 
           resolved_path = resolve_schema_location(schema_location, glob_mappings)
           if resolved_path && path_to_basename.key?(File.absolute_path(resolved_path))
@@ -173,7 +173,7 @@ module Lutaml
 
         # Rewrite import schemaLocation (with or without xs: prefix)
         content = content.gsub(/<(xs:)?import([^>]*)schemaLocation="([^"]+)"/) do
-          prefix = Regexp.last_match(1) || ""
+          prefix = Regexp.last_match(1) || ''
           attrs = Regexp.last_match(2)
           location = Regexp.last_match(3)
           new_location = resolve_to_package_location(
@@ -187,7 +187,7 @@ module Lutaml
 
         # Rewrite include schemaLocation (with or without xs: prefix)
         content.gsub(/<(xs:)?include([^>]*)schemaLocation="([^"]+)"/) do
-          prefix = Regexp.last_match(1) || ""
+          prefix = Regexp.last_match(1) || ''
           attrs = Regexp.last_match(2)
           location = Regexp.last_match(3)
           new_location = resolve_to_package_location(
@@ -208,7 +208,7 @@ module Lutaml
       # @return [String] New location (just the basename)
       def resolve_to_package_location(location, source_dir, path_mapping, url_to_basename)
         # For HTTP URLs, check the url_to_basename mapping
-        if location.start_with?("http://", "https://")
+        if location.start_with?('http://', 'https://')
           return url_to_basename[location] if url_to_basename.key?(location)
 
           # If not in mapping, keep original URL (external dependency)

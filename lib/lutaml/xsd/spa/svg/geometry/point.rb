@@ -23,7 +23,7 @@ module Lutaml
             end
 
             def distance_to(other)
-              Math.sqrt((x - other.x)**2 + (y - other.y)**2)
+              Math.sqrt(((x - other.x)**2) + ((y - other.y)**2))
             end
 
             def midpoint_to(other)

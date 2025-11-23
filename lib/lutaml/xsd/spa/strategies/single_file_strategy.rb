@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../output_strategy"
+require_relative '../output_strategy'
 
 module Lutaml
   module Xsd
@@ -39,7 +39,7 @@ module Lutaml
           # @param renderer [TemplateRenderer] Template renderer
           # @return [Array<String>] List containing single file path
           def generate(data, renderer)
-            log "Generating single-file SPA..."
+            log 'Generating single-file SPA...'
 
             # Load configurations
             theme = config_loader.load_ui_theme
@@ -53,9 +53,9 @@ module Lutaml
             content_html = render_content(data, renderer)
 
             # Render complete layout
-            html = renderer.render("layout.html.liquid", context.merge(
-              content: content_html
-            ))
+            html = renderer.render('layout.html.liquid', context.merge(
+                                                           content: content_html
+                                                         ))
 
             # Write to file
             prepare_output
@@ -72,7 +72,7 @@ module Lutaml
           # @return [void]
           def prepare_output
             dir = File.dirname(output_path)
-            ensure_directory(dir) unless dir == "."
+            ensure_directory(dir) unless dir == '.'
           end
 
           # Build template context
@@ -84,11 +84,11 @@ module Lutaml
           # @return [Hash] Template context
           def build_context(data, theme, features, templates_config)
             {
-              "metadata" => data[:metadata],
-              "schemas" => data[:schemas],
-              "theme" => theme["theme"],
-              "features" => features["features"],
-              "templates" => templates_config["templates"]
+              'metadata' => data[:metadata],
+              'schemas' => data[:schemas],
+              'theme' => theme['theme'],
+              'features' => features['features'],
+              'templates' => templates_config['templates']
             }
           end
 
@@ -102,7 +102,7 @@ module Lutaml
 
             # Pre-render all schema detail views
             schema_details = schemas.map do |schema|
-              renderer.render_partial("_schema_detail", { "schema" => schema })
+              renderer.render_partial('_schema_detail', { 'schema' => schema })
             end.join("\n")
 
             # Wrap in containers: one for pre-rendered schemas, one for dynamic detail views

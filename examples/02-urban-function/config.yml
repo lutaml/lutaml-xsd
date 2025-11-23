@@ -11,6 +11,16 @@ schema_location_mappings:
     to: ../../spec/fixtures/i-ur/urbanObject.xsd
     pattern: false
 
+  # Map relative gmd/ paths to ISO TC211 gmd directory
+  - from: '(?:\.\./)+(gmd/(.+\.xsd))$'
+    to: ../../spec/fixtures/isotc211/19139/-/gmd/1.0/\2
+    pattern: true
+
+  # Map bare gmd.xsd (no path prefix)
+  - from: '^gmd\.xsd$'
+    to: ../../spec/fixtures/isotc211/19139/-/gmd/1.0/gmd.xsd
+    pattern: false
+
   # Map GML bare filenames (no gml/ prefix)
   - from: '^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects|geometryComplexes)\.xsd$'
     to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd
@@ -30,6 +40,31 @@ schema_location_mappings:
   - from: '(?:\.\./)+(xlink/.+\.xsd)$'
     to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
     pattern: true
+
+  # Map CityGML 2.0 HTTP URLs to local files
+  - from: '^http://schemas\.opengis\.net/citygml/2\.0/(.+\.xsd)$'
+    to: ../../spec/fixtures/citygml/2.0/\1
+    pattern: true
+
+  # Map CityGML module HTTP URLs to local files
+  - from: '^http://schemas\.opengis\.net/citygml/([^/]+)/2\.0/(.+\.xsd)$'
+    to: ../../spec/fixtures/citygml/\1/2.0/\2
+    pattern: true
+
+  # Map GML 3.1.1 base/gml.xsd specifically (3.1.1 not available, map to 3.2.1 gml.xsd)
+  - from: '^http://schemas\.opengis\.net/gml/3\.1\.1/base/gml\.xsd$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
+    pattern: false
+
+  # Map other GML 3.1.1 paths to 3.2.1 (stripping /base/ if present)
+  - from: '^http://schemas\.opengis\.net/gml/3\.1\.1/(?:base/)?(.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1
+    pattern: true
+
+  # Map xAL HTTP URLs to local files (used by CityGML)
+  - from: '^http://docs\.oasis-open\.org/election/external/xAL\.xsd$'
+    to: ../../spec/fixtures/citygml/xAL/xAL.xsd
+    pattern: false
 
 namespace_mappings:
   - prefix: "xs"

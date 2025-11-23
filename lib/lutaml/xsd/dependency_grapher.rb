@@ -30,7 +30,7 @@ module Lutaml
           resolved: true,
           root: qname,
           namespace: result.namespace,
-          type_category: result.definition.class.name.split("::").last,
+          type_category: result.definition.class.name.split('::').last,
           dependencies: {}
         }
 
@@ -65,15 +65,15 @@ module Lutaml
           deps = extract_type_references(definition)
 
           # Check if this type references our target
-          if deps.any? { |dep| matches_target?(dep, result.namespace, result.local_name) }
-            dependents_list << {
-              qname: build_qname(type_info[:namespace], type_info[:definition].name),
-              namespace: type_info[:namespace],
-              local_name: type_info[:definition].name,
-              type_category: type_info[:type].to_s,
-              schema_file: File.basename(type_info[:schema_file])
-            }
-          end
+          next unless deps.any? { |dep| matches_target?(dep, result.namespace, result.local_name) }
+
+          dependents_list << {
+            qname: build_qname(type_info[:namespace], type_info[:definition].name),
+            namespace: type_info[:namespace],
+            local_name: type_info[:definition].name,
+            type_category: type_info[:type].to_s,
+            schema_file: File.basename(type_info[:schema_file])
+          }
         end
 
         {
@@ -91,7 +91,7 @@ module Lutaml
       def to_mermaid(graph)
         return "graph TD\n  error[Error: #{graph[:error]}]" unless graph[:resolved]
 
-        lines = ["graph TD"]
+        lines = ['graph TD']
         node_id = 0
         node_map = {}
 
@@ -124,10 +124,10 @@ module Lutaml
       def to_dot(graph)
         return "digraph {\n  error [label=\"Error: #{graph[:error]}\"];\n}" unless graph[:resolved]
 
-        lines = ["digraph dependencies {"]
-        lines << "  rankdir=LR;"
-        lines << "  node [shape=box, style=rounded];"
-        lines << ""
+        lines = ['digraph dependencies {']
+        lines << '  rankdir=LR;'
+        lines << '  node [shape=box, style=rounded];'
+        lines << ''
 
         node_id = 0
         node_map = {}
@@ -151,7 +151,7 @@ module Lutaml
           add_dot_dependencies(dep_info[:dependencies], dep_id, lines, node_map, node_id) if dep_info[:dependencies]
         end
 
-        lines << "}"
+        lines << '}'
         lines.join("\n")
       end
 
@@ -159,21 +159,21 @@ module Lutaml
       # @param graph [Hash] Dependency graph
       # @param direction [String] Direction of display (both, up, down)
       # @return [String] Text representation
-      def to_text(graph, direction: "both")
+      def to_text(graph, direction: 'both')
         return "Error: #{graph[:error]}" unless graph[:resolved]
 
         lines = []
         lines << "Type: #{graph[:root]}"
         lines << "Namespace: #{graph[:namespace]}"
         lines << "Category: #{graph[:type_category]}"
-        lines << ""
+        lines << ''
 
-        if direction == "both" || direction == "down"
-          lines << "Dependencies (what this type depends on):"
+        if %w[both down].include?(direction)
+          lines << 'Dependencies (what this type depends on):'
           if graph[:dependencies].empty?
-            lines << "  (none)"
+            lines << '  (none)'
           else
-            add_text_dependencies(graph[:dependencies], lines, "  ")
+            add_text_dependencies(graph[:dependencies], lines, '  ')
           end
         end
 
@@ -189,6 +189,7 @@ module Lutaml
         refs = extract_type_references(definition)
         refs.each do |type_ref|
           next if visited.include?(type_ref)
+
           visited.add(type_ref)
 
           # Resolve the type
@@ -201,7 +202,7 @@ module Lutaml
           graph[dep_key] = {
             namespace: type_result.namespace,
             local_name: type_result.local_name,
-            type_category: type_result.definition.class.name.split("::").last,
+            type_category: type_result.definition.class.name.split('::').last,
             schema_file: File.basename(type_result.schema_file),
             dependencies: {}
           }
@@ -222,44 +223,30 @@ module Lutaml
         refs = []
 
         # Base type from complex content
-        if definition.respond_to?(:complex_content) && definition.complex_content
-          refs.concat(extract_from_complex_content(definition.complex_content))
-        end
+        refs.concat(extract_from_complex_content(definition.complex_content)) if definition.respond_to?(:complex_content) && definition.complex_content
 
         # Base type from simple content
-        if definition.respond_to?(:simple_content) && definition.simple_content
-          refs.concat(extract_from_simple_content(definition.simple_content))
-        end
+        refs.concat(extract_from_simple_content(definition.simple_content)) if definition.respond_to?(:simple_content) && definition.simple_content
 
         # Restriction base for simple types
-        if definition.respond_to?(:restriction) && definition.restriction
-          refs << definition.restriction.base if definition.restriction.respond_to?(:base)
-        end
+        refs << definition.restriction.base if definition.respond_to?(:restriction) && definition.restriction.respond_to?(:base)
 
         # Element types from sequence
-        if definition.respond_to?(:sequence) && definition.sequence
-          refs.concat(extract_from_sequence(definition.sequence))
-        end
+        refs.concat(extract_from_sequence(definition.sequence)) if definition.respond_to?(:sequence) && definition.sequence
 
         # Element types from choice
-        if definition.respond_to?(:choice) && definition.choice
-          refs.concat(extract_from_choice(definition.choice))
-        end
+        refs.concat(extract_from_choice(definition.choice)) if definition.respond_to?(:choice) && definition.choice
 
         # Element types from all
-        if definition.respond_to?(:all) && definition.all
-          refs.concat(extract_from_all(definition.all))
-        end
+        refs.concat(extract_from_all(definition.all)) if definition.respond_to?(:all) && definition.all
 
         # Attribute types
-        if definition.respond_to?(:attribute) && definition.attribute
-          refs.concat(extract_from_attributes(definition.attribute))
-        end
+        refs.concat(extract_from_attributes(definition.attribute)) if definition.respond_to?(:attribute) && definition.attribute
 
         # For elements with type references
         refs << definition.type if definition.respond_to?(:type) && definition.type
 
-        refs.compact.uniq.reject { |ref| ref =~ /^xsd?:/ }
+        refs.compact.uniq.grep_v(/^xsd?:/)
       end
 
       def extract_from_complex_content(complex_content)
@@ -418,9 +405,7 @@ module Lutaml
         deps.each do |dep_name, dep_info|
           lines << "#{indent}#{dep_name} (#{dep_info[:type_category]})"
 
-          if dep_info[:dependencies] && !dep_info[:dependencies].empty?
-            add_text_dependencies(dep_info[:dependencies], lines, indent + "  ")
-          end
+          add_text_dependencies(dep_info[:dependencies], lines, "#{indent}  ") if dep_info[:dependencies] && !dep_info[:dependencies].empty?
         end
       end
     end

@@ -9,8 +9,8 @@ module Lutaml
       attribute :simple_type, :simple_type
 
       xml do
-        root "list", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'list', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :id, to: :id
         map_attribute :itemType, to: :item_type

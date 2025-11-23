@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../connector_renderer"
+require_relative '../connector_renderer'
 
 module Lutaml
   module Xsd
@@ -11,7 +11,7 @@ module Lutaml
           # (e.g., Type extends BaseType)
           class InheritanceConnector < ConnectorRenderer
             def initialize(config)
-              super(config, "inheritance")
+              super(config, 'inheritance')
             end
 
             # Renders an inheritance connector from parent to child
@@ -37,14 +37,14 @@ module Lutaml
               when :down
                 create_arrow_down(
                   point,
-                  fill: "white",
+                  fill: 'white',
                   stroke: config.colors.ui.border,
                   stroke_width: style.stroke_width
                 )
               when :up
                 create_arrow_up(
                   point,
-                  fill: "white",
+                  fill: 'white',
                   stroke: config.colors.ui.border,
                   stroke_width: style.stroke_width
                 )
@@ -52,7 +52,7 @@ module Lutaml
                 # For horizontal, use down arrow (most common case)
                 create_arrow_down(
                   point,
-                  fill: "white",
+                  fill: 'white',
                   stroke: config.colors.ui.border,
                   stroke_width: style.stroke_width
                 )

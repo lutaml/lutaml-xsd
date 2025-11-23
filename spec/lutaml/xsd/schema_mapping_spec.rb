@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-require "spec_helper"
-require "lutaml/xsd"
+require 'spec_helper'
+require 'lutaml/xsd'
 
-RSpec.describe "Schema mapping integration" do
-  let(:fixtures_dir) { File.expand_path("../../fixtures", __dir__) }
+RSpec.describe 'Schema mapping integration' do
+  let(:fixtures_dir) { File.expand_path('../../fixtures', __dir__) }
 
   after do
     Lutaml::Xsd::Glob.schema_mappings = nil
   end
 
-  describe "parsing with exact string mappings" do
+  describe 'parsing with exact string mappings' do
     let(:xsd_content) do
       <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
@@ -23,10 +23,10 @@ RSpec.describe "Schema mapping integration" do
       XSD
     end
 
-    it "maps remote URL to local file" do
-      local_schema_path = File.join(fixtures_dir, "metaschema.xsd")
+    it 'maps remote URL to local file' do
+      local_schema_path = File.join(fixtures_dir, 'metaschema.xsd')
       schema_mappings = [
-        { from: "http://remote.example.com/schema.xsd", to: local_schema_path }
+        { from: 'http://remote.example.com/schema.xsd', to: local_schema_path }
       ]
 
       parsed = Lutaml::Xsd.parse(
@@ -36,11 +36,11 @@ RSpec.describe "Schema mapping integration" do
       )
 
       expect(parsed).to be_a(Lutaml::Xsd::Schema)
-      expect(parsed.target_namespace).to eq("http://example.com/test")
+      expect(parsed.target_namespace).to eq('http://example.com/test')
     end
 
-    it "maps relative path to absolute path" do
-      local_schema_path = File.join(fixtures_dir, "metaschema.xsd")
+    it 'maps relative path to absolute path' do
+      local_schema_path = File.join(fixtures_dir, 'metaschema.xsd')
       xsd_with_relative = <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -50,7 +50,7 @@ RSpec.describe "Schema mapping integration" do
       XSD
 
       schema_mappings = [
-        { from: "../../external/schema.xsd", to: local_schema_path }
+        { from: '../../external/schema.xsd', to: local_schema_path }
       ]
 
       parsed = Lutaml::Xsd.parse(
@@ -63,9 +63,9 @@ RSpec.describe "Schema mapping integration" do
     end
   end
 
-  describe "parsing with regex pattern mappings" do
-    it "maps URL patterns to local directory structure" do
-      local_schema_path = File.join(fixtures_dir, "metaschema.xsd")
+  describe 'parsing with regex pattern mappings' do
+    it 'maps URL patterns to local directory structure' do
+      local_schema_path = File.join(fixtures_dir, 'metaschema.xsd')
       xsd_content = <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -78,7 +78,7 @@ RSpec.describe "Schema mapping integration" do
       # Since the pattern maps to fixtures_dir/v1.0/schema.xsd which doesn't exist,
       # we need to map to an existing file
       schema_mappings = [
-        { from: "http://schemas.example.com/remote/v1.0/schema.xsd", to: local_schema_path }
+        { from: 'http://schemas.example.com/remote/v1.0/schema.xsd', to: local_schema_path }
       ]
 
       parsed = Lutaml::Xsd.parse(
@@ -90,7 +90,7 @@ RSpec.describe "Schema mapping integration" do
       expect(parsed).to be_a(Lutaml::Xsd::Schema)
     end
 
-    it "handles multiple regex patterns" do
+    it 'handles multiple regex patterns' do
       # Create a test XSD that imports from multiple ISO directories
       xsd_content = <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
@@ -123,8 +123,8 @@ RSpec.describe "Schema mapping integration" do
     end
   end
 
-  describe "parsing with mixed exact and regex mappings" do
-    it "prioritizes exact matches over patterns" do
+  describe 'parsing with mixed exact and regex mappings' do
+    it 'prioritizes exact matches over patterns' do
       xsd_content = <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -134,12 +134,12 @@ RSpec.describe "Schema mapping integration" do
         </xs:schema>
       XSD
 
-      exact_match_path = File.join(fixtures_dir, "codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/gmd.xsd")
-      pattern_match_path = File.join(fixtures_dir, "metaschema.xsd")
+      exact_match_path = File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/gmd.xsd')
+      pattern_match_path = File.join(fixtures_dir, 'metaschema.xsd')
 
       schema_mappings = [
         # Exact match should take priority
-        { from: "gmd.xsd", to: exact_match_path },
+        { from: 'gmd.xsd', to: exact_match_path },
         # Regex pattern as fallback
         { from: /^(.+\.xsd)$/, to: pattern_match_path }
       ]
@@ -155,15 +155,15 @@ RSpec.describe "Schema mapping integration" do
     end
   end
 
-  describe "parsing i-UR schemas with mappings" do
-    let(:urban_function_file) { File.join(fixtures_dir, "i-ur/urbanFunction.xsd") }
+  describe 'parsing i-UR schemas with mappings' do
+    let(:urban_function_file) { File.join(fixtures_dir, 'i-ur/urbanFunction.xsd') }
     let(:urban_function_content) { File.read(urban_function_file) }
 
     let(:codesynthesis_mappings) do
       [
         # 1. Specific relative path
-        { from: "../../uro/3.2/urbanObject.xsd",
-          to: File.join(fixtures_dir, "i-ur/urbanObject.xsd") },
+        { from: '../../uro/3.2/urbanObject.xsd',
+          to: File.join(fixtures_dir, 'i-ur/urbanObject.xsd') },
 
         # 2-4. Relative path patterns
         { from: %r{(?:\.\./)+xlink/(.+\.xsd)$},
@@ -217,7 +217,7 @@ RSpec.describe "Schema mapping integration" do
       ]
     end
 
-    it "parses urbanFunction.xsd successfully with all mappings" do
+    it 'parses urbanFunction.xsd successfully with all mappings' do
       parsed = Lutaml::Xsd.parse(
         urban_function_content,
         location: File.dirname(urban_function_file),
@@ -225,11 +225,11 @@ RSpec.describe "Schema mapping integration" do
       )
 
       expect(parsed).to be_a(Lutaml::Xsd::Schema)
-      expect(parsed.target_namespace).to eq("https://www.geospatial.jp/iur/urf/3.2")
-      expect(parsed.element_form_default).to eq("qualified")
+      expect(parsed.target_namespace).to eq('https://www.geospatial.jp/iur/urf/3.2')
+      expect(parsed.element_form_default).to eq('qualified')
     end
 
-    it "resolves imports correctly" do
+    it 'resolves imports correctly' do
       parsed = Lutaml::Xsd.parse(
         urban_function_content,
         location: File.dirname(urban_function_file),
@@ -241,12 +241,12 @@ RSpec.describe "Schema mapping integration" do
 
       # Check that import objects have the expected attributes
       namespaces = parsed.imports.map(&:namespace)
-      expect(namespaces).to include("http://www.opengis.net/citygml/2.0")
-      expect(namespaces).to include("http://www.opengis.net/gml")
-      expect(namespaces).to include("https://www.geospatial.jp/iur/uro/3.2")
+      expect(namespaces).to include('http://www.opengis.net/citygml/2.0')
+      expect(namespaces).to include('http://www.opengis.net/gml')
+      expect(namespaces).to include('https://www.geospatial.jp/iur/uro/3.2')
     end
 
-    it "parses elements from urbanFunction schema" do
+    it 'parses elements from urbanFunction schema' do
       parsed = Lutaml::Xsd.parse(
         urban_function_content,
         location: File.dirname(urban_function_file),
@@ -258,11 +258,11 @@ RSpec.describe "Schema mapping integration" do
 
       # Verify some expected elements exist
       element_names = parsed.element.map(&:name)
-      expect(element_names).to include("Administration")
-      expect(element_names).to include("Agreement")
+      expect(element_names).to include('Administration')
+      expect(element_names).to include('Agreement')
     end
 
-    it "parses complex types from urbanFunction schema" do
+    it 'parses complex types from urbanFunction schema' do
       parsed = Lutaml::Xsd.parse(
         urban_function_content,
         location: File.dirname(urban_function_file),
@@ -274,13 +274,13 @@ RSpec.describe "Schema mapping integration" do
 
       # Verify some expected complex types exist
       type_names = parsed.complex_type.map(&:name)
-      expect(type_names).to include("AdministrationType")
-      expect(type_names).to include("AgreementType")
+      expect(type_names).to include('AdministrationType')
+      expect(type_names).to include('AgreementType')
     end
   end
 
-  describe "regex pattern matching" do
-    it "matches relative paths with multiple ../ segments" do
+  describe 'regex pattern matching' do
+    it 'matches relative paths with multiple ../ segments' do
       xsd_content = <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -312,7 +312,7 @@ RSpec.describe "Schema mapping integration" do
       expect(parsed.imports).not_to be_empty
     end
 
-    it "matches simple relative paths" do
+    it 'matches simple relative paths' do
       xsd_content = <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -362,7 +362,7 @@ RSpec.describe "Schema mapping integration" do
       expect(parsed.imports).not_to be_empty
     end
 
-    it "matches bare filenames with specific patterns" do
+    it 'matches bare filenames with specific patterns' do
       xsd_content = <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -392,8 +392,8 @@ RSpec.describe "Schema mapping integration" do
     end
   end
 
-  describe "URL pattern mappings" do
-    it "maps HTTPS URLs to local directory structure" do
+  describe 'URL pattern mappings' do
+    it 'maps HTTPS URLs to local directory structure' do
       xsd_content = <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -445,8 +445,8 @@ RSpec.describe "Schema mapping integration" do
     end
   end
 
-  describe "mapping order precedence" do
-    it "uses first matching mapping when multiple patterns match" do
+  describe 'mapping order precedence' do
+    it 'uses first matching mapping when multiple patterns match' do
       xsd_content = <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -456,12 +456,12 @@ RSpec.describe "Schema mapping integration" do
         </xs:schema>
       XSD
 
-      specific_path = File.join(fixtures_dir, "metaschema.xsd")
-      general_path = File.join(fixtures_dir, "metaschema-datatypes.xsd")
+      specific_path = File.join(fixtures_dir, 'metaschema.xsd')
+      general_path = File.join(fixtures_dir, 'metaschema-datatypes.xsd')
 
       schema_mappings = [
         # More specific pattern first
-        { from: "specific.xsd", to: specific_path },
+        { from: 'specific.xsd', to: specific_path },
         # More general pattern second
         { from: /^(.+\.xsd)$/, to: general_path }
       ]
@@ -477,9 +477,9 @@ RSpec.describe "Schema mapping integration" do
     end
   end
 
-  describe "parsing without mappings" do
-    it "works for local schemas without imports" do
-      xsd_path = File.join(fixtures_dir, "metaschema.xsd")
+  describe 'parsing without mappings' do
+    it 'works for local schemas without imports' do
+      xsd_path = File.join(fixtures_dir, 'metaschema.xsd')
       xsd_content = File.read(xsd_path)
 
       parsed = Lutaml::Xsd.parse(
@@ -491,7 +491,7 @@ RSpec.describe "Schema mapping integration" do
     end
   end
 
-  describe "nil and empty mappings" do
+  describe 'nil and empty mappings' do
     let(:simple_xsd) do
       <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
@@ -502,7 +502,7 @@ RSpec.describe "Schema mapping integration" do
       XSD
     end
 
-    it "handles nil schema_mappings" do
+    it 'handles nil schema_mappings' do
       parsed = Lutaml::Xsd.parse(
         simple_xsd,
         location: fixtures_dir,
@@ -510,10 +510,10 @@ RSpec.describe "Schema mapping integration" do
       )
 
       expect(parsed).to be_a(Lutaml::Xsd::Schema)
-      expect(parsed.element.first.name).to eq("test")
+      expect(parsed.element.first.name).to eq('test')
     end
 
-    it "handles empty schema_mappings hash" do
+    it 'handles empty schema_mappings hash' do
       parsed = Lutaml::Xsd.parse(
         simple_xsd,
         location: fixtures_dir,
@@ -521,20 +521,20 @@ RSpec.describe "Schema mapping integration" do
       )
 
       expect(parsed).to be_a(Lutaml::Xsd::Schema)
-      expect(parsed.element.first.name).to eq("test")
+      expect(parsed.element.first.name).to eq('test')
     end
   end
 
-  describe "nested schema imports with mappings" do
-    it "resolves nested imports using mappings" do
+  describe 'nested schema imports with mappings' do
+    it 'resolves nested imports using mappings' do
       # Use CityGML building schema which imports cityGMLBase
-      citygml_building_path = File.join(fixtures_dir, "citygml/building/2.0/building.xsd")
+      citygml_building_path = File.join(fixtures_dir, 'citygml/building/2.0/building.xsd')
       citygml_building_content = File.read(citygml_building_path)
 
       schema_mappings = [
         # Map cityGMLBase.xsd
-        { from: "../../2.0/cityGMLBase.xsd",
-          to: File.join(fixtures_dir, "citygml/2.0/cityGMLBase.xsd") },
+        { from: '../../2.0/cityGMLBase.xsd',
+          to: File.join(fixtures_dir, 'citygml/2.0/cityGMLBase.xsd') },
         # Map GML schemas via HTTP URL
         { from: %r{http://schemas\.opengis\.net/gml/3\.2\.1/(.+\.xsd)$},
           to: File.join(fixtures_dir, 'codesynthesis-gml-3.2.1/gml/3.2.1/\1') },
@@ -575,13 +575,13 @@ RSpec.describe "Schema mapping integration" do
       )
 
       expect(parsed).to be_a(Lutaml::Xsd::Schema)
-      expect(parsed.target_namespace).to eq("http://www.opengis.net/citygml/building/2.0")
+      expect(parsed.target_namespace).to eq('http://www.opengis.net/citygml/building/2.0')
       # Verify that imports were resolved
       expect(parsed.imports).not_to be_empty
     end
   end
 
-  describe "mappings isolation between parse calls" do
+  describe 'mappings isolation between parse calls' do
     let(:xsd1) do
       <<~XSD
         <?xml version="1.0" encoding="UTF-8"?>
@@ -600,17 +600,17 @@ RSpec.describe "Schema mapping integration" do
       XSD
     end
 
-    it "does not leak mappings between parse calls" do
-      mappings1 = [{ from: "http://example.com/schema1.xsd", to: "/local/path1.xsd" }]
+    it 'does not leak mappings between parse calls' do
+      mappings1 = [{ from: 'http://example.com/schema1.xsd', to: '/local/path1.xsd' }]
       parsed1 = Lutaml::Xsd.parse(xsd1, schema_mappings: mappings1)
-      expect(parsed1.element.first.name).to eq("test1")
+      expect(parsed1.element.first.name).to eq('test1')
 
       # Clear mappings explicitly
       Lutaml::Xsd::Glob.schema_mappings = nil
 
-      mappings2 = [{ from: "http://example.com/schema2.xsd", to: "/local/path2.xsd" }]
+      mappings2 = [{ from: 'http://example.com/schema2.xsd', to: '/local/path2.xsd' }]
       parsed2 = Lutaml::Xsd.parse(xsd2, schema_mappings: mappings2)
-      expect(parsed2.element.first.name).to eq("test2")
+      expect(parsed2.element.first.name).to eq('test2')
 
       # Verify mappings are different
       current_mappings = Lutaml::Xsd::Glob.schema_mappings

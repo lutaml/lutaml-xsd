@@ -1,15 +1,15 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative "../lib/lutaml/xsd"
+require_relative '../lib/lutaml/xsd'
 
 # Parse metaschema.xsd - a simpler example without complex dependencies
-xsd_file = File.expand_path("../spec/fixtures/metaschema.xsd", __dir__)
+xsd_file = File.expand_path('../spec/fixtures/metaschema.xsd', __dir__)
 xsd_content = File.read(xsd_file)
 
-puts "=" * 80
-puts "Parsing metaschema.xsd with Array-Based Schema Mappings"
-puts "=" * 80
+puts '=' * 80
+puts 'Parsing metaschema.xsd with Array-Based Schema Mappings'
+puts '=' * 80
 puts
 
 begin
@@ -20,17 +20,17 @@ begin
   )
 
   # Display schema information
-  puts "SCHEMA INFORMATION"
-  puts "-" * 80
+  puts 'SCHEMA INFORMATION'
+  puts '-' * 80
   puts "Target Namespace: #{parsed_schema.target_namespace}"
-  puts "Element Form Default: #{parsed_schema.element_form_default || "unqualified"}"
-  puts "Attribute Form Default: #{parsed_schema.attribute_form_default || "unqualified"}"
+  puts "Element Form Default: #{parsed_schema.element_form_default || 'unqualified'}"
+  puts "Attribute Form Default: #{parsed_schema.attribute_form_default || 'unqualified'}"
   puts
 
   # Display imports
   if parsed_schema.import && !parsed_schema.import.empty?
     puts "IMPORTS (#{parsed_schema.import.size})"
-    puts "-" * 80
+    puts '-' * 80
     parsed_schema.import.each do |imp|
       puts "  Namespace: #{imp.namespace}"
       puts "  Schema Location: #{imp.schema_location}" if imp.schema_location
@@ -41,7 +41,7 @@ begin
   # Display includes
   if parsed_schema.include && !parsed_schema.include.empty?
     puts "INCLUDES (#{parsed_schema.include.size})"
-    puts "-" * 80
+    puts '-' * 80
     parsed_schema.include.each do |inc|
       puts "  Schema Location: #{inc.schema_location}"
     end
@@ -51,7 +51,7 @@ begin
   # Display elements
   if parsed_schema.element && !parsed_schema.element.empty?
     puts "ELEMENTS (#{parsed_schema.element.size})"
-    puts "-" * 80
+    puts '-' * 80
     parsed_schema.element.each_with_index do |element, idx|
       puts "  [#{idx + 1}] Element: #{element.name}"
       puts "      Type: #{element.type}" if element.type
@@ -66,7 +66,7 @@ begin
         element.annotation.documentation&.each do |doc|
           docs << doc.content.strip if doc.content
         end
-        puts "      Documentation: #{docs.join(" ")}" unless docs.empty?
+        puts "      Documentation: #{docs.join(' ')}" unless docs.empty?
       end
 
       puts
@@ -76,7 +76,7 @@ begin
   # Display complex types
   if parsed_schema.complex_type && !parsed_schema.complex_type.empty?
     puts "COMPLEX TYPES (#{parsed_schema.complex_type.size})"
-    puts "-" * 80
+    puts '-' * 80
     parsed_schema.complex_type.each_with_index do |ct, idx|
       puts "  [#{idx + 1}] ComplexType: #{ct.name}"
       puts "      Abstract: #{ct.abstract}" if ct.abstract
@@ -124,7 +124,7 @@ begin
 
       # Show complex content if available
       if ct.complex_content
-        puts "      Complex Content:"
+        puts '      Complex Content:'
         if ct.complex_content.extension
           ext = ct.complex_content.extension
           puts "        Extension base: #{ext.base}"
@@ -135,7 +135,7 @@ begin
 
       # Show simple content if available
       if ct.simple_content
-        puts "      Simple Content:"
+        puts '      Simple Content:'
         puts "        Extension base: #{ct.simple_content.extension.base}" if ct.simple_content.extension
         puts "        Restriction base: #{ct.simple_content.restriction.base}" if ct.simple_content.restriction
       end
@@ -147,7 +147,7 @@ begin
   # Display simple types
   if parsed_schema.simple_type && !parsed_schema.simple_type.empty?
     puts "SIMPLE TYPES (#{parsed_schema.simple_type.size})"
-    puts "-" * 80
+    puts '-' * 80
     parsed_schema.simple_type.each_with_index do |st, idx|
       puts "  [#{idx + 1}] SimpleType: #{st.name}"
 
@@ -168,7 +168,7 @@ begin
         if st.restriction.pattern
           patterns = [st.restriction.pattern].flatten
           unless patterns.empty?
-            puts "      Patterns:"
+            puts '      Patterns:'
             patterns.each do |pattern|
               pattern_val = pattern.respond_to?(:value) ? pattern.value : pattern.to_s
               puts "        - #{pattern_val}"
@@ -204,7 +204,7 @@ begin
   # Display attribute groups
   if parsed_schema.attribute_group && !parsed_schema.attribute_group.empty?
     puts "ATTRIBUTE GROUPS (#{parsed_schema.attribute_group.size})"
-    puts "-" * 80
+    puts '-' * 80
     parsed_schema.attribute_group.each_with_index do |ag, idx|
       puts "  [#{idx + 1}] AttributeGroup: #{ag.name || ag.ref}"
       if ag.attribute && !ag.attribute.empty?
@@ -220,7 +220,7 @@ begin
   # Display groups
   if parsed_schema.group && !parsed_schema.group.empty?
     puts "GROUPS (#{parsed_schema.group.size})"
-    puts "-" * 80
+    puts '-' * 80
     parsed_schema.group.each_with_index do |grp, idx|
       puts "  [#{idx + 1}] Group: #{grp.name || grp.ref}"
       if grp.sequence&.element
@@ -239,21 +239,21 @@ begin
     end
   end
 
-  puts "=" * 80
-  puts "Summary Statistics"
-  puts "=" * 80
+  puts '=' * 80
+  puts 'Summary Statistics'
+  puts '=' * 80
   puts "Total Elements: #{parsed_schema.element&.size || 0}"
   puts "Total Complex Types: #{parsed_schema.complex_type&.size || 0}"
   puts "Total Simple Types: #{parsed_schema.simple_type&.size || 0}"
   puts "Total Attribute Groups: #{parsed_schema.attribute_group&.size || 0}"
   puts "Total Groups: #{parsed_schema.group&.size || 0}"
   puts
-  puts "Parsing completed successfully!"
-  puts "=" * 80
+  puts 'Parsing completed successfully!'
+  puts '=' * 80
 rescue StandardError => e
   puts "ERROR: #{e.class}: #{e.message}"
   puts
-  puts "Backtrace:"
+  puts 'Backtrace:'
   puts e.backtrace.first(10).join("\n")
   exit 1
 end

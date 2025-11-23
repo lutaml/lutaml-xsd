@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "base_command"
-require_relative "../package_tree_formatter"
+require_relative 'base_command'
+require_relative '../package_tree_formatter'
 
 module Lutaml
   module Xsd
@@ -71,7 +71,7 @@ module Lutaml
 
           output tree_output
 
-          verbose_output "✓ Tree display complete"
+          verbose_output '✓ Tree display complete'
         end
 
         # Create tree formatter instance
@@ -90,7 +90,7 @@ module Lutaml
         #
         # @return [Symbol] Format as symbol (:tree or :flat)
         def parse_format_option
-          format_str = options[:format] || "tree"
+          format_str = options[:format] || 'tree'
           format_str.to_sym
         end
 
@@ -102,14 +102,12 @@ module Lutaml
           case error
           when Zip::Error
             error "Failed to read package file: #{error.message}"
-            verbose_output error.backtrace.join("\n") if verbose?
           when Lutaml::Xsd::Error
             error "Package error: #{error.message}"
-            verbose_output error.backtrace.join("\n") if verbose?
           else
             error "Failed to display tree: #{error.message}"
-            verbose_output error.backtrace.join("\n") if verbose?
           end
+          verbose_output error.backtrace.join("\n") if verbose?
           exit 1
         end
       end

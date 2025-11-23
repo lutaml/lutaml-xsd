@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "utils/svg_builder"
+require_relative 'utils/svg_builder'
 
 module Lutaml
   module Xsd
@@ -31,7 +31,7 @@ module Lutaml
             attributes = {
               fill: fill,
               stroke: options[:stroke] || config.colors.ui.border,
-              "stroke-width" => options[:stroke_width] || 2,
+              'stroke-width' => options[:stroke_width] || 2,
               rx: options[:corner_radius] || config.dimensions.box_corner_radius
             }
 
@@ -47,17 +47,17 @@ module Lutaml
               box.y + (options[:offset_y] || config.dimensions.text_offset_y),
               text,
               {
-                fill: options[:fill] || "white",
-                "font-size" => options[:font_size] || config.dimensions.text_font_size,
-                "font-weight" => options[:font_weight] || "bold",
-                "text-anchor" => "middle"
+                fill: options[:fill] || 'white',
+                'font-size' => options[:font_size] || config.dimensions.text_font_size,
+                'font-weight' => options[:font_weight] || 'bold',
+                'text-anchor' => 'middle'
               }
             )
           end
 
           # Creates a clickable link wrapper
           def create_link(href, &block)
-            Utils::SvgBuilder.element("a", { href: href }, &block)
+            Utils::SvgBuilder.element('a', { href: href }, &block)
           end
 
           # Generates a semantic URI for linking
@@ -68,13 +68,13 @@ module Lutaml
 
           # CamelCase-aware slugification
           def slugify(name)
-            return "" unless name
+            return '' unless name
 
             name.gsub(/([a-z])([A-Z])/, '\1-\2')
                 .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')
                 .downcase
-                .gsub(/[^a-z0-9]+/, "-")
-                .gsub(/^-|-$/, "")
+                .gsub(/[^a-z0-9]+/, '-')
+                .gsub(/^-|-$/, '')
           end
         end
       end

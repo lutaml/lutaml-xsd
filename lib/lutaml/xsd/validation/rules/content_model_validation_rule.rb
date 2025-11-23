@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../validation_rule"
+require_relative '../validation_rule'
 
 module Lutaml
   module Xsd
@@ -33,7 +33,7 @@ module Lutaml
           #
           # @return [String]
           def description
-            "Validates element content models (sequence, choice, all)"
+            'Validates element content models (sequence, choice, all)'
           end
 
           # Validate content model
@@ -158,53 +158,53 @@ module Lutaml
               while child_index < children.size
                 child = children[child_index]
 
-                if particle_matches?(child, particle)
-                  matched_count += 1
-                  child_index += 1
+                break unless particle_matches?(child, particle)
 
-                  # Stop if we've reached max occurrences
-                  break if max_occurs != :unbounded &&
-                           matched_count >= max_occurs
-                else
-                  # Child doesn't match, move to next particle
-                  break
-                end
+                matched_count += 1
+                child_index += 1
+
+                # Stop if we've reached max occurrences
+                break if max_occurs != :unbounded &&
+                         matched_count >= max_occurs
+
+                # Child doesn't match, move to next particle
+
               end
 
               # Check minimum occurrences
-              if matched_count < min_occurs
-                report_error(
-                  collector,
-                  code: "sequence_min_occurs_violation",
-                  message: "Element '#{particle_name(particle)}' must occur " \
-                           "at least #{min_occurs} time(s) in sequence, " \
-                           "found #{matched_count}",
-                  location: xml_element.xpath,
-                  context: {
-                    particle: particle_name(particle),
-                    min_occurs: min_occurs,
-                    actual: matched_count
-                  }
-                )
-              end
+              next unless matched_count < min_occurs
+
+              report_error(
+                collector,
+                code: 'sequence_min_occurs_violation',
+                message: "Element '#{particle_name(particle)}' must occur " \
+                         "at least #{min_occurs} time(s) in sequence, " \
+                         "found #{matched_count}",
+                location: xml_element.xpath,
+                context: {
+                  particle: particle_name(particle),
+                  min_occurs: min_occurs,
+                  actual: matched_count
+                }
+              )
             end
 
             # Check for unexpected children after sequence
-            if child_index < children.size
-              unexpected = children[child_index..-1]
-              unexpected.each do |child|
-                report_error(
-                  collector,
-                  code: "unexpected_element_in_sequence",
-                  message: "Unexpected element '#{child.qualified_name}' " \
-                           "in sequence",
-                  location: child.xpath,
-                  context: {
-                    element: child.qualified_name
-                  },
-                  suggestion: "Remove this element or check sequence order"
-                )
-              end
+            return unless child_index < children.size
+
+            unexpected = children[child_index..]
+            unexpected.each do |child|
+              report_error(
+                collector,
+                code: 'unexpected_element_in_sequence',
+                message: "Unexpected element '#{child.qualified_name}' " \
+                         'in sequence',
+                location: child.xpath,
+                context: {
+                  element: child.qualified_name
+                },
+                suggestion: 'Remove this element or check sequence order'
+              )
             end
           end
 
@@ -232,12 +232,12 @@ module Lutaml
             min_occurs = parse_occurs(choice.min_occurs, 1)
 
             # Check if at least one alternative is present
-            if matched_particles.empty? && min_occurs > 0
+            if matched_particles.empty? && min_occurs.positive?
               particle_names = particles.map { |p| particle_name(p) }
               report_error(
                 collector,
-                code: "choice_not_satisfied",
-                message: "One of the following elements must be present: " \
+                code: 'choice_not_satisfied',
+                message: 'One of the following elements must be present: ' \
                          "#{particle_names.join(', ')}",
                 location: xml_element.xpath,
                 context: {
@@ -249,14 +249,14 @@ module Lutaml
               # Multiple alternatives present (ambiguous choice)
               report_error(
                 collector,
-                code: "choice_ambiguous",
-                message: "Only one choice alternative should be present, " \
+                code: 'choice_ambiguous',
+                message: 'Only one choice alternative should be present, ' \
                          "found #{matched_particles.size}",
                 location: xml_element.xpath,
                 context: {
                   matched: matched_particles.map { |p| particle_name(p) }
                 },
-                suggestion: "Use only one of the choice alternatives"
+                suggestion: 'Use only one of the choice alternatives'
               )
             end
           end
@@ -288,7 +288,7 @@ module Lutaml
               if matched_count < min_occurs
                 report_error(
                   collector,
-                  code: "all_min_occurs_violation",
+                  code: 'all_min_occurs_violation',
                   message: "Element '#{particle_name(particle)}' must occur " \
                            "at least #{min_occurs} time(s), found " \
                            "#{matched_count}",
@@ -302,21 +302,21 @@ module Lutaml
               end
 
               # Check maximum occurrence (in xs:all, max is usually 1)
-              if max_occurs != :unbounded && matched_count > max_occurs
-                report_error(
-                  collector,
-                  code: "all_max_occurs_violation",
-                  message: "Element '#{particle_name(particle)}' must occur " \
-                           "at most #{max_occurs} time(s), found " \
-                           "#{matched_count}",
-                  location: xml_element.xpath,
-                  context: {
-                    element: particle_name(particle),
-                    max_occurs: max_occurs,
-                    actual: matched_count
-                  }
-                )
-              end
+              next unless max_occurs != :unbounded && matched_count > max_occurs
+
+              report_error(
+                collector,
+                code: 'all_max_occurs_violation',
+                message: "Element '#{particle_name(particle)}' must occur " \
+                         "at most #{max_occurs} time(s), found " \
+                         "#{matched_count}",
+                location: xml_element.xpath,
+                context: {
+                  element: particle_name(particle),
+                  max_occurs: max_occurs,
+                  actual: matched_count
+                }
+              )
             end
           end
 
@@ -329,24 +329,16 @@ module Lutaml
             particles = []
 
             # Collect elements
-            if content_model.respond_to?(:element)
-              particles.concat(Array(content_model.element))
-            end
+            particles.concat(Array(content_model.element)) if content_model.respond_to?(:element)
 
             # Collect nested sequences
-            if content_model.respond_to?(:sequence)
-              particles.concat(Array(content_model.sequence))
-            end
+            particles.concat(Array(content_model.sequence)) if content_model.respond_to?(:sequence)
 
             # Collect nested choices
-            if content_model.respond_to?(:choice)
-              particles.concat(Array(content_model.choice))
-            end
+            particles.concat(Array(content_model.choice)) if content_model.respond_to?(:choice)
 
             # Collect groups
-            if content_model.respond_to?(:group)
-              particles.concat(Array(content_model.group))
-            end
+            particles.concat(Array(content_model.group)) if content_model.respond_to?(:group)
 
             particles
           end
@@ -398,7 +390,7 @@ module Lutaml
             if particle.respond_to?(:name)
               particle.name
             else
-              particle.class.name.split("::").last
+              particle.class.name.split('::').last
             end
           end
 
@@ -420,7 +412,7 @@ module Lutaml
           # @return [Integer, Symbol]
           def parse_max_occurs(value, default)
             return default if value.nil? || value.to_s.empty?
-            return :unbounded if value.to_s == "unbounded"
+            return :unbounded if value.to_s == 'unbounded'
 
             value.to_i
           end

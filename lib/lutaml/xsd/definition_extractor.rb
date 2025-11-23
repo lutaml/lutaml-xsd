@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "nokogiri"
+require 'nokogiri'
 
 module Lutaml
   module Xsd
@@ -27,12 +27,12 @@ module Lutaml
         extract_definition_from_xsd(
           schema_file,
           type_obj.name,
-          type_obj.class.name.split("::").last.downcase
+          type_obj.class.name.split('::').last.downcase
         ).tap do |def_info|
           if def_info
             def_info[:qname] = qname
             def_info[:namespace] = schema.target_namespace
-            def_info[:category] = type_obj.class.name.split("::").last
+            def_info[:category] = type_obj.class.name.split('::').last
             def_info[:type_object] = type_obj
             def_info[:schema] = schema
           end
@@ -52,12 +52,12 @@ module Lutaml
         extract_definition_from_xsd(
           schema_file,
           element_obj.name,
-          "element"
+          'element'
         ).tap do |def_info|
           if def_info
             def_info[:qname] = qname
             def_info[:namespace] = schema.target_namespace
-            def_info[:category] = "Element"
+            def_info[:category] = 'Element'
             def_info[:element_object] = element_obj
             def_info[:schema] = schema
           end
@@ -70,7 +70,7 @@ module Lutaml
       def extract_attribute_definition(qname)
         repository = package.load_repository
         # Remove @ prefix if present
-        clean_name = qname.sub(/^@/, "")
+        clean_name = qname.sub(/^@/, '')
 
         attribute_result = find_attribute_in_repository(repository, clean_name)
         return nil unless attribute_result
@@ -80,12 +80,12 @@ module Lutaml
         extract_definition_from_xsd(
           schema_file,
           attr_obj.name,
-          "attribute"
+          'attribute'
         ).tap do |def_info|
           if def_info
             def_info[:qname] = clean_name
             def_info[:namespace] = schema.target_namespace
-            def_info[:category] = "Attribute"
+            def_info[:category] = 'Attribute'
             def_info[:attribute_object] = attr_obj
             def_info[:schema] = schema
           end
@@ -155,8 +155,8 @@ module Lutaml
       # @param qname [String] Qualified name (e.g., "gml:PointType")
       # @return [Array] [namespace_uri, local_name]
       def parse_qname(repository, qname)
-        if qname.include?(":")
-          prefix, local = qname.split(":", 2)
+        if qname.include?(':')
+          prefix, local = qname.split(':', 2)
           namespace = find_namespace_by_prefix(repository, prefix)
           [namespace, local]
         else
@@ -211,13 +211,13 @@ module Lutaml
       def find_definition_node(node, name, type)
         # Use XPath to find the definition
         xpath = case type.downcase
-                when "complextype"
+                when 'complextype'
                   "//xs:complexType[@name='#{name}'] | //*[local-name()='complexType'][@name='#{name}']"
-                when "simpletype"
+                when 'simpletype'
                   "//xs:simpleType[@name='#{name}'] | //*[local-name()='simpleType'][@name='#{name}']"
-                when "element"
+                when 'element'
                   "//xs:element[@name='#{name}'] | //*[local-name()='element'][@name='#{name}']"
-                when "attribute"
+                when 'attribute'
                   "//xs:attribute[@name='#{name}'] | //*[local-name()='attribute'][@name='#{name}']"
                 else
                   "//*[@name='#{name}']"
@@ -233,7 +233,7 @@ module Lutaml
         # Use Nokogiri to serialize the node
         node.to_xml(indent: 2)
       rescue StandardError
-        "<Could not extract XSD source>"
+        '<Could not extract XSD source>'
       end
 
       # Estimate line number in file
@@ -244,13 +244,13 @@ module Lutaml
       def estimate_line_number(content, name, type)
         # Look for the definition line
         pattern = case type.downcase
-                  when "complextype"
+                  when 'complextype'
                     /<xs:complexType\s+name="#{Regexp.escape(name)}"/i
-                  when "simpletype"
+                  when 'simpletype'
                     /<xs:simpleType\s+name="#{Regexp.escape(name)}"/i
-                  when "element"
+                  when 'element'
                     /<xs:element\s+name="#{Regexp.escape(name)}"/i
-                  when "attribute"
+                  when 'attribute'
                     /<xs:attribute\s+name="#{Regexp.escape(name)}"/i
                   else
                     /name="#{Regexp.escape(name)}"/

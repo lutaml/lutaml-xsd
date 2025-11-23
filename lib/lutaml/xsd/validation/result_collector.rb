@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "validation_result"
-require_relative "validation_error"
+require_relative 'validation_result'
+require_relative 'validation_error'
 
 module Lutaml
   module Xsd
@@ -219,7 +219,7 @@ module Lutaml
         #
         # @param error [ValidationError] The error
         # @return [Boolean]
-        def should_skip_error?(error)
+        def should_skip_error?(_error)
           return false unless @config.respond_to?(:max_errors)
           return false unless @config.max_errors
 

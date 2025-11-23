@@ -13,8 +13,8 @@ module Lutaml
       attribute :restriction, :restriction_simple_type
 
       xml do
-        root "simpleType", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'simpleType', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :id, to: :id
         map_attribute :name, to: :name

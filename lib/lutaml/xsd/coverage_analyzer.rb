@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "dependency_grapher"
+require_relative 'dependency_grapher'
 
 module Lutaml
   module Xsd
@@ -96,11 +96,11 @@ module Lutaml
       # @param all_types [Set<String>] All types
       # @param used_types [Set<String>] Used types
       # @return [Hash] Coverage data by namespace
-      def analyze_by_namespace(all_types, used_types)
+      def analyze_by_namespace(_all_types, used_types)
         by_ns = {}
 
         @type_index.all.each do |clark_key, type_info|
-          ns = type_info[:namespace] || "(no namespace)"
+          ns = type_info[:namespace] || '(no namespace)'
 
           by_ns[ns] ||= {
             total: 0,
@@ -120,7 +120,7 @@ module Lutaml
         end
 
         # Calculate percentages
-        by_ns.each do |_ns, data|
+        by_ns.each_value do |data|
           data[:coverage_percentage] = if data[:total].zero?
                                          0.0
                                        else

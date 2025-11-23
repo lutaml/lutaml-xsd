@@ -35,7 +35,7 @@ module Lutaml
           msg += "\n"
         end
 
-        msg += "💡 See: https://www.lutaml.org/lutaml-xsd/troubleshooting/schema-not-found"
+        msg += '💡 See: https://www.lutaml.org/lutaml-xsd/troubleshooting/schema-not-found'
         msg
       end
     end
@@ -71,7 +71,7 @@ module Lutaml
           msg += "\n"
         end
 
-        msg += "💡 See: https://www.lutaml.org/lutaml-xsd/troubleshooting/type-not-found"
+        msg += '💡 See: https://www.lutaml.org/lutaml-xsd/troubleshooting/type-not-found'
         msg
       end
     end
@@ -81,5 +81,8 @@ module Lutaml
 
     # Configuration error
     class ConfigurationError < Error; end
+
+    # Schema validation error (pre-parsing validation)
+    class SchemaValidationError < Error; end
   end
 end

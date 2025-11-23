@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "canon"
+require 'canon'
 
 module Lutaml
   module Xsd
@@ -11,7 +11,7 @@ module Lutaml
       def to_formatted_xml(except: [])
         Canon.format_xml(
           to_xml(except: except)
-        ).gsub(XML_DECLARATION_REGEX, "")
+        ).gsub(XML_DECLARATION_REGEX, '')
       end
 
       def resolved_element_order

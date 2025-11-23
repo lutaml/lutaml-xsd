@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "liquid_methods/extension"
+require_relative 'liquid_methods/extension'
 
 module Lutaml
   module Xsd
@@ -15,8 +15,8 @@ module Lutaml
       attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
 
       xml do
-        root "extension", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'extension', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :id, to: :id
         map_attribute :base, to: :base

@@ -59,7 +59,7 @@ module Lutaml
             location: @location,
             namespace: @namespace,
             expected_type: @expected_type,
-            actual_value: @actual_value,
+            actual_value: @actual_value
           }.merge(@additional).compact
         end
 

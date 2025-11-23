@@ -55,7 +55,7 @@ module Lutaml
       # @param category [String, Symbol, nil] Filter by category
       # @param limit [Integer] Maximum number of results to return
       # @return [Array<SearchResult>] Sorted search results
-      def search(query, in_field: "both", namespace: nil, category: nil, limit: 20)
+      def search(query, in_field: 'both', namespace: nil, category: nil, limit: 20)
         return [] if query.nil? || query.strip.empty?
 
         query = query.strip.downcase
@@ -64,7 +64,7 @@ module Lutaml
         # Get all types from the index
         all_types = @type_index.all
 
-        all_types.each do |_clark_key, type_info|
+        all_types.each_value do |type_info|
           # Apply namespace filter
           next if namespace && type_info[:namespace] != namespace
 
@@ -148,11 +148,11 @@ module Lutaml
         # Contains in documentation: 50
 
         case in_field
-        when "name"
+        when 'name'
           calculate_name_score(query, name_lower)
-        when "documentation"
+        when 'documentation'
           calculate_documentation_score(query, doc_lower)
-        when "both"
+        when 'both'
           name_result = calculate_name_score(query, name_lower)
           doc_result = calculate_documentation_score(query, doc_lower)
 
@@ -163,7 +163,7 @@ module Lutaml
             doc_result
           end
         else
-          { score: 0, match_type: "none" }
+          { score: 0, match_type: 'none' }
         end
       end
 
@@ -173,13 +173,13 @@ module Lutaml
       # @return [Hash] Score and match type
       def calculate_name_score(query, name_lower)
         if name_lower == query
-          { score: 1000, match_type: "exact_name" }
+          { score: 1000, match_type: 'exact_name' }
         elsif name_lower.start_with?(query)
-          { score: 500, match_type: "name_starts_with" }
+          { score: 500, match_type: 'name_starts_with' }
         elsif name_lower.include?(query)
-          { score: 250, match_type: "name_contains" }
+          { score: 250, match_type: 'name_contains' }
         else
-          { score: 0, match_type: "none" }
+          { score: 0, match_type: 'none' }
         end
       end
 
@@ -188,15 +188,15 @@ module Lutaml
       # @param doc_lower [String] The documentation to match against (lowercase)
       # @return [Hash] Score and match type
       def calculate_documentation_score(query, doc_lower)
-        return { score: 0, match_type: "none" } if doc_lower.empty?
+        return { score: 0, match_type: 'none' } if doc_lower.empty?
 
         # Check for exact word match (with word boundaries)
         if doc_lower =~ /\b#{Regexp.escape(query)}\b/
-          { score: 100, match_type: "doc_exact_word" }
+          { score: 100, match_type: 'doc_exact_word' }
         elsif doc_lower.include?(query)
-          { score: 50, match_type: "doc_contains" }
+          { score: 50, match_type: 'doc_contains' }
         else
-          { score: 0, match_type: "none" }
+          { score: 0, match_type: 'none' }
         end
       end
 
@@ -204,8 +204,8 @@ module Lutaml
       # @param definition [Object] The type definition
       # @return [String] The documentation text or empty string
       def extract_documentation(definition)
-        return "" unless definition.respond_to?(:annotation)
-        return "" unless definition.annotation&.documentation
+        return '' unless definition.respond_to?(:annotation)
+        return '' unless definition.annotation&.documentation
 
         docs = definition.annotation.documentation
         docs = [docs] unless docs.is_a?(Array)
@@ -213,7 +213,7 @@ module Lutaml
         docs.map do |doc|
           content = doc.respond_to?(:content) ? doc.content : doc.to_s
           content&.strip
-        end.compact.first || ""
+        end.compact.first || ''
       end
     end
   end

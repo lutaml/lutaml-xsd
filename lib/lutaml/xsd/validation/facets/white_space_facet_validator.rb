@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "facet_validator"
+require_relative 'facet_validator'
 
 module Lutaml
   module Xsd
@@ -22,16 +22,16 @@ module Lutaml
         #   validator.normalize("  hello  world  ")  # => "hello world"
         #
         class WhiteSpaceFacetValidator < FacetValidator
-          PRESERVE = "preserve"
-          REPLACE = "replace"
-          COLLAPSE = "collapse"
+          PRESERVE = 'preserve'
+          REPLACE = 'replace'
+          COLLAPSE = 'collapse'
 
           # Validate always returns true as whiteSpace is about
           # normalization
           #
           # @param value [String] The value to validate
           # @return [Boolean] Always true
-          def valid?(value)
+          def valid?(_value)
             true
           end
 
@@ -69,7 +69,7 @@ module Lutaml
           # @param value [String] The value to process
           # @return [String] Value with replaced whitespace
           def replace_whitespace(value)
-            value.gsub(/[\t\n\r]/, " ")
+            value.gsub(/[\t\n\r]/, ' ')
           end
 
           # Collapse sequences of whitespace and trim
@@ -80,7 +80,7 @@ module Lutaml
             # First replace tabs, newlines, carriage returns with spaces
             result = replace_whitespace(value)
             # Then collapse multiple spaces to single space
-            result = result.gsub(/\s+/, " ")
+            result = result.gsub(/\s+/, ' ')
             # Finally trim leading and trailing whitespace
             result.strip
           end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../component_renderer"
+require_relative '../component_renderer'
 
 module Lutaml
   module Xsd
@@ -10,14 +10,14 @@ module Lutaml
           # Renders XSD attribute components
           class AttributeRenderer < ComponentRenderer
             def render(component_data, box)
-              name = component_data["name"]
-              type = component_data["type"]
+              name = component_data['name']
+              type = component_data['type']
 
               parts = []
 
               # Box
               fill = if config.effects.gradient_enabled?
-                       "url(#attributeGradient)"
+                       'url(#attributeGradient)'
                      else
                        config.colors.attribute.base
                      end
@@ -35,8 +35,8 @@ module Lutaml
                 box.y + 15,
                 "@#{name}",
                 {
-                  fill: "white",
-                  "font-size" => 12
+                  fill: 'white',
+                  'font-size' => 12
                 }
               )
 
@@ -47,19 +47,17 @@ module Lutaml
                   box.y + 27,
                   type,
                   {
-                    fill: "white",
-                    "font-size" => 10,
+                    fill: 'white',
+                    'font-size' => 10,
                     opacity: 0.8
                   }
                 )
               end
 
               # Required indicator
-              if component_data["use"] == "required"
-                parts << render_required_indicator(box)
-              end
+              parts << render_required_indicator(box) if component_data['use'] == 'required'
 
-              Utils::SvgBuilder.group({ class: "attribute-box" }) { parts.join("\n") }
+              Utils::SvgBuilder.group({ class: 'attribute-box' }) { parts.join("\n") }
             end
 
             private
@@ -68,11 +66,11 @@ module Lutaml
               Utils::SvgBuilder.text(
                 box.x + box.width + 5,
                 box.y + 15,
-                "*",
+                '*',
                 {
                   fill: config.colors.indicators.required,
-                  "font-size" => config.dimensions.text_font_size,
-                  "font-weight" => "bold"
+                  'font-size' => config.dimensions.text_font_size,
+                  'font-weight' => 'bold'
                 }
               )
             end

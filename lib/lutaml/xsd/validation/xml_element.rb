@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "xml_attribute"
+require_relative 'xml_attribute'
 
 module Lutaml
   module Xsd
@@ -117,7 +117,7 @@ module Lutaml
         def children
           return [] unless @moxml_element.respond_to?(:children)
 
-          @moxml_element.children.select { |n| n.element? }.map do |child|
+          @moxml_element.children.select(&:element?).map do |child|
             XmlElement.new(child, @navigator)
           end
         end

@@ -12,8 +12,8 @@ module Lutaml
       attribute :attribute_group, :attribute_group
 
       xml do
-        root "redefine", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'redefine', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :id, to: :id
         map_attribute :schema_location, to: :schema_path

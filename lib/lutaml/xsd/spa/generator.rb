@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-require_relative "configuration_loader"
-require_relative "schema_serializer"
-require_relative "template_renderer"
-require_relative "strategies/single_file_strategy"
-require_relative "strategies/multi_file_strategy"
-require_relative "strategies/api_strategy"
-require_relative "filters/schema_filters"
-require_relative "filters/url_filters"
+require_relative 'configuration_loader'
+require_relative 'schema_serializer'
+require_relative 'template_renderer'
+require_relative 'strategies/single_file_strategy'
+require_relative 'strategies/multi_file_strategy'
+require_relative 'strategies/api_strategy'
+require_relative 'filters/schema_filters'
+require_relative 'filters/url_filters'
 
 module Lutaml
   module Xsd
@@ -59,12 +59,12 @@ module Lutaml
         #
         # @return [Array<String>] List of generated file paths
         def generate
-          log "Starting SPA generation..."
+          log 'Starting SPA generation...'
 
           # Create output strategy
           strategy = create_strategy
-          mode = options[:mode] || "single_file"
-          strategy_name = mode.split('_').map(&:capitalize).join(' ') + " Strategy"
+          mode = options[:mode] || 'single_file'
+          strategy_name = "#{mode.split('_').map(&:capitalize).join(' ')} Strategy"
           log "✓ Using #{strategy_name}"
 
           # Serialize schema data
@@ -94,22 +94,22 @@ module Lutaml
         #
         # @return [OutputStrategy] Strategy instance
         def create_strategy
-          mode = options[:mode] || "single_file"
+          mode = options[:mode] || 'single_file'
 
           case mode
-          when "single_file"
+          when 'single_file'
             Strategies::SingleFileStrategy.new(
               output_dir,
               @config_loader,
               verbose: verbose?
             )
-          when "multi_file"
+          when 'multi_file'
             Strategies::MultiFileStrategy.new(
               output_dir,
               @config_loader,
               verbose: verbose?
             )
-          when "api"
+          when 'api'
             Strategies::ApiStrategy.new(
               output_dir,
               @config_loader,

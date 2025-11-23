@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "json"
-require_relative "xml_instance_generator"
-require_relative "svg/diagram_generator"
+require 'json'
+require_relative 'xml_instance_generator'
+require_relative 'svg/diagram_generator'
 
 module Lutaml
   module Xsd
@@ -78,7 +78,7 @@ module Lutaml
           {
             generated: current_timestamp,
             generator: generator_info,
-            title: config["title"] || default_title,
+            title: config['title'] || default_title,
             schema_count: get_schemas.size
           }
         end
@@ -341,21 +341,13 @@ module Lutaml
         def serialize_facets(restriction)
           facets = []
 
-          if restriction.respond_to?(:enumerations) && restriction.enumerations
-            facets << { type: "enumeration", values: restriction.enumerations }
-          end
+          facets << { type: 'enumeration', values: restriction.enumerations } if restriction.respond_to?(:enumerations) && restriction.enumerations
 
-          if restriction.respond_to?(:pattern) && restriction.pattern
-            facets << { type: "pattern", value: restriction.pattern }
-          end
+          facets << { type: 'pattern', value: restriction.pattern } if restriction.respond_to?(:pattern) && restriction.pattern
 
-          if restriction.respond_to?(:min_length) && restriction.min_length
-            facets << { type: "min_length", value: restriction.min_length }
-          end
+          facets << { type: 'min_length', value: restriction.min_length } if restriction.respond_to?(:min_length) && restriction.min_length
 
-          if restriction.respond_to?(:max_length) && restriction.max_length
-            facets << { type: "max_length", value: restriction.max_length }
-          end
+          facets << { type: 'max_length', value: restriction.max_length } if restriction.respond_to?(:max_length) && restriction.max_length
 
           facets
         end
@@ -380,13 +372,13 @@ module Lutaml
         # @param type [ComplexType] Complex type
         # @return [String] Content model type
         def extract_content_model(type)
-          return "sequence" if type.respond_to?(:sequence) && type.sequence
-          return "choice" if type.respond_to?(:choice) && type.choice
-          return "all" if type.respond_to?(:all) && type.all
-          return "complex_content" if type.respond_to?(:complex_content) && type.complex_content
-          return "simple_content" if type.respond_to?(:simple_content) && type.simple_content
+          return 'sequence' if type.respond_to?(:sequence) && type.sequence
+          return 'choice' if type.respond_to?(:choice) && type.choice
+          return 'all' if type.respond_to?(:all) && type.all
+          return 'complex_content' if type.respond_to?(:complex_content) && type.complex_content
+          return 'simple_content' if type.respond_to?(:simple_content) && type.simple_content
 
-          "empty"
+          'empty'
         end
 
         # Extract base type from complex type
@@ -422,16 +414,12 @@ module Lutaml
         # @param type [SimpleType] Simple type
         # @return [String, nil] Base type name
         def extract_simple_base(type)
-          if type.respond_to?(:restriction) && type.restriction
-            return type.restriction.base if type.restriction.respond_to?(:base)
-          end
+          return type.restriction.base if type.respond_to?(:restriction) && type.restriction.respond_to?(:base)
 
-          if type.respond_to?(:list) && type.list
-            return type.list.item_type if type.list.respond_to?(:item_type)
-          end
+          return type.list.item_type if type.respond_to?(:list) && type.list.respond_to?(:item_type)
 
           if type.respond_to?(:union) && type.union
-            return "union" # Union types have multiple bases
+            return 'union' # Union types have multiple bases
           end
 
           nil
@@ -444,51 +432,56 @@ module Lutaml
         # @param name [String, nil] Name to slugify
         # @return [String] URL-safe slug
         def slugify(name)
-          return "unnamed" unless name
+          return 'unnamed' unless name
 
           name.to_s
-            .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')  # Split acronyms: HTTPParser → HTTP-Parser
-            .gsub(/([a-z\d])([A-Z])/, '\1-\2')      # Split camelCase: fooBar → foo-Bar
-            .downcase                                # Convert to lowercase
-            .gsub(/[^a-z0-9]+/, '-')                # Replace non-alphanumeric with dash
-            .gsub(/^-|-$/, '')                       # Remove leading/trailing dashes
+              .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')  # Split acronyms: HTTPParser → HTTP-Parser
+              .gsub(/([a-z\d])([A-Z])/, '\1-\2')      # Split camelCase: fooBar → foo-Bar
+              .downcase # Convert to lowercase
+              .gsub(/[^a-z0-9]+/, '-') # Replace non-alphanumeric with dash
+              .gsub(/^-|-$/, '') # Remove leading/trailing dashes
         end
 
         def schema_id(index, schema = nil, file_path = nil)
           # Use schema name instead of index
           name = schema_name(schema, file_path) if schema
-          name ||= "schema-#{index}"  # Fallback
+          name ||= "schema-#{index}" # Fallback
           slugify(name)
         end
 
         def element_id(index, element = nil)
           # Use element name if available
           return slugify(element.name) if element&.name
-          "element-#{index}"  # Fallback
+
+          "element-#{index}" # Fallback
         end
 
         def complex_type_id(index, type = nil)
           # Use type name if available
           return "type-#{slugify(type.name)}" if type&.name
-          "type-#{index}"  # Fallback
+
+          "type-#{index}" # Fallback
         end
 
         def simple_type_id(index, type = nil)
           # Differentiate from complex types
           return "simpletype-#{slugify(type.name)}" if type&.name
-          "simpletype-#{index}"  # Fallback
+
+          "simpletype-#{index}" # Fallback
         end
 
         def attribute_id(index, attr = nil)
           # Use attribute name if available
           return "attr-#{slugify(attr.name)}" if attr&.name
-          "attr-#{index}"  # Fallback
+
+          "attr-#{index}" # Fallback
         end
 
         def group_id(index, group = nil)
           # Use group name if available
           return "group-#{slugify(group.name)}" if group&.name
-          "group-#{index}"  # Fallback
+
+          "group-#{index}" # Fallback
         end
 
         # Helper methods
@@ -502,27 +495,32 @@ module Lutaml
         end
 
         def default_title
-          "XSD Schema Documentation"
+          'XSD Schema Documentation'
         end
 
         def schema_name(schema, file_path = nil)
-          # Prioritize target namespace for consistent schema identification
-          # This ensures links use namespace-based IDs instead of filenames
+          # Prioritize filename if available and meaningful
+          if file_path.is_a?(String) && !file_path.empty?
+            basename = File.basename(file_path, '.*')
+            # Use filename unless it's generic (schema, unnamed, or just numbers)
+            return basename unless basename.match?(/^(schema|unnamed|\d+)$/i)
+          end
+
+          # Fallback to target namespace extraction
           if schema.respond_to?(:target_namespace) && schema.target_namespace
-            # Extract last meaningful part of namespace URI as name
+            # Extract last meaningful part of namespace URI
             uri = schema.target_namespace
             # For URNs like "urn:oasis:names:tc:unitsml:schema:xsd:UnitsML-Schema-1.0"
             # extract the last part
-            last_part = uri.split('/').last || uri.split(':').last || "unnamed"
-            return last_part unless last_part == "unnamed"
+            last_part = uri.split('/').last || uri.split(':').last || 'unnamed'
+            # Don't return if it's just a version number (e.g., "3.2")
+            return last_part unless last_part.match?(/^\d+(\.\d+)*$/)
           end
 
-          # Fallback to filename only if namespace not available
-          if file_path && file_path.is_a?(String) && !file_path.empty?
-            return File.basename(file_path, ".*")
-          end
+          # Final fallback: use filename if we have one, even if generic
+          return File.basename(file_path, '.*') if file_path.is_a?(String) && !file_path.empty?
 
-          "unnamed"
+          'unnamed'
         end
 
         # Check if file path is an entrypoint
@@ -537,9 +535,9 @@ module Lutaml
           # not the resolved dependencies
           entrypoint_files = []
 
-          if package && package.respond_to?(:metadata)
+          if package.respond_to?(:metadata)
             metadata = package.metadata || {}
-            entrypoint_files = metadata[:files] || metadata["files"] || []
+            entrypoint_files = metadata[:files] || metadata['files'] || []
           elsif repository.respond_to?(:files) && !repository.respond_to?(:all_schemas)
             # Direct repository has files attribute
             entrypoint_files = repository.files || []
@@ -565,8 +563,8 @@ module Lutaml
           # Extract path relative to package (strip temp directory)
           # Transform: /var/folders/.../T/package.../schemas/file.xsd
           # To: schemas/file.xsd
-          if file_path.include?("/schemas/")
-            parts = file_path.split("/schemas/")
+          if file_path.include?('/schemas/')
+            parts = file_path.split('/schemas/')
             "schemas/#{parts.last}"
           else
             File.basename(file_path)
@@ -619,7 +617,7 @@ module Lutaml
             all_schemas: get_schemas
           )
           generator.generate
-        rescue => e
+        rescue StandardError => e
           # Fallback if generation fails - return nil to skip display
           warn "Failed to generate instance XML: #{e.message}" if config[:verbose]
           nil
@@ -631,21 +629,15 @@ module Lutaml
         # @return [Schema, nil] Schema containing the component
         def find_schema_for_component(component)
           # Search through all schemas to find the one containing this component
-          get_schemas.each do |_path, schema|
+          get_schemas.each_value do |schema|
             # Check if component is in this schema's elements
-            if schema.respond_to?(:element) && schema.element&.include?(component)
-              return schema
-            end
+            return schema if schema.respond_to?(:element) && schema.element&.include?(component)
 
             # Check if component is in this schema's complex types
-            if schema.respond_to?(:complex_type) && schema.complex_type&.include?(component)
-              return schema
-            end
+            return schema if schema.respond_to?(:complex_type) && schema.complex_type&.include?(component)
 
             # Check if component is in this schema's simple types
-            if schema.respond_to?(:simple_type) && schema.simple_type&.include?(component)
-              return schema
-            end
+            return schema if schema.respond_to?(:simple_type) && schema.simple_type&.include?(component)
           end
 
           # If not found, return first schema as fallback
@@ -666,8 +658,6 @@ module Lutaml
             generator.generate_element_diagram(component_data)
           when :type
             generator.generate_type_diagram(component_data)
-          else
-            nil
           end
         rescue StandardError => e
           # Graceful failure - diagram generation should not break serialization
@@ -680,9 +670,7 @@ module Lutaml
         # @return [String] Schema name
         def get_current_schema_name
           # Try to get from current schema being serialized
-          if @current_schema_name
-            return @current_schema_name
-          end
+          return @current_schema_name if @current_schema_name
 
           # Fallback to first schema name
           file_path, schema = get_schemas.first

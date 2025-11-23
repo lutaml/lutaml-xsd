@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "json"
-require "yaml"
-require_relative "../errors"
+require 'json'
+require 'yaml'
+require_relative '../errors'
 
 module Lutaml
   module Xsd
@@ -19,7 +19,7 @@ module Lutaml
         # Run the command
         # Must be implemented by subclasses
         def run
-          raise NotImplementedError, "Subclass must implement #run method"
+          raise NotImplementedError, 'Subclass must implement #run method'
         end
 
         private
@@ -27,7 +27,7 @@ module Lutaml
         # Check if verbose mode is enabled
         # @return [Boolean]
         def verbose?
-          options[:verbose] || options["verbose"]
+          options[:verbose] || options['verbose']
         end
 
         # Output message to stdout
@@ -53,12 +53,12 @@ module Lutaml
         # @param format [String] Output format (text, json, yaml)
         # @return [String] Formatted output
         def format_output(data, format = nil)
-          format ||= options[:format] || options["format"] || "text"
+          format ||= options[:format] || options['format'] || 'text'
 
           case format.to_s
-          when "json"
+          when 'json'
             JSON.pretty_generate(data)
-          when "yaml"
+          when 'yaml'
             data.to_yaml
           else
             # Text format - must be handled by subclass
@@ -77,7 +77,7 @@ module Lutaml
 
           verbose_output "Loading repository from: #{package_path}"
           repository = SchemaRepository.from_package(package_path)
-          verbose_output "✓ Repository loaded successfully"
+          verbose_output '✓ Repository loaded successfully'
           repository
         rescue SchemaNotFoundError => e
           handle_schema_not_found_error(e)
@@ -96,26 +96,26 @@ module Lutaml
         # @return [SchemaRepository]
         def ensure_resolved(repository)
           if repository.needs_parsing?
-            verbose_output "Parsing schemas from XSD files..."
+            verbose_output 'Parsing schemas from XSD files...'
             repository.parse(verbose: verbose?)
-            verbose_output "✓ Schemas parsed"
+            verbose_output '✓ Schemas parsed'
           else
-            verbose_output "✓ Schemas loaded from package (instant load)"
+            verbose_output '✓ Schemas loaded from package (instant load)'
           end
 
-          verbose_output "Resolving cross-references and building type index..."
+          verbose_output 'Resolving cross-references and building type index...'
           repository.resolve(verbose: verbose?)
 
           # Show statistics in verbose mode
           if verbose?
             stats = repository.statistics
-            verbose_output "✓ Repository resolved"
+            verbose_output '✓ Repository resolved'
             verbose_output "  Total schemas: #{stats[:total_schemas]}"
             verbose_output "  Total types indexed: #{stats[:total_types]}"
             verbose_output "  Total namespaces: #{stats[:total_namespaces]}"
             verbose_output "  Namespace prefixes registered: #{stats[:namespace_prefixes]}"
           else
-            verbose_output "✓ Repository resolved"
+            verbose_output '✓ Repository resolved'
           end
 
           repository

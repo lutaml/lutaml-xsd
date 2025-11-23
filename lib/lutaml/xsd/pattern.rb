@@ -7,8 +7,8 @@ module Lutaml
       attribute :annotation, :annotation
 
       xml do
-        root "pattern", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'pattern', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :value, to: :value
         map_element :annotation, to: :annotation

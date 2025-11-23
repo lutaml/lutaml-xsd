@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "liquid_methods/simple_content"
+require_relative 'liquid_methods/simple_content'
 
 module Lutaml
   module Xsd
@@ -14,8 +14,8 @@ module Lutaml
       attribute :restriction, :restriction_simple_content
 
       xml do
-        root "simpleContent", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'simpleContent', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :id, to: :id
         map_attribute :base, to: :base

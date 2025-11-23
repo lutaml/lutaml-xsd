@@ -25,10 +25,10 @@ module Lutaml
 
           def build_gradients
             [
-              build_gradient("elementGradient", config.colors.element),
-              build_gradient("typeGradient", config.colors.type),
-              build_gradient("attributeGradient", config.colors.attribute),
-              build_gradient("groupGradient", config.colors.group)
+              build_gradient('elementGradient', config.colors.element),
+              build_gradient('typeGradient', config.colors.type),
+              build_gradient('attributeGradient', config.colors.attribute),
+              build_gradient('groupGradient', config.colors.group)
             ].join("\n")
           end
 
@@ -75,7 +75,7 @@ module Lutaml
 
               <!-- Attribute icon -->
               <g id="attributeIcon">
-                <circle cx="#{icon_size / 2}" cy="#{icon_size / 2}" r="#{icon_size / 2 - 1}" fill="#{config.colors.attribute.base}"/>
+                <circle cx="#{icon_size / 2}" cy="#{icon_size / 2}" r="#{(icon_size / 2) - 1}" fill="#{config.colors.attribute.base}"/>
                 <text x="#{icon_size / 2}" y="#{icon_size * 0.75}" fill="white" font-size="#{icon_size * 0.75}" font-weight="bold" text-anchor="middle">@</text>
               </g>
             SVG

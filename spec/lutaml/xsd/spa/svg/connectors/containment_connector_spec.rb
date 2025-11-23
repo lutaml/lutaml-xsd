@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "spec_helper"
-require "lutaml/xsd/spa/svg/style_configuration"
-require "lutaml/xsd/spa/svg/connectors/containment_connector"
+require 'spec_helper'
+require 'lutaml/xsd/spa/svg/style_configuration'
+require 'lutaml/xsd/spa/svg/connectors/containment_connector'
 
 RSpec.describe Lutaml::Xsd::Spa::Svg::Connectors::ContainmentConnector do
   let(:config) { Lutaml::Xsd::Spa::Svg::StyleConfiguration.load }
@@ -14,10 +14,10 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::Connectors::ContainmentConnector do
     Lutaml::Xsd::Spa::Svg::Geometry::Point.new(50, 100)
   end
 
-  describe "#initialize" do
-    it "sets connector type to containment" do
+  describe '#initialize' do
+    it 'sets connector type to containment' do
       style = connector.style
-      expected_style = config.connectors.for_type("containment")
+      expected_style = config.connectors.for_type('containment')
 
       expect(style.type).to eq(expected_style.type)
       expect(style.stroke_width).to eq(expected_style.stroke_width)
@@ -25,22 +25,22 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::Connectors::ContainmentConnector do
     end
   end
 
-  describe "#render" do
-    it "renders a line and solid triangle" do
+  describe '#render' do
+    it 'renders a line and solid triangle' do
       svg = connector.render(from_point, to_point)
 
-      expect(svg).to include("<line")
-      expect(svg).to include("<polygon")
+      expect(svg).to include('<line')
+      expect(svg).to include('<polygon')
     end
 
-    it "uses containment connector style from config" do
+    it 'uses containment connector style from config' do
       svg = connector.render(from_point, to_point)
 
-      stroke_width = config.connectors.for_type("containment").stroke_width
+      stroke_width = config.connectors.for_type('containment').stroke_width
       expect(svg).to include("stroke-width=\"#{stroke_width}\"")
     end
 
-    it "connects from source to target point" do
+    it 'connects from source to target point' do
       svg = connector.render(from_point, to_point)
 
       expect(svg).to include("x1=\"#{from_point.x}\"")
@@ -49,7 +49,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::Connectors::ContainmentConnector do
       expect(svg).to include("y2=\"#{to_point.y}\"")
     end
 
-    it "creates a solid filled triangle" do
+    it 'creates a solid filled triangle' do
       svg = connector.render(from_point, to_point)
 
       border_color = config.colors.ui.border

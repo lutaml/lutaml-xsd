@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
-require "thor"
-require_relative "commands/pkg_command"
-require_relative "commands/xml_command"
-require_relative "commands/build_command"
-require_relative "commands/doc_command"
-require_relative "commands/type_command"
-require_relative "commands/search_command"
-require_relative "commands/namespace_command"
-require_relative "commands/element_command"
+require 'thor'
+require_relative 'commands/pkg_command'
+require_relative 'commands/xml_command'
+require_relative 'commands/build_command'
+require_relative 'commands/doc_command'
+require_relative 'commands/type_command'
+require_relative 'commands/search_command'
+require_relative 'commands/namespace_command'
+require_relative 'commands/element_command'
+require_relative 'commands/validate_schema_command'
 
 module Lutaml
   module Xsd
@@ -18,9 +19,33 @@ module Lutaml
       class_option :verbose,
                    type: :boolean,
                    default: false,
-                   desc: "Enable verbose output"
+                   desc: 'Enable verbose output'
 
-      desc "pkg SUBCOMMAND", "Package inspection commands"
+      desc 'validate-schema SCHEMA_FILE [SCHEMA_FILE...]',
+           'Validate XSD schema files'
+      long_desc <<~DESC
+        Validate one or more XSD schema files for correctness.
+
+        Checks:
+          - XML syntax correctness
+          - Proper XML Schema namespace usage
+          - XSD version compliance (1.0 or 1.1)
+
+        Examples:
+          lutaml-xsd validate-schema schema.xsd
+          lutaml-xsd validate-schema schema1.xsd schema2.xsd
+          lutaml-xsd validate-schema *.xsd
+          lutaml-xsd validate-schema schema.xsd --version 1.1
+      DESC
+      option :version,
+             type: :string,
+             default: '1.0',
+             desc: 'XSD version to validate against (1.0 or 1.1)'
+      def validate_schema(*schema_files)
+        Commands::ValidateSchemaCommand.new([], options).validate(*schema_files)
+      end
+
+      desc 'pkg SUBCOMMAND', 'Package inspection commands'
       long_desc <<~DESC
         Inspect and query schema repository packages.
 
@@ -45,9 +70,9 @@ module Lutaml
           lutaml-xsd pkg type find "gml:CodeType" schemas.lxr
           lutaml-xsd pkg search "unit" schemas.lxr
       DESC
-      subcommand "pkg", Commands::PkgCommand
+      subcommand 'pkg', Commands::PkgCommand
 
-      desc "xml SUBCOMMAND", "XML validation commands"
+      desc 'xml SUBCOMMAND', 'XML validation commands'
       long_desc <<~DESC
         Validate XML files against XSD schemas.
 
@@ -58,9 +83,9 @@ module Lutaml
           lutaml-xsd xml validate instance.xml schemas.lxr
           lutaml-xsd xml validate *.xml schemas.lxr
       DESC
-      subcommand "xml", Commands::XmlCommand
+      subcommand 'xml', Commands::XmlCommand
 
-      desc "build SUBCOMMAND", "Package creation commands"
+      desc 'build SUBCOMMAND', 'Package creation commands'
       long_desc <<~DESC
         Build and manage schema repository packages.
 
@@ -77,9 +102,9 @@ module Lutaml
           lutaml-xsd build init schema.xsd
           lutaml-xsd build quick config.yml
       DESC
-      subcommand "build", Commands::BuildCommand
+      subcommand 'build', Commands::BuildCommand
 
-      desc "doc SUBCOMMAND", "Documentation generation commands"
+      desc 'doc SUBCOMMAND', 'Documentation generation commands'
       long_desc <<~DESC
         Generate documentation from schema packages.
 
@@ -90,9 +115,9 @@ module Lutaml
           lutaml-xsd doc spa schemas.lxr --mode single_file --output docs.html
           lutaml-xsd doc spa schemas.lxr --mode multi_file --output-dir ./docs
       DESC
-      subcommand "doc", Commands::DocCommand
+      subcommand 'doc', Commands::DocCommand
 
-      desc "version", "Display lutaml-xsd version"
+      desc 'version', 'Display lutaml-xsd version'
       def version
         puts "lutaml-xsd version #{Lutaml::Xsd::VERSION}"
       end

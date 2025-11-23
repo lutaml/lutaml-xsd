@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "pathname"
-require "ripper"
-require "yaml"
+require 'pathname'
+require 'ripper'
+require 'yaml'
 
 module CodeExampleValidator
   # Represents a single code example extracted from documentation
@@ -33,10 +33,10 @@ module CodeExampleValidator
     def looks_complete?
       return false if code.strip.empty?
 
-      has_require = code.include?("require")
+      has_require = code.include?('require')
       has_class_or_module = code =~ /^(class|module)\s+\w+/
       has_method_definition = code =~ /^def\s+\w+/
-      has_executable_code = !code.strip.start_with?("#")
+      has_executable_code = !code.strip.start_with?('#')
 
       # Complete if it has requires and class/module definitions
       # or if it has method definitions with requires
@@ -45,7 +45,7 @@ module CodeExampleValidator
     end
 
     def syntax_valid?
-      Ripper.sexp(code) != nil
+      !Ripper.sexp(code).nil?
     rescue StandardError
       false
     end
@@ -55,7 +55,7 @@ module CodeExampleValidator
     end
 
     def requires_lutaml_xsd?
-      code.match?(/require\s+['"]lutaml[\/\-]xsd/)
+      code.match?(%r{require\s+['"]lutaml[/\-]xsd})
     end
 
     def to_h
@@ -69,7 +69,7 @@ module CodeExampleValidator
         has_requires: has_requires?,
         requires_lutaml_xsd: requires_lutaml_xsd?,
         looks_complete: looks_complete?,
-        syntax_valid: syntax_valid?,
+        syntax_valid: syntax_valid?
       }
     end
   end
@@ -77,15 +77,15 @@ module CodeExampleValidator
   # Extracts code examples from AsciiDoc files
   class Extractor
     RUBY_CODE_BLOCK_START = [
-      /^\[source,ruby\]$/,     # AsciiDoc style
-      /^```ruby$/,             # Markdown style
+      /^\[source,ruby\]$/, # AsciiDoc style
+      /^```ruby$/ # Markdown style
     ].freeze
 
     BLOCK_DELIMITER_START = /^----$/
 
     BLOCK_END_PATTERNS = [
       /^----$/,
-      /^```$/,
+      /^```$/
     ].freeze
 
     attr_reader :root_dir
@@ -141,7 +141,7 @@ module CodeExampleValidator
       examples
     end
 
-    def extract_all(pattern: "**/*.adoc")
+    def extract_all(pattern: '**/*.adoc')
       examples = []
       Dir.glob(root_dir.join(pattern)).each do |file|
         examples.concat(extract_from_file(file))
@@ -194,12 +194,12 @@ module CodeExampleValidator
         end
       end
 
-      context_lines.empty? ? nil : context_lines.join(" / ")
+      context_lines.empty? ? nil : context_lines.join(' / ')
     end
 
     def determine_type(code)
       # Heuristics to determine if code is complete or snippet
-      has_require = code.include?("require")
+      has_require = code.include?('require')
       has_class = code.match?(/^(class|module)\s+\w+/)
       has_instantiation = code.match?(/\w+\.new/)
       lines = code.lines.count
@@ -227,7 +227,7 @@ module CodeExampleValidator
         has_requires: 0,
         requires_lutaml: 0,
         by_file: {},
-        failures: [],
+        failures: []
       }
     end
 
@@ -248,7 +248,7 @@ module CodeExampleValidator
         complete: 0,
         snippets: 0,
         syntax_valid: 0,
-        syntax_invalid: 0,
+        syntax_invalid: 0
       }
 
       @results[:by_file][file][:total] += 1
@@ -276,7 +276,7 @@ module CodeExampleValidator
         @results[:failures] << {
           identifier: example.identifier,
           type: :syntax_error,
-          context: example.context,
+          context: example.context
         }
       end
     end
@@ -305,7 +305,7 @@ module CodeExampleValidator
     def detailed_report
       report = [summary]
       report << "\nBy File:\n"
-      report << "=" * 80
+      report << ('=' * 80)
 
       @results[:by_file].sort.each do |file, stats|
         report << "\n#{file}:"
@@ -316,7 +316,7 @@ module CodeExampleValidator
 
       if @results[:failures].any?
         report << "\n\nFailures:\n"
-        report << "=" * 80
+        report << ('=' * 80)
         @results[:failures].each do |failure|
           report << "\n#{failure[:identifier]}"
           report << "  Type: #{failure[:type]}"
@@ -340,48 +340,48 @@ module CodeExampleValidator
   class Reporter
     def self.generate_markdown(validator:, examples:)
       report = []
-      report << "# Code Examples Validation Report"
-      report << ""
+      report << '# Code Examples Validation Report'
+      report << ''
       report << "Generated: #{Time.now.utc.strftime('%Y-%m-%dT%H:%M:%SZ')}"
-      report << ""
-      report << "## Summary"
-      report << ""
+      report << ''
+      report << '## Summary'
+      report << ''
       report << validator.summary
-      report << ""
-      report << "## Examples by File"
-      report << ""
+      report << ''
+      report << '## Examples by File'
+      report << ''
 
       validator.results[:by_file].sort.each do |file, stats|
         report << "### #{file}"
-        report << ""
-        report << "| Metric | Count |"
-        report << "|--------|-------|"
+        report << ''
+        report << '| Metric | Count |'
+        report << '|--------|-------|'
         report << "| Total Examples | #{stats[:total]} |"
         report << "| Complete Programs | #{stats[:complete]} |"
         report << "| Code Snippets | #{stats[:snippets]} |"
         report << "| Syntax Valid | #{stats[:syntax_valid]} |"
         report << "| Syntax Invalid | #{stats[:syntax_invalid]} |"
-        report << ""
+        report << ''
       end
 
       if validator.results[:failures].any?
-        report << "## Failures"
-        report << ""
+        report << '## Failures'
+        report << ''
         validator.results[:failures].each do |failure|
           report << "- **#{failure[:identifier]}**"
           report << "  - Type: #{failure[:type]}"
           report << "  - Context: #{failure[:context]}" if failure[:context]
-          report << ""
+          report << ''
         end
       end
 
-      report << "## Recommendations"
-      report << ""
-      report << "1. Fix all syntax errors in code examples"
-      report << "2. Ensure all complete examples can run independently"
-      report << "3. Add missing `require` statements to complete examples"
-      report << "4. Consider adding comments to clarify snippet context"
-      report << ""
+      report << '## Recommendations'
+      report << ''
+      report << '1. Fix all syntax errors in code examples'
+      report << '2. Ensure all complete examples can run independently'
+      report << '3. Add missing `require` statements to complete examples'
+      report << '4. Consider adding comments to clarify snippet context'
+      report << ''
 
       report.join("\n")
     end

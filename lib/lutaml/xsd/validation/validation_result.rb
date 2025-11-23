@@ -147,7 +147,7 @@ module Lutaml
         #
         # @return [String]
         def to_json(*args)
-          require "json"
+          require 'json'
           to_h.to_json(*args)
         end
 
@@ -158,22 +158,22 @@ module Lutaml
         def detailed_report(include_warnings: true)
           lines = []
           lines << summary
-          lines << ""
+          lines << ''
 
           if @errors.any?
-            lines << "Errors:"
+            lines << 'Errors:'
             @errors.each_with_index do |error, index|
               lines << "  #{index + 1}. #{error.detailed_message}"
             end
-            lines << ""
+            lines << ''
           end
 
           if include_warnings && @warnings.any?
-            lines << "Warnings:"
+            lines << 'Warnings:'
             @warnings.each_with_index do |warning, index|
               lines << "  #{index + 1}. #{warning.detailed_message}"
             end
-            lines << ""
+            lines << ''
           end
 
           lines.join("\n")

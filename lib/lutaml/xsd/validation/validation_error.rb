@@ -82,7 +82,7 @@ module Lutaml
           parts = []
           parts << "Line #{@line_number}" if @line_number
           parts << @location if @location
-          parts.empty? ? "(unknown location)" : parts.join(", ")
+          parts.empty? ? '(unknown location)' : parts.join(', ')
         end
 
         # Get detailed error message including location and suggestion
@@ -92,10 +92,10 @@ module Lutaml
           parts = []
           parts << "[#{@severity.to_s.upcase}]"
           parts << @code
-          parts << "-"
+          parts << '-'
           parts << @message
 
-          result = parts.join(" ")
+          result = parts.join(' ')
           result += "\n  Location: #{formatted_location}" if has_location?
           result += "\n  Context: #{format_context}" if @context.any?
           result += "\n  Suggestion: #{@suggestion}" if @suggestion
@@ -135,7 +135,7 @@ module Lutaml
         #
         # @return [String]
         def to_json(*args)
-          require "json"
+          require 'json'
           to_h.to_json(*args)
         end
 
@@ -196,7 +196,7 @@ module Lutaml
         #
         # @return [String]
         def format_context
-          @context.map { |k, v| "#{k}=#{v.inspect}" }.join(", ")
+          @context.map { |k, v| "#{k}=#{v.inspect}" }.join(', ')
         end
       end
     end

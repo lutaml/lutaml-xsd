@@ -10,8 +10,8 @@ module Lutaml
       attribute :element, :element, collection: true, initialize_empty: true
 
       xml do
-        root "all", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'all', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :id, to: :id
         map_attribute :max_occurs, to: :max_occurs

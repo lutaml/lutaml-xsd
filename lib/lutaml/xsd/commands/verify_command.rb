@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "base_command"
+require_relative 'base_command'
 
 module Lutaml
   module Xsd
@@ -11,9 +11,9 @@ module Lutaml
         def initialize(package_path, options)
           super(options)
           @package_path = package_path
-          @xsd_version = options[:xsd_version] || "1.0"
+          @xsd_version = options[:xsd_version] || '1.0'
           @strict = options[:strict] || false
-          @format = options[:format] || "text"
+          @format = options[:format] || 'text'
         end
 
         def run
@@ -54,9 +54,9 @@ module Lutaml
 
         def display_results(report)
           case @format
-          when "json"
+          when 'json'
             output_json(report)
-          when "yaml"
+          when 'yaml'
             output_yaml(report)
           else
             output_text(report)
@@ -64,71 +64,71 @@ module Lutaml
         end
 
         def output_json(report)
-          require "json"
+          require 'json'
           output JSON.pretty_generate(report.to_h)
         end
 
         def output_yaml(report)
-          require "yaml"
+          require 'yaml'
           output report.to_h.to_yaml
         end
 
         def output_text(report)
-          output "=" * 80
-          output "XSD Specification Compliance Verification"
-          output "=" * 80
-          output ""
+          output '=' * 80
+          output 'XSD Specification Compliance Verification'
+          output '=' * 80
+          output ''
 
           # Overall status
           if report.valid
             output "✓ VALID - All schemas comply with XSD #{report.version} specification"
           else
-            output "✗ INVALID - Specification violations found"
+            output '✗ INVALID - Specification violations found'
           end
-          output ""
+          output ''
 
           # Statistics
-          output "Statistics:"
+          output 'Statistics:'
           output "  XSD Version: #{report.version}"
           output "  Schemas checked: #{report.schemas_checked}"
           output "  Errors: #{report.errors.size}"
           output "  Warnings: #{report.warnings.size}"
-          output ""
+          output ''
 
           # Errors
           if report.errors.any?
             output "Errors (#{report.errors.size}):"
-            output "-" * 80
+            output '-' * 80
             report.errors.each_with_index do |err, idx|
               output "#{idx + 1}. #{err}"
             end
-            output ""
+            output ''
           end
 
           # Warnings
           if report.warnings.any?
             output "Warnings (#{report.warnings.size}):"
-            output "-" * 80
+            output '-' * 80
             report.warnings.each_with_index do |warn, idx|
               output "#{idx + 1}. #{warn}"
             end
-            output ""
+            output ''
           end
 
           # Summary
-          output "=" * 80
+          output '=' * 80
           if report.valid
             if report.warnings.any?
               output "✓ Schemas are valid but have #{report.warnings.size} warning(s)"
-              output "  Consider addressing warnings for better XSD compliance"
+              output '  Consider addressing warnings for better XSD compliance'
             else
               output "✓ All schemas fully comply with XSD #{report.version} specification"
             end
           else
-            output "✗ Schemas have specification violations"
+            output '✗ Schemas have specification violations'
             output "  Fix the #{report.errors.size} error(s) above for spec compliance"
           end
-          output "=" * 80
+          output '=' * 80
         end
 
         def determine_exit_code(report)

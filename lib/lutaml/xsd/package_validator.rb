@@ -68,11 +68,11 @@ module Lutaml
             # Qualify unprefixed types with schema's namespace
             qualified_type = qualify_type_reference(elem.type, schema_namespace)
             result = repository.find_type(qualified_type)
-            unless result&.resolved?
-              @errors << "Unresolved type reference: #{elem.type} " \
-                         "in element #{elem.name} " \
-                         "(#{schema_location(schema)})"
-            end
+            next if result&.resolved?
+
+            @errors << "Unresolved type reference: #{elem.type} " \
+                       "in element #{elem.name} " \
+                       "(#{schema_location(schema)})"
           end
 
           # Check attributes with type references
@@ -83,11 +83,11 @@ module Lutaml
             # Qualify unprefixed types with schema's namespace
             qualified_type = qualify_type_reference(attr.type, schema_namespace)
             result = repository.find_type(qualified_type)
-            unless result&.resolved?
-              @errors << "Unresolved type reference: #{attr.type} " \
-                         "in attribute #{attr.name} " \
-                         "(#{schema_location(schema)})"
-            end
+            next if result&.resolved?
+
+            @errors << "Unresolved type reference: #{attr.type} " \
+                       "in attribute #{attr.name} " \
+                       "(#{schema_location(schema)})"
           end
 
           # Check complex types with base type references
@@ -178,11 +178,11 @@ module Lutaml
           # Qualify unprefixed types with schema's namespace
           qualified_type = qualify_type_reference(st.restriction.base, schema_namespace)
           result = repository.find_type(qualified_type)
-          unless result&.resolved?
-            @errors << "Unresolved base type: #{st.restriction.base} " \
-                       "in simpleType #{st.name} " \
-                       "(#{schema_location(schema)})"
-          end
+          next if result&.resolved?
+
+          @errors << "Unresolved base type: #{st.restriction.base} " \
+                     "in simpleType #{st.name} " \
+                     "(#{schema_location(schema)})"
         end
       end
 
@@ -204,11 +204,11 @@ module Lutaml
         end
 
         # Check extension content
-        if complex_type.complex_content&.extension
-          ext = complex_type.complex_content.extension
-          [ext.sequence, ext.choice, ext.all].flatten.compact.each do |content|
-            check_element_refs_in_group_content(content, schema)
-          end
+        return unless complex_type.complex_content&.extension
+
+        ext = complex_type.complex_content.extension
+        [ext.sequence, ext.choice, ext.all].flatten.compact.each do |content|
+          check_element_refs_in_group_content(content, schema)
         end
       end
 
@@ -233,10 +233,10 @@ module Lutaml
           end
         end
 
-        if content.respond_to?(:sequence)
-          [content.sequence].flatten.compact.each do |nested|
-            check_element_refs_in_group_content(nested, schema)
-          end
+        return unless content.respond_to?(:sequence)
+
+        [content.sequence].flatten.compact.each do |nested|
+          check_element_refs_in_group_content(nested, schema)
         end
       end
 
@@ -294,11 +294,11 @@ module Lutaml
           next unless attr.ref
 
           result = repository.find_attribute(attr.ref)
-          unless result
-            @errors << "Unresolved attribute reference: #{attr.ref} " \
-                       "in complexType #{complex_type.name} " \
-                       "(#{schema_location(schema)})"
-          end
+          next if result
+
+          @errors << "Unresolved attribute reference: #{attr.ref} " \
+                     "in complexType #{complex_type.name} " \
+                     "(#{schema_location(schema)})"
         end
 
         # Check attributes in extensions
@@ -316,16 +316,16 @@ module Lutaml
         end
 
         # Check attributes in simple content
-        if complex_type.simple_content&.extension
-          ext = complex_type.simple_content.extension
-          [ext.attribute].flatten.compact.each do |attr|
-            next unless attr.ref
+        return unless complex_type.simple_content&.extension
 
-            result = repository.find_attribute(attr.ref)
-            unless result
-              @errors << "Unresolved attribute reference: #{attr.ref} " \
-                         "(#{schema_location(schema)})"
-            end
+        ext = complex_type.simple_content.extension
+        [ext.attribute].flatten.compact.each do |attr|
+          next unless attr.ref
+
+          result = repository.find_attribute(attr.ref)
+          unless result
+            @errors << "Unresolved attribute reference: #{attr.ref} " \
+                       "(#{schema_location(schema)})"
           end
         end
       end
@@ -364,26 +364,26 @@ module Lutaml
           # Qualify unprefixed attribute group references with schema's namespace
           qualified_ref = qualify_attribute_group_reference(ag.ref, schema_namespace)
           result = repository.find_attribute_group(qualified_ref)
-          unless result
-            @errors << "Unresolved attributeGroup reference: #{ag.ref} " \
-                       "in complexType #{complex_type.name} " \
-                       "(#{schema_location(schema)})"
-          end
+          next if result
+
+          @errors << "Unresolved attributeGroup reference: #{ag.ref} " \
+                     "in complexType #{complex_type.name} " \
+                     "(#{schema_location(schema)})"
         end
 
         # Check in extensions
-        if complex_type.complex_content&.extension
-          ext = complex_type.complex_content.extension
-          [ext.attribute_group].flatten.compact.each do |ag|
-            next unless ag.ref
+        return unless complex_type.complex_content&.extension
 
-            # Qualify unprefixed attribute group references with schema's namespace
-            qualified_ref = qualify_attribute_group_reference(ag.ref, schema_namespace)
-            result = repository.find_attribute_group(qualified_ref)
-            unless result
-              @errors << "Unresolved attributeGroup reference: #{ag.ref} " \
-                         "(#{schema_location(schema)})"
-            end
+        ext = complex_type.complex_content.extension
+        [ext.attribute_group].flatten.compact.each do |ag|
+          next unless ag.ref
+
+          # Qualify unprefixed attribute group references with schema's namespace
+          qualified_ref = qualify_attribute_group_reference(ag.ref, schema_namespace)
+          result = repository.find_attribute_group(qualified_ref)
+          unless result
+            @errors << "Unresolved attributeGroup reference: #{ag.ref} " \
+                       "(#{schema_location(schema)})"
           end
         end
       end
@@ -459,7 +459,7 @@ module Lutaml
       def count_elements_in_content(content)
         return 0 unless content.respond_to?(:element)
 
-        count = content.element.count { |e| e.ref }
+        count = content.element.count(&:ref)
         # Recursively count nested groups
         if content.respond_to?(:choice)
           [content.choice].flatten.compact.each do |nested|
@@ -479,7 +479,7 @@ module Lutaml
         count = 0
         all_schemas.each do |schema|
           schema.complex_type.each do |ct|
-            count += [ct.attribute].flatten.compact.count { |a| a.ref }
+            count += [ct.attribute].flatten.compact.count(&:ref)
           end
         end
         count
@@ -491,7 +491,7 @@ module Lutaml
         all_schemas.each do |schema|
           schema.complex_type.each do |ct|
             [ct.sequence, ct.choice].flatten.compact.each do |content|
-              count += [content.group].flatten.compact.count { |g| g.ref } if content.respond_to?(:group)
+              count += [content.group].flatten.compact.count(&:ref) if content.respond_to?(:group)
             end
           end
         end
@@ -503,7 +503,7 @@ module Lutaml
         count = 0
         all_schemas.each do |schema|
           schema.complex_type.each do |ct|
-            count += [ct.attribute_group].flatten.compact.count { |ag| ag.ref }
+            count += [ct.attribute_group].flatten.compact.count(&:ref)
           end
         end
         count
@@ -522,7 +522,7 @@ module Lutaml
       def builtin_type?(type)
         return false unless type
 
-        type.start_with?("xs:", "xsd:", "xsi:")
+        type.start_with?('xs:', 'xsd:', 'xsi:')
       end
 
       # Qualify an unprefixed type reference with the schema's namespace
@@ -531,7 +531,7 @@ module Lutaml
       # @return [String] The qualified type reference
       def qualify_type_reference(type_ref, schema_namespace)
         # If already prefixed or no namespace, return as-is
-        return type_ref if type_ref.include?(":") || schema_namespace.nil?
+        return type_ref if type_ref.include?(':') || schema_namespace.nil?
 
         # Get prefix for this namespace
         prefix = repository.send(:namespace_to_prefix, schema_namespace)
@@ -546,7 +546,7 @@ module Lutaml
       # @return [String] The qualified attribute group reference
       def qualify_attribute_group_reference(ref, schema_namespace)
         # If already prefixed or no namespace, return as-is
-        return ref if ref.include?(":") || schema_namespace.nil?
+        return ref if ref.include?(':') || schema_namespace.nil?
 
         # Get prefix for this namespace
         prefix = repository.send(:namespace_to_prefix, schema_namespace)
@@ -557,7 +557,7 @@ module Lutaml
 
       # Get a readable location for a schema
       def schema_location(schema)
-        schema.instance_variable_get(:@location) || "unknown location"
+        schema.instance_variable_get(:@location) || 'unknown location'
       end
     end
   end

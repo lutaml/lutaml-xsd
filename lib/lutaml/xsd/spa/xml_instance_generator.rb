@@ -26,7 +26,7 @@ module Lutaml
           when SimpleType
             generate_simple_type_instance(@component)
           else
-            "<!-- Unknown component type -->"
+            '<!-- Unknown component type -->'
           end
         end
 
@@ -35,12 +35,12 @@ module Lutaml
         # Generate element instance with attributes and content
         def generate_element_instance(element, indent: 0)
           lines = []
-          indent_str = "  " * indent
+          indent_str = '  ' * indent
 
           # Build opening tag with all attributes on one line
           tag_name = element.name
           schema_id = get_schema_id_for_element(element)
-          link_marker = schema_id ? " data-element-link=\"#{schema_id}/elements/#{tag_name}\"" : ""
+          link_marker = schema_id ? " data-element-link=\"#{schema_id}/elements/#{tag_name}\"" : ''
 
           # Collect attributes
           attr_parts = []
@@ -57,11 +57,11 @@ module Lutaml
                 attr_type = attr.type || 'string'
                 type_link = get_type_link_marker(attr_type)
 
-                if default_val
-                  attr_parts << "#{attr_name}=\"#{default_val}\" #{occurs}"
-                else
-                  attr_parts << "#{attr_name}=\"#{attr_type}#{type_link}\" #{occurs}"
-                end
+                attr_parts << if default_val
+                                "#{attr_name}=\"#{default_val}\" #{occurs}"
+                              else
+                                "#{attr_name}=\"#{attr_type}#{type_link}\" #{occurs}"
+                              end
               end
             end
           end
@@ -105,7 +105,6 @@ module Lutaml
         # Generate type instance content
         def generate_type_instance(type, indent: 0)
           lines = []
-          indent_str = "  " * indent
 
           # Show type structure
           content = generate_type_content(type, indent)
@@ -117,9 +116,10 @@ module Lutaml
         # Generate content for a type
         def generate_type_content(type, indent)
           lines = []
-          indent_str = "  " * indent
+          indent_str = '  ' * indent
 
           return lines if @visited_types.include?(type.object_id)
+
           @visited_types << type.object_id
 
           # Handle sequence (only if not handling via complex_content)
@@ -131,13 +131,13 @@ module Lutaml
             seq.element.each do |elem|
               elem_occurs = element_occurs(elem)
               elem_name = resolve_element_name(elem)
-              if elem_name
-                # Resolve which schema this element belongs to and get display name with prefix
-                elem_info = resolve_element_schema(elem_name)
-                display_name = get_display_name_with_prefix(elem_info)
-                elem_link = get_element_link_marker(elem_name)
-                lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
-              end
+              next unless elem_name
+
+              # Resolve which schema this element belongs to and get display name with prefix
+              elem_info = resolve_element_schema(elem_name)
+              display_name = get_display_name_with_prefix(elem_info)
+              elem_link = get_element_link_marker(elem_name)
+              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
             end
 
             lines << "#{indent_str}End Sequence"
@@ -152,12 +152,12 @@ module Lutaml
             choice.element.each do |elem|
               elem_occurs = element_occurs(elem)
               elem_name = resolve_element_name(elem)
-              if elem_name
-                elem_info = resolve_element_schema(elem_name)
-                display_name = get_display_name_with_prefix(elem_info)
-                elem_link = get_element_link_marker(elem_name)
-                lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
-              end
+              next unless elem_name
+
+              elem_info = resolve_element_schema(elem_name)
+              display_name = get_display_name_with_prefix(elem_info)
+              elem_link = get_element_link_marker(elem_name)
+              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
             end
 
             lines << "#{indent_str}End Choice"
@@ -172,12 +172,12 @@ module Lutaml
             all_group.element.each do |elem|
               elem_occurs = element_occurs(elem)
               elem_name = resolve_element_name(elem)
-              if elem_name
-                elem_info = resolve_element_schema(elem_name)
-                display_name = get_display_name_with_prefix(elem_info)
-                elem_link = get_element_link_marker(elem_name)
-                lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
-              end
+              next unless elem_name
+
+              elem_info = resolve_element_schema(elem_name)
+              display_name = get_display_name_with_prefix(elem_info)
+              elem_link = get_element_link_marker(elem_name)
+              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
             end
 
             lines << "#{indent_str}End All"
@@ -223,15 +223,15 @@ module Lutaml
 
         # Extract simple type constraints
         def extract_simple_constraints(simple_content)
-          return "string" unless simple_content
+          return 'string' unless simple_content
 
           if simple_content.respond_to?(:restriction) && simple_content.restriction
             restriction = simple_content.restriction
-            base = restriction.base || "string"
+            base = restriction.base || 'string'
 
             # Check for enumerations
             if restriction.respond_to?(:enumeration) && restriction.enumeration&.any?
-              enums = restriction.enumeration.map(&:value).join(" | ")
+              enums = restriction.enumeration.map(&:value).join(' | ')
               return "(#{enums})"
             end
 
@@ -243,42 +243,38 @@ module Lutaml
 
             # Check for length constraints
             constraints = []
-            if restriction.respond_to?(:min_length) && restriction.min_length&.any?
-              constraints << "minLength: #{restriction.min_length.first.value}"
-            end
-            if restriction.respond_to?(:max_length) && restriction.max_length&.any?
-              constraints << "maxLength: #{restriction.max_length.first.value}"
-            end
+            constraints << "minLength: #{restriction.min_length.first.value}" if restriction.respond_to?(:min_length) && restriction.min_length&.any?
+            constraints << "maxLength: #{restriction.max_length.first.value}" if restriction.respond_to?(:max_length) && restriction.max_length&.any?
 
             return "#{base} (#{constraints.join(', ')})" if constraints.any?
 
             base
           elsif simple_content.respond_to?(:extension) && simple_content.extension
-            simple_content.extension.base || "string"
+            simple_content.extension.base || 'string'
           else
-            "string"
+            'string'
           end
         end
 
         # Calculate element occurrence notation
         def element_occurs(element)
-          min = element.min_occurs || "1"
-          max = element.max_occurs == "unbounded" ? "*" : (element.max_occurs || "1")
+          min = element.min_occurs || '1'
+          max = element.max_occurs == 'unbounded' ? '*' : (element.max_occurs || '1')
           "[#{min}..#{max}]"
         end
 
         # Calculate attribute occurrence notation
         def attribute_occurs(attr)
-          use = attr.use || "optional"
-          use == "required" ? "[1]" : "[0..1]"
+          use = attr.use || 'optional'
+          use == 'required' ? '[1]' : '[0..1]'
         end
 
         # Calculate model group occurrence notation
         def model_group_occurs(group)
-          return "[1]" unless group
+          return '[1]' unless group
 
-          min = group.min_occurs || "1"
-          max = group.max_occurs == "unbounded" ? "*" : (group.max_occurs || "1")
+          min = group.min_occurs || '1'
+          max = group.max_occurs == 'unbounded' ? '*' : (group.max_occurs || '1')
           "[#{min}..#{max}]"
         end
 
@@ -292,11 +288,9 @@ module Lutaml
           return elem.name if elem.name
 
           # Element uses ref - extract the local name from the ref
-          if elem.ref
-            elem.ref.split(":").last
-          else
-            nil
-          end
+          return unless elem.ref
+
+          elem.ref.split(':').last
         end
 
         # Resolve attribute name from attribute (handles ref attribute)
@@ -304,33 +298,28 @@ module Lutaml
           return attr.name if attr.name
 
           # Attribute uses ref - extract the local name from the ref
-          if attr.ref
-            attr.ref.split(":").last
-          else
-            nil
-          end
+          return unless attr.ref
+
+          attr.ref.split(':').last
         end
 
         # Collect all attributes from a type (including inherited)
         def collect_attributes(type, visited = [])
           return [] if visited.include?(type.object_id)
+
           visited << type.object_id
 
           attrs = []
 
           # Direct attributes
-          if type.respond_to?(:attribute) && type.attribute
-            attrs.concat(type.attribute)
-          end
+          attrs.concat(type.attribute) if type.respond_to?(:attribute) && type.attribute
 
           # Attributes from complex content extension
           if type.respond_to?(:complex_content) && type.complex_content
             cc = type.complex_content
             if cc.respond_to?(:extension) && cc.extension
               # Add attributes from extension
-              if cc.extension.respond_to?(:attribute) && cc.extension.attribute
-                attrs.concat(cc.extension.attribute)
-              end
+              attrs.concat(cc.extension.attribute) if cc.extension.respond_to?(:attribute) && cc.extension.attribute
 
               # Recursively get base type attributes
               if cc.extension.base
@@ -338,9 +327,7 @@ module Lutaml
                 attrs.concat(collect_attributes(base_type, visited)) if base_type
               end
             elsif cc.respond_to?(:restriction) && cc.restriction
-              if cc.restriction.respond_to?(:attribute) && cc.restriction.attribute
-                attrs.concat(cc.restriction.attribute)
-              end
+              attrs.concat(cc.restriction.attribute) if cc.restriction.respond_to?(:attribute) && cc.restriction.attribute
             end
           end
 
@@ -348,13 +335,9 @@ module Lutaml
           if type.respond_to?(:simple_content) && type.simple_content
             sc = type.simple_content
             if sc.respond_to?(:extension) && sc.extension
-              if sc.extension.respond_to?(:attribute) && sc.extension.attribute
-                attrs.concat(sc.extension.attribute)
-              end
+              attrs.concat(sc.extension.attribute) if sc.extension.respond_to?(:attribute) && sc.extension.attribute
             elsif sc.respond_to?(:restriction) && sc.restriction
-              if sc.restriction.respond_to?(:attribute) && sc.restriction.attribute
-                attrs.concat(sc.restriction.attribute)
-              end
+              attrs.concat(sc.restriction.attribute) if sc.restriction.respond_to?(:attribute) && sc.restriction.attribute
             end
           end
 
@@ -366,7 +349,7 @@ module Lutaml
           return nil unless type_name
 
           # Strip namespace prefix
-          local_name = type_name.split(":").last
+          local_name = type_name.split(':').last
 
           # Search in current schema
           if @schema.respond_to?(:complex_type) && @schema.complex_type
@@ -383,7 +366,7 @@ module Lutaml
           if @repository
             # Try to find type in all schemas
             all_schemas = @repository.respond_to?(:all_schemas) ? @repository.all_schemas : {}
-            all_schemas.each do |_path, schema|
+            all_schemas.each_value do |schema|
               if schema.respond_to?(:complex_type) && schema.complex_type
                 found = schema.complex_type.find { |t| t.name == local_name }
                 return found if found
@@ -402,7 +385,7 @@ module Lutaml
         # Generate content for an extension (combining base and extension elements)
         def generate_extension_content(extension, indent)
           lines = []
-          indent_str = "  " * indent
+          indent_str = '  ' * indent
 
           # Collect all elements from base type and extension into a single sequence
           all_elements = []
@@ -410,9 +393,7 @@ module Lutaml
           # Get base type elements first
           if extension.base
             base_type = find_type(extension.base)
-            if base_type
-              all_elements.concat(collect_type_elements(base_type))
-            end
+            all_elements.concat(collect_type_elements(base_type)) if base_type
           end
 
           # Then add extension elements
@@ -428,18 +409,18 @@ module Lutaml
 
           # Display as a single combined sequence if we have elements
           if all_elements.any?
-            occurs = "[1..1]"  # Extension sequences are typically required
+            occurs = '[1..1]' # Extension sequences are typically required
             lines << "#{indent_str}Start Sequence #{occurs}"
 
             all_elements.each do |elem|
               elem_occurs = element_occurs(elem)
               elem_name = resolve_element_name(elem)
-              if elem_name
-                elem_info = resolve_element_schema(elem_name)
-                display_name = get_display_name_with_prefix(elem_info)
-                elem_link = get_element_link_marker(elem_name)
-                lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
-              end
+              next unless elem_name
+
+              elem_info = resolve_element_schema(elem_name)
+              display_name = get_display_name_with_prefix(elem_info)
+              elem_link = get_element_link_marker(elem_name)
+              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
             end
 
             lines << "#{indent_str}End Sequence"
@@ -451,14 +432,13 @@ module Lutaml
         # Collect all elements from a type recursively
         def collect_type_elements(type, visited = [])
           return [] if visited.include?(type.object_id)
+
           visited << type.object_id
 
           elements = []
 
           # Direct sequence elements
-          if type.respond_to?(:sequence) && type.sequence && type.sequence.element
-            elements.concat(type.sequence.element)
-          end
+          elements.concat(type.sequence.element) if type.respond_to?(:sequence) && type.sequence&.element
 
           # Elements from complex content extension
           if type.respond_to?(:complex_content) && type.complex_content
@@ -471,9 +451,7 @@ module Lutaml
               end
 
               # Get extension sequence elements
-              if cc.extension.respond_to?(:sequence) && cc.extension.sequence && cc.extension.sequence.element
-                elements.concat(cc.extension.sequence.element)
-              end
+              elements.concat(cc.extension.sequence.element) if cc.extension.respond_to?(:sequence) && cc.extension.sequence&.element
             end
           end
 
@@ -483,7 +461,7 @@ module Lutaml
         # Generate choice content
         def generate_choice_content(choice, indent)
           lines = []
-          indent_str = "  " * indent
+          indent_str = '  ' * indent
 
           occurs = model_group_occurs(choice)
           lines << "#{indent_str}Start Choice #{occurs}"
@@ -491,12 +469,12 @@ module Lutaml
           choice.element.each do |elem|
             elem_occurs = element_occurs(elem)
             elem_name = resolve_element_name(elem)
-            if elem_name
-              elem_info = resolve_element_schema(elem_name)
-              display_name = get_display_name_with_prefix(elem_info)
-              elem_link = get_element_link_marker(elem_name)
-              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
-            end
+            next unless elem_name
+
+            elem_info = resolve_element_schema(elem_name)
+            display_name = get_display_name_with_prefix(elem_info)
+            elem_link = get_element_link_marker(elem_name)
+            lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
           end
 
           lines << "#{indent_str}End Choice"
@@ -506,7 +484,7 @@ module Lutaml
         # Generate all content
         def generate_all_content(all_group, indent)
           lines = []
-          indent_str = "  " * indent
+          indent_str = '  ' * indent
 
           occurs = model_group_occurs(all_group)
           lines << "#{indent_str}Start All #{occurs}"
@@ -514,12 +492,12 @@ module Lutaml
           all_group.element.each do |elem|
             elem_occurs = element_occurs(elem)
             elem_name = resolve_element_name(elem)
-            if elem_name
-              elem_info = resolve_element_schema(elem_name)
-              display_name = get_display_name_with_prefix(elem_info)
-              elem_link = get_element_link_marker(elem_name)
-              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
-            end
+            next unless elem_name
+
+            elem_info = resolve_element_schema(elem_name)
+            display_name = get_display_name_with_prefix(elem_info)
+            elem_link = get_element_link_marker(elem_name)
+            lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
           end
 
           lines << "#{indent_str}End All"
@@ -527,18 +505,16 @@ module Lutaml
         end
 
         # Get schema ID for an element (for linking)
-        def get_schema_id_for_element(element)
+        def get_schema_id_for_element(_element)
           # Try to find which schema this element belongs to
           return nil unless @schema
 
           # Use schema's target namespace or filename to create schema ID
-          if @schema.respond_to?(:target_namespace) && @schema.target_namespace
-            # Extract last part of namespace as schema ID
-            uri = @schema.target_namespace
-            uri.split('/').last || uri.split(':').last
-          else
-            nil
-          end
+          return unless @schema.respond_to?(:target_namespace) && @schema.target_namespace
+
+          # Extract last part of namespace as schema ID
+          uri = @schema.target_namespace
+          uri.split('/').last || uri.split(':').last
         end
 
         # Get link marker for an element with cross-schema support
@@ -599,7 +575,7 @@ module Lutaml
           return nil unless namespace_uri
 
           # Search all_schemas for one with matching target_namespace
-          @all_schemas.each do |_path, schema|
+          @all_schemas.each_value do |schema|
             if schema.respond_to?(:target_namespace) &&
                schema.target_namespace == namespace_uri
               return schema
@@ -630,14 +606,14 @@ module Lutaml
 
         # Slugify helper
         def slugify(name)
-          return "unnamed" unless name
+          return 'unnamed' unless name
 
           name.to_s
-            .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')
-            .gsub(/([a-z\d])([A-Z])/, '\1-\2')
-            .downcase
-            .gsub(/[^a-z0-9]+/, '-')
-            .gsub(/^-|-$/, '')
+              .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')
+              .gsub(/([a-z\d])([A-Z])/, '\1-\2')
+              .downcase
+              .gsub(/[^a-z0-9]+/, '-')
+              .gsub(/^-|-$/, '')
         end
 
         # Get display name with namespace prefix if cross-schema
@@ -653,13 +629,13 @@ module Lutaml
 
         # Get link marker for a type
         def get_type_link_marker(type_name)
-          return "" unless type_name
+          return '' unless type_name
 
           # Don't link built-in XSD types
-          return "" if type_name =~ /^(xs:|xsd:|string|integer|boolean|date|time|anyURI|double|float|decimal)/
+          return '' if type_name =~ /^(xs:|xsd:|string|integer|boolean|date|time|anyURI|double|float|decimal)/
 
           # Strip namespace prefix for link
-          local_name = type_name.split(":").last
+          local_name = type_name.split(':').last
           " data-type-ref=\"#{local_name}\""
         end
       end

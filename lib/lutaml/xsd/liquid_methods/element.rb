@@ -17,7 +17,7 @@ module Lutaml
         end
 
         def max_occurrences
-          return "*" if @max_occurs == "unbounded"
+          return '*' if @max_occurs == 'unbounded'
 
           @max_occurs&.to_i || 1
         end

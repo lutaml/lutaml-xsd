@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "set"
+require 'set'
 
 module Lutaml
   module Xsd
@@ -96,19 +96,19 @@ module Lutaml
           next unless base_type
 
           # Check if this type extends/restricts our target type
-          if types_match?(base_type, qualified_name, type_info[:namespace])
-            qname = build_qualified_name(type_info)
-            descendants << {
-              qualified_name: qname,
-              namespace: type_info[:namespace],
-              local_name: type_info[:definition]&.name,
-              type_category: type_info[:type]
-            }
+          next unless types_match?(base_type, qualified_name, type_info[:namespace])
 
-            # Recursively find descendants
-            child_descendants = find_descendants(qname, depth - 1)
-            descendants.concat(child_descendants)
-          end
+          qname = build_qualified_name(type_info)
+          descendants << {
+            qualified_name: qname,
+            namespace: type_info[:namespace],
+            local_name: type_info[:definition]&.name,
+            type_category: type_info[:type]
+          }
+
+          # Recursively find descendants
+          child_descendants = find_descendants(qname, depth - 1)
+          descendants.concat(child_descendants)
         end
 
         descendants
@@ -133,7 +133,7 @@ module Lutaml
 
         # Find ancestors (base types)
         base_type = extract_base_type(type_result.definition)
-        if base_type && !(base_type =~ /^xsd?:/)
+        if base_type && base_type !~ /^xsd?:/
           ancestor_node = build_tree(base_type, depth - 1, visited)
           node.add_ancestor(ancestor_node) if ancestor_node
         end
@@ -147,13 +147,13 @@ module Lutaml
           def_base_type = extract_base_type(definition)
           next unless def_base_type
 
-          if types_match?(def_base_type, qualified_name, type_info[:namespace])
-            child_qname = build_qualified_name(type_info)
-            next if visited.include?(child_qname)
+          next unless types_match?(def_base_type, qualified_name, type_info[:namespace])
 
-            child_node = build_tree(child_qname, depth - 1, visited)
-            node.add_descendant(child_node) if child_node
-          end
+          child_qname = build_qualified_name(type_info)
+          next if visited.include?(child_qname)
+
+          child_node = build_tree(child_qname, depth - 1, visited)
+          node.add_descendant(child_node) if child_node
         end
 
         node
@@ -163,7 +163,7 @@ module Lutaml
       # @param node [TypeHierarchyNode] The root node
       # @return [String] Mermaid diagram syntax
       def to_mermaid(node)
-        lines = ["graph TD"]
+        lines = ['graph TD']
         node_id_map = {}
         counter = 0
 
@@ -178,6 +178,7 @@ module Lutaml
         # Recursive helper to add nodes and edges
         add_to_diagram = lambda do |current_node, visited = Set.new|
           return if visited.include?(current_node.qualified_name)
+
           visited.add(current_node.qualified_name)
 
           current_id = generate_node_id.call(current_node.qualified_name)
@@ -208,8 +209,9 @@ module Lutaml
       # @param indent [String] Current indentation
       # @param visited [Set] Already visited nodes (cycle detection)
       # @return [String] Text tree representation
-      def to_text_tree(node, indent = "", visited = Set.new)
-        return "" if visited.include?(node.qualified_name)
+      def to_text_tree(node, indent = '', visited = Set.new)
+        return '' if visited.include?(node.qualified_name)
+
         visited.add(node.qualified_name)
 
         lines = []
@@ -219,9 +221,9 @@ module Lutaml
           lines << "#{indent}Ancestors (base types):"
           node.ancestors.each do |ancestor|
             lines << "#{indent}  ↑ #{ancestor.qualified_name} (#{ancestor.category})"
-            lines << to_text_tree(ancestor, indent + "    ", visited)
+            lines << to_text_tree(ancestor, "#{indent}    ", visited)
           end
-          lines << ""
+          lines << ''
         end
 
         # Show current node
@@ -232,7 +234,7 @@ module Lutaml
           lines << "#{indent}Descendants (derived types):"
           node.descendants.each do |descendant|
             lines << "#{indent}  ↓ #{descendant.qualified_name} (#{descendant.category})"
-            lines << to_text_tree(descendant, indent + "    ", visited)
+            lines << to_text_tree(descendant, "#{indent}    ", visited)
           end
         end
 
@@ -245,28 +247,18 @@ module Lutaml
       def extract_base_type(definition)
         # ComplexType with complexContent/extension
         if definition.respond_to?(:complex_content) && definition.complex_content
-          if definition.complex_content.respond_to?(:extension) && definition.complex_content.extension
-            return definition.complex_content.extension.base
-          end
-          if definition.complex_content.respond_to?(:restriction) && definition.complex_content.restriction
-            return definition.complex_content.restriction.base
-          end
+          return definition.complex_content.extension.base if definition.complex_content.respond_to?(:extension) && definition.complex_content.extension
+          return definition.complex_content.restriction.base if definition.complex_content.respond_to?(:restriction) && definition.complex_content.restriction
         end
 
         # ComplexType with simpleContent/extension
         if definition.respond_to?(:simple_content) && definition.simple_content
-          if definition.simple_content.respond_to?(:extension) && definition.simple_content.extension
-            return definition.simple_content.extension.base
-          end
-          if definition.simple_content.respond_to?(:restriction) && definition.simple_content.restriction
-            return definition.simple_content.restriction.base
-          end
+          return definition.simple_content.extension.base if definition.simple_content.respond_to?(:extension) && definition.simple_content.extension
+          return definition.simple_content.restriction.base if definition.simple_content.respond_to?(:restriction) && definition.simple_content.restriction
         end
 
         # SimpleType with restriction
-        if definition.respond_to?(:restriction) && definition.restriction
-          return definition.restriction.base
-        end
+        return definition.restriction.base if definition.respond_to?(:restriction) && definition.restriction
 
         nil
       end
@@ -276,7 +268,7 @@ module Lutaml
       # @param type2 [String] Second type name
       # @param namespace [String, nil] Namespace URI for resolution
       # @return [Boolean] True if types match
-      def types_match?(type1, type2, namespace = nil)
+      def types_match?(type1, type2, _namespace = nil)
         # Try direct match first
         return true if type1 == type2
 

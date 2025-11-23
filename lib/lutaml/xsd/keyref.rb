@@ -12,8 +12,8 @@ module Lutaml
       # Field should be one or more
 
       xml do
-        root "keyref", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'keyref', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :id, to: :id
         map_attribute :name, to: :name

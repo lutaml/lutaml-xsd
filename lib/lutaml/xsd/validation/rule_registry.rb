@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "validation_rule"
+require_relative 'validation_rule'
 
 module Lutaml
   module Xsd

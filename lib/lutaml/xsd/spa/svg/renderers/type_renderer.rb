@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../component_renderer"
+require_relative '../component_renderer'
 
 module Lutaml
   module Xsd
@@ -10,18 +10,18 @@ module Lutaml
           # Renders XSD type components (complexType, simpleType)
           class TypeRenderer < ComponentRenderer
             def render(component_data, box)
-              name = component_data["name"]
-              rule = config.component_rule("type")
+              name = component_data['name']
+              rule = config.component_rule('type')
 
               content = if rule.clickable?
-                          create_link(semantic_uri("types", name)) do
+                          create_link(semantic_uri('types', name)) do
                             render_box_and_text(box, name, rule, component_data)
                           end
                         else
                           render_box_and_text(box, name, rule, component_data)
                         end
 
-              Utils::SvgBuilder.group({ class: "type-box" }) { content }
+              Utils::SvgBuilder.group({ class: 'type-box' }) { content }
             end
 
             private
@@ -31,7 +31,7 @@ module Lutaml
 
               # Box with gradient
               fill = if config.effects.gradient_enabled?
-                       "url(#typeGradient)"
+                       'url(#typeGradient)'
                      else
                        config.colors.type.base
                      end
@@ -48,16 +48,14 @@ module Lutaml
               parts << create_centered_text(box, name)
 
               # Indicator if abstract
-              if component_data["abstract"]
-                parts << render_indicator("abstract", box)
-              end
+              parts << render_indicator('abstract', box) if component_data['abstract']
 
               parts.join("\n")
             end
 
             def render_indicator(type, box)
               indicator = config.indicator_rule(type)
-              return "" unless indicator
+              return '' unless indicator
 
               Utils::SvgBuilder.text(
                 box.x + box.width + indicator.offset_x,
@@ -65,9 +63,9 @@ module Lutaml
                 indicator.text,
                 {
                   fill: config.colors.indicators.send(type.to_sym),
-                  "font-size" => config.dimensions.text_small_font_size,
-                  "font-style" => indicator.style,
-                  "text-anchor" => "end"
+                  'font-size' => config.dimensions.text_small_font_size,
+                  'font-style' => indicator.style,
+                  'text-anchor' => 'end'
                 }
               )
             end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "thor"
-require_relative "base_command"
+require 'thor'
+require_relative 'base_command'
 
 module Lutaml
   module Xsd
@@ -11,7 +11,7 @@ module Lutaml
       class MetadataCommand < Thor
         class_option :verbose, type: :boolean, default: false
 
-        desc "get PACKAGE [KEY]", "Get package metadata"
+        desc 'get PACKAGE [KEY]', 'Get package metadata'
         long_desc <<~DESC
           Get metadata from an LXR package.
 
@@ -23,13 +23,13 @@ module Lutaml
             lutaml-xsd package metadata get schemas.lxr --all
             lutaml-xsd package metadata get schemas.lxr --format json
         DESC
-        option :all, type: :boolean, desc: "Show all metadata"
-        option :format, type: :string, default: "text", enum: %w[text json yaml]
+        option :all, type: :boolean, desc: 'Show all metadata'
+        option :format, type: :string, default: 'text', enum: %w[text json yaml]
         def get(package_path, key = nil)
           GetCommand.new(package_path, key, options).run
         end
 
-        desc "set PACKAGE", "Set package metadata"
+        desc 'set PACKAGE', 'Set package metadata'
         long_desc <<~DESC
           Set metadata values in a package, creating a new package file.
 
@@ -37,8 +37,8 @@ module Lutaml
             lutaml-xsd package metadata set schemas.lxr --set "version=2.0" -o updated.lxr
             lutaml-xsd package metadata set schemas.lxr --set "version=2.0" --set "description=New" -o updated.lxr
         DESC
-        option :set, type: :array, desc: "Set metadata key=value pairs"
-        option :output, type: :string, aliases: "-o", required: true, desc: "Output package path"
+        option :set, type: :array, desc: 'Set metadata key=value pairs'
+        option :output, type: :string, aliases: '-o', required: true, desc: 'Output package path'
         def set(package_path)
           SetCommand.new(package_path, options).run
         end
@@ -59,7 +59,7 @@ module Lutaml
             unless raw_metadata
               validation = pkg.validate
               unless validation.valid?
-                error "Failed to load package metadata"
+                error 'Failed to load package metadata'
                 validation.errors.each { |err| error "  - #{err}" }
                 exit 1
               end
@@ -81,18 +81,18 @@ module Lutaml
               output value.to_s
             elsif options[:all]
               case options[:format]
-              when "json"
-                require "json"
+              when 'json'
+                require 'json'
                 output JSON.pretty_generate(metadata)
-              when "yaml"
-                require "yaml"
+              when 'yaml'
+                require 'yaml'
                 output metadata.to_yaml
               else
                 # Text format - table
                 display_metadata_table(metadata)
               end
             else
-              error "Please specify a KEY or use --all"
+              error 'Please specify a KEY or use --all'
               exit 1
             end
           rescue StandardError => e
@@ -104,12 +104,12 @@ module Lutaml
           private
 
           def display_metadata_table(metadata)
-            require "table_tennis"
+            require 'table_tennis'
 
             rows = metadata.map do |key, value|
               {
-                "Key" => key.to_s,
-                "Value" => format_value(value)
+                'Key' => key.to_s,
+                'Value' => format_value(value)
               }
             end
 
@@ -144,7 +144,7 @@ module Lutaml
             # Get existing metadata
             validation = old_pkg.validate
             unless validation.valid?
-              error "Cannot modify invalid package"
+              error 'Cannot modify invalid package'
               validation.errors.each { |err| error "  - #{err}" }
               exit 1
             end
@@ -156,19 +156,19 @@ module Lutaml
 
             # Parse and apply --set options
             (options[:set] || []).each do |setting|
-              key, value = setting.split("=", 2)
+              key, value = setting.split('=', 2)
               unless value
                 error "Invalid setting format: #{setting}"
-                error "Expected format: key=value"
+                error 'Expected format: key=value'
                 exit 1
               end
-              current_metadata[key] = value  # Use string key, not symbol
+              current_metadata[key] = value # Use string key, not symbol
             end
 
             # Preserve package configuration from original package
-            xsd_mode = (validation.metadata["xsd_mode"] || :include_all).to_sym
-            resolution_mode = (validation.metadata["resolution_mode"] || :resolved).to_sym
-            serialization_format = (validation.metadata["serialization_format"] || :marshal).to_sym
+            xsd_mode = (validation.metadata['xsd_mode'] || :include_all).to_sym
+            resolution_mode = (validation.metadata['resolution_mode'] || :resolved).to_sym
+            serialization_format = (validation.metadata['serialization_format'] || :marshal).to_sym
 
             # Create new package with updated metadata
             repo.to_package(

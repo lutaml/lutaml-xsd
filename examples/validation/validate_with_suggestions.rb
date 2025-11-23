@@ -12,30 +12,32 @@
 # Usage:
 #   ruby examples/validation/validate_with_suggestions.rb
 
-require "bundler/setup"
-require "lutaml/xsd"
+require 'bundler/setup'
+require 'lutaml/xsd'
 
 # Configuration
-SCHEMAS_DIR = File.expand_path("sample_schemas", __dir__)
-PERSON_XSD = File.join(SCHEMAS_DIR, "person.xsd")
-INVALID_XML = File.join(SCHEMAS_DIR, "person_invalid.xml")
-PACKAGE_PATH = File.join(SCHEMAS_DIR, "person_schemas.lxr")
+SCHEMAS_DIR = File.expand_path('sample_schemas', __dir__)
+PERSON_XSD = File.join(SCHEMAS_DIR, 'person.xsd')
+INVALID_XML = File.join(SCHEMAS_DIR, 'person_invalid.xml')
+PACKAGE_PATH = File.join(SCHEMAS_DIR, 'person_schemas.lxr')
 
-puts "=" * 80
-puts "XML Validation with Error Suggestions Example"
-puts "=" * 80
+puts '=' * 80
+puts 'XML Validation with Error Suggestions Example'
+puts '=' * 80
 puts
 
 # Step 1: Setup schema repository
 # ------------------------------
-puts "Step 1: Setting up schema repository"
-puts "-" * 80
+puts 'Step 1: Setting up schema repository'
+puts '-' * 80
 
-unless File.exist?(PACKAGE_PATH)
-  puts "Building LXR package..."
+if File.exist?(PACKAGE_PATH)
+  puts '✓ Using existing package'
+else
+  puts 'Building LXR package...'
   repository = Lutaml::Xsd::SchemaRepository.new
   repository.instance_variable_set(:@files, [PERSON_XSD])
-  repository.configure_namespace(prefix: "p", uri: "http://example.com/person")
+  repository.configure_namespace(prefix: 'p', uri: 'http://example.com/person')
   repository.parse.resolve
   repository.to_package(
     PACKAGE_PATH,
@@ -43,9 +45,7 @@ unless File.exist?(PACKAGE_PATH)
     resolution_mode: :resolved,
     serialization_format: :marshal
   )
-  puts "✓ Package created"
-else
-  puts "✓ Using existing package"
+  puts '✓ Package created'
 end
 
 repository = Lutaml::Xsd::SchemaRepository.from_package(PACKAGE_PATH)
@@ -53,18 +53,18 @@ puts
 
 # Step 2: Demonstrate type suggestions
 # ------------------------------------
-puts "Step 2: Type resolution with fuzzy matching"
-puts "-" * 80
+puts 'Step 2: Type resolution with fuzzy matching'
+puts '-' * 80
 
-puts "Searching for types (demonstrating suggestion system):"
+puts 'Searching for types (demonstrating suggestion system):'
 puts
 
 # Try to find a type with a typo
 test_queries = [
-  { query: "p:PersonTypo", description: "Typo in type name" },
-  { query: "p:AgeTyp", description: "Incomplete type name" },
-  { query: "p:EmaillType", description: "Double 'l' typo" },
-  { query: "PersonType", description: "Missing namespace prefix" }
+  { query: 'p:PersonTypo', description: 'Typo in type name' },
+  { query: 'p:AgeTyp', description: 'Incomplete type name' },
+  { query: 'p:EmaillType', description: "Double 'l' typo" },
+  { query: 'PersonType', description: 'Missing namespace prefix' }
 ]
 
 test_queries.each do |test|
@@ -78,16 +78,14 @@ test_queries.each do |test|
 
     # The error message should include suggestions if available
     # This demonstrates the fuzzy matching capability
-    if result.error_message =~ /Did you mean:/
-      puts "  💡 Suggestions are available in the error message"
-    end
+    puts '  💡 Suggestions are available in the error message' if result.error_message =~ /Did you mean:/
   end
   puts
 end
 
 # Show available types for reference
-puts "Available types in the repository:"
-all_types = repository.all_type_names(namespace: "http://example.com/person")
+puts 'Available types in the repository:'
+all_types = repository.all_type_names(namespace: 'http://example.com/person')
 all_types.each do |type_name|
   puts "  - #{type_name}"
 end
@@ -96,8 +94,8 @@ puts
 
 # Step 3: Validate with enhanced errors
 # -------------------------------------
-puts "Step 3: Validating XML with enhanced error reporting"
-puts "-" * 80
+puts 'Step 3: Validating XML with enhanced error reporting'
+puts '-' * 80
 
 puts "Validating: #{File.basename(INVALID_XML)}"
 puts
@@ -107,15 +105,15 @@ xml_content = File.read(INVALID_XML)
 result = validator.validate(xml_content)
 
 if result.valid?
-  puts "✓ VALID"
+  puts '✓ VALID'
 else
   puts "✗ INVALID - Found #{result.errors.size} error(s)"
   puts
 
   result.errors.each_with_index do |error, idx|
-    puts "─" * 80
+    puts '─' * 80
     puts "Error #{idx + 1} of #{result.errors.size}"
-    puts "─" * 80
+    puts '─' * 80
 
     if error.respond_to?(:to_detailed_message)
       # Enhanced error with suggestions
@@ -124,14 +122,12 @@ else
       # Basic error display
       puts "Message: #{error.message}"
 
-      if error.respond_to?(:location)
-        puts "Location: #{error.location}"
-      end
+      puts "Location: #{error.location}" if error.respond_to?(:location)
 
       # Show context if available
       if error.respond_to?(:context) && error.context
         puts
-        puts "Context:"
+        puts 'Context:'
         error.context.split("\n").each do |line|
           puts "  #{line}"
         end
@@ -140,7 +136,7 @@ else
       # Show suggestions if available
       if error.respond_to?(:suggestions) && error.suggestions && !error.suggestions.empty?
         puts
-        puts "Suggestions:"
+        puts 'Suggestions:'
         error.suggestions.each do |suggestion|
           puts "  💡 #{suggestion}"
         end
@@ -149,7 +145,7 @@ else
       # Show troubleshooting tips if available
       if error.respond_to?(:troubleshooting) && error.troubleshooting && !error.troubleshooting.empty?
         puts
-        puts "Troubleshooting:"
+        puts 'Troubleshooting:'
         error.troubleshooting.each do |tip|
           puts "  🔧 #{tip}"
         end
@@ -162,10 +158,10 @@ end
 
 # Step 4: Demonstrate namespace troubleshooting
 # ---------------------------------------------
-puts "Step 4: Namespace troubleshooting"
-puts "-" * 80
+puts 'Step 4: Namespace troubleshooting'
+puts '-' * 80
 
-puts "Creating XML with namespace issues..."
+puts 'Creating XML with namespace issues...'
 puts
 
 # Example XML with wrong namespace
@@ -178,13 +174,13 @@ wrong_namespace_xml = <<~XML
   </person>
 XML
 
-puts "Validating XML with incorrect namespace..."
+puts 'Validating XML with incorrect namespace...'
 result = validator.validate(wrong_namespace_xml)
 
 if result.valid?
-  puts "✓ VALID"
+  puts '✓ VALID'
 else
-  puts "✗ INVALID - Namespace mismatch detected"
+  puts '✗ INVALID - Namespace mismatch detected'
   puts
 
   result.errors.each do |error|
@@ -197,7 +193,7 @@ else
   end
 
   # Show registered namespaces
-  puts "Registered namespaces in repository:"
+  puts 'Registered namespaces in repository:'
   repository.all_namespaces.each do |ns|
     prefix = repository.namespace_to_prefix(ns)
     puts "  #{prefix || '(default)'} => #{ns}"
@@ -207,23 +203,23 @@ end
 puts
 
 # Summary
-puts "=" * 80
-puts "Example completed successfully!"
+puts '=' * 80
+puts 'Example completed successfully!'
 puts
-puts "This example demonstrated:"
-puts "  ✓ Fuzzy matching for type name typos"
-puts "  ✓ Type suggestions when resolution fails"
-puts "  ✓ Enhanced error messages with context"
-puts "  ✓ Troubleshooting suggestions for common issues"
-puts "  ✓ Namespace mismatch detection and guidance"
+puts 'This example demonstrated:'
+puts '  ✓ Fuzzy matching for type name typos'
+puts '  ✓ Type suggestions when resolution fails'
+puts '  ✓ Enhanced error messages with context'
+puts '  ✓ Troubleshooting suggestions for common issues'
+puts '  ✓ Namespace mismatch detection and guidance'
 puts
-puts "Key features of the error enhancement system:"
-puts "  • Fuzzy matching suggests similar type names"
-puts "  • Context shows surrounding XML for better understanding"
-puts "  • Suggestions provide actionable fixes"
-puts "  • Troubleshooting guides help resolve common issues"
+puts 'Key features of the error enhancement system:'
+puts '  • Fuzzy matching suggests similar type names'
+puts '  • Context shows surrounding XML for better understanding'
+puts '  • Suggestions provide actionable fixes'
+puts '  • Troubleshooting guides help resolve common issues'
 puts
-puts "Next steps:"
-puts "  - Try examples/lxr_build.rb to learn about package creation"
-puts "  - Try examples/lxr_search.rb for type searching capabilities"
-puts "=" * 80
+puts 'Next steps:'
+puts '  - Try examples/lxr_build.rb to learn about package creation'
+puts '  - Try examples/lxr_search.rb for type searching capabilities'
+puts '=' * 80

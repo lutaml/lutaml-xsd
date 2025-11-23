@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "error_context"
-require_relative "message_builder"
+require_relative 'error_context'
+require_relative 'message_builder'
 
 module Lutaml
   module Xsd
@@ -67,7 +67,7 @@ module Lutaml
         #
         # @return [String] Error code
         def error_code
-          "E000"
+          'E000'
         end
 
         # Get error severity
@@ -101,30 +101,20 @@ module Lutaml
           # Get suggester class for this error type
           #
           # @return [Class, nil] Suggester class
-          def suggester_class
-            @suggester_class
-          end
+          attr_accessor :suggester_class
 
           # Set suggester class for this error type
           #
           # @param klass [Class] Suggester class
-          def suggester_class=(klass)
-            @suggester_class = klass
-          end
 
           # Get troubleshooter class for this error type
           #
           # @return [Class, nil] Troubleshooter class
-          def troubleshooter_class
-            @troubleshooter_class
-          end
+          attr_accessor :troubleshooter_class
 
           # Set troubleshooter class for this error type
           #
           # @param klass [Class] Troubleshooter class
-          def troubleshooter_class=(klass)
-            @troubleshooter_class = klass
-          end
 
           # Register suggester for this error type
           #

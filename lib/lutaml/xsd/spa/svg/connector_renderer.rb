@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "utils/svg_builder"
+require_relative 'utils/svg_builder'
 
 module Lutaml
   module Xsd
@@ -33,8 +33,8 @@ module Lutaml
               to_point.x, to_point.y,
               {
                 stroke: options[:stroke] || config.colors.ui.border,
-                "stroke-width" => options[:stroke_width] || style.stroke_width,
-                "stroke-dasharray" => options[:dash_pattern]
+                'stroke-width' => options[:stroke_width] || style.stroke_width,
+                'stroke-dasharray' => options[:dash_pattern]
               }.compact
             )
           end
@@ -53,7 +53,7 @@ module Lutaml
               {
                 fill: options[:fill] || config.colors.ui.border,
                 stroke: options[:stroke],
-                "stroke-width" => options[:stroke_width]
+                'stroke-width' => options[:stroke_width]
               }.compact
             )
           end
@@ -72,7 +72,7 @@ module Lutaml
               {
                 fill: options[:fill] || config.colors.ui.border,
                 stroke: options[:stroke],
-                "stroke-width" => options[:stroke_width]
+                'stroke-width' => options[:stroke_width]
               }.compact
             )
           end
@@ -83,9 +83,9 @@ module Lutaml
             dy = to_point.y - from_point.y
 
             if dy.abs > dx.abs
-              dy > 0 ? :down : :up
+              dy.positive? ? :down : :up
             else
-              dx > 0 ? :right : :left
+              dx.positive? ? :right : :left
             end
           end
         end

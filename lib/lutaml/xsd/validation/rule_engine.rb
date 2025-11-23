@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "rule_registry"
-require_relative "result_collector"
+require_relative 'rule_registry'
+require_relative 'result_collector'
 
 module Lutaml
   module Xsd
@@ -172,7 +172,7 @@ module Lutaml
         def handle_rule_error(rule, error)
           @collector.add_error(
             ValidationError.new(
-              code: "rule_execution_error",
+              code: 'rule_execution_error',
               message: "Error executing #{rule.class.name}: #{error.message}",
               severity: :error,
               context: {

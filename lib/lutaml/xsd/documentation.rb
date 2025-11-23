@@ -8,8 +8,8 @@ module Lutaml
       attribute :content, :string
 
       xml do
-        root "documentation"
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'documentation'
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_all to: :content
         map_attribute :lang, to: :lang

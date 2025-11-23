@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../validation_rule"
+require_relative '../validation_rule'
 
 module Lutaml
   module Xsd
@@ -33,7 +33,7 @@ module Lutaml
           #
           # @return [String]
           def description
-            "Validates minOccurs and maxOccurs constraints on elements"
+            'Validates minOccurs and maxOccurs constraints on elements'
           end
 
           # Validate occurrence constraints
@@ -128,7 +128,7 @@ module Lutaml
             if present_count < min_occurs
               report_error(
                 collector,
-                code: "choice_min_occurs_violation",
+                code: 'choice_min_occurs_violation',
                 message: "Choice must have at least #{min_occurs} " \
                          "alternative(s), found #{present_count}",
                 location: parent_element.xpath,
@@ -139,19 +139,19 @@ module Lutaml
               )
             end
 
-            if max_occurs != :unbounded && present_count > max_occurs
-              report_error(
-                collector,
-                code: "choice_max_occurs_violation",
-                message: "Choice must have at most #{max_occurs} " \
-                         "alternative(s), found #{present_count}",
-                location: parent_element.xpath,
-                context: {
-                  max_occurs: max_occurs,
-                  actual: present_count
-                }
-              )
-            end
+            return unless max_occurs != :unbounded && present_count > max_occurs
+
+            report_error(
+              collector,
+              code: 'choice_max_occurs_violation',
+              message: "Choice must have at most #{max_occurs} " \
+                       "alternative(s), found #{present_count}",
+              location: parent_element.xpath,
+              context: {
+                max_occurs: max_occurs,
+                actual: present_count
+              }
+            )
           end
 
           # Validate all particle occurrences
@@ -192,10 +192,10 @@ module Lutaml
             end
 
             # Check for groups
-            if particle.respond_to?(:group)
-              Array(particle.group).each do |group|
-                # TODO: Resolve and validate group reference
-              end
+            return unless particle.respond_to?(:group)
+
+            Array(particle.group).each do |group|
+              # TODO: Resolve and validate group reference
             end
           end
 
@@ -224,7 +224,7 @@ module Lutaml
 
             alternatives = Array(choice.element)
             alternatives.count do |alt_element|
-              count_element_occurrences(parent_element, alt_element) > 0
+              count_element_occurrences(parent_element, alt_element).positive?
             end
           end
 
@@ -242,7 +242,7 @@ module Lutaml
 
             report_error(
               collector,
-              code: "min_occurs_violation",
+              code: 'min_occurs_violation',
               message: "Element '#{schema_element.name}' must occur at " \
                        "least #{min_occurs} time(s), found #{actual_count}",
               location: parent_element.xpath,
@@ -271,7 +271,7 @@ module Lutaml
 
             report_error(
               collector,
-              code: "max_occurs_violation",
+              code: 'max_occurs_violation',
               message: "Element '#{schema_element.name}' must occur at " \
                        "most #{max_occurs} time(s), found #{actual_count}",
               location: parent_element.xpath,
@@ -303,7 +303,7 @@ module Lutaml
           # @return [Integer, Symbol]
           def parse_max_occurs(value, default)
             return default if value.nil? || value.to_s.empty?
-            return :unbounded if value.to_s == "unbounded"
+            return :unbounded if value.to_s == 'unbounded'
 
             value.to_i
           end

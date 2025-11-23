@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "liquid_methods/complex_type"
+require_relative 'liquid_methods/complex_type'
 
 module Lutaml
   module Xsd
@@ -25,8 +25,8 @@ module Lutaml
       attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
 
       xml do
-        root "complexType", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'complexType', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :id, to: :id
         map_attribute :name, to: :name
@@ -59,9 +59,10 @@ module Lutaml
       # Get elements from content model (sequence, choice, or all)
       # @return [Array<Element>] Elements from content model
       def elements
-        return sequence.element if sequence&.respond_to?(:element)
-        return choice.element if choice&.respond_to?(:element)
-        return all.element if all&.respond_to?(:element)
+        return sequence.element if sequence.respond_to?(:element)
+        return choice.element if choice.respond_to?(:element)
+        return all.element if all.respond_to?(:element)
+
         []
       end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../connector_renderer"
+require_relative '../connector_renderer'
 
 module Lutaml
   module Xsd
@@ -11,7 +11,7 @@ module Lutaml
           # (e.g., Element references another Element)
           class ReferenceConnector < ConnectorRenderer
             def initialize(config)
-              super(config, "reference")
+              super(config, 'reference')
             end
 
             # Renders a reference connector
@@ -41,21 +41,21 @@ module Lutaml
               when :down
                 create_arrow_down(
                   point,
-                  fill: "none",
+                  fill: 'none',
                   stroke: config.colors.ui.border,
                   stroke_width: style.stroke_width
                 )
               when :up
                 create_arrow_up(
                   point,
-                  fill: "none",
+                  fill: 'none',
                   stroke: config.colors.ui.border,
                   stroke_width: style.stroke_width
                 )
               else
                 create_arrow_down(
                   point,
-                  fill: "none",
+                  fill: 'none',
                   stroke: config.colors.ui.border,
                   stroke_width: style.stroke_width
                 )

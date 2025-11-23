@@ -34,9 +34,9 @@ module Lutaml
       # @param resolution_mode [Symbol] :bare or :resolved
       # @param serialization_format [Symbol] :marshal, :json, :yaml, or :parse
       def initialize(xsd_mode: :include_all, resolution_mode: :resolved, serialization_format: :marshal)
-        @xsd_mode = validate_mode(xsd_mode, XSD_MODES, "XSD mode")
-        @resolution_mode = validate_mode(resolution_mode, RESOLUTION_MODES, "Resolution mode")
-        @serialization_format = validate_mode(serialization_format, SERIALIZATION_FORMATS, "Serialization format")
+        @xsd_mode = validate_mode(xsd_mode, XSD_MODES, 'XSD mode')
+        @resolution_mode = validate_mode(resolution_mode, RESOLUTION_MODES, 'Resolution mode')
+        @serialization_format = validate_mode(serialization_format, SERIALIZATION_FORMATS, 'Serialization format')
       end
 
       # @return [Boolean] Whether to include all XSD files in package
@@ -93,9 +93,9 @@ module Lutaml
       # @return [PackageConfiguration]
       def self.from_hash(data)
         new(
-          xsd_mode: data[:xsd_mode] || data["xsd_mode"],
-          resolution_mode: data[:resolution_mode] || data["resolution_mode"],
-          serialization_format: data[:serialization_format] || data["serialization_format"] || :marshal
+          xsd_mode: data[:xsd_mode] || data['xsd_mode'],
+          resolution_mode: data[:resolution_mode] || data['resolution_mode'],
+          serialization_format: data[:serialization_format] || data['serialization_format'] || :marshal
         )
       end
 
@@ -111,7 +111,7 @@ module Lutaml
         unless valid_modes.key?(mode_sym)
           raise ArgumentError,
                 "Invalid #{mode_name}: #{mode}. " \
-                "Valid options: #{valid_modes.keys.join(", ")}"
+                "Valid options: #{valid_modes.keys.join(', ')}"
         end
         mode_sym
       end

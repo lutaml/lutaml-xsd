@@ -12,34 +12,34 @@
 # Usage:
 #   ruby examples/04-metaschema/ruby-api/example.rb
 
-require "bundler/setup"
-require "lutaml/xsd"
-require "fileutils"
+require 'bundler/setup'
+require 'lutaml/xsd'
+require 'fileutils'
 
 # Configuration
-EXAMPLE_DIR = File.expand_path("..", __dir__)
-CONFIG_PATH = File.join(EXAMPLE_DIR, "config.yml")
-OUTPUT_PATH = File.join(EXAMPLE_DIR, "metaschema.lxr")
+EXAMPLE_DIR = File.expand_path('..', __dir__)
+CONFIG_PATH = File.join(EXAMPLE_DIR, 'config.yml')
+OUTPUT_PATH = File.join(EXAMPLE_DIR, 'metaschema.lxr')
 
-puts "=" * 80
-puts "04-METASCHEMA: Ruby API Example"
-puts "=" * 80
+puts '=' * 80
+puts '04-METASCHEMA: Ruby API Example'
+puts '=' * 80
 puts
 
 # Step 1: Build LXR Package from Metaschema
 # ------------------------------------------
-puts "Step 1: Building LXR package from NIST Metaschema definition"
-puts "-" * 80
+puts 'Step 1: Building LXR package from NIST Metaschema definition'
+puts '-' * 80
 
 config = YAML.load_file(CONFIG_PATH)
-puts "Loaded configuration:"
+puts 'Loaded configuration:'
 puts "  Entry point: #{config['files'].size} file(s)"
 puts "  Schema location mappings: #{config['schema_location_mappings']&.size || 0}"
 puts "  Namespaces: #{config['namespace_mappings'].size}"
 puts
 
-puts "Building package..."
-puts "(Processing self-referential schema...)"
+puts 'Building package...'
+puts '(Processing self-referential schema...)'
 start_time = Time.now
 
 # Create repository with configuration
@@ -83,9 +83,9 @@ repository.to_package(
   resolution_mode: :resolved,
   serialization_format: :marshal,
   metadata: {
-    name: "NIST Metaschema Definition",
-    version: "1.0",
-    description: "XSD schema defining the Metaschema model structure"
+    name: 'NIST Metaschema Definition',
+    version: '1.0',
+    description: 'XSD schema defining the Metaschema model structure'
   }
 )
 
@@ -99,8 +99,8 @@ puts
 
 # Step 2: Load and Inspect Package
 # ---------------------------------
-puts "Step 2: Loading and inspecting package"
-puts "-" * 80
+puts 'Step 2: Loading and inspecting package'
+puts '-' * 80
 
 start_time = Time.now
 loaded_repo = Lutaml::Xsd::SchemaRepository.from_package(OUTPUT_PATH)
@@ -112,7 +112,7 @@ puts "✓ Package loaded in #{(load_time * 1000).round(1)} ms"
 puts
 
 stats = loaded_repo.statistics
-puts "Repository statistics:"
+puts 'Repository statistics:'
 puts "  - Total schemas: #{stats[:total_schemas]}"
 puts "  - Total types: #{stats[:total_types]}"
 puts "  - Namespaces: #{stats[:total_namespaces]}"
@@ -120,18 +120,18 @@ puts
 
 # Step 3: Search for Metaschema Definition Types
 # -----------------------------------------------
-puts "Step 3: Searching for metaschema definition types"
-puts "-" * 80
+puts 'Step 3: Searching for metaschema definition types'
+puts '-' * 80
 
 searcher = Lutaml::Xsd::TypeSearcher.new(loaded_repo)
 
-search_terms = ["Definition", "Assembly", "Field", "Flag", "Constraint"]
+search_terms = %w[Definition Assembly Field Flag Constraint]
 search_terms.each do |term|
   puts "Searching for '#{term}'..."
-  results = searcher.search(term, in_field: "name", limit: 5)
+  results = searcher.search(term, in_field: 'name', limit: 5)
 
   if results.empty?
-    puts "  No results found"
+    puts '  No results found'
   else
     results.each do |result|
       puts "  • #{result.qualified_name}"
@@ -143,8 +143,8 @@ end
 
 # Step 4: Resolve Core Metaschema Types
 # --------------------------------------
-puts "Step 4: Resolving core metaschema types"
-puts "-" * 80
+puts 'Step 4: Resolving core metaschema types'
+puts '-' * 80
 
 # Find types with metaschema prefix
 all_types = loaded_repo.all_type_names
@@ -176,13 +176,13 @@ puts
 
 # Step 5: Analyze Type Hierarchy
 # -------------------------------
-puts "Step 5: Analyzing type hierarchy"
-puts "-" * 80
+puts 'Step 5: Analyzing type hierarchy'
+puts '-' * 80
 
 # Look for base types and extensions
 complex_types = loaded_repo.all_type_names(category: :complex_type).take(10)
 
-puts "Examining type structure (first 10 complex types):"
+puts 'Examining type structure (first 10 complex types):'
 puts
 
 complex_types.each do |type_name|
@@ -193,23 +193,23 @@ complex_types.each do |type_name|
   next unless definition.is_a?(Lutaml::Xsd::ComplexType)
 
   # Check for base types
-  if definition.complex_content || definition.simple_content
-    content = definition.complex_content || definition.simple_content
-    if content.extension
-      puts "  #{type_name.split(':').last}"
-      puts "    Extends: #{content.extension.base}"
-    elsif content.restriction
-      puts "  #{type_name.split(':').last}"
-      puts "    Restricts: #{content.restriction.base}"
-    end
+  next unless definition.complex_content || definition.simple_content
+
+  content = definition.complex_content || definition.simple_content
+  if content.extension
+    puts "  #{type_name.split(':').last}"
+    puts "    Extends: #{content.extension.base}"
+  elsif content.restriction
+    puts "  #{type_name.split(':').last}"
+    puts "    Restricts: #{content.restriction.base}"
   end
 end
 puts
 
 # Step 6: Explore Constraint-Related Types
 # -----------------------------------------
-puts "Step 6: Exploring constraint-related types"
-puts "-" * 80
+puts 'Step 6: Exploring constraint-related types'
+puts '-' * 80
 
 constraint_types = all_types.select { |t| t.include?('Constraint') }
 
@@ -221,8 +221,8 @@ puts
 
 # Step 7: Namespace Analysis
 # ---------------------------
-puts "Step 7: Namespace analysis"
-puts "-" * 80
+puts 'Step 7: Namespace analysis'
+puts '-' * 80
 
 loaded_repo.all_namespaces.each do |ns|
   prefix = loaded_repo.namespace_to_prefix(ns)
@@ -242,21 +242,21 @@ loaded_repo.all_namespaces.each do |ns|
 end
 
 # Summary
-puts "=" * 80
-puts "Example completed successfully!"
+puts '=' * 80
+puts 'Example completed successfully!'
 puts
-puts "Key concepts demonstrated:"
-puts "  ✓ Building packages from self-referential schemas"
-puts "  ✓ Handling XSD schemas defining XSD structure"
-puts "  ✓ Meta-level type definitions (types about types)"
-puts "  ✓ Type hierarchy analysis"
-puts "  ✓ Constraint type exploration"
+puts 'Key concepts demonstrated:'
+puts '  ✓ Building packages from self-referential schemas'
+puts '  ✓ Handling XSD schemas defining XSD structure'
+puts '  ✓ Meta-level type definitions (types about types)'
+puts '  ✓ Type hierarchy analysis'
+puts '  ✓ Constraint type exploration'
 puts
-puts "NIST Metaschema:"
-puts "  - Defines modeling language for data structures"
-puts "  - Self-referential (defines its own structure)"
-puts "  - Used by OSCAL and other NIST standards"
+puts 'NIST Metaschema:'
+puts '  - Defines modeling language for data structures'
+puts '  - Self-referential (defines its own structure)'
+puts '  - Used by OSCAL and other NIST standards'
 puts
-puts "Output files:"
+puts 'Output files:'
 puts "  - #{OUTPUT_PATH}"
-puts "=" * 80
+puts '=' * 80

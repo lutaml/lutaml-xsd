@@ -6,8 +6,8 @@ module Lutaml
       attribute :value, :string
 
       xml do
-        root "minInclusive", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'minInclusive', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_attribute :value, to: :value
       end

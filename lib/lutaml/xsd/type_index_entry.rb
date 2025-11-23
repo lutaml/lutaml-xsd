@@ -11,11 +11,11 @@ module Lutaml
       attribute :schema_file, :string
 
       yaml do
-        map "clark_key", to: :clark_key
-        map "type_category", to: :type_category
-        map "namespace", to: :namespace
-        map "local_name", to: :local_name
-        map "schema_file", to: :schema_file
+        map 'clark_key', to: :clark_key
+        map 'type_category', to: :type_category
+        map 'namespace', to: :namespace
+        map 'local_name', to: :local_name
+        map 'schema_file', to: :schema_file
       end
 
       # Create from type index info hash

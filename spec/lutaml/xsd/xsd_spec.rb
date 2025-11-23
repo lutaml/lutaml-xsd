@@ -1,30 +1,30 @@
 # frozen_string_literal: true
 
 LOCATIONS = {
-  omml_schema: "https://raw.githubusercontent.com/t-yuki/ooxml-xsd/refs/heads/master",
-  "metaschema-meta-constraints": "spec/lutaml/fixtures",
-  "metaschema-markup-multiline": "spec/lutaml/fixtures",
-  "metaschema-prose-module": "spec/lutaml/fixtures",
-  "metaschema-markup-line": "spec/lutaml/fixtures",
-  metaschema: "spec/lutaml/fixtures",
-  "unitsml-v1.0-csd03": nil
+  omml_schema: 'https://raw.githubusercontent.com/t-yuki/ooxml-xsd/refs/heads/master',
+  'metaschema-meta-constraints': 'spec/lutaml/fixtures',
+  'metaschema-markup-multiline': 'spec/lutaml/fixtures',
+  'metaschema-prose-module': 'spec/lutaml/fixtures',
+  'metaschema-markup-line': 'spec/lutaml/fixtures',
+  metaschema: 'spec/lutaml/fixtures',
+  'unitsml-v1.0-csd03': nil
 }.freeze
 
 RSpec.describe Lutaml::Xsd do
   subject(:parsed_schema) { described_class.parse(schema, location: location) }
 
-  Dir.glob(File.expand_path("fixtures/*.xsd", __dir__)).each do |input_file|
+  Dir.glob(File.expand_path('fixtures/*.xsd', __dir__)).each do |input_file|
     rel_path = Pathname.new(input_file).relative_path_from(Pathname.new(__dir__)).to_s
 
     context "when parsing #{rel_path}" do
       let(:schema) { File.read(input_file) }
-      let(:location) { LOCATIONS[File.basename(input_file, ".xsd").to_sym] }
+      let(:location) { LOCATIONS[File.basename(input_file, '.xsd').to_sym] }
 
-      it "matches a Lutaml::Model::Schema object" do
+      it 'matches a Lutaml::Model::Schema object' do
         expect(parsed_schema).to be_a(Lutaml::Xsd::Schema)
       end
 
-      it "matches count of direct child elements of the root" do
+      it 'matches count of direct child elements of the root' do
         expected_counts = {
           imports: /<\w+:import /,
           includes: /<\w+:include /,
@@ -40,7 +40,7 @@ RSpec.describe Lutaml::Xsd do
         end
       end
 
-      it "matches parsed schema to xml with the input" do
+      it 'matches parsed schema to xml with the input' do
         processed_xml = schema_to_xml(parsed_schema.to_xml, escape_content_tags: true)
         expect(processed_xml).to be_analogous_with(schema_to_xml(schema))
       end

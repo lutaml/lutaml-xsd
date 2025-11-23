@@ -7,8 +7,8 @@ module Lutaml
       attribute :text, :string
 
       xml do
-        root "appinfo", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'appinfo', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_content to: :text
         map_attribute :source, to: :source

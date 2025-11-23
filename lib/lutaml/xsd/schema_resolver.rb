@@ -34,9 +34,9 @@ module Lutaml
 
         serialized_schemas.each do |schema_data|
           # Create SerializedSchema from hash data
-          file_path = schema_data["file_path"] || schema_data[:file_path]
-          target_ns = schema_data["target_namespace"] || schema_data[:target_namespace]
-          data = schema_data["schema_data"] || schema_data[:schema_data]
+          file_path = schema_data['file_path'] || schema_data[:file_path]
+          target_ns = schema_data['target_namespace'] || schema_data[:target_namespace]
+          data = schema_data['schema_data'] || schema_data[:schema_data]
 
           serialized = SerializedSchema.new(
             file_path: file_path,

@@ -16,19 +16,19 @@ module Lutaml
             end
 
             def element
-              rule_for("element")
+              rule_for('element')
             end
 
             def type
-              rule_for("type")
+              rule_for('type')
             end
 
             def attribute
-              rule_for("attribute")
+              rule_for('attribute')
             end
 
             def group
-              rule_for("group")
+              rule_for('group')
             end
           end
 
@@ -37,15 +37,15 @@ module Lutaml
             attr_reader :icon, :filter
 
             def initialize(rule_hash)
-              @icon = rule_hash["icon"]
-              @show_cardinality = rule_hash["show_cardinality"] || false
-              @show_namespace = rule_hash["show_namespace"] || false
-              @show_type = rule_hash["show_type"] || false
-              @show_default = rule_hash["show_default"] || false
-              @show_base_type = rule_hash["show_base_type"] || false
-              @show_derivation = rule_hash["show_derivation"] || false
-              @clickable = rule_hash["clickable"] || false
-              @filter = rule_hash["filter"]
+              @icon = rule_hash['icon']
+              @show_cardinality = rule_hash['show_cardinality'] || false
+              @show_namespace = rule_hash['show_namespace'] || false
+              @show_type = rule_hash['show_type'] || false
+              @show_default = rule_hash['show_default'] || false
+              @show_base_type = rule_hash['show_base_type'] || false
+              @show_derivation = rule_hash['show_derivation'] || false
+              @clickable = rule_hash['clickable'] || false
+              @filter = rule_hash['filter']
             end
 
             def show_cardinality?

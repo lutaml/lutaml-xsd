@@ -30,8 +30,8 @@ module Lutaml
       attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
 
       xml do
-        root "schema", mixed: true
-        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
+        root 'schema', mixed: true
+        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
 
         map_element :group, to: :group
         map_element :element, to: :element
@@ -58,10 +58,10 @@ module Lutaml
       def import_from_schema(model, value)
         value.each do |schema|
           setup_import_and_include(
-            "import",
+            'import',
             model,
             schema,
-            namespace: schema.attributes["namespace"].value
+            namespace: schema.attributes['namespace'].value
           )
         end
       end
@@ -78,7 +78,7 @@ module Lutaml
       def include_from_schema(model, value)
         value.each do |schema|
           setup_import_and_include(
-            "include",
+            'include',
             model,
             schema
           )
@@ -161,7 +161,7 @@ module Lutaml
       # Human-readable summary
       # @return [String] A summary of the schema
       def summary
-        ns = target_namespace || "(no namespace)"
+        ns = target_namespace || '(no namespace)'
         "#{ns}: #{stats[:elements]} elements, " \
           "#{stats[:complex_types]} complex types, " \
           "#{stats[:simple_types]} simple types"
@@ -205,8 +205,8 @@ module Lutaml
       end
 
       def init_instance_of(klass, schema_hash, args = {})
-        args[:id] = schema_hash["id"].value if schema_hash&.key?("id")
-        args[:schema_path] = schema_hash["schemaLocation"].value if schema_hash&.key?("schemaLocation")
+        args[:id] = schema_hash['id'].value if schema_hash&.key?('id')
+        args[:schema_path] = schema_hash['schemaLocation'].value if schema_hash&.key?('schemaLocation')
         Lutaml::Xsd.register.get_class(klass.to_sym).new(**args)
       end
 
@@ -234,7 +234,7 @@ module Lutaml
 
       def annotation_object(instance, schema)
         elements = schema.children || []
-        annotation_key = elements.find { |element| element.unprefixed_name == "annotation" }
+        annotation_key = elements.find { |element| element.unprefixed_name == 'annotation' }
         return unless annotation_key
 
         annotation = Lutaml::Xsd.register.get_class(:annotation)

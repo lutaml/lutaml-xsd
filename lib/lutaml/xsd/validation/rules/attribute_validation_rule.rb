@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../validation_rule"
+require_relative '../validation_rule'
 
 module Lutaml
   module Xsd
@@ -33,7 +33,7 @@ module Lutaml
           #
           # @return [String]
           def description
-            "Validates element attributes against schema definitions"
+            'Validates element attributes against schema definitions'
           end
 
           # Validate element attributes
@@ -83,9 +83,7 @@ module Lutaml
             end
 
             # For complex types, collect attributes
-            if schema_def.respond_to?(:attribute)
-              attributes.concat(Array(schema_def.attribute))
-            end
+            attributes.concat(Array(schema_def.attribute)) if schema_def.respond_to?(:attribute)
 
             # Handle attribute groups
             if schema_def.respond_to?(:attribute_group)
@@ -202,7 +200,7 @@ module Lutaml
 
               report_error(
                 collector,
-                code: "required_attribute_missing",
+                code: 'required_attribute_missing',
                 message: "Required attribute '#{attr_name}' is missing",
                 location: xml_element.xpath,
                 context: {
@@ -221,7 +219,7 @@ module Lutaml
           def attribute_required?(schema_attr)
             return false unless schema_attr.respond_to?(:use)
 
-            schema_attr.use == "required"
+            schema_attr.use == 'required'
           end
 
           # Validate attribute values
@@ -271,7 +269,7 @@ module Lutaml
               unless value == schema_attr.fixed
                 report_error(
                   collector,
-                  code: "fixed_attribute_value_mismatch",
+                  code: 'fixed_attribute_value_mismatch',
                   message: "Attribute '#{xml_attr.name}' must have fixed " \
                            "value '#{schema_attr.fixed}'",
                   location: xml_element.xpath,
@@ -315,12 +313,12 @@ module Lutaml
                                                 xml_attrs, collector)
             xml_attrs.each do |xml_attr|
               # Skip xmlns attributes
-              next if xml_attr.name == "xmlns" ||
-                      xml_attr.prefix == "xmlns"
+              next if xml_attr.name == 'xmlns' ||
+                      xml_attr.prefix == 'xmlns'
 
               # Skip xsi attributes
               next if xml_attr.namespace_uri ==
-                      "http://www.w3.org/2001/XMLSchema-instance"
+                      'http://www.w3.org/2001/XMLSchema-instance'
 
               schema_attr = find_schema_attribute(schema_attrs, xml_attr)
               next if schema_attr
@@ -330,9 +328,9 @@ module Lutaml
 
               report_error(
                 collector,
-                code: "unexpected_attribute",
+                code: 'unexpected_attribute',
                 message: "Attribute '#{xml_attr.qualified_name}' is not " \
-                         "allowed here",
+                         'allowed here',
                 location: xml_element.xpath,
                 context: {
                   attribute: xml_attr.qualified_name,
@@ -347,7 +345,7 @@ module Lutaml
           #
           # @param schema_attrs [Array<Lutaml::Xsd::Attribute>] Schema attrs
           # @return [Boolean]
-          def has_any_attribute?(schema_attrs)
+          def has_any_attribute?(_schema_attrs)
             # TODO: Check for anyAttribute in schema
             false
           end
@@ -357,7 +355,7 @@ module Lutaml
           # @param xml_attr [XmlAttribute] XML attribute
           # @param schema_attrs [Array<Lutaml::Xsd::Attribute>] Schema attrs
           # @return [String, nil]
-          def suggest_similar_attribute(xml_attr, schema_attrs)
+          def suggest_similar_attribute(_xml_attr, schema_attrs)
             return nil if schema_attrs.empty?
 
             # Simple suggestion based on available attributes

@@ -43,7 +43,7 @@ module Lutaml
           @body_classes = []
           @body_attributes = {}
           @head_content = []
-          @body_content = ""
+          @body_content = ''
         end
 
         # Set document title
@@ -78,7 +78,7 @@ module Lutaml
         #
         # @param charset [String] Character encoding (default: UTF-8)
         # @return [self] Builder instance for chaining
-        def charset(charset = "UTF-8")
+        def charset(charset = 'UTF-8')
           @options[:charset] = charset
           self
         end
@@ -87,7 +87,7 @@ module Lutaml
         #
         # @param content [String] Viewport content
         # @return [self] Builder instance for chaining
-        def viewport(content = "width=device-width, initial-scale=1.0")
+        def viewport(content = 'width=device-width, initial-scale=1.0')
           @options[:viewport] = content
           self
         end
@@ -172,7 +172,7 @@ module Lutaml
         # @param theme [String] Theme name (e.g., "light", "dark")
         # @return [self] Builder instance for chaining
         def theme(theme)
-          body_attribute("data-theme", theme)
+          body_attribute('data-theme', theme)
           self
         end
 
@@ -204,10 +204,10 @@ module Lutaml
         # @return [Hash] Default options
         def default_options
           {
-            lang: "en",
-            charset: "UTF-8",
-            viewport: "width=device-width, initial-scale=1.0",
-            title: "Document",
+            lang: 'en',
+            charset: 'UTF-8',
+            viewport: 'width=device-width, initial-scale=1.0',
+            title: 'Document',
             generator: "lutaml-xsd v#{Lutaml::Xsd::VERSION}"
           }
         end
@@ -216,7 +216,7 @@ module Lutaml
         #
         # @return [String] DOCTYPE
         def doctype
-          "<!DOCTYPE html>"
+          '<!DOCTYPE html>'
         end
 
         # Build opening HTML tag
@@ -230,20 +230,20 @@ module Lutaml
         #
         # @return [String] HTML closing tag
         def html_close_tag
-          "</html>"
+          '</html>'
         end
 
         # Build head section
         #
         # @return [String] Complete head section
         def build_head
-          parts = ["<head>"]
+          parts = ['<head>']
           parts << build_meta_tags
           parts << build_title
           parts << build_stylesheets
           parts << build_inline_styles
           parts += @head_content
-          parts << "</head>"
+          parts << '</head>'
           parts.join("\n  ")
         end
 
@@ -274,7 +274,7 @@ module Lutaml
         #
         # @return [String] Stylesheet links HTML
         def build_stylesheets
-          return "" if @stylesheets.empty?
+          return '' if @stylesheets.empty?
 
           @stylesheets.map do |href|
             %(<link rel="stylesheet" href="#{href}">)
@@ -285,7 +285,7 @@ module Lutaml
         #
         # @return [String] Inline styles HTML
         def build_inline_styles
-          return "" if @inline_styles.empty?
+          return '' if @inline_styles.empty?
 
           styles = @inline_styles.join("\n\n")
           "  <style>\n#{indent(styles, 4)}\n  </style>"
@@ -299,7 +299,7 @@ module Lutaml
           parts = ["<body#{attrs}>"]
           parts << @body_content
           parts << build_scripts unless @scripts.empty? && @inline_scripts.empty?
-          parts << "</body>"
+          parts << '</body>'
           parts.join("\n")
         end
 
@@ -309,15 +309,13 @@ module Lutaml
         def build_body_attributes
           attrs = []
 
-          unless @body_classes.empty?
-            attrs << %(class="#{@body_classes.join(' ')}")
-          end
+          attrs << %(class="#{@body_classes.join(' ')}") unless @body_classes.empty?
 
           @body_attributes.each do |name, value|
             attrs << %(#{name}="#{value}")
           end
 
-          attrs.empty? ? "" : " #{attrs.join(' ')}"
+          attrs.empty? ? '' : " #{attrs.join(' ')}"
         end
 
         # Build script tags
@@ -329,8 +327,8 @@ module Lutaml
           # External scripts
           @scripts.each do |script|
             attrs = [%(src="#{script[:src]}")]
-            attrs << "defer" if script[:options][:defer]
-            attrs << "async" if script[:options][:async]
+            attrs << 'defer' if script[:options][:defer]
+            attrs << 'async' if script[:options][:async]
             attrs << 'type="module"' if script[:options][:module]
             parts << "<script #{attrs.join(' ')}></script>"
           end
@@ -339,7 +337,7 @@ module Lutaml
           @inline_scripts.each do |script|
             attrs = []
             attrs << 'type="module"' if script[:options][:module]
-            tag_attrs = attrs.empty? ? "" : " #{attrs.join(' ')}"
+            tag_attrs = attrs.empty? ? '' : " #{attrs.join(' ')}"
             parts << "<script#{tag_attrs}>\n#{indent(script[:content], 2)}\n</script>"
           end
 
@@ -352,11 +350,11 @@ module Lutaml
         # @return [String] Escaped text
         def escape_html(text)
           text.to_s
-              .gsub("&", "&amp;")
-              .gsub("<", "&lt;")
-              .gsub(">", "&gt;")
-              .gsub('"', "&quot;")
-              .gsub("'", "&#39;")
+              .gsub('&', '&amp;')
+              .gsub('<', '&lt;')
+              .gsub('>', '&gt;')
+              .gsub('"', '&quot;')
+              .gsub("'", '&#39;')
         end
 
         # Indent text
@@ -365,7 +363,7 @@ module Lutaml
         # @param spaces [Integer] Number of spaces
         # @return [String] Indented text
         def indent(text, spaces)
-          prefix = " " * spaces
+          prefix = ' ' * spaces
           text.split("\n").map { |line| "#{prefix}#{line}" }.join("\n")
         end
       end

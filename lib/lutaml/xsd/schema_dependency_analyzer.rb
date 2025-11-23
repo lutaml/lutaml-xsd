@@ -16,7 +16,7 @@ module Lutaml
       # @param depth [Integer, nil] Maximum depth (nil for unlimited)
       # @return [Array<Hash>] Tree structure
       def build_dependency_tree(entrypoints, depth: nil)
-        repository = package.load_repository
+        package.load_repository
         visited = Set.new
 
         entrypoints.map do |entrypoint|
@@ -59,7 +59,7 @@ module Lutaml
 
           import_file = find_schema_filename(import_schema)
           node[:dependencies] << {
-            type: "import",
+            type: 'import',
             namespace: import.namespace,
             file: import_file,
             schema: import_schema,
@@ -74,7 +74,7 @@ module Lutaml
 
           include_file = find_schema_filename(include_schema)
           node[:dependencies] << {
-            type: "include",
+            type: 'include',
             file: include_file,
             schema: include_schema,
             children: build_tree_node(include_schema, include_file, visited.dup, current_depth + 1, max_depth)
@@ -124,7 +124,7 @@ module Lutaml
           return File.basename(location) if s == schema
         end
 
-        "unknown.xsd"
+        'unknown.xsd'
       end
     end
   end

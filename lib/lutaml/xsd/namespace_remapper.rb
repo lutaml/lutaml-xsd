@@ -30,14 +30,10 @@ module Lutaml
       def validate_changes(changes)
         changes.each do |old_prefix, new_prefix|
           # Check old prefix exists
-          unless repository.namespace_mappings.any? { |m| m.prefix == old_prefix }
-            raise ArgumentError, "Prefix '#{old_prefix}' not found in repository"
-          end
+          raise ArgumentError, "Prefix '#{old_prefix}' not found in repository" unless repository.namespace_mappings.any? { |m| m.prefix == old_prefix }
 
           # Check new prefix is valid
-          if new_prefix.nil? || new_prefix.empty?
-            raise ArgumentError, "New prefix cannot be empty"
-          end
+          raise ArgumentError, 'New prefix cannot be empty' if new_prefix.nil? || new_prefix.empty?
 
           # Check new prefix doesn't conflict (unless it's being swapped)
           if repository.namespace_mappings.any? { |m| m.prefix == new_prefix } &&
@@ -87,11 +83,11 @@ module Lutaml
         end
 
         # Rebuild type index with new namespace registry
-        if repository.instance_variable_get(:@resolved)
-          type_index = new_repo.instance_variable_get(:@type_index)
-          all_schemas = new_repo.send(:get_all_processed_schemas)
-          type_index.build_from_schemas(all_schemas)
-        end
+        return unless repository.instance_variable_get(:@resolved)
+
+        type_index = new_repo.instance_variable_get(:@type_index)
+        all_schemas = new_repo.send(:get_all_processed_schemas)
+        type_index.build_from_schemas(all_schemas)
       end
     end
   end

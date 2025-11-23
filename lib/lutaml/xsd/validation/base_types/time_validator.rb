@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "base_type_validator"
+require_relative 'base_type_validator'
 
 module Lutaml
   module Xsd
@@ -40,7 +40,7 @@ module Lutaml
 
             # Extract time part (before timezone and fractional seconds)
             time_part = str.split(/[Z+.\-]/)[0]
-            parts = time_part.split(":")
+            parts = time_part.split(':')
 
             # Validate ranges
             hour = parts[0].to_i
@@ -50,7 +50,7 @@ module Lutaml
             hour >= 0 && hour <= 23 &&
               minute >= 0 && minute <= 59 &&
               second >= 0 && second <= 59
-          rescue
+          rescue StandardError
             false
           end
 
@@ -60,7 +60,7 @@ module Lutaml
           # @return [String] Error message
           def error_message(value)
             "Value '#{value}' is not a valid time. " \
-              "Expected format: HH:MM:SS[.sss][Z|(+|-)HH:MM]"
+              'Expected format: HH:MM:SS[.sss][Z|(+|-)HH:MM]'
           end
         end
       end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "fileutils"
+require 'fileutils'
 
 module Lutaml
   module Xsd
@@ -85,13 +85,9 @@ module Lutaml
         # @raise [IOError] if any file is missing or empty
         def verify_files(files)
           files.each do |file_path|
-            unless File.exist?(file_path)
-              raise IOError, "Failed to write file: #{file_path}"
-            end
+            raise IOError, "Failed to write file: #{file_path}" unless File.exist?(file_path)
 
-            if File.size(file_path).zero?
-              raise IOError, "File is empty: #{file_path}"
-            end
+            raise IOError, "File is empty: #{file_path}" if File.empty?(file_path)
           end
         end
 
@@ -112,7 +108,7 @@ module Lutaml
         # @param content [String] File content
         # @return [String] File path that was written
         def write_file(path, content)
-          content ||= ""  # Handle nil content
+          content ||= '' # Handle nil content
           File.write(path, content)
           log "✓ Wrote: #{path} (#{format_size(content.bytesize)})"
           path

@@ -1,20 +1,20 @@
 # frozen_string_literal: true
 
-require "thor"
-require_relative "base_command"
-require_relative "package_command"
-require_relative "tree_command"
-require_relative "stats_command"
-require_relative "coverage_command"
-require_relative "verify_command"
-require_relative "metadata_command"
-require_relative "type_command"
-require_relative "search_command"
-require_relative "namespace_command"
-require_relative "element_command"
-require_relative "../entrypoint_identifier"
-require_relative "../schema_dependency_analyzer"
-require_relative "../definition_extractor"
+require 'thor'
+require_relative 'base_command'
+require_relative 'package_command'
+require_relative 'tree_command'
+require_relative 'stats_command'
+require_relative 'coverage_command'
+require_relative 'verify_command'
+require_relative 'metadata_command'
+require_relative 'type_command'
+require_relative 'search_command'
+require_relative 'namespace_command'
+require_relative 'element_command'
+require_relative '../entrypoint_identifier'
+require_relative '../schema_dependency_analyzer'
+require_relative '../definition_extractor'
 
 module Lutaml
   module Xsd
@@ -25,9 +25,9 @@ module Lutaml
         class_option :verbose,
                      type: :boolean,
                      default: false,
-                     desc: "Enable verbose output"
+                     desc: 'Enable verbose output'
 
-        desc "ls PACKAGE", "List all schemas in package"
+        desc 'ls PACKAGE', 'List all schemas in package'
         long_desc <<~DESC
           Display all XSD schema files contained in a schema repository package.
 
@@ -46,19 +46,19 @@ module Lutaml
         DESC
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format (text, json, yaml)"
+               desc: 'Output format (text, json, yaml)'
         option :classify,
                type: :boolean,
                default: false,
-               desc: "Classify schemas by role and resolution status"
+               desc: 'Classify schemas by role and resolution status'
         def ls(package_path)
-          require_relative "package_command"
+          require_relative 'package_command'
           PackageCommand::SchemasCommand.new(package_path, options).run
         end
 
-        desc "tree PACKAGE", "Show package file tree"
+        desc 'tree PACKAGE', 'Show package file tree'
         long_desc <<~DESC
           Display all contents of an LXR package file in a colorized tree structure.
 
@@ -81,22 +81,22 @@ module Lutaml
         option :show_sizes,
                type: :boolean,
                default: false,
-               desc: "Show file sizes"
+               desc: 'Show file sizes'
         option :no_color,
                type: :boolean,
                default: false,
-               desc: "Disable colored output"
+               desc: 'Disable colored output'
         option :format,
                type: :string,
-               default: "tree",
+               default: 'tree',
                enum: %w[tree flat],
-               desc: "Output format (tree or flat)"
+               desc: 'Output format (tree or flat)'
         def tree(package_path)
-          require_relative "tree_command"
+          require_relative 'tree_command'
           TreeCommand.new(package_path, options).run
         end
 
-        desc "inspect PACKAGE", "Show full package details"
+        desc 'inspect PACKAGE', 'Show full package details'
         long_desc <<~DESC
           Display comprehensive package metadata and statistics.
 
@@ -109,15 +109,15 @@ module Lutaml
         DESC
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def inspect(package_path)
-          require_relative "package_command"
+          require_relative 'package_command'
           PackageCommand::InfoCommand.new(package_path, options).run
         end
 
-        desc "stats PACKAGE", "Display package statistics"
+        desc 'stats PACKAGE', 'Display package statistics'
         long_desc <<~DESC
           Display comprehensive statistics for a schema repository package.
 
@@ -137,14 +137,14 @@ module Lutaml
         option :format,
                type: :string,
                enum: %w[text json yaml],
-               default: "text",
-               desc: "Output format (text, json, yaml)"
+               default: 'text',
+               desc: 'Output format (text, json, yaml)'
         def stats(package_path)
-          require_relative "stats_command"
+          require_relative 'stats_command'
           StatsCommand::ShowCommand.new(package_path, options).run
         end
 
-        desc "extract PACKAGE SCHEMA", "Extract a schema from the package"
+        desc 'extract PACKAGE SCHEMA', 'Extract a schema from the package'
         long_desc <<~DESC
           Extract a specific XSD schema file from a schema repository package.
 
@@ -163,14 +163,14 @@ module Lutaml
         DESC
         option :output,
                type: :string,
-               aliases: "-o",
-               desc: "Output file path (default: stdout)"
+               aliases: '-o',
+               desc: 'Output file path (default: stdout)'
         def extract(package_path, schema_name)
-          require_relative "package_command"
+          require_relative 'package_command'
           PackageCommand::ExtractCommand.new(package_path, schema_name, options).run
         end
 
-        desc "coverage PACKAGE", "Analyze schema coverage from entry points"
+        desc 'coverage PACKAGE', 'Analyze schema coverage from entry points'
         long_desc <<~DESC
           Analyze which types are reachable from entry point types.
           Shows used vs unused types and coverage percentage.
@@ -188,15 +188,15 @@ module Lutaml
                desc: "Comma-separated entry types (e.g., 'Type1,ns:Type2')"
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def coverage(package_path)
-          require_relative "coverage_command"
+          require_relative 'coverage_command'
           CoverageCommand.new(package_path, options).run
         end
 
-        desc "verify PACKAGE", "Verify XSD specification compliance"
+        desc 'verify PACKAGE', 'Verify XSD specification compliance'
         long_desc <<~DESC
           Validate schemas against W3C XSD specification.
 
@@ -216,23 +216,23 @@ module Lutaml
         DESC
         option :xsd_version,
                type: :string,
-               default: "1.0",
+               default: '1.0',
                enum: %w[1.0 1.1],
-               desc: "XSD version to validate against"
+               desc: 'XSD version to validate against'
         option :strict,
                type: :boolean,
-               desc: "Fail on warnings"
+               desc: 'Fail on warnings'
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def verify(package_path)
-          require_relative "verify_command"
+          require_relative 'verify_command'
           VerifyCommand.new(package_path, options).run
         end
 
-        desc "metadata SUBCOMMAND", "Manage package metadata"
+        desc 'metadata SUBCOMMAND', 'Manage package metadata'
         long_desc <<~DESC
           Manage package metadata.
 
@@ -240,9 +240,9 @@ module Lutaml
             lutaml-xsd pkg metadata show schemas.lxr
             lutaml-xsd pkg metadata update schemas.lxr --name "My Schemas"
         DESC
-        subcommand "metadata", Commands::MetadataCommand
+        subcommand 'metadata', Commands::MetadataCommand
 
-        desc "type SUBCOMMAND", "Query and explore schema types"
+        desc 'type SUBCOMMAND', 'Query and explore schema types'
         long_desc <<~DESC
           Query and explore schema types within packages.
 
@@ -259,9 +259,9 @@ module Lutaml
             lutaml-xsd pkg type dependencies "unitsml:UnitType" schemas.lxr
             lutaml-xsd pkg type hierarchy "gml:AbstractFeatureType" schemas.lxr
         DESC
-        subcommand "type", Commands::TypeCommand
+        subcommand 'type', Commands::TypeCommand
 
-        desc "search QUERY PACKAGE", "Search for types by name or documentation"
+        desc 'search QUERY PACKAGE', 'Search for types by name or documentation'
         long_desc <<~DESC
           Search for types in a schema repository package by name, documentation, or both.
 
@@ -286,31 +286,31 @@ module Lutaml
         DESC
         option :in,
                type: :string,
-               default: "both",
+               default: 'both',
                enum: %w[name documentation both],
-               desc: "Search in: name, documentation, or both"
+               desc: 'Search in: name, documentation, or both'
         option :namespace,
                type: :string,
-               desc: "Filter by namespace URI"
+               desc: 'Filter by namespace URI'
         option :category,
                type: :string,
                enum: %w[element complex_type simple_type attribute_group group],
-               desc: "Filter by type category"
+               desc: 'Filter by type category'
         option :limit,
                type: :numeric,
                default: 20,
-               desc: "Maximum number of results"
+               desc: 'Maximum number of results'
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def search(query, package_path)
-          require_relative "search_command"
+          require_relative 'search_command'
           Commands::SearchCommand.new(query, package_path, options).run
         end
 
-        desc "namespace SUBCOMMAND", "Explore namespaces"
+        desc 'namespace SUBCOMMAND', 'Explore namespaces'
         long_desc <<~DESC
           Explore namespaces in schema packages.
 
@@ -318,9 +318,9 @@ module Lutaml
             lutaml-xsd pkg namespace list schemas.lxr
             lutaml-xsd pkg namespace show http://www.example.com schemas.lxr
         DESC
-        subcommand "namespace", Commands::NamespaceCommand
+        subcommand 'namespace', Commands::NamespaceCommand
 
-        desc "element SUBCOMMAND", "Explore elements"
+        desc 'element SUBCOMMAND', 'Explore elements'
         long_desc <<~DESC
           Explore elements in schema packages.
 
@@ -328,9 +328,9 @@ module Lutaml
             lutaml-xsd pkg element list schemas.lxr
             lutaml-xsd pkg element find "BuildingType" schemas.lxr
         DESC
-        subcommand "element", Commands::ElementCommand
+        subcommand 'element', Commands::ElementCommand
 
-        desc "entrypoints PACKAGE", "Show package entrypoints and dependencies"
+        desc 'entrypoints PACKAGE', 'Show package entrypoints and dependencies'
         long_desc <<~DESC
           Display entrypoint schemas and their dependencies.
 
@@ -349,10 +349,10 @@ module Lutaml
         option :tree,
                type: :boolean,
                default: false,
-               desc: "Show dependency tree from entrypoints"
+               desc: 'Show dependency tree from entrypoints'
         option :depth,
                type: :numeric,
-               desc: "Maximum depth for tree display"
+               desc: 'Maximum depth for tree display'
         def entrypoints(package_path)
           package = SchemaRepositoryPackage.new(package_path)
           identifier = EntrypointIdentifier.new(package)
@@ -367,7 +367,7 @@ module Lutaml
           end
         end
 
-        desc "type-def QNAME PACKAGE", "Show XSD definition for a type"
+        desc 'type-def QNAME PACKAGE', 'Show XSD definition for a type'
         long_desc <<~DESC
           Extract and display the complete XSD definition for a type.
 
@@ -392,7 +392,7 @@ module Lutaml
           end
         end
 
-        desc "element-def QNAME PACKAGE", "Show XSD definition for an element"
+        desc 'element-def QNAME PACKAGE', 'Show XSD definition for an element'
         long_desc <<~DESC
           Extract and display the complete XSD definition for an element.
 
@@ -417,7 +417,7 @@ module Lutaml
           end
         end
 
-        desc "attribute-def QNAME PACKAGE", "Show XSD definition for an attribute"
+        desc 'attribute-def QNAME PACKAGE', 'Show XSD definition for an attribute'
         long_desc <<~DESC
           Extract and display the complete XSD definition for an attribute.
 
@@ -441,7 +441,7 @@ module Lutaml
           end
         end
 
-        desc "namespace-types URI PACKAGE", "Show all types in namespace"
+        desc 'namespace-types URI PACKAGE', 'Show all types in namespace'
         long_desc <<~DESC
           Filter and display all types in a specific namespace.
 
@@ -453,9 +453,9 @@ module Lutaml
         DESC
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def namespace_types(uri, package_path)
           package = SchemaRepositoryPackage.new(package_path)
           repository = package.load_repository
@@ -467,7 +467,7 @@ module Lutaml
           display_namespace_types(namespace_uri, types, options[:format])
         end
 
-        desc "namespace-elements URI PACKAGE", "Show all elements in namespace"
+        desc 'namespace-elements URI PACKAGE', 'Show all elements in namespace'
         long_desc <<~DESC
           Filter and display all elements in a specific namespace.
 
@@ -479,9 +479,9 @@ module Lutaml
         DESC
         option :format,
                type: :string,
-               default: "text",
+               default: 'text',
                enum: %w[text json yaml],
-               desc: "Output format"
+               desc: 'Output format'
         def namespace_elements(uri, package_path)
           package = SchemaRepositoryPackage.new(package_path)
           repository = package.load_repository
@@ -494,9 +494,9 @@ module Lutaml
         end
 
         # Command aliases
-        map "cov" => :coverage
-        map "s" => :search
-        map "?" => :search
+        map 'cov' => :coverage
+        map 's' => :search
+        map '?' => :search
 
         private
 
@@ -504,7 +504,7 @@ module Lutaml
         def display_entrypoints_list(entrypoints, dependencies)
           puts
           puts "ENTRYPOINTS (#{entrypoints.size})"
-          puts "─" * 70
+          puts '─' * 70
 
           entrypoints.each do |ep|
             puts "Namespace URI: #{ep[:namespace] || '—'}"
@@ -514,7 +514,7 @@ module Lutaml
           end
 
           puts "DEPENDENCIES (#{dependencies.size})"
-          puts "─" * 70
+          puts '─' * 70
 
           dependencies.each do |dep|
             puts "#{dep[:file]} (#{dep[:namespace] || '—'})"
@@ -528,15 +528,15 @@ module Lutaml
           trees = analyzer.build_dependency_tree(entrypoints, depth: max_depth)
 
           puts
-          puts "ENTRYPOINTS & DEPENDENCY TREE"
-          puts "═" * 70
+          puts 'ENTRYPOINTS & DEPENDENCY TREE'
+          puts '═' * 70
           puts
 
           trees.each do |tree|
             display_tree_node(tree, 0, max_depth)
           end
 
-          puts "━" * 70
+          puts '━' * 70
           total_deps = count_dependencies(trees)
           puts "Summary: #{entrypoints.size} entrypoint(s) | #{total_deps} dependencies"
           puts
@@ -544,8 +544,8 @@ module Lutaml
 
         # Display tree node recursively
         def display_tree_node(node, level, max_depth)
-          indent = "   " * level
-          marker = level.zero? ? "📄" : "├──"
+          indent = '   ' * level
+          marker = level.zero? ? '📄' : '├──'
 
           puts "#{indent}#{marker} #{node[:file]} #{level.zero? ? '⭐ ENTRYPOINT' : ''}"
           puts "#{indent}    URI: #{node[:namespace]}" if node[:namespace]
@@ -555,7 +555,7 @@ module Lutaml
           return if max_depth && level >= max_depth
 
           node[:dependencies]&.each do |dep|
-            child_indent = "   " * (level + 1)
+            child_indent = '   ' * (level + 1)
             puts "#{child_indent}│"
             puts "#{child_indent}#{dep[:type]} → #{dep[:file]}"
             puts "#{child_indent}    URI: #{dep[:namespace]}" if dep[:namespace]
@@ -588,14 +588,14 @@ module Lutaml
         def display_type_definition(definition)
           puts
           puts "TYPE DEFINITION: #{definition[:qname]}"
-          puts "═" * 70
+          puts '═' * 70
           puts "Namespace: #{definition[:namespace] || '—'}"
           puts "File: #{definition[:file]}"
           puts "Line: #{definition[:line]}"
           puts "Category: #{definition[:category]}"
           puts
-          puts "XSD DEFINITION:"
-          puts "─" * 70
+          puts 'XSD DEFINITION:'
+          puts '─' * 70
           puts definition[:xsd_source]
           puts
         end
@@ -604,13 +604,13 @@ module Lutaml
         def display_element_definition(definition)
           puts
           puts "ELEMENT DEFINITION: #{definition[:qname]}"
-          puts "═" * 70
+          puts '═' * 70
           puts "Namespace: #{definition[:namespace] || '—'}"
           puts "File: #{definition[:file]}"
           puts "Line: #{definition[:line]}"
           puts
-          puts "XSD DEFINITION:"
-          puts "─" * 70
+          puts 'XSD DEFINITION:'
+          puts '─' * 70
           puts definition[:xsd_source]
           puts
         end
@@ -619,13 +619,13 @@ module Lutaml
         def display_attribute_definition(definition)
           puts
           puts "ATTRIBUTE DEFINITION: #{definition[:qname]}"
-          puts "═" * 70
+          puts '═' * 70
           puts "Namespace: #{definition[:namespace] || '—'}"
           puts "File: #{definition[:file]}"
           puts "Line: #{definition[:line]}"
           puts
-          puts "XSD DEFINITION:"
-          puts "─" * 70
+          puts 'XSD DEFINITION:'
+          puts '─' * 70
           puts definition[:xsd_source]
           puts
         end
@@ -633,7 +633,7 @@ module Lutaml
         # Resolve namespace URI from prefix or full URI
         def resolve_namespace_uri(repository, uri_or_prefix)
           # If it looks like a full URI, return it
-          return uri_or_prefix if uri_or_prefix.start_with?("http://", "https://")
+          return uri_or_prefix if uri_or_prefix.start_with?('http://', 'https://')
 
           # Otherwise, treat it as a prefix
           mappings = repository.namespace_mappings || []
@@ -642,7 +642,7 @@ module Lutaml
         end
 
         # Filter types by namespace
-        def filter_types_by_namespace(repository, namespace_uri)
+        def filter_types_by_namespace(_repository, namespace_uri)
           types = []
 
           Schema.processed_schemas.each_value do |schema|
@@ -651,7 +651,7 @@ module Lutaml
             schema.complex_type.each do |type|
               types << {
                 name: type.name,
-                category: "ComplexType",
+                category: 'ComplexType',
                 schema: schema
               }
             end
@@ -659,7 +659,7 @@ module Lutaml
             schema.simple_type.each do |type|
               types << {
                 name: type.name,
-                category: "SimpleType",
+                category: 'SimpleType',
                 schema: schema
               }
             end
@@ -669,7 +669,7 @@ module Lutaml
         end
 
         # Filter elements by namespace
-        def filter_elements_by_namespace(repository, namespace_uri)
+        def filter_elements_by_namespace(_repository, namespace_uri)
           elements = []
 
           Schema.processed_schemas.each_value do |schema|
@@ -690,14 +690,14 @@ module Lutaml
         # Display namespace types
         def display_namespace_types(namespace_uri, types, format)
           case format
-          when "json"
-            require "json"
+          when 'json'
+            require 'json'
             puts JSON.pretty_generate({
-              namespace: namespace_uri,
-              types: types.map { |t| { name: t[:name], category: t[:category] } }
-            })
-          when "yaml"
-            require "yaml"
+                                        namespace: namespace_uri,
+                                        types: types.map { |t| { name: t[:name], category: t[:category] } }
+                                      })
+          when 'yaml'
+            require 'yaml'
             puts({
               namespace: namespace_uri,
               types: types.map { |t| { name: t[:name], category: t[:category] } }
@@ -705,10 +705,10 @@ module Lutaml
           else
             puts
             puts "NAMESPACE: #{namespace_uri}"
-            puts "═" * 70
+            puts '═' * 70
             puts
             puts "TYPES (#{types.size})"
-            puts "─" * 70
+            puts '─' * 70
 
             types.each do |type|
               puts "#{type[:name]} (#{type[:category]})"
@@ -720,14 +720,14 @@ module Lutaml
         # Display namespace elements
         def display_namespace_elements(namespace_uri, elements, format)
           case format
-          when "json"
-            require "json"
+          when 'json'
+            require 'json'
             puts JSON.pretty_generate({
-              namespace: namespace_uri,
-              elements: elements.map { |e| { name: e[:name], type: e[:type] } }
-            })
-          when "yaml"
-            require "yaml"
+                                        namespace: namespace_uri,
+                                        elements: elements.map { |e| { name: e[:name], type: e[:type] } }
+                                      })
+          when 'yaml'
+            require 'yaml'
             puts({
               namespace: namespace_uri,
               elements: elements.map { |e| { name: e[:name], type: e[:type] } }
@@ -735,10 +735,10 @@ module Lutaml
           else
             puts
             puts "NAMESPACE: #{namespace_uri}"
-            puts "═" * 70
+            puts '═' * 70
             puts
             puts "ELEMENTS (#{elements.size})"
-            puts "─" * 70
+            puts '─' * 70
 
             elements.each do |elem|
               puts "#{elem[:name]} : #{elem[:type] || '(anonymous type)'}"

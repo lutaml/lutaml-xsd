@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "geometry/box"
-require_relative "geometry/point"
+require_relative 'geometry/box'
+require_relative 'geometry/point'
 
 module Lutaml
   module Xsd
@@ -19,9 +19,9 @@ module Lutaml
           # Factory method to create appropriate layout engine
           def self.for(config)
             case config.layout_type
-            when "tree"
+            when 'tree'
               Lutaml::Xsd::Spa::Svg::Layouts::TreeLayout.new(config)
-            when "vertical"
+            when 'vertical'
               Lutaml::Xsd::Spa::Svg::Layouts::VerticalLayout.new(config)
             else
               raise ArgumentError, "Unknown layout type: #{config.layout_type}"

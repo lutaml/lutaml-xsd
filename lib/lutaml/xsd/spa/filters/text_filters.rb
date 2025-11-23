@@ -15,8 +15,8 @@ module Lutaml
           # @param length [Integer] Maximum length
           # @param omission [String] String to append when truncated
           # @return [String] Truncated text
-          def truncate_text(text, length = 100, omission = "...")
-            return "" unless text
+          def truncate_text(text, length = 100, omission = '...')
+            return '' unless text
 
             text_str = text.to_s
             return text_str if text_str.length <= length
@@ -29,7 +29,7 @@ module Lutaml
           # @param text [String] Text to capitalize
           # @return [String] Capitalized text
           def capitalize_first(text)
-            return "" unless text
+            return '' unless text
 
             text.to_s.capitalize
           end
@@ -39,9 +39,9 @@ module Lutaml
           # @param text [String] Text to convert
           # @return [String] Title cased text
           def titleize(text)
-            return "" unless text
+            return '' unless text
 
-            text.to_s.split(/[\s_-]/).map(&:capitalize).join(" ")
+            text.to_s.split(/[\s_-]/).map(&:capitalize).join(' ')
           end
 
           # Convert to slug (URL-friendly)
@@ -49,13 +49,13 @@ module Lutaml
           # @param text [String] Text to slugify
           # @return [String] Slugified text
           def slugify(text)
-            return "" unless text
+            return '' unless text
 
             text.to_s
                 .downcase
-                .gsub(/[^\w\s-]/, "")
-                .gsub(/[\s_-]+/, "-")
-                .gsub(/^-+|-+$/, "")
+                .gsub(/[^\w\s-]/, '')
+                .gsub(/[\s_-]+/, '-')
+                .gsub(/^-+|-+$/, '')
           end
 
           # Pluralize word based on count
@@ -76,8 +76,8 @@ module Lutaml
           # @param number [Integer, Float] Number to format
           # @param separator [String] Thousands separator
           # @return [String] Formatted number
-          def number_with_delimiter(number, separator = ",")
-            return "" unless number
+          def number_with_delimiter(number, separator = ',')
+            return '' unless number
 
             number.to_s.reverse.scan(/\d{1,3}/).join(separator).reverse
           end
@@ -87,9 +87,9 @@ module Lutaml
           # @param html [String] HTML content
           # @return [String] Plain text
           def strip_html(html)
-            return "" unless html
+            return '' unless html
 
-            html.to_s.gsub(/<[^>]*>/, "")
+            html.to_s.gsub(/<[^>]*>/, '')
           end
 
           # Escape HTML characters
@@ -97,14 +97,14 @@ module Lutaml
           # @param text [String] Text to escape
           # @return [String] Escaped text
           def escape_html(text)
-            return "" unless text
+            return '' unless text
 
             text.to_s
-                .gsub("&", "&amp;")
-                .gsub("<", "&lt;")
-                .gsub(">", "&gt;")
-                .gsub('"', "&quot;")
-                .gsub("'", "&#39;")
+                .gsub('&', '&amp;')
+                .gsub('<', '&lt;')
+                .gsub('>', '&gt;')
+                .gsub('"', '&quot;')
+                .gsub("'", '&#39;')
           end
 
           # Convert newlines to <br> tags
@@ -112,9 +112,9 @@ module Lutaml
           # @param text [String] Text with newlines
           # @return [String] HTML with <br> tags
           def nl2br(text)
-            return "" unless text
+            return '' unless text
 
-            text.to_s.gsub(/\n/, "<br>\n")
+            text.to_s.gsub("\n", "<br>\n")
           end
 
           # Wrap text in paragraph tags
@@ -122,7 +122,7 @@ module Lutaml
           # @param text [String] Text content
           # @return [String] Text wrapped in <p> tags
           def paragraphize(text)
-            return "" unless text
+            return '' unless text
 
             text.to_s.split(/\n\n+/).map { |para| "<p>#{para.strip}</p>" }.join("\n")
           end
@@ -133,7 +133,7 @@ module Lutaml
           # @param term [String] Search term
           # @param tag [String] HTML tag to wrap matches
           # @return [String] Text with highlighted terms
-          def highlight(text, term, tag = "mark")
+          def highlight(text, term, tag = 'mark')
             return text unless text && term
 
             text.to_s.gsub(
@@ -148,8 +148,8 @@ module Lutaml
           # @param length [Integer] Maximum length
           # @param omission [String] String to append when truncated
           # @return [String] Truncated text
-          def smart_truncate(text, length = 100, omission = "...")
-            return "" unless text
+          def smart_truncate(text, length = 100, omission = '...')
+            return '' unless text
 
             text_str = text.to_s
             return text_str if text_str.length <= length
@@ -170,7 +170,7 @@ module Lutaml
           # @param text [String] Text content
           # @return [String] First sentence
           def first_sentence(text)
-            return "" unless text
+            return '' unless text
 
             match = text.to_s.match(/^[^.!?]+[.!?]/)
             match ? match[0] : text.to_s
@@ -192,9 +192,9 @@ module Lutaml
           # @param language [String, nil] Programming language
           # @return [String] Formatted code block
           def code_block(text, language = nil)
-            return "" unless text
+            return '' unless text
 
-            lang_class = language ? %( class="language-#{language}") : ""
+            lang_class = language ? %( class="language-#{language}") : ''
             "<pre><code#{lang_class}>#{escape_html(text)}</code></pre>"
           end
 
@@ -203,7 +203,7 @@ module Lutaml
           # @param text [String] Code text
           # @return [String] Inline code
           def inline_code(text)
-            return "" unless text
+            return '' unless text
 
             "<code>#{escape_html(text)}</code>"
           end

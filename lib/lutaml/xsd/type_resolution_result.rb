@@ -30,13 +30,13 @@ module Lutaml
       attribute :error_message, :string
 
       yaml do
-        map "resolved", to: :resolved
-        map "qname", to: :qname
-        map "namespace", to: :namespace
-        map "local_name", to: :local_name
-        map "schema_file", to: :schema_file
-        map "resolution_path", to: :resolution_path
-        map "error_message", to: :error_message
+        map 'resolved', to: :resolved
+        map 'qname', to: :qname
+        map 'namespace', to: :namespace
+        map 'local_name', to: :local_name
+        map 'schema_file', to: :schema_file
+        map 'resolution_path', to: :resolution_path
+        map 'error_message', to: :error_message
       end
 
       # Check if the type was successfully resolved

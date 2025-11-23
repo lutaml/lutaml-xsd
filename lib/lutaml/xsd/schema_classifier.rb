@@ -49,7 +49,7 @@ module Lutaml
         entrypoint_paths = repository.files || []
         all_schemas = get_all_schemas
 
-        all_schemas.reject { |path, _| entrypoint_paths.include?(path) }.map do |path, schema|
+        all_schemas.except(*entrypoint_paths).map do |path, schema|
           SchemaClassificationInfo.new(
             schema: schema,
             location: path,
@@ -132,7 +132,7 @@ module Lutaml
       # @param path [String] Schema path
       # @return [Symbol] :entrypoint or :dependency
       def determine_category(path)
-        if repository.files && repository.files.include?(path)
+        if repository.files&.include?(path)
           :entrypoint
         else
           :dependency
@@ -188,7 +188,7 @@ module Lutaml
           location: @location,
           filename: File.basename(@location),
           category: @category,
-          namespace: @namespace || "(no namespace)",
+          namespace: @namespace || '(no namespace)',
           elements_count: @elements_count,
           types_count: @types_count,
           complex_types_count: @complex_types_count,

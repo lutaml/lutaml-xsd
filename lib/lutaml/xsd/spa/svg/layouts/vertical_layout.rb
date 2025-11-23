@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../layout_engine"
+require_relative '../layout_engine'
 
 module Lutaml
   module Xsd
@@ -9,7 +9,7 @@ module Lutaml
         module Layouts
           # Simple vertical layout - stacks components vertically
           class VerticalLayout < LayoutEngine
-            def calculate(component_data, component_type)
+            def calculate(component_data, _component_type)
               nodes = []
               connections = []
 
@@ -28,9 +28,9 @@ module Lutaml
                            config.dimensions.spacing_vertical
 
               # Add type reference if present
-              if component_data["type"]
+              if component_data['type']
                 type_node = create_node(
-                  { "name" => component_data["type"], "kind" => "type" },
+                  { 'name' => component_data['type'], 'kind' => 'type' },
                   Geometry::Point.new(start_x, current_y),
                   1
                 )
@@ -38,17 +38,17 @@ module Lutaml
                 connections << LayoutConnection.new(
                   main_node,
                   type_node,
-                  "containment"
+                  'containment'
                 )
                 current_y += config.dimensions.box_height +
                              config.dimensions.spacing_vertical
               end
 
               # Add attributes
-              if component_data["attributes"]&.any?
-                component_data["attributes"].each do |attr|
+              if component_data['attributes']&.any?
+                component_data['attributes'].each do |attr|
                   attr_node = create_node(
-                    attr.merge("kind" => "attribute"),
+                    attr.merge('kind' => 'attribute'),
                     Geometry::Point.new(
                       start_x + config.dimensions.spacing_indent,
                       current_y

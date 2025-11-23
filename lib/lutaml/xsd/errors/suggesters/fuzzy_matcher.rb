@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../suggestion"
+require_relative '../suggestion'
 
 module Lutaml
   module Xsd

@@ -49,7 +49,7 @@ module Lutaml
       # @param metadata_hash [Hash] Metadata from package
       def load(repository, metadata_hash)
         # Backward compatibility: check for old serialized_schemas format
-        serialized_schemas = metadata_hash["serialized_schemas"] ||
+        serialized_schemas = metadata_hash['serialized_schemas'] ||
                              metadata_hash[:serialized_schemas]
 
         return unless serialized_schemas&.any?
@@ -103,7 +103,7 @@ module Lutaml
 
         all_schemas.each do |schema_location, schema|
           # Resolve schema location to actual file path
-          file_path = if schema_location.start_with?("/")
+          file_path = if schema_location.start_with?('/')
                         # Already an absolute file path
                         schema_location
                       else
@@ -159,7 +159,7 @@ module Lutaml
 
         puts
         puts "⚠ WARNINGS (#{warnings.size})"
-        puts "─" * 70
+        puts '─' * 70
 
         warnings.each_with_index do |w, i|
           puts "#{i + 1}. #{w[:type]}: #{w[:reference]}"
@@ -169,9 +169,9 @@ module Lutaml
           puts
         end
 
-        puts "━" * 70
+        puts '━' * 70
         puts "Status: ✓ Package created with #{warnings.size} warning(s)"
-        puts "Action: Review warnings and update config if needed"
+        puts 'Action: Review warnings and update config if needed'
         puts
       end
 
@@ -181,12 +181,12 @@ module Lutaml
       def suggest_fix(error)
         message = error.message
 
-        if message.include?("not found")
-          "Check that all required schemas are included in dependencies"
-        elsif message.include?("namespace")
-          "Verify namespace URI is correct and schema is imported"
+        if message.include?('not found')
+          'Check that all required schemas are included in dependencies'
+        elsif message.include?('namespace')
+          'Verify namespace URI is correct and schema is imported'
         else
-          "Review schema dependencies and imports"
+          'Review schema dependencies and imports'
         end
       end
 

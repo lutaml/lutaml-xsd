@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "json"
+require 'json'
 
 module Lutaml
   module Xsd
@@ -11,9 +11,9 @@ module Lutaml
       attribute :schema_data, :string
 
       yaml do
-        map "file_path", to: :file_path
-        map "target_namespace", to: :target_namespace
-        map "schema_data", to: :schema_data
+        map 'file_path', to: :file_path
+        map 'target_namespace', to: :target_namespace
+        map 'schema_data', to: :schema_data
       end
 
       # Create from a parsed Schema object
@@ -49,18 +49,18 @@ module Lutaml
 
         # Create a minimal Schema object with the essential data
         schema = Schema.new(
-          target_namespace: data["target_namespace"],
-          element_form_default: data["element_form_default"],
-          attribute_form_default: data["attribute_form_default"],
-          version: data["version"]
+          target_namespace: data['target_namespace'],
+          element_form_default: data['element_form_default'],
+          attribute_form_default: data['attribute_form_default'],
+          version: data['version']
         )
 
         # Reconstruct collections
-        schema.instance_variable_set(:@simple_type, deserialize_types(data["simple_types"], :simple_type))
-        schema.instance_variable_set(:@complex_type, deserialize_types(data["complex_types"], :complex_type))
-        schema.instance_variable_set(:@element, deserialize_elements(data["elements"]))
-        schema.instance_variable_set(:@attribute_group, deserialize_attribute_groups(data["attribute_groups"]))
-        schema.instance_variable_set(:@group, deserialize_groups(data["groups"]))
+        schema.instance_variable_set(:@simple_type, deserialize_types(data['simple_types'], :simple_type))
+        schema.instance_variable_set(:@complex_type, deserialize_types(data['complex_types'], :complex_type))
+        schema.instance_variable_set(:@element, deserialize_elements(data['elements']))
+        schema.instance_variable_set(:@attribute_group, deserialize_attribute_groups(data['attribute_groups']))
+        schema.instance_variable_set(:@group, deserialize_groups(data['groups']))
 
         schema
       end
@@ -86,8 +86,8 @@ module Lutaml
         # Create stub objects that respond to common type methods
         # This avoids circular references and lutaml-model initialization issues
         types_data.map do |type_data|
-          class_name = type_data["class"]
-          type_name = type_data["name"]
+          class_name = type_data['class']
+          type_name = type_data['name']
 
           # Create a stub that behaves like a ComplexType/SimpleType
           Object.new.tap do |obj|
@@ -124,8 +124,8 @@ module Lutaml
 
         elements_data.map do |elem_data|
           Object.new.tap do |obj|
-            obj.define_singleton_method(:name) { elem_data["name"] }
-            obj.define_singleton_method(:type) { elem_data["type"] }
+            obj.define_singleton_method(:name) { elem_data['name'] }
+            obj.define_singleton_method(:type) { elem_data['type'] }
           end
         end
       end
@@ -143,7 +143,7 @@ module Lutaml
 
         groups_data.map do |g|
           Object.new.tap do |obj|
-            obj.define_singleton_method(:name) { g["name"] }
+            obj.define_singleton_method(:name) { g['name'] }
           end
         end
       end
@@ -161,7 +161,7 @@ module Lutaml
 
         groups_data.map do |g|
           Object.new.tap do |obj|
-            obj.define_singleton_method(:name) { g["name"] }
+            obj.define_singleton_method(:name) { g['name'] }
           end
         end
       end

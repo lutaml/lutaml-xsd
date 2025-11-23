@@ -44,8 +44,8 @@ module Lutaml
               if mapping.is_a?(NamespaceMapping)
                 register(mapping.prefix, mapping.uri)
               elsif mapping.is_a?(Hash)
-                prefix = mapping[:prefix] || mapping["prefix"]
-                uri = mapping[:uri] || mapping["uri"]
+                prefix = mapping[:prefix] || mapping['prefix']
+                uri = mapping[:uri] || mapping['uri']
                 register(prefix, uri)
               end
             end
@@ -144,15 +144,15 @@ module Lutaml
           # Common namespace patterns
           case uri
           when %r{www\.w3\.org/2001/XMLSchema}
-            "xs"
+            'xs'
           when %r{www\.opengis\.net/gml}
-            "gml"
+            'gml'
           when %r{www\.w3\.org/1999/xlink}
-            "xlink"
+            'xlink'
           else
             # Extract from path or use a hash-based approach
-            parts = uri.split("/").reject(&:empty?)
-            parts.last&.gsub(/[^a-zA-Z0-9]/, "") || "ns#{uri.hash.abs}"
+            parts = uri.split('/').reject(&:empty?)
+            parts.last&.gsub(/[^a-zA-Z0-9]/, '') || "ns#{uri.hash.abs}"
           end
         end
       end
