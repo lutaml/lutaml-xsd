@@ -56,8 +56,7 @@ module Lutaml
         def validate_package_file
           return if File.exist?(package_path)
 
-          error "Package file not found: #{package_path}"
-          exit 1
+          raise Lutaml::Xsd::Error, "Package file not found: #{package_path}"
         end
 
         # Display package tree
@@ -101,14 +100,15 @@ module Lutaml
         def handle_error(error)
           case error
           when Zip::Error
-            error "Failed to read package file: #{error.message}"
+            error_msg = "Failed to read package file: #{error.message}"
           when Lutaml::Xsd::Error
-            error "Package error: #{error.message}"
+            error_msg = "Package error: #{error.message}"
           else
-            error "Failed to display tree: #{error.message}"
+            error_msg = "Failed to display tree: #{error.message}"
           end
+          error error_msg
           verbose_output error.backtrace.join("\n") if verbose?
-          exit 1
+          raise error
         end
       end
     end

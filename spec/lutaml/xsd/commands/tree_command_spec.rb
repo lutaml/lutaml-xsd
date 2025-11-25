@@ -148,17 +148,17 @@ RSpec.describe Lutaml::Xsd::Commands::TreeCommand do
   end
 
   describe 'error handling' do
-    it 'exits with error for non-existent package' do
+    it 'raises error for non-existent package' do
       command = described_class.new('/nonexistent/package.lxr', {})
-      expect { command.run }.to raise_error(SystemExit)
+      expect { command.run }.to raise_error(Lutaml::Xsd::Error, /Package file not found/)
     end
 
     it 'outputs error message for non-existent package' do
       command = described_class.new('/nonexistent/package.lxr', {})
       expect do
         command.run
-      rescue SystemExit
-        # Catch exit to allow error output verification
+      rescue Lutaml::Xsd::Error
+        # Catch error to allow error output verification
       end.to output(/Package file not found/).to_stderr
     end
 
@@ -168,7 +168,7 @@ RSpec.describe Lutaml::Xsd::Commands::TreeCommand do
       invalid_file.close
 
       command = described_class.new(invalid_file.path, {})
-      expect { command.run }.to raise_error(SystemExit)
+      expect { command.run }.to raise_error(Lutaml::Xsd::Error, /Failed to read package/)
 
       invalid_file.unlink
     end
@@ -181,8 +181,8 @@ RSpec.describe Lutaml::Xsd::Commands::TreeCommand do
       command = described_class.new(invalid_file.path, {})
       expect do
         command.run
-      rescue SystemExit
-        # Catch exit to allow error output verification
+      rescue Lutaml::Xsd::Error
+        # Catch error to allow error output verification
       end.to output(/Failed to read package/).to_stderr
 
       invalid_file.unlink

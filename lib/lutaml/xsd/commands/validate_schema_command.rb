@@ -2,6 +2,8 @@
 
 require "thor"
 require_relative "../schema_validator"
+require_relative "../file_validation_result"
+require_relative "../validation_result"
 require_relative "../formatters/formatter_factory"
 
 module Lutaml
@@ -65,7 +67,7 @@ module Lutaml
 
           output_results(results, format)
 
-          exit 1 unless results[:failed_files].empty?
+          exit 1 unless results.failed_files.empty?
           exit 0
         end
 
@@ -73,27 +75,17 @@ module Lutaml
 
         # Validate all schema files and collect results
         def validate_files(schema_files, validator, verbose)
-          results = {
-            total: schema_files.length,
-            valid: 0,
-            invalid: 0,
-            files: [],
-            failed_files: []
-          }
-
-          schema_files.each do |file|
-            file_result = validate_single_file(file, validator, verbose)
-            results[:files] << file_result
-
-            if file_result[:valid]
-              results[:valid] += 1
-            else
-              results[:invalid] += 1
-              results[:failed_files] << file
-            end
+          file_results = schema_files.map do |file|
+            hash = validate_single_file(file, validator, verbose)
+            FileValidationResult.new(
+              file: hash[:file],
+              valid: hash[:valid],
+              error: hash[:error],
+              detected_version: hash[:detected_version]
+            )
           end
 
-          results
+          ValidationResult.new(file_results)
         end
 
         # Validate a single schema file
@@ -127,7 +119,9 @@ module Lutaml
         # Output results in the specified format
         def output_results(results, format)
           formatter = Formatters::FormatterFactory.create(format)
-          puts formatter.format(results)
+          # Convert ValidationResult to Hash for backward compatibility
+          result_hash = results.respond_to?(:to_h) ? results.to_h : results
+          puts formatter.format(result_hash)
         end
       end
     end

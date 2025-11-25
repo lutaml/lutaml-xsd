@@ -40,6 +40,8 @@ end
 require_relative 'xsd/version'
 require_relative 'xsd/errors'
 require_relative 'xsd/schema_validator'
+require_relative 'xsd/file_validation_result'
+require_relative 'xsd/validation_result'
 require_relative 'xsd/base'
 require_relative 'xsd/schema_location_mapping'
 require_relative 'xsd/namespace_mapping'

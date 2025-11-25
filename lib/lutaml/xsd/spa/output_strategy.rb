@@ -85,9 +85,13 @@ module Lutaml
         # @raise [IOError] if any file is missing or empty
         def verify_files(files)
           files.each do |file_path|
-            raise IOError, "Failed to write file: #{file_path}" unless File.exist?(file_path)
+            unless File.exist?(file_path)
+              raise IOError, "Failed to write file: #{file_path}"
+            end
 
-            raise IOError, "File is empty: #{file_path}" if File.empty?(file_path)
+            if File.size(file_path).zero?
+              raise IOError, "File is empty: #{file_path}"
+            end
           end
         end
 

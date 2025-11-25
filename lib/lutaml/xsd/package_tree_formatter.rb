@@ -323,7 +323,7 @@ module Lutaml
         exp = (Math.log(bytes) / Math.log(1024)).to_i
         exp = [exp, units.length - 1].min
 
-        format('%.1f %s', bytes.to_f / (1024**exp), units[exp])
+        Kernel.format('%.1f %s', bytes.to_f / (1024**exp), units[exp])
       end
 
       # Colorize text if colors enabled
