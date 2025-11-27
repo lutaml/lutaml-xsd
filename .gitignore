@@ -10,3 +10,7 @@
 # rspec failure tracking
 .rspec_status
 Gemfile*.lock
+
+# Jekyll build artifacts
+docs/_site/
+docs/.jekyll-cache/

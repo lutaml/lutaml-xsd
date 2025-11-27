@@ -8,21 +8,22 @@ image:https://github.com/lutaml/lutaml-xsd/actions/workflows/rake.yml/badge.svg[
 
 == Purpose
 
-Lutaml::Xsd is a Ruby gem designed to parse and manipulate XML Schema
-Definition (XSD) files. It provides a robust framework for handling XSD
-elements, attributes, complex types, and all other XSD constructs, allowing
-users to programmatically work with XML schemas.
+Lutaml::Xsd is a Ruby gem designed to parse and manipulate XML Schema Definition
+(XSD) files. It provides a robust framework for handling XSD elements,
+attributes, complex types, and all other XSD constructs, allowing users to
+programmatically work with XML schemas.
 
 NOTE: For UML-to-XSD mapping and YAML documentation generation (including
-ShapeChange integration), see the https://github.com/lutaml/lutaml-klin[lutaml-klin]
-gem which orchestrates both https://github.com/lutaml/lutaml[lutaml] (for UML
-parsing) and lutaml-xsd (for XSD schema operations).
+ShapeChange integration), see the
+https://github.com/lutaml/lutaml-klin[lutaml-klin] gem which orchestrates both
+https://github.com/lutaml/lutaml[lutaml] (for UML parsing) and lutaml-xsd (for
+XSD schema operations).
 
 The `lutaml-xsd` gem provides a Ruby library for working with XSD schemas,
 allowing users to parse XSD files into Ruby objects, manipulate schema
 structures, and serialize them back to XML. It is built on top of the
-`lutaml-model` serialization framework, which provides a flexible and
-extensible way to define data models.
+`lutaml-model` serialization framework, which provides a flexible and extensible
+way to define data models.
 
 This library is particularly useful for developers working with XML-based
 standards, schema transformation tools, code generators, and XML validation
@@ -1606,6 +1607,7 @@ interactively via the command-line interface.
 
 .Loading and using an LXR package
 [example]
+====
 [source,ruby]
 ----
 require 'lutaml/xsd'
@@ -1635,6 +1637,7 @@ stats[:types_by_category].each do |category, count|
   puts "#{category}: #{count}"
 end
 ----
+====
 
 ==== Using via command-line interface
 
@@ -2234,6 +2237,7 @@ Schema mappings use a simple array of hash objects with `from` and `to` keys.
 
 .Basic schema mapping example
 [example]
+====
 [source,ruby]
 ----
 require 'lutaml/xsd'
@@ -2264,7 +2268,7 @@ parsed_schema = Lutaml::Xsd.parse(
 
 The first mapping uses exact string matching, while the second uses a regular
 expression with a capture group (`\1`) to map an entire directory structure.
-====
+
 [source,ruby]
 ----
 require 'lutaml/xsd'
@@ -2455,7 +2459,7 @@ schema_mappings = [
     to: '/local/path/gml/\1.xsd'
   }
 ]
-====
+----
 ====
 
 ==== Order matters - specific before general
@@ -2481,7 +2485,7 @@ schema_mappings = [
     to: '/local/path/gml/\1'
   }
 ]
-====
+----
 ====
 
 ==== Use capture groups for flexible mappings
@@ -2665,6 +2669,7 @@ Key capabilities:
 
 .Basic repository initialization
 [example]
+====
 [source,ruby]
 ----
 require 'lutaml/xsd'
@@ -2677,6 +2682,7 @@ repo = Lutaml::Xsd::SchemaRepository.new(
   base_dir: '/path/to/schemas'
 )
 ----
+====
 
 === Configuring namespaces
 
@@ -2699,6 +2705,7 @@ Where,
 
 .Configuring namespace mappings
 [example]
+====
 [source,ruby]
 ----
 repo = Lutaml::Xsd::SchemaRepository.new
@@ -2719,6 +2726,7 @@ repo.add_namespace_mapping(
   uri: 'http://www.isotc211.org/2005/gco'
 )
 ----
+====
 
 Namespace mappings enable resolving qualified names like `gml:CodeType` to
 their full namespace URIs.
@@ -2751,6 +2759,7 @@ Where,
 
 .Parsing a schema with location mappings
 [example]
+====
 [source,ruby]
 ----
 require 'lutaml/xsd'
@@ -2787,6 +2796,7 @@ result = repo.parse_schema(
 puts "Parsed: #{result.location}"
 puts "Namespace: #{result.target_namespace}"
 ----
+====
 
 The repository automatically follows all `xs:import` and `xs:include`
 directives, parsing referenced schemas and adding them to the index.
@@ -2821,6 +2831,7 @@ Returns a `TypeResolutionResult` with:
 
 .Resolving types by qualified name
 [example]
+====
 [source,ruby]
 ----
 # Resolve using prefixed name
@@ -2845,6 +2856,7 @@ unless result.found?
   puts "Type not found: #{result.local_name}"
 end
 ----
+====
 
 === Finding types and components
 
@@ -2866,6 +2878,7 @@ Where,
 
 .Finding types across namespaces
 [example]
+====
 [source,ruby]
 ----
 # Find in specific namespace
@@ -2881,6 +2894,7 @@ end
 # Find across all namespaces (may return first match)
 type = repo.find_type(name: 'CodeType')
 ----
+====
 
 === Validation
 
@@ -2907,6 +2921,7 @@ Returns a hash with:
 
 .Validating schema consistency
 [example]
+====
 [source,ruby]
 ----
 # Validate the repository
@@ -2928,6 +2943,7 @@ if validation[:warnings].any?
   end
 end
 ----
+====
 
 === Statistics and queries
 
@@ -2935,6 +2951,7 @@ The repository provides comprehensive statistics about parsed schemas.
 
 .Querying repository statistics
 [example]
+====
 [source,ruby]
 ----
 # Get overall statistics
@@ -2962,6 +2979,7 @@ end
 types = repo.types_in_namespace('http://www.opengis.net/gml/3.2')
 puts "GML has #{types.size} types"
 ----
+====
 
 === Packaging schemas
 
@@ -2989,6 +3007,7 @@ Where,
 
 .Exporting a schema repository
 [example]
+====
 [source,ruby]
 ----
 # Export repository to ZIP with metadata
@@ -3004,6 +3023,7 @@ repo.export_to_zip(
 
 puts "Exported to citygml_schemas.zip"
 ----
+====
 
 The ZIP package contains:
 
@@ -3033,6 +3053,7 @@ loaded.
 
 .Importing a schema repository
 [example]
+====
 [source,ruby]
 ----
 # Import from previously exported ZIP
@@ -3048,11 +3069,13 @@ puts "Loaded: #{metadata[:name]} v#{metadata[:version]}"
 result = repo.resolve_type(qualified_name: 'gml:CodeType')
 puts "Type found: #{result.found?}"
 ----
+====
 
 === Complete workflow example
 
 .Comprehensive schema repository workflow
 [example]
+====
 [source,ruby]
 ----
 require 'lutaml/xsd'
@@ -3138,6 +3161,7 @@ imported_repo = Lutaml::Xsd::SchemaRepository.import_from_zip(
 )
 puts "Imported repository with #{imported_repo.schema_count} schemas"
 ----
+====
 
 This example demonstrates the complete lifecycle:
 
@@ -3460,6 +3484,7 @@ working with attribute group objects in Liquid templates.
   {% endfor %}
 {% endfor %}
 ----
+====
 
 === ComplexType methods
 
@@ -3491,6 +3516,7 @@ working with complex type objects in Liquid templates.
   {% endfor %}
 {% endfor %}
 ----
+====
 
 === Group, Sequence, and Choice methods
 
@@ -3514,6 +3540,7 @@ templates.
   {% endfor %}
 {% endfor %}
 ----
+====
 
 === SimpleContent methods
 
@@ -3533,6 +3560,7 @@ working with simple content objects in Liquid templates.
   - {{ a.referenced_name }}
 {% endfor %}
 ----
+====
 
 === Extension methods
 
@@ -3551,6 +3579,7 @@ working with extension objects in Liquid templates.
   - {{ a.referenced_name }}
 {% endfor %}
 ----
+====
 
 === ResolvedElementOrder methods
 
@@ -3562,6 +3591,7 @@ helper method for maintaining original element order.
 
 .Using resolved element order in Liquid templates
 [example]
+====
 [source,liquid]
 ----
 {% assign ordered = ct.resolved_element_order %}
@@ -3569,6 +3599,7 @@ helper method for maintaining original element order.
   {{ el.name }} (position preserved from XSD)
 {% endfor %}
 ----
+====
 
 == Copyright
 
