@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'liquid'
+require_relative 'multiply_local_file_system'
 
 module Lutaml
   module Xsd
@@ -128,7 +129,14 @@ module Lutaml
         # @return [Liquid::Environment] Configured environment
         def create_liquid_environment
           env = Liquid::Environment.new
-          env.file_system = Liquid::LocalFileSystem.new(template_dir)
+
+          # include sub folders in template dir
+          template_dirs = Dir.glob "#{template_dir}/**/"
+
+          env.file_system = ::Lutaml::Xsd::Spa::LocalFileSystem.new(
+            template_dirs, ["%s.liquid", "_%s.liquid", "%s.html.liquid"]
+          )
+
           env.error_mode = :strict
           env
         end
