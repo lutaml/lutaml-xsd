@@ -9,9 +9,9 @@ module Lutaml
           class Dimensions
             def initialize(dimensions_hash)
               @dimensions = dimensions_hash
-              @box = BoxDimensions.new(@dimensions['box'] || {})
-              @spacing = SpacingDimensions.new(@dimensions['spacing'] || {})
-              @text = TextDimensions.new(@dimensions['text'] || {})
+              @box = BoxDimensions.new(@dimensions["box"] || {})
+              @spacing = SpacingDimensions.new(@dimensions["spacing"] || {})
+              @text = TextDimensions.new(@dimensions["text"] || {})
             end
 
             def box_width
@@ -60,9 +60,9 @@ module Lutaml
             attr_reader :width, :height, :corner_radius
 
             def initialize(box_hash)
-              @width = box_hash['width'] || 120
-              @height = box_hash['height'] || 30
-              @corner_radius = box_hash['corner_radius'] || 5
+              @width = box_hash["width"] || 120
+              @height = box_hash["height"] || 30
+              @corner_radius = box_hash["corner_radius"] || 5
             end
           end
 
@@ -71,9 +71,9 @@ module Lutaml
             attr_reader :horizontal, :vertical, :indent
 
             def initialize(spacing_hash)
-              @horizontal = spacing_hash['horizontal'] || 20
-              @vertical = spacing_hash['vertical'] || 15
-              @indent = spacing_hash['indent'] || 40
+              @horizontal = spacing_hash["horizontal"] || 20
+              @vertical = spacing_hash["vertical"] || 15
+              @indent = spacing_hash["indent"] || 40
             end
           end
 
@@ -82,10 +82,10 @@ module Lutaml
             attr_reader :offset_y, :font_size, :small_font_size, :icon_size
 
             def initialize(text_hash)
-              @offset_y = text_hash['offset_y'] || 20
-              @font_size = text_hash['font_size'] || 14
-              @small_font_size = text_hash['small_font_size'] || 10
-              @icon_size = text_hash['icon_size'] || 16
+              @offset_y = text_hash["offset_y"] || 20
+              @font_size = text_hash["font_size"] || 14
+              @small_font_size = text_hash["small_font_size"] || 10
+              @icon_size = text_hash["icon_size"] || 16
             end
           end
         end

@@ -15,9 +15,9 @@ RSpec.describe Lutaml::Xsd::Formatters::TextFormatter do
           invalid: 0,
           files: [
             { file: "schema1.xsd", valid: true },
-            { file: "schema2.xsd", valid: true }
+            { file: "schema2.xsd", valid: true },
           ],
-          failed_files: []
+          failed_files: [],
         }
       end
 
@@ -43,10 +43,11 @@ RSpec.describe Lutaml::Xsd::Formatters::TextFormatter do
           valid: 0,
           invalid: 2,
           files: [
-            { file: "invalid1.xsd", valid: false, error: "Not a valid XSD schema" },
-            { file: "invalid2.xsd", valid: false, error: "Invalid XML syntax" }
+            { file: "invalid1.xsd", valid: false,
+              error: "Not a valid XSD schema" },
+            { file: "invalid2.xsd", valid: false, error: "Invalid XML syntax" },
           ],
-          failed_files: ["invalid1.xsd", "invalid2.xsd"]
+          failed_files: ["invalid1.xsd", "invalid2.xsd"],
         }
       end
 
@@ -79,9 +80,9 @@ RSpec.describe Lutaml::Xsd::Formatters::TextFormatter do
           files: [
             { file: "valid1.xsd", valid: true },
             { file: "invalid.xsd", valid: false, error: "File not found" },
-            { file: "valid2.xsd", valid: true }
+            { file: "valid2.xsd", valid: true },
           ],
-          failed_files: ["invalid.xsd"]
+          failed_files: ["invalid.xsd"],
         }
       end
 
@@ -102,9 +103,9 @@ RSpec.describe Lutaml::Xsd::Formatters::TextFormatter do
           invalid: 0,
           files: [
             { file: "schema1.xsd", valid: true, detected_version: "1.0" },
-            { file: "schema2.xsd", valid: true, detected_version: "1.1" }
+            { file: "schema2.xsd", valid: true, detected_version: "1.1" },
           ],
-          failed_files: []
+          failed_files: [],
         }
       end
 
@@ -122,7 +123,7 @@ RSpec.describe Lutaml::Xsd::Formatters::TextFormatter do
           valid: 0,
           invalid: 0,
           files: [],
-          failed_files: []
+          failed_files: [],
         }
       end
 
@@ -142,9 +143,9 @@ RSpec.describe Lutaml::Xsd::Formatters::TextFormatter do
           valid: 1,
           invalid: 0,
           files: [
-            { file: "path/to/my schema (v1.0).xsd", valid: true }
+            { file: "path/to/my schema (v1.0).xsd", valid: true },
           ],
-          failed_files: []
+          failed_files: [],
         }
       end
 

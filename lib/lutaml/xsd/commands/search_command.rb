@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'base_command'
-require_relative '../type_searcher'
+require_relative "base_command"
+require_relative "../type_searcher"
 
 module Lutaml
   module Xsd
@@ -20,7 +20,7 @@ module Lutaml
           repository = ensure_resolved(repository)
 
           # Store package root for path display
-          @package_root = if @package_path.end_with?('.lxr')
+          @package_root = if @package_path.end_with?(".lxr")
                             # For LXR packages, get the temp extraction dir
                             repository.instance_variable_get(:@temp_extraction_dir) || Dir.pwd
                           else
@@ -39,7 +39,7 @@ module Lutaml
           verbose_output "  Namespace filter: #{options[:namespace] || 'none'}"
           verbose_output "  Category filter: #{options[:category] || 'none'}"
           verbose_output "  Result limit: #{options[:limit] || 20}"
-          verbose_output ''
+          verbose_output ""
 
           # Create searcher
           searcher = TypeSearcher.new(repository)
@@ -47,19 +47,19 @@ module Lutaml
           # Perform search
           results = searcher.search(
             @query,
-            in_field: options[:in] || 'both',
+            in_field: options[:in] || "both",
             namespace: options[:namespace],
             category: options[:category],
-            limit: options[:limit] || 20
+            limit: options[:limit] || 20,
           )
 
           # Display results
-          format = options[:format] || 'text'
+          format = options[:format] || "text"
 
           case format
-          when 'json'
+          when "json"
             output format_output(format_results_for_json(results), format)
-          when 'yaml'
+          when "yaml"
             output format_output(format_results_for_yaml(results), format)
           else
             display_text_results(results)
@@ -67,25 +67,25 @@ module Lutaml
         end
 
         def display_text_results(results)
-          require 'table_tennis'
+          require "table_tennis"
 
-          output '=' * 80
+          output "=" * 80
           output "Search Results: \"#{@query}\""
-          output '=' * 80
-          output ''
+          output "=" * 80
+          output ""
 
           if results.empty?
-            output 'No types found matching your search criteria.'
-            output ''
-            output 'Tips:'
-            output '  - Try searching with --in both (default) to search name and documentation'
-            output '  - Remove namespace or category filters to broaden results'
-            output '  - Try a shorter or more general search term'
+            output "No types found matching your search criteria."
+            output ""
+            output "Tips:"
+            output "  - Try searching with --in both (default) to search name and documentation"
+            output "  - Remove namespace or category filters to broaden results"
+            output "  - Try a shorter or more general search term"
             return
           end
 
           output "Found #{results.size} type(s)"
-          output ''
+          output ""
 
           # Group results by match type for better display
           by_match_type = results.group_by(&:match_type)
@@ -105,40 +105,44 @@ module Lutaml
             display_match_group(match_type, by_match_type[match_type])
           end
 
-          output ''
+          output ""
           output "💡 Use 'lutaml-xsd type find <qname> #{@package_path}' to view details"
         end
 
         def display_match_group(match_type, results)
           output match_type_label(match_type)
-          output '-' * 80
-          output ''
+          output "-" * 80
+          output ""
 
           results.each do |result|
             display_search_result(result)
           end
 
-          output ''
+          output ""
         end
 
         def display_search_result(result)
-          require 'table_tennis'
+          require "table_tennis"
 
           # Get schema file with package path
           schema_file = if result.schema_file
                           # Show relative path within package
-                          result.schema_file.sub(@package_root, '').sub(%r{^/}, '')
+                          result.schema_file.sub(@package_root, "").sub(%r{^/},
+                                                                        "")
                         else
-                          '(unknown)'
+                          "(unknown)"
                         end
 
           # Build result data
           result_data = [
-            { 'Property' => 'Qualified Name', 'Value' => result.qualified_name },
-            { 'Property' => 'Category', 'Value' => result.category.to_s },
-            { 'Property' => 'Namespace', 'Value' => result.namespace || '(none)' },
-            { 'Property' => 'Schema File', 'Value' => schema_file },
-            { 'Property' => 'Relevance', 'Value' => "#{result.relevance_score} (#{result.match_type})" }
+            { "Property" => "Qualified Name",
+              "Value" => result.qualified_name },
+            { "Property" => "Category", "Value" => result.category.to_s },
+            { "Property" => "Namespace",
+              "Value" => result.namespace || "(none)" },
+            { "Property" => "Schema File", "Value" => schema_file },
+            { "Property" => "Relevance",
+              "Value" => "#{result.relevance_score} (#{result.match_type})" },
           ]
 
           # Add annotation if present (renamed from "Documentation")
@@ -148,40 +152,41 @@ module Lutaml
                           else
                             result.documentation
                           end
-            result_data << { 'Property' => 'Annotation', 'Value' => doc_preview }
+            result_data << { "Property" => "Annotation",
+                             "Value" => doc_preview }
           end
 
           table = TableTennis.new(result_data)
           output table
-          output ''
+          output ""
         end
 
         def match_type_label(match_type)
           case match_type
-          when 'exact_name'
-            'Exact Name Match'
-          when 'name_starts_with'
-            'Name Starts With'
-          when 'name_contains'
-            'Name Contains'
-          when 'doc_exact_word'
-            'Documentation Exact Word Match'
-          when 'doc_contains'
-            'Documentation Contains'
+          when "exact_name"
+            "Exact Name Match"
+          when "name_starts_with"
+            "Name Starts With"
+          when "name_contains"
+            "Name Contains"
+          when "doc_exact_word"
+            "Documentation Exact Word Match"
+          when "doc_contains"
+            "Documentation Contains"
           else
-            'Other Matches'
+            "Other Matches"
           end
         end
 
         def format_results_for_json(results)
           {
             query: @query,
-            search_field: options[:in] || 'both',
+            search_field: options[:in] || "both",
             namespace_filter: options[:namespace],
             category_filter: options[:category],
             limit: options[:limit] || 20,
             total_results: results.size,
-            results: results.map(&:to_h)
+            results: results.map(&:to_h),
           }
         end
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'bundler/setup'
-require 'lutaml/xsd'
+require "bundler/setup"
+require "lutaml/xsd"
 
 # Build package with marshal format using YAML config
-yaml_config = File.expand_path('urban_function_repository.yml', __dir__)
+yaml_config = File.expand_path("urban_function_repository.yml", __dir__)
 repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(yaml_config)
 
 # Parse the repository
@@ -16,14 +16,14 @@ repository.resolve
 config = Lutaml::Xsd::PackageConfiguration.new(
   xsd_mode: :include_all,
   resolution_mode: :resolved,
-  serialization_format: :marshal
+  serialization_format: :marshal,
 )
 
 # Create builder
 builder = Lutaml::Xsd::PackageBuilder.new(config)
 
 # Build package data
-puts '=== ALL PROCESSED SCHEMAS BEFORE BUILD ==='
+puts "=== ALL PROCESSED SCHEMAS BEFORE BUILD ==="
 puts "Count: #{Lutaml::Xsd::Schema.processed_schemas.size}"
 Lutaml::Xsd::Schema.processed_schemas.keys.first(5).each do |loc|
   puts "  #{loc}"
@@ -66,7 +66,7 @@ package_data[:serialized_schemas].each_key do |schema_location|
   matched = false
   package_data[:xsd_files].each do |source_path, package_info|
     # Try absolute path comparison
-    schema_abs = if schema_location.start_with?('/')
+    schema_abs = if schema_location.start_with?("/")
                    File.absolute_path(schema_location)
                  else
                    begin
@@ -88,13 +88,13 @@ package_data[:serialized_schemas].each_key do |schema_location|
     break
   end
 
-  puts '    NO MATCH FOUND' unless matched
+  puts "    NO MATCH FOUND" unless matched
 end
 
 # Check for basicTypes.xsd specifically
 puts "\n=== FOCUS ON basicTypes.xsd ==="
 basicTypes_schemas = package_data[:serialized_schemas].select do |location, _|
-  location.include?('basicTypes.xsd')
+  location.include?("basicTypes.xsd")
 end
 
 puts "Found #{basicTypes_schemas.size} basicTypes.xsd schemas:"
@@ -105,7 +105,7 @@ basicTypes_schemas.each_key do |location|
 end
 
 basicTypes_xsd_files = package_data[:xsd_files].select do |source, _|
-  source.include?('basicTypes.xsd')
+  source.include?("basicTypes.xsd")
 end
 
 puts "\nFound #{basicTypes_xsd_files.size} basicTypes.xsd in xsd_files:"

@@ -34,13 +34,13 @@ module Lutaml
         metadata = build_metadata(
           repository,
           additional_metadata,
-          serialized_schemas_data
+          serialized_schemas_data,
         )
 
         {
           metadata: metadata,
           xsd_files: xsd_files,
-          serialized_schemas: serialized_schemas_data
+          serialized_schemas: serialized_schemas_data,
         }
       end
 
@@ -49,8 +49,8 @@ module Lutaml
       # @param metadata_hash [Hash] Metadata from package
       def load(repository, metadata_hash)
         # Backward compatibility: check for old serialized_schemas format
-        serialized_schemas = metadata_hash['serialized_schemas'] ||
-                             metadata_hash[:serialized_schemas]
+        serialized_schemas = metadata_hash["serialized_schemas"] ||
+          metadata_hash[:serialized_schemas]
 
         return unless serialized_schemas&.any?
 
@@ -103,12 +103,13 @@ module Lutaml
 
         all_schemas.each do |schema_location, schema|
           # Resolve schema location to actual file path
-          file_path = if schema_location.start_with?('/')
+          file_path = if schema_location.start_with?("/")
                         # Already an absolute file path
                         schema_location
                       else
                         # Relative path or HTTP URL - resolve using mappings
-                        resolve_schema_location_to_file(schema_location, glob_mappings)
+                        resolve_schema_location_to_file(schema_location,
+                                                        glob_mappings)
                       end
 
           # Skip if we couldn't resolve to a file path
@@ -143,7 +144,7 @@ module Lutaml
           to = mapping[:to]
 
           if from.is_a?(Regexp)
-            return location.gsub(from, to) if location =~ from
+            return location.gsub(from, to) if location&.match?(from)
           elsif location == from
             return to
           end
@@ -159,7 +160,7 @@ module Lutaml
 
         puts
         puts "⚠ WARNINGS (#{warnings.size})"
-        puts '─' * 70
+        puts "─" * 70
 
         warnings.each_with_index do |w, i|
           puts "#{i + 1}. #{w[:type]}: #{w[:reference]}"
@@ -169,9 +170,9 @@ module Lutaml
           puts
         end
 
-        puts '━' * 70
+        puts "━" * 70
         puts "Status: ✓ Package created with #{warnings.size} warning(s)"
-        puts 'Action: Review warnings and update config if needed'
+        puts "Action: Review warnings and update config if needed"
         puts
       end
 
@@ -181,12 +182,12 @@ module Lutaml
       def suggest_fix(error)
         message = error.message
 
-        if message.include?('not found')
-          'Check that all required schemas are included in dependencies'
-        elsif message.include?('namespace')
-          'Verify namespace URI is correct and schema is imported'
+        if message.include?("not found")
+          "Check that all required schemas are included in dependencies"
+        elsif message.include?("namespace")
+          "Verify namespace URI is correct and schema is imported"
         else
-          'Review schema dependencies and imports'
+          "Review schema dependencies and imports"
         end
       end
 
@@ -200,13 +201,15 @@ module Lutaml
       def build_metadata(repository, additional, serialized_schemas_data)
         metadata = SchemaRepositoryMetadata.from_repository(
           repository,
-          additional
+          additional,
         )
 
         # Add package configuration
         metadata.instance_variable_set(:@xsd_mode, @config.xsd_mode)
-        metadata.instance_variable_set(:@resolution_mode, @config.resolution_mode)
-        metadata.instance_variable_set(:@serialization_format, @config.serialization_format)
+        metadata.instance_variable_set(:@resolution_mode,
+                                       @config.resolution_mode)
+        metadata.instance_variable_set(:@serialization_format,
+                                       @config.serialization_format)
 
         # Backward compatibility: only add serialized_schemas for old format
         # (new format stores them separately in schemas_data/ directory)
@@ -217,7 +220,10 @@ module Lutaml
 
         # Clear schema_location_mappings if include_all mode
         # (all XSDs are bundled, mappings not needed and cause validation warnings)
-        metadata.instance_variable_set(:@schema_location_mappings, []) if @config.include_all_xsds?
+        if @config.include_all_xsds?
+          metadata.instance_variable_set(:@schema_location_mappings,
+                                         [])
+        end
 
         metadata
       end

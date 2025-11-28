@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../validation_rule'
+require_relative "../validation_rule"
 
 module Lutaml
   module Xsd
@@ -33,7 +33,7 @@ module Lutaml
           #
           # @return [String]
           def description
-            'Validates element content against XSD type definitions'
+            "Validates element content against XSD type definitions"
           end
 
           # Validate element type
@@ -73,11 +73,11 @@ module Lutaml
             # Check for inline type definition
             return schema_element.simple_type if
               schema_element.respond_to?(:simple_type) &&
-              schema_element.simple_type
+                schema_element.simple_type
 
             return schema_element.complex_type if
               schema_element.respond_to?(:complex_type) &&
-              schema_element.complex_type
+                schema_element.complex_type
 
             # Check for type reference
             if schema_element.respond_to?(:type) && schema_element.type
@@ -101,7 +101,7 @@ module Lutaml
 
             # Validate base type if present
             if simple_type.respond_to?(:restriction) &&
-               simple_type.restriction
+                simple_type.restriction
               validate_restriction(value, simple_type.restriction,
                                    xml_element, collector)
             elsif simple_type.respond_to?(:list) && simple_type.list
@@ -126,7 +126,7 @@ module Lutaml
 
             # Check for simple content
             if complex_type.respond_to?(:simple_content) &&
-               complex_type.simple_content
+                complex_type.simple_content
               validate_simple_content(xml_element, complex_type.simple_content,
                                       collector)
             end
@@ -206,21 +206,21 @@ module Lutaml
 
                 report_error(
                   collector,
-                  code: 'pattern_mismatch',
+                  code: "pattern_mismatch",
                   message: "Value '#{value}' does not match pattern " \
                            "'#{pattern_value}'",
                   location: xml_element.xpath,
                   context: {
                     value: value,
-                    pattern: pattern_value
-                  }
+                    pattern: pattern_value,
+                  },
                 )
               rescue RegexpError => e
                 report_warning(
                   collector,
-                  code: 'invalid_pattern',
+                  code: "invalid_pattern",
                   message: "Invalid pattern in schema: #{e.message}",
-                  location: xml_element.xpath
+                  location: xml_element.xpath,
                 )
               end
             end
@@ -243,15 +243,15 @@ module Lutaml
               if value_length != expected_length
                 report_error(
                   collector,
-                  code: 'length_mismatch',
+                  code: "length_mismatch",
                   message: "Value length #{value_length} does not equal " \
                            "required length #{expected_length}",
                   location: xml_element.xpath,
                   context: {
                     value: value,
                     expected_length: expected_length,
-                    actual_length: value_length
-                  }
+                    actual_length: value_length,
+                  },
                 )
               end
             end
@@ -262,15 +262,15 @@ module Lutaml
               if value_length < min_length
                 report_error(
                   collector,
-                  code: 'min_length_violation',
+                  code: "min_length_violation",
                   message: "Value length #{value_length} is less than " \
                            "minimum #{min_length}",
                   location: xml_element.xpath,
                   context: {
                     value: value,
                     min_length: min_length,
-                    actual_length: value_length
-                  }
+                    actual_length: value_length,
+                  },
                 )
               end
             end
@@ -283,15 +283,15 @@ module Lutaml
 
             report_error(
               collector,
-              code: 'max_length_violation',
+              code: "max_length_violation",
               message: "Value length #{value_length} exceeds maximum " \
                        "#{max_length}",
               location: xml_element.xpath,
               context: {
                 value: value,
                 max_length: max_length,
-                actual_length: value_length
-              }
+                actual_length: value_length,
+              },
             )
           end
 
@@ -329,14 +329,14 @@ module Lutaml
 
             report_error(
               collector,
-              code: 'enumeration_violation',
+              code: "enumeration_violation",
               message: "Value '#{value}' is not in enumeration",
               location: xml_element.xpath,
               context: {
                 value: value,
-                allowed_values: allowed_values
+                allowed_values: allowed_values,
               },
-              suggestion: "Use one of: #{allowed_values.join(', ')}"
+              suggestion: "Use one of: #{allowed_values.join(', ')}",
             )
           end
 
@@ -374,11 +374,11 @@ module Lutaml
             # Simple content means element has text content and attributes
             # Validate the text content as a simple type
             if simple_content.respond_to?(:extension) &&
-               simple_content.extension
+                simple_content.extension
               # Extension adds attributes to a simple type
               # Text content validation handled by base type
             elsif simple_content.respond_to?(:restriction) &&
-                  simple_content.restriction
+                simple_content.restriction
               # Restriction constrains a simple type
               value = xml_element.text_content
               validate_restriction(value, simple_content.restriction,

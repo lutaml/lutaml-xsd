@@ -7,7 +7,7 @@ RSpec.describe Lutaml::Xsd::FileValidationResult do
     it "creates a valid result" do
       result = described_class.new(
         file: "schema.xsd",
-        valid: true
+        valid: true,
       )
 
       expect(result.file).to eq("schema.xsd")
@@ -21,7 +21,7 @@ RSpec.describe Lutaml::Xsd::FileValidationResult do
       result = described_class.new(
         file: "bad.xsd",
         valid: false,
-        error: "Invalid XML syntax"
+        error: "Invalid XML syntax",
       )
 
       expect(result.file).to eq("bad.xsd")
@@ -34,7 +34,7 @@ RSpec.describe Lutaml::Xsd::FileValidationResult do
       result = described_class.new(
         file: "schema.xsd",
         valid: true,
-        detected_version: "1.1"
+        detected_version: "1.1",
       )
 
       expect(result.detected_version).to eq("1.1")
@@ -51,7 +51,7 @@ RSpec.describe Lutaml::Xsd::FileValidationResult do
       result = described_class.new(
         file: "test.xsd",
         valid: false,
-        error: "Error"
+        error: "Error",
       )
       expect(result.success?).to be false
     end
@@ -67,7 +67,7 @@ RSpec.describe Lutaml::Xsd::FileValidationResult do
       result = described_class.new(
         file: "test.xsd",
         valid: false,
-        error: "Error"
+        error: "Error",
       )
       expect(result.failure?).to be true
     end
@@ -78,7 +78,7 @@ RSpec.describe Lutaml::Xsd::FileValidationResult do
       result = described_class.new(
         file: "schema.xsd",
         valid: true,
-        detected_version: "1.0"
+        detected_version: "1.0",
       )
 
       hash = result.to_h
@@ -92,7 +92,7 @@ RSpec.describe Lutaml::Xsd::FileValidationResult do
       result = described_class.new(
         file: "bad.xsd",
         valid: false,
-        error: "Invalid XML"
+        error: "Invalid XML",
       )
 
       hash = result.to_h
@@ -107,9 +107,9 @@ RSpec.describe Lutaml::Xsd::FileValidationResult do
       hash = result.to_h
 
       expect(hash).to eq({
-        file: "test.xsd",
-        valid: true
-      })
+                           file: "test.xsd",
+                           valid: true,
+                         })
     end
   end
 
@@ -123,7 +123,7 @@ RSpec.describe Lutaml::Xsd::FileValidationResult do
       result = described_class.new(
         file: "bad.xsd",
         valid: false,
-        error: "Not a valid XSD"
+        error: "Not a valid XSD",
       )
       expect(result.to_s).to eq("bad.xsd: INVALID - Not a valid XSD")
     end

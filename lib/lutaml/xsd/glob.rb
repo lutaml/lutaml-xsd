@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'net/http'
+require "net/http"
 
 module Lutaml
   module Xsd
@@ -72,7 +72,7 @@ module Lutaml
       def is_absolute_path?(path)
         # Unix/Linux/macOS: starts with /
         # Windows: starts with drive letter (e.g., C:\)
-        path.start_with?('/') || path.match?(%r{^[A-Za-z]:[\\/]})
+        path.start_with?("/") || path.match?(%r{^[A-Za-z]:[\\/]})
       end
 
       def resolve_schema_location(schema_location)
@@ -80,8 +80,8 @@ module Lutaml
 
         # Iterate through mappings array
         schema_mappings.each do |mapping|
-          from = mapping[:from] || mapping['from']
-          to = mapping[:to] || mapping['to']
+          from = mapping[:from] || mapping["from"]
+          to = mapping[:to] || mapping["to"]
           next unless from && to
 
           # Check for exact string match
@@ -98,7 +98,7 @@ module Lutaml
       end
 
       def schema_location_path(schema_location)
-        separator = '/' unless schema_location&.start_with?('/') || location&.end_with?('/')
+        separator = "/" unless schema_location&.start_with?("/") || location&.end_with?("/")
 
         location_params = [location, schema_location].compact
         url? ? location_params.join(separator) : File.join(location_params)

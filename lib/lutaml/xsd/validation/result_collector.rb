@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'validation_result'
-require_relative 'validation_error'
+require_relative "validation_result"
+require_relative "validation_error"
 
 module Lutaml
   module Xsd
@@ -141,7 +141,7 @@ module Lutaml
           {
             errors: @errors.size,
             warnings: @warnings.size,
-            infos: @infos.size
+            infos: @infos.size,
           }
         end
 
@@ -153,7 +153,7 @@ module Lutaml
             valid: !has_errors?,
             errors: @errors.dup,
             warnings: @warnings.dup,
-            infos: @infos.dup
+            infos: @infos.dup,
           )
         end
 
@@ -198,7 +198,7 @@ module Lutaml
             warnings: @warnings.map(&:to_h),
             infos: @infos.map(&:to_h),
             counts: count_by_severity,
-            valid: !has_errors?
+            valid: !has_errors?,
           }
         end
 

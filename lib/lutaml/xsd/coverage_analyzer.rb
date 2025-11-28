@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'dependency_grapher'
+require_relative "dependency_grapher"
 
 module Lutaml
   module Xsd
@@ -32,7 +32,7 @@ module Lutaml
           all_types: all_types,
           used_types: used_types,
           entry_types: entry_types,
-          by_namespace: by_namespace
+          by_namespace: by_namespace,
         )
       end
 
@@ -100,12 +100,12 @@ module Lutaml
         by_ns = {}
 
         @type_index.all.each do |clark_key, type_info|
-          ns = type_info[:namespace] || '(no namespace)'
+          ns = type_info[:namespace] || "(no namespace)"
 
           by_ns[ns] ||= {
             total: 0,
             used: 0,
-            types: []
+            types: [],
           }
 
           by_ns[ns][:total] += 1
@@ -113,7 +113,7 @@ module Lutaml
             clark_key: clark_key,
             name: type_info[:definition]&.name,
             category: type_info[:type],
-            used: used_types.include?(clark_key)
+            used: used_types.include?(clark_key),
           }
 
           by_ns[ns][:used] += 1 if used_types.include?(clark_key)
@@ -197,10 +197,10 @@ module Lutaml
             used_types: used_count,
             unused_types: unused_count,
             coverage_percentage: coverage_percentage,
-            entry_types: entry_types
+            entry_types: entry_types,
           },
           by_namespace: format_namespace_data,
-          unused_type_details: format_unused_types
+          unused_type_details: format_unused_types,
         }
       end
 
@@ -216,7 +216,7 @@ module Lutaml
             total: data[:total],
             used: data[:used],
             unused: data[:total] - data[:used],
-            coverage_percentage: data[:coverage_percentage]
+            coverage_percentage: data[:coverage_percentage],
           }
         end
 
@@ -236,7 +236,7 @@ module Lutaml
               namespace: ns,
               name: type_info[:name],
               category: type_info[:category],
-              clark_key: type_info[:clark_key]
+              clark_key: type_info[:clark_key],
             }
           end
         end

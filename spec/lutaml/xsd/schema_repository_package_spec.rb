@@ -1,24 +1,26 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-require 'tempfile'
-require 'tmpdir'
+require "spec_helper"
+require "tempfile"
+require "tmpdir"
 
 RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
-  let(:fixtures_path) { File.expand_path('../../fixtures', __dir__) }
-  let(:urban_function_xsd) { File.join(fixtures_path, 'i-ur/urbanFunction.xsd') }
-  let(:urban_object_xsd) { File.join(fixtures_path, 'i-ur/urbanObject.xsd') }
+  let(:fixtures_path) { File.expand_path("../../fixtures", __dir__) }
+  let(:urban_function_xsd) do
+    File.join(fixtures_path, "i-ur/urbanFunction.xsd")
+  end
+  let(:urban_object_xsd) { File.join(fixtures_path, "i-ur/urbanObject.xsd") }
 
-  describe '.create' do
-    it 'creates a package from a repository' do
-      temp_zip = Tempfile.new(['test_package', '.zip']).path
+  describe ".create" do
+    it "creates a package from a repository" do
+      temp_zip = Tempfile.new(["test_package", ".zip"]).path
 
       # Create repository
       repo = Lutaml::Xsd::SchemaRepository.new(
         files: [urban_function_xsd],
         namespace_mappings: [
-          Lutaml::Xsd::NamespaceMapping.new(prefix: 'urf', uri: 'https://www.geospatial.jp/iur/urf/3.2')
-        ]
+          Lutaml::Xsd::NamespaceMapping.new(prefix: "urf", uri: "https://www.geospatial.jp/iur/urf/3.2"),
+        ],
       )
       repo.parse.resolve
 
@@ -26,7 +28,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
       config = Lutaml::Xsd::PackageConfiguration.new(
         xsd_mode: :include_all,
         resolution_mode: :resolved,
-        serialization_format: :marshal
+        serialization_format: :marshal,
       )
 
       # Create package
@@ -34,22 +36,23 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         repository: repo,
         output_path: temp_zip,
         config: config,
-        metadata: { name: 'Test Package', version: '1.0' }
+        metadata: { name: "Test Package", version: "1.0" },
       )
 
       expect(package).to be_a(described_class)
       expect(package.zip_path).to eq(temp_zip)
       expect(File.exist?(temp_zip)).to be true
-      expect(package.metadata).to include('name' => 'Test Package', 'version' => '1.0')
+      expect(package.metadata).to include("name" => "Test Package",
+                                          "version" => "1.0")
 
       FileUtils.rm_f(temp_zip)
     end
   end
 
-  describe '#validate' do
-    context 'with a valid package' do
-      it 'returns successful validation result' do
-        temp_zip = Tempfile.new(['valid_package', '.zip']).path
+  describe "#validate" do
+    context "with a valid package" do
+      it "returns successful validation result" do
+        temp_zip = Tempfile.new(["valid_package", ".zip"]).path
 
         # Create a minimal self-contained schema
         simple_schema = <<~XSD
@@ -60,15 +63,15 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
           </xs:schema>
         XSD
 
-        simple_xsd_path = File.join(Dir.tmpdir, 'validation_test.xsd')
+        simple_xsd_path = File.join(Dir.tmpdir, "validation_test.xsd")
         File.write(simple_xsd_path, simple_schema)
 
         begin
           repo = Lutaml::Xsd::SchemaRepository.new(
             files: [simple_xsd_path],
             namespace_mappings: [
-              Lutaml::Xsd::NamespaceMapping.new(prefix: 'test', uri: 'http://example.com/test')
-            ]
+              Lutaml::Xsd::NamespaceMapping.new(prefix: "test", uri: "http://example.com/test"),
+            ],
           )
           repo.parse.resolve
 
@@ -76,10 +79,11 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
           config = Lutaml::Xsd::PackageConfiguration.new(
             xsd_mode: :include_all,
             resolution_mode: :resolved,
-            serialization_format: :marshal
+            serialization_format: :marshal,
           )
 
-          described_class.create(repository: repo, output_path: temp_zip, config: config)
+          described_class.create(repository: repo, output_path: temp_zip,
+                                 config: config)
 
           # Validate
           package = described_class.new(temp_zip)
@@ -94,8 +98,8 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         end
       end
 
-      it 'includes metadata in validation result' do
-        temp_zip = Tempfile.new(['metadata_package', '.zip']).path
+      it "includes metadata in validation result" do
+        temp_zip = Tempfile.new(["metadata_package", ".zip"]).path
 
         simple_schema = <<~XSD
           <?xml version="1.0" encoding="UTF-8"?>
@@ -105,15 +109,15 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
           </xs:schema>
         XSD
 
-        simple_xsd_path = File.join(Dir.tmpdir, 'metadata_test.xsd')
+        simple_xsd_path = File.join(Dir.tmpdir, "metadata_test.xsd")
         File.write(simple_xsd_path, simple_schema)
 
         begin
           repo = Lutaml::Xsd::SchemaRepository.new(
             files: [simple_xsd_path],
             namespace_mappings: [
-              Lutaml::Xsd::NamespaceMapping.new(prefix: 'test', uri: 'http://example.com/test')
-            ]
+              Lutaml::Xsd::NamespaceMapping.new(prefix: "test", uri: "http://example.com/test"),
+            ],
           )
           repo.parse.resolve
 
@@ -121,21 +125,21 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
           config = Lutaml::Xsd::PackageConfiguration.new(
             xsd_mode: :include_all,
             resolution_mode: :resolved,
-            serialization_format: :marshal
+            serialization_format: :marshal,
           )
 
           described_class.create(
             repository: repo,
             output_path: temp_zip,
             config: config,
-            metadata: { description: 'Test description' }
+            metadata: { description: "Test description" },
           )
 
           package = described_class.new(temp_zip)
           result = package.validate
 
-          expect(result.metadata).to include('description' => 'Test description')
-          expect(result.metadata).to include('lutaml_xsd_version')
+          expect(result.metadata).to include("description" => "Test description")
+          expect(result.metadata).to include("lutaml_xsd_version")
         ensure
           FileUtils.rm_f(simple_xsd_path)
           FileUtils.rm_f(temp_zip)
@@ -143,9 +147,9 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
       end
     end
 
-    context 'with a missing package file' do
-      it 'returns validation error' do
-        package = described_class.new('/nonexistent/package.zip')
+    context "with a missing package file" do
+      it "returns validation error" do
+        package = described_class.new("/nonexistent/package.zip")
         result = package.validate
 
         expect(result.valid?).to be false
@@ -153,13 +157,13 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
       end
     end
 
-    context 'with invalid package structure' do
-      it 'detects missing metadata.yaml' do
-        temp_zip = Tempfile.new(['no_metadata', '.zip']).path
+    context "with invalid package structure" do
+      it "detects missing metadata.yaml" do
+        temp_zip = Tempfile.new(["no_metadata", ".zip"]).path
 
         Zip::File.open(temp_zip, create: true) do |zipfile|
-          zipfile.get_output_stream('schemas/test.xsd') do |f|
-            f.write('<schema/>')
+          zipfile.get_output_stream("schemas/test.xsd") do |f|
+            f.write("<schema/>")
           end
         end
 
@@ -172,16 +176,16 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         FileUtils.rm_f(temp_zip)
       end
 
-      it 'detects missing schemas directory' do
-        temp_zip = Tempfile.new(['no_schemas', '.zip']).path
+      it "detects missing schemas directory" do
+        temp_zip = Tempfile.new(["no_schemas", ".zip"]).path
 
         Zip::File.open(temp_zip, create: true) do |zipfile|
-          zipfile.get_output_stream('metadata.yaml') do |f|
+          zipfile.get_output_stream("metadata.yaml") do |f|
             f.write({
-              'files' => [],
-              'namespace_mappings' => [],
-              'created_at' => Time.now.iso8601,
-              'lutaml_xsd_version' => Lutaml::Xsd::VERSION
+              "files" => [],
+              "namespace_mappings" => [],
+              "created_at" => Time.now.iso8601,
+              "lutaml_xsd_version" => Lutaml::Xsd::VERSION,
             }.to_yaml)
           end
         end
@@ -196,16 +200,16 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
       end
     end
 
-    context 'with invalid metadata' do
-      it 'detects missing required fields' do
-        temp_zip = Tempfile.new(['invalid_metadata', '.zip']).path
+    context "with invalid metadata" do
+      it "detects missing required fields" do
+        temp_zip = Tempfile.new(["invalid_metadata", ".zip"]).path
 
         Zip::File.open(temp_zip, create: true) do |zipfile|
-          zipfile.get_output_stream('metadata.yaml') do |f|
-            f.write({ 'files' => [] }.to_yaml)
+          zipfile.get_output_stream("metadata.yaml") do |f|
+            f.write({ "files" => [] }.to_yaml)
           end
-          zipfile.get_output_stream('schemas/test.xsd') do |f|
-            f.write('<schema/>')
+          zipfile.get_output_stream("schemas/test.xsd") do |f|
+            f.write("<schema/>")
           end
         end
 
@@ -218,20 +222,20 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         FileUtils.rm_f(temp_zip)
       end
 
-      it 'detects invalid field types' do
-        temp_zip = Tempfile.new(['wrong_types', '.zip']).path
+      it "detects invalid field types" do
+        temp_zip = Tempfile.new(["wrong_types", ".zip"]).path
 
         Zip::File.open(temp_zip, create: true) do |zipfile|
-          zipfile.get_output_stream('metadata.yaml') do |f|
+          zipfile.get_output_stream("metadata.yaml") do |f|
             f.write({
-              'files' => 'not_an_array',
-              'namespace_mappings' => [],
-              'created_at' => Time.now.iso8601,
-              'lutaml_xsd_version' => Lutaml::Xsd::VERSION
+              "files" => "not_an_array",
+              "namespace_mappings" => [],
+              "created_at" => Time.now.iso8601,
+              "lutaml_xsd_version" => Lutaml::Xsd::VERSION,
             }.to_yaml)
           end
-          zipfile.get_output_stream('schemas/test.xsd') do |f|
-            f.write('<schema/>')
+          zipfile.get_output_stream("schemas/test.xsd") do |f|
+            f.write("<schema/>")
           end
         end
 
@@ -244,20 +248,20 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         FileUtils.rm_f(temp_zip)
       end
 
-      it 'detects invalid namespace mappings' do
-        temp_zip = Tempfile.new(['invalid_ns', '.zip']).path
+      it "detects invalid namespace mappings" do
+        temp_zip = Tempfile.new(["invalid_ns", ".zip"]).path
 
         Zip::File.open(temp_zip, create: true) do |zipfile|
-          zipfile.get_output_stream('metadata.yaml') do |f|
+          zipfile.get_output_stream("metadata.yaml") do |f|
             f.write({
-              'files' => [],
-              'namespace_mappings' => [{ 'prefix' => 'gml' }], # Missing uri
-              'created_at' => Time.now.iso8601,
-              'lutaml_xsd_version' => Lutaml::Xsd::VERSION
+              "files" => [],
+              "namespace_mappings" => [{ "prefix" => "gml" }], # Missing uri
+              "created_at" => Time.now.iso8601,
+              "lutaml_xsd_version" => Lutaml::Xsd::VERSION,
             }.to_yaml)
           end
-          zipfile.get_output_stream('schemas/test.xsd') do |f|
-            f.write('<schema/>')
+          zipfile.get_output_stream("schemas/test.xsd") do |f|
+            f.write("<schema/>")
           end
         end
 
@@ -271,24 +275,25 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
       end
     end
 
-    context 'with external dependencies' do
-      it 'detects HTTP/HTTPS dependencies as errors' do
-        temp_zip = Tempfile.new(['external_http', '.zip']).path
+    context "with external dependencies" do
+      it "detects HTTP/HTTPS dependencies as errors" do
+        temp_zip = Tempfile.new(["external_http", ".zip"]).path
 
         Zip::File.open(temp_zip, create: true) do |zipfile|
-          zipfile.get_output_stream('metadata.yaml') do |f|
+          zipfile.get_output_stream("metadata.yaml") do |f|
             f.write({
-              'files' => ['test.xsd'],
-              'namespace_mappings' => [],
-              'schema_location_mappings' => [
-                { 'from' => '../../gml.xsd', 'to' => 'http://example.com/gml.xsd' }
+              "files" => ["test.xsd"],
+              "namespace_mappings" => [],
+              "schema_location_mappings" => [
+                { "from" => "../../gml.xsd",
+                  "to" => "http://example.com/gml.xsd" },
               ],
-              'created_at' => Time.now.iso8601,
-              'lutaml_xsd_version' => Lutaml::Xsd::VERSION
+              "created_at" => Time.now.iso8601,
+              "lutaml_xsd_version" => Lutaml::Xsd::VERSION,
             }.to_yaml)
           end
-          zipfile.get_output_stream('schemas/test.xsd') do |f|
-            f.write('<schema/>')
+          zipfile.get_output_stream("schemas/test.xsd") do |f|
+            f.write("<schema/>")
           end
         end
 
@@ -301,23 +306,23 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         FileUtils.rm_f(temp_zip)
       end
 
-      it 'detects absolute/relative path dependencies as warnings' do
-        temp_zip = Tempfile.new(['external_path', '.zip']).path
+      it "detects absolute/relative path dependencies as warnings" do
+        temp_zip = Tempfile.new(["external_path", ".zip"]).path
 
         Zip::File.open(temp_zip, create: true) do |zipfile|
-          zipfile.get_output_stream('metadata.yaml') do |f|
+          zipfile.get_output_stream("metadata.yaml") do |f|
             f.write({
-              'files' => ['test.xsd'],
-              'namespace_mappings' => [],
-              'schema_location_mappings' => [
-                { 'from' => 'gml.xsd', 'to' => '/absolute/path/gml.xsd' }
+              "files" => ["test.xsd"],
+              "namespace_mappings" => [],
+              "schema_location_mappings" => [
+                { "from" => "gml.xsd", "to" => "/absolute/path/gml.xsd" },
               ],
-              'created_at' => Time.now.iso8601,
-              'lutaml_xsd_version' => Lutaml::Xsd::VERSION
+              "created_at" => Time.now.iso8601,
+              "lutaml_xsd_version" => Lutaml::Xsd::VERSION,
             }.to_yaml)
           end
-          zipfile.get_output_stream('schemas/test.xsd') do |f|
-            f.write('<schema/>')
+          zipfile.get_output_stream("schemas/test.xsd") do |f|
+            f.write("<schema/>")
           end
         end
 
@@ -330,21 +335,21 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
       end
     end
 
-    context 'with version compatibility' do
-      it 'warns about newer package versions' do
-        temp_zip = Tempfile.new(['newer_version', '.zip']).path
+    context "with version compatibility" do
+      it "warns about newer package versions" do
+        temp_zip = Tempfile.new(["newer_version", ".zip"]).path
 
         Zip::File.open(temp_zip, create: true) do |zipfile|
-          zipfile.get_output_stream('metadata.yaml') do |f|
+          zipfile.get_output_stream("metadata.yaml") do |f|
             f.write({
-              'files' => [],
-              'namespace_mappings' => [],
-              'created_at' => Time.now.iso8601,
-              'lutaml_xsd_version' => '99.99.99'
+              "files" => [],
+              "namespace_mappings" => [],
+              "created_at" => Time.now.iso8601,
+              "lutaml_xsd_version" => "99.99.99",
             }.to_yaml)
           end
-          zipfile.get_output_stream('schemas/test.xsd') do |f|
-            f.write('<schema/>')
+          zipfile.get_output_stream("schemas/test.xsd") do |f|
+            f.write("<schema/>")
           end
         end
 
@@ -358,9 +363,9 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
     end
   end
 
-  describe '#load_repository' do
-    it 'loads a repository with correct configuration from package' do
-      temp_zip = Tempfile.new(['load_test', '.zip']).path
+  describe "#load_repository" do
+    it "loads a repository with correct configuration from package" do
+      temp_zip = Tempfile.new(["load_test", ".zip"]).path
 
       # Create a minimal schema file
       simple_schema = <<~XSD
@@ -372,7 +377,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         </xs:schema>
       XSD
 
-      simple_xsd_path = File.join(Dir.tmpdir, 'simple_test.xsd')
+      simple_xsd_path = File.join(Dir.tmpdir, "simple_test.xsd")
       File.write(simple_xsd_path, simple_schema)
 
       begin
@@ -380,18 +385,19 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         repo = Lutaml::Xsd::SchemaRepository.new(
           files: [simple_xsd_path],
           namespace_mappings: [
-            Lutaml::Xsd::NamespaceMapping.new(prefix: 'test', uri: 'http://example.com/test')
-          ]
+            Lutaml::Xsd::NamespaceMapping.new(prefix: "test", uri: "http://example.com/test"),
+          ],
         )
         repo.parse.resolve
 
         config = Lutaml::Xsd::PackageConfiguration.new(
           xsd_mode: :include_all,
           resolution_mode: :resolved,
-          serialization_format: :marshal
+          serialization_format: :marshal,
         )
 
-        described_class.create(repository: repo, output_path: temp_zip, config: config)
+        described_class.create(repository: repo, output_path: temp_zip,
+                               config: config)
 
         # Load package - returns unparsed repository
         package = described_class.new(temp_zip)
@@ -401,34 +407,36 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         expect(loaded_repo).to be_a(Lutaml::Xsd::SchemaRepository)
         expect(loaded_repo.files).not_to be_empty
         expect(loaded_repo.namespace_mappings.size).to be > 0
-        expect(loaded_repo.namespace_mappings.first.prefix).to eq('test')
-        expect(loaded_repo.namespace_mappings.first.uri).to eq('http://example.com/test')
+        expect(loaded_repo.namespace_mappings.first.prefix).to eq("test")
+        expect(loaded_repo.namespace_mappings.first.uri).to eq("http://example.com/test")
       ensure
         FileUtils.rm_f(simple_xsd_path)
         FileUtils.rm_f(temp_zip)
       end
     end
 
-    it 'raises error for invalid package' do
-      temp_zip = Tempfile.new(['invalid_load', '.zip']).path
+    it "raises error for invalid package" do
+      temp_zip = Tempfile.new(["invalid_load", ".zip"]).path
 
       Zip::File.open(temp_zip, create: true) do |zipfile|
-        zipfile.get_output_stream('invalid.txt') do |f|
-          f.write('not a valid package')
+        zipfile.get_output_stream("invalid.txt") do |f|
+          f.write("not a valid package")
         end
       end
 
       package = described_class.new(temp_zip)
 
-      expect { package.load_repository }.to raise_error(Lutaml::Xsd::Error, /Invalid package/)
+      expect do
+        package.load_repository
+      end.to raise_error(Lutaml::Xsd::Error, /Invalid package/)
 
       FileUtils.rm_f(temp_zip)
     end
   end
 
-  describe '#write_from_repository' do
-    it 'writes package with all required components' do
-      temp_zip = Tempfile.new(['write_test', '.zip']).path
+  describe "#write_from_repository" do
+    it "writes package with all required components" do
+      temp_zip = Tempfile.new(["write_test", ".zip"]).path
 
       # Create a minimal self-contained schema
       simple_schema = <<~XSD
@@ -439,15 +447,15 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         </xs:schema>
       XSD
 
-      simple_xsd_path = File.join(Dir.tmpdir, 'write_test.xsd')
+      simple_xsd_path = File.join(Dir.tmpdir, "write_test.xsd")
       File.write(simple_xsd_path, simple_schema)
 
       begin
         repo = Lutaml::Xsd::SchemaRepository.new(
           files: [simple_xsd_path],
           namespace_mappings: [
-            Lutaml::Xsd::NamespaceMapping.new(prefix: 'wt', uri: 'http://example.com/write')
-          ]
+            Lutaml::Xsd::NamespaceMapping.new(prefix: "wt", uri: "http://example.com/write"),
+          ],
         )
         repo.parse.resolve
 
@@ -455,22 +463,23 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         config = Lutaml::Xsd::PackageConfiguration.new(
           xsd_mode: :include_all,
           resolution_mode: :resolved,
-          serialization_format: :marshal
+          serialization_format: :marshal,
         )
 
         package = described_class.new(temp_zip)
-        result_path = package.write_from_repository(repo, config, { custom: 'value' })
+        result_path = package.write_from_repository(repo, config,
+                                                    { custom: "value" })
 
         expect(result_path).to eq(temp_zip)
         expect(File.exist?(temp_zip)).to be true
 
         # Verify ZIP contents
         Zip::File.open(temp_zip) do |zipfile|
-          expect(zipfile.find_entry('metadata.yaml')).not_to be_nil
-          expect(zipfile.glob('schemas/*.xsd').size).to be > 0
+          expect(zipfile.find_entry("metadata.yaml")).not_to be_nil
+          expect(zipfile.glob("schemas/*.xsd").size).to be > 0
         end
 
-        expect(package.metadata).to include('custom' => 'value')
+        expect(package.metadata).to include("custom" => "value")
       ensure
         FileUtils.rm_f(simple_xsd_path)
         FileUtils.rm_f(temp_zip)
@@ -478,14 +487,14 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
     end
   end
 
-  describe 'ValidationResult' do
-    describe '#to_h' do
-      it 'converts validation result to hash' do
+  describe "ValidationResult" do
+    describe "#to_h" do
+      it "converts validation result to hash" do
         result = Lutaml::Xsd::SchemaRepositoryPackage::ValidationResult.new(
           valid: true,
           errors: [],
-          warnings: ['warning 1'],
-          metadata: { 'version' => '1.0' }
+          warnings: ["warning 1"],
+          metadata: { "version" => "1.0" },
         )
 
         hash = result.to_h
@@ -493,8 +502,8 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         expect(hash).to include(
           valid?: true,
           errors: [],
-          warnings: ['warning 1'],
-          metadata: { 'version' => '1.0' }
+          warnings: ["warning 1"],
+          metadata: { "version" => "1.0" },
         )
       end
     end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'yaml'
+require "yaml"
 
 module Lutaml
   module Xsd
@@ -23,8 +23,8 @@ module Lutaml
       class ConfigurationLoader
         # Default configuration directory
         DEFAULT_CONFIG_DIR = File.expand_path(
-          '../../../../config/spa',
-          __dir__
+          "../../../../config/spa",
+          __dir__,
         )
 
         attr_reader :config_dir
@@ -41,7 +41,7 @@ module Lutaml
         #
         # @return [Hash] Theme configuration
         def theme
-          load_config('ui_theme', default_theme)
+          load_config("ui_theme", default_theme)
         end
         alias load_ui_theme theme
         alias load_theme theme
@@ -50,7 +50,7 @@ module Lutaml
         #
         # @return [Hash] Features configuration
         def features
-          load_config('features', default_features)
+          load_config("features", default_features)
         end
         alias load_features features
 
@@ -58,7 +58,7 @@ module Lutaml
         #
         # @return [Hash] Templates configuration
         def templates
-          load_config('templates', default_templates)
+          load_config("templates", default_templates)
         end
         alias load_templates templates
 
@@ -68,8 +68,14 @@ module Lutaml
         # @param dark_mode [Boolean] Whether to use dark theme colors
         # @return [String] Color hex value
         def color(key, dark_mode: false)
-          colors = dark_mode ? theme.dig('theme', 'dark_colors') : theme.dig('theme', 'colors')
-          colors&.fetch(key, nil) || '#000000'
+          colors = if dark_mode
+                     theme.dig("theme",
+                               "dark_colors")
+                   else
+                     theme.dig("theme",
+                               "colors")
+                   end
+          colors&.fetch(key, nil) || "#000000"
         end
 
         # Get typography value from theme
@@ -77,7 +83,7 @@ module Lutaml
         # @param key [String] Typography key
         # @return [String] Typography value
         def typography(key)
-          theme.dig('theme', 'typography', key)
+          theme.dig("theme", "typography", key)
         end
 
         # Get layout value from theme
@@ -85,7 +91,7 @@ module Lutaml
         # @param key [String] Layout key
         # @return [String] Layout value
         def layout(key)
-          theme.dig('theme', 'layout', key)
+          theme.dig("theme", "layout", key)
         end
 
         # Check if a feature is enabled
@@ -93,7 +99,7 @@ module Lutaml
         # @param feature [String] Feature name
         # @return [Boolean] True if feature is enabled
         def feature_enabled?(feature)
-          features.dig('features', feature, 'enabled') || false
+          features.dig("features", feature, "enabled") || false
         end
 
         # Get feature setting
@@ -103,15 +109,15 @@ module Lutaml
         # @param default [Object] Default value if not found
         # @return [Object] Setting value
         def feature_setting(feature, setting, default: nil)
-          features.dig('features', feature, setting) || default
+          features.dig("features", feature, setting) || default
         end
 
         # Get template layout components
         #
         # @param layout_name [String] Layout name (default: "default")
         # @return [Array<String>] List of component names
-        def template_components(layout_name: 'default')
-          templates.dig('templates', 'layouts', layout_name, 'components') || []
+        def template_components(layout_name: "default")
+          templates.dig("templates", "layouts", layout_name, "components") || []
         end
 
         # Get partial template path
@@ -119,7 +125,7 @@ module Lutaml
         # @param partial_name [String] Partial name
         # @return [String, nil] Partial template path
         def partial_template(partial_name)
-          templates.dig('templates', 'partials', partial_name, 'template')
+          templates.dig("templates", "partials", partial_name, "template")
         end
 
         # Reload all configurations (clears cache)
@@ -159,25 +165,25 @@ module Lutaml
         # @return [Hash] Default theme
         def default_theme
           {
-            'theme' => {
-              'colors' => {
-                'primary' => '#2563eb',
-                'secondary' => '#64748b',
-                'background_primary' => '#ffffff',
-                'text_primary' => '#0f172a',
-                'border_light' => '#e2e8f0'
+            "theme" => {
+              "colors" => {
+                "primary" => "#2563eb",
+                "secondary" => "#64748b",
+                "background_primary" => "#ffffff",
+                "text_primary" => "#0f172a",
+                "border_light" => "#e2e8f0",
               },
-              'typography' => {
-                'font_family' => 'system-ui, sans-serif',
-                'font_size_base' => '1rem',
-                'line_height_normal' => '1.5'
+              "typography" => {
+                "font_family" => "system-ui, sans-serif",
+                "font_size_base" => "1rem",
+                "line_height_normal" => "1.5",
               },
-              'layout' => {
-                'sidebar_width' => '280px',
-                'header_height' => '64px',
-                'max_width_xl' => '1280px'
-              }
-            }
+              "layout" => {
+                "sidebar_width" => "280px",
+                "header_height" => "64px",
+                "max_width_xl" => "1280px",
+              },
+            },
           }
         end
 
@@ -186,12 +192,12 @@ module Lutaml
         # @return [Hash] Default features
         def default_features
           {
-            'features' => {
-              'search' => { 'enabled' => true },
-              'filtering' => { 'enabled' => true },
-              'navigation' => { 'enabled' => true },
-              'documentation' => { 'enabled' => true }
-            }
+            "features" => {
+              "search" => { "enabled" => true },
+              "filtering" => { "enabled" => true },
+              "navigation" => { "enabled" => true },
+              "documentation" => { "enabled" => true },
+            },
           }
         end
 
@@ -200,28 +206,29 @@ module Lutaml
         # @return [Hash] Default templates
         def default_templates
           {
-            'templates' => {
-              'layout' => 'default',
-              'layouts' => {
-                'default' => {
-                  'components' => %w[head header navigation search content footer scripts]
-                }
+            "templates" => {
+              "layout" => "default",
+              "layouts" => {
+                "default" => {
+                  "components" => %w[head header navigation search content
+                                     footer scripts],
+                },
               },
-              'partials' => {},
-              'single_file' => {
-                'embed_resources' => true,
-                'inline_css' => true,
-                'inline_js' => true
+              "partials" => {},
+              "single_file" => {
+                "embed_resources" => true,
+                "inline_css" => true,
+                "inline_js" => true,
               },
-              'multi_file' => {
-                'separate_resources' => true,
-                'directories' => {
-                  'css' => 'css',
-                  'js' => 'js',
-                  'data' => 'data'
-                }
-              }
-            }
+              "multi_file" => {
+                "separate_resources" => true,
+                "directories" => {
+                  "css" => "css",
+                  "js" => "js",
+                  "data" => "data",
+                },
+              },
+            },
           }
         end
       end

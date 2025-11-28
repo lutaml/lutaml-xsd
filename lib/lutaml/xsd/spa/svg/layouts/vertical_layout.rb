@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../layout_engine'
+require_relative "../layout_engine"
 
 module Lutaml
   module Xsd
@@ -21,43 +21,43 @@ module Lutaml
               main_node = create_node(
                 component_data,
                 Geometry::Point.new(start_x, current_y),
-                0
+                0,
               )
               nodes << main_node
               current_y += config.dimensions.box_height +
-                           config.dimensions.spacing_vertical
+                config.dimensions.spacing_vertical
 
               # Add type reference if present
-              if component_data['type']
+              if component_data["type"]
                 type_node = create_node(
-                  { 'name' => component_data['type'], 'kind' => 'type' },
+                  { "name" => component_data["type"], "kind" => "type" },
                   Geometry::Point.new(start_x, current_y),
-                  1
+                  1,
                 )
                 nodes << type_node
                 connections << LayoutConnection.new(
                   main_node,
                   type_node,
-                  'containment'
+                  "containment",
                 )
                 current_y += config.dimensions.box_height +
-                             config.dimensions.spacing_vertical
+                  config.dimensions.spacing_vertical
               end
 
               # Add attributes
-              if component_data['attributes']&.any?
-                component_data['attributes'].each do |attr|
+              if component_data["attributes"]&.any?
+                component_data["attributes"].each do |attr|
                   attr_node = create_node(
-                    attr.merge('kind' => 'attribute'),
+                    attr.merge("kind" => "attribute"),
                     Geometry::Point.new(
                       start_x + config.dimensions.spacing_indent,
-                      current_y
+                      current_y,
                     ),
-                    1
+                    1,
                   )
                   nodes << attr_node
                   current_y += config.dimensions.box_height +
-                               config.dimensions.spacing_vertical
+                    config.dimensions.spacing_vertical
                 end
               end
 
@@ -68,7 +68,7 @@ module Lutaml
               LayoutResult.new(
                 nodes,
                 connections,
-                Geometry::Box.new(0, 0, width, max_y)
+                Geometry::Box.new(0, 0, width, max_y),
               )
             end
           end

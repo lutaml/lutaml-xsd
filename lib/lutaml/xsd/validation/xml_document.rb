@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'xml_element'
+require_relative "xml_element"
 
 module Lutaml
   module Xsd
@@ -104,7 +104,7 @@ module Lutaml
             version: version,
             encoding: encoding,
             root_element: root_element&.qualified_name,
-            namespaces: namespace_declarations
+            namespaces: namespace_declarations,
           }.compact
         end
 
@@ -132,11 +132,17 @@ module Lutaml
         # @return [Hash<String, String>]
         def collect_namespaces(element, namespaces = {})
           # Add element's namespace
-          namespaces[element.prefix] = element.namespace_uri if element.prefix && element.namespace_uri
+          if element.prefix && element.namespace_uri
+            namespaces[element.prefix] =
+              element.namespace_uri
+          end
 
           # Add attribute namespaces
           element.attributes.each do |attr|
-            namespaces[attr.prefix] = attr.namespace_uri if attr.prefix && attr.namespace_uri
+            if attr.prefix && attr.namespace_uri
+              namespaces[attr.prefix] =
+                attr.namespace_uri
+            end
           end
 
           # Recurse into children

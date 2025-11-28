@@ -20,7 +20,7 @@ module Lutaml
         validation = package.validate
         metadata = validation.metadata
 
-        entrypoint_files = metadata&.[]('files') || []
+        entrypoint_files = metadata&.[]("files") || []
 
         # Now load repository to get schemas
         repository = package.load_repository
@@ -34,7 +34,7 @@ module Lutaml
             path: file_path,
             namespace: schema.target_namespace,
             schema: schema,
-            role: 'Root schema'
+            role: "Root schema",
           }
         end.compact
       end
@@ -50,7 +50,7 @@ module Lutaml
         all_schemas = Schema.processed_schemas
 
         # Exclude entrypoint files from dependencies
-        entrypoint_files = metadata&.[]('files') || []
+        entrypoint_files = metadata&.[]("files") || []
         entrypoint_paths = Set.new(entrypoint_files.map do |f|
           File.basename(f)
         end)
@@ -64,7 +64,7 @@ module Lutaml
             file: basename,
             path: location,
             namespace: schema.target_namespace,
-            schema: schema
+            schema: schema,
           }
         end
 

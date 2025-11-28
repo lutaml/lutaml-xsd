@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../validation_rule'
+require_relative "../validation_rule"
 
 module Lutaml
   module Xsd
@@ -33,7 +33,7 @@ module Lutaml
           #
           # @return [String]
           def description
-            'Validates element attributes against schema definitions'
+            "Validates element attributes against schema definitions"
           end
 
           # Validate element attributes
@@ -94,17 +94,17 @@ module Lutaml
 
             # Handle complex content
             if schema_def.respond_to?(:complex_content) &&
-               schema_def.complex_content
+                schema_def.complex_content
               attributes.concat(
-                collect_from_complex_content(schema_def.complex_content)
+                collect_from_complex_content(schema_def.complex_content),
               )
             end
 
             # Handle simple content
             if schema_def.respond_to?(:simple_content) &&
-               schema_def.simple_content
+                schema_def.simple_content
               attributes.concat(
-                collect_from_simple_content(schema_def.simple_content)
+                collect_from_simple_content(schema_def.simple_content),
               )
             end
 
@@ -117,7 +117,7 @@ module Lutaml
           # @return [Lutaml::Xsd::ComplexType, nil]
           def resolve_type(element)
             return element.complex_type if element.respond_to?(:complex_type) &&
-                                           element.complex_type
+              element.complex_type
 
             # TODO: Resolve type reference from repository
             nil
@@ -141,14 +141,14 @@ module Lutaml
             attributes = []
 
             if complex_content.respond_to?(:extension) &&
-               complex_content.extension
+                complex_content.extension
               ext = complex_content.extension
               attributes.concat(Array(ext.attribute)) if
                 ext.respond_to?(:attribute)
             end
 
             if complex_content.respond_to?(:restriction) &&
-               complex_content.restriction
+                complex_content.restriction
               restr = complex_content.restriction
               attributes.concat(Array(restr.attribute)) if
                 restr.respond_to?(:attribute)
@@ -165,14 +165,14 @@ module Lutaml
             attributes = []
 
             if simple_content.respond_to?(:extension) &&
-               simple_content.extension
+                simple_content.extension
               ext = simple_content.extension
               attributes.concat(Array(ext.attribute)) if
                 ext.respond_to?(:attribute)
             end
 
             if simple_content.respond_to?(:restriction) &&
-               simple_content.restriction
+                simple_content.restriction
               restr = simple_content.restriction
               attributes.concat(Array(restr.attribute)) if
                 restr.respond_to?(:attribute)
@@ -200,14 +200,14 @@ module Lutaml
 
               report_error(
                 collector,
-                code: 'required_attribute_missing',
+                code: "required_attribute_missing",
                 message: "Required attribute '#{attr_name}' is missing",
                 location: xml_element.xpath,
                 context: {
                   attribute: attr_name,
-                  element: xml_element.name
+                  element: xml_element.name,
                 },
-                suggestion: "Add attribute: #{attr_name}=\"...\""
+                suggestion: "Add attribute: #{attr_name}=\"...\"",
               )
             end
           end
@@ -219,7 +219,7 @@ module Lutaml
           def attribute_required?(schema_attr)
             return false unless schema_attr.respond_to?(:use)
 
-            schema_attr.use == 'required'
+            schema_attr.use == "required"
           end
 
           # Validate attribute values
@@ -269,15 +269,15 @@ module Lutaml
               unless value == schema_attr.fixed
                 report_error(
                   collector,
-                  code: 'fixed_attribute_value_mismatch',
+                  code: "fixed_attribute_value_mismatch",
                   message: "Attribute '#{xml_attr.name}' must have fixed " \
                            "value '#{schema_attr.fixed}'",
                   location: xml_element.xpath,
                   context: {
                     attribute: xml_attr.name,
                     expected: schema_attr.fixed,
-                    actual: value
-                  }
+                    actual: value,
+                  },
                 )
               end
               return
@@ -313,12 +313,12 @@ module Lutaml
                                                 xml_attrs, collector)
             xml_attrs.each do |xml_attr|
               # Skip xmlns attributes
-              next if xml_attr.name == 'xmlns' ||
-                      xml_attr.prefix == 'xmlns'
+              next if xml_attr.name == "xmlns" ||
+                xml_attr.prefix == "xmlns"
 
               # Skip xsi attributes
               next if xml_attr.namespace_uri ==
-                      'http://www.w3.org/2001/XMLSchema-instance'
+                "http://www.w3.org/2001/XMLSchema-instance"
 
               schema_attr = find_schema_attribute(schema_attrs, xml_attr)
               next if schema_attr
@@ -328,15 +328,15 @@ module Lutaml
 
               report_error(
                 collector,
-                code: 'unexpected_attribute',
+                code: "unexpected_attribute",
                 message: "Attribute '#{xml_attr.qualified_name}' is not " \
-                         'allowed here',
+                         "allowed here",
                 location: xml_element.xpath,
                 context: {
                   attribute: xml_attr.qualified_name,
-                  element: xml_element.name
+                  element: xml_element.name,
                 },
-                suggestion: suggest_similar_attribute(xml_attr, schema_attrs)
+                suggestion: suggest_similar_attribute(xml_attr, schema_attrs),
               )
             end
           end

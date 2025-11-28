@@ -35,7 +35,7 @@ module Lutaml
           msg += "\n"
         end
 
-        msg += '💡 See: https://www.lutaml.org/lutaml-xsd/troubleshooting/schema-not-found'
+        msg += "💡 See: https://www.lutaml.org/lutaml-xsd/troubleshooting/schema-not-found"
         msg
       end
     end
@@ -44,7 +44,8 @@ module Lutaml
     class TypeNotFoundError < Error
       attr_reader :qualified_name, :resolution_path, :available_namespaces
 
-      def initialize(qualified_name:, resolution_path: [], available_namespaces: [])
+      def initialize(qualified_name:, resolution_path: [],
+available_namespaces: [])
         @qualified_name = qualified_name
         @resolution_path = resolution_path
         @available_namespaces = available_namespaces
@@ -60,7 +61,9 @@ module Lutaml
 
         if @resolution_path.any?
           msg += "Resolution path:\n"
-          @resolution_path.each_with_index { |step, i| msg += "  #{i + 1}. #{step}\n" }
+          @resolution_path.each_with_index do |step, i|
+            msg += "  #{i + 1}. #{step}\n"
+          end
           msg += "\n"
         end
 
@@ -71,7 +74,7 @@ module Lutaml
           msg += "\n"
         end
 
-        msg += '💡 See: https://www.lutaml.org/lutaml-xsd/troubleshooting/type-not-found'
+        msg += "💡 See: https://www.lutaml.org/lutaml-xsd/troubleshooting/type-not-found"
         msg
       end
     end

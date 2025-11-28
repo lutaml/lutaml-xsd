@@ -8,8 +8,8 @@ module Lutaml
       attribute :count, :integer
 
       yaml do
-        map 'category', to: :category
-        map 'count', to: :count
+        map "category", to: :category
+        map "count", to: :count
       end
     end
 
@@ -24,13 +24,13 @@ module Lutaml
       attribute :validated, :boolean
 
       yaml do
-        map 'total_schemas', to: :total_schemas
-        map 'total_types', to: :total_types
-        map 'types_by_category', to: :types_by_category
-        map 'total_namespaces', to: :total_namespaces
-        map 'namespace_prefixes', to: :namespace_prefixes
-        map 'resolved', to: :resolved
-        map 'validated', to: :validated
+        map "total_schemas", to: :total_schemas
+        map "total_types", to: :total_types
+        map "types_by_category", to: :types_by_category
+        map "total_namespaces", to: :total_namespaces
+        map "namespace_prefixes", to: :namespace_prefixes
+        map "resolved", to: :resolved
+        map "validated", to: :validated
       end
 
       # Create from statistics hash
@@ -50,7 +50,7 @@ module Lutaml
           total_namespaces: stats[:total_namespaces],
           namespace_prefixes: stats[:namespace_prefixes],
           resolved: stats[:resolved],
-          validated: stats[:validated]
+          validated: stats[:validated],
         )
       end
     end
@@ -58,7 +58,8 @@ module Lutaml
     # Metadata for a schema repository package
     class SchemaRepositoryMetadata < Lutaml::Model::Serializable
       attribute :files, :string, collection: true
-      attribute :schema_location_mappings, SchemaLocationMapping, collection: true
+      attribute :schema_location_mappings, SchemaLocationMapping,
+                collection: true
       attribute :namespace_mappings, NamespaceMapping, collection: true
       attribute :statistics, SchemaRepositoryStatistics
       attribute :serialized_schemas, SerializedSchema, collection: true
@@ -73,20 +74,20 @@ module Lutaml
       attribute :serialization_format, :string
 
       yaml do
-        map 'files', to: :files
-        map 'schema_location_mappings', to: :schema_location_mappings
-        map 'namespace_mappings', to: :namespace_mappings
-        map 'statistics', to: :statistics
-        map 'serialized_schemas', to: :serialized_schemas
-        map 'created_at', to: :created_at
-        map 'lutaml_xsd_version', to: :lutaml_xsd_version
-        map 'name', to: :name
-        map 'version', to: :version
-        map 'description', to: :description
-        map 'created_by', to: :created_by
-        map 'xsd_mode', to: :xsd_mode
-        map 'resolution_mode', to: :resolution_mode
-        map 'serialization_format', to: :serialization_format
+        map "files", to: :files
+        map "schema_location_mappings", to: :schema_location_mappings
+        map "namespace_mappings", to: :namespace_mappings
+        map "statistics", to: :statistics
+        map "serialized_schemas", to: :serialized_schemas
+        map "created_at", to: :created_at
+        map "lutaml_xsd_version", to: :lutaml_xsd_version
+        map "name", to: :name
+        map "version", to: :version
+        map "description", to: :description
+        map "created_by", to: :created_by
+        map "xsd_mode", to: :xsd_mode
+        map "resolution_mode", to: :resolution_mode
+        map "serialization_format", to: :serialization_format
       end
 
       # Override to_yaml to include any extra custom metadata fields
@@ -94,7 +95,7 @@ module Lutaml
         hash = to_hash
         # Add any instance variables that aren't part of the schema
         instance_variables.each do |ivar|
-          var_name = ivar.to_s.delete_prefix('@')
+          var_name = ivar.to_s.delete_prefix("@")
           next if hash.key?(var_name) || hash.key?(var_name.to_sym)
 
           value = instance_variable_get(ivar)
@@ -108,7 +109,7 @@ module Lutaml
         hash = super
         # Add any instance variables that aren't part of the schema
         instance_variables.each do |ivar|
-          var_name = ivar.to_s.delete_prefix('@')
+          var_name = ivar.to_s.delete_prefix("@")
           next if hash.key?(var_name) || hash.key?(var_name.to_sym)
 
           value = instance_variable_get(ivar)
@@ -130,15 +131,15 @@ module Lutaml
           statistics: SchemaRepositoryStatistics.from_statistics(repository.statistics),
           created_at: Time.now.iso8601,
           lutaml_xsd_version: Lutaml::Xsd::VERSION,
-          name: additional[:name] || additional['name'],
-          version: additional[:version] || additional['version'],
-          description: additional[:description] || additional['description'],
-          created_by: additional[:created_by] || additional['created_by']
+          name: additional[:name] || additional["name"],
+          version: additional[:version] || additional["version"],
+          description: additional[:description] || additional["description"],
+          created_by: additional[:created_by] || additional["created_by"],
         )
 
         # Store any custom metadata fields as instance variables
         known_fields = [:name, :version, :description, :created_by,
-                        'name', 'version', 'description', 'created_by']
+                        "name", "version", "description", "created_by"]
         additional.each do |key, value|
           next if known_fields.include?(key)
 

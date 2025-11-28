@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'error_context'
-require_relative 'message_builder'
+require_relative "error_context"
+require_relative "message_builder"
 
 module Lutaml
   module Xsd
@@ -67,7 +67,7 @@ module Lutaml
         #
         # @return [String] Error code
         def error_code
-          'E000'
+          "E000"
         end
 
         # Get error severity

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../suggestion'
+require_relative "../suggestion"
 
 module Lutaml
   module Xsd
@@ -44,7 +44,7 @@ module Lutaml
               Suggestion.new(
                 text: name,
                 similarity: score,
-                explanation: "Did you mean '#{name}'?"
+                explanation: "Did you mean '#{name}'?",
               )
             end
           end
@@ -69,7 +69,7 @@ module Lutaml
                 matrix[i][j] = [
                   matrix[i - 1][j] + 1,      # deletion
                   matrix[i][j - 1] + 1,      # insertion
-                  matrix[i - 1][j - 1] + cost # substitution
+                  matrix[i - 1][j - 1] + cost, # substitution
                 ].min
               end
             end

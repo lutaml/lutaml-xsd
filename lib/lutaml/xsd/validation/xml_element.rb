@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'xml_attribute'
+require_relative "xml_attribute"
 
 module Lutaml
   module Xsd
@@ -85,7 +85,7 @@ module Lutaml
               attr.name,
               attr.value,
               attr.namespace&.href,
-              attr.namespace&.prefix
+              attr.namespace&.prefix,
             )
           end
         end
@@ -166,8 +166,8 @@ module Lutaml
         #
         # @yield Block to execute in element context
         # @return [Object] Result of the block
-        def with_context(&block)
-          @navigator.with_element(self, &block)
+        def with_context(&)
+          @navigator.with_element(self, &)
         end
 
         # Check if element is in a namespace
@@ -189,7 +189,7 @@ module Lutaml
             xpath: xpath,
             attributes: attributes.map(&:to_h),
             has_children: has_children?,
-            has_text: has_text?
+            has_text: has_text?,
           }.compact
         end
 

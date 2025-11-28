@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'set'
+require "set"
 
 module Lutaml
   module Xsd
@@ -34,8 +34,8 @@ module Lutaml
           tree: root_node.to_h,
           formats: {
             mermaid: to_mermaid(root_node),
-            text: to_text_tree(root_node)
-          }
+            text: to_text_tree(root_node),
+          },
         }
       end
 
@@ -57,7 +57,7 @@ module Lutaml
         return ancestors unless base_type
 
         # Skip XML Schema built-in types
-        return ancestors if base_type =~ /^xsd?:/
+        return ancestors if /^xsd?:/.match?(base_type)
 
         # Resolve the base type
         base_result = @repository.find_type(base_type)
@@ -68,11 +68,12 @@ module Lutaml
           qualified_name: base_type,
           namespace: base_result.namespace,
           local_name: base_result.local_name,
-          type_category: determine_type_category(base_result.definition)
+          type_category: determine_type_category(base_result.definition),
         }
 
         # Recursively find ancestors of the base type
-        parent_ancestors = find_ancestors(base_result.definition, depth - 1, visited)
+        parent_ancestors = find_ancestors(base_result.definition, depth - 1,
+                                          visited)
         ancestors.concat(parent_ancestors)
 
         ancestors
@@ -96,14 +97,15 @@ module Lutaml
           next unless base_type
 
           # Check if this type extends/restricts our target type
-          next unless types_match?(base_type, qualified_name, type_info[:namespace])
+          next unless types_match?(base_type, qualified_name,
+                                   type_info[:namespace])
 
           qname = build_qualified_name(type_info)
           descendants << {
             qualified_name: qname,
             namespace: type_info[:namespace],
             local_name: type_info[:definition]&.name,
-            type_category: type_info[:type]
+            type_category: type_info[:type],
           }
 
           # Recursively find descendants
@@ -129,7 +131,8 @@ module Lutaml
         return nil unless type_result.resolved?
 
         category = determine_type_category(type_result.definition)
-        node = TypeHierarchyNode.new(qualified_name, category: category, depth: 0)
+        node = TypeHierarchyNode.new(qualified_name, category: category,
+                                                     depth: 0)
 
         # Find ancestors (base types)
         base_type = extract_base_type(type_result.definition)
@@ -147,7 +150,8 @@ module Lutaml
           def_base_type = extract_base_type(definition)
           next unless def_base_type
 
-          next unless types_match?(def_base_type, qualified_name, type_info[:namespace])
+          next unless types_match?(def_base_type, qualified_name,
+                                   type_info[:namespace])
 
           child_qname = build_qualified_name(type_info)
           next if visited.include?(child_qname)
@@ -163,7 +167,7 @@ module Lutaml
       # @param node [TypeHierarchyNode] The root node
       # @return [String] Mermaid diagram syntax
       def to_mermaid(node)
-        lines = ['graph TD']
+        lines = ["graph TD"]
         node_id_map = {}
         counter = 0
 
@@ -209,8 +213,8 @@ module Lutaml
       # @param indent [String] Current indentation
       # @param visited [Set] Already visited nodes (cycle detection)
       # @return [String] Text tree representation
-      def to_text_tree(node, indent = '', visited = Set.new)
-        return '' if visited.include?(node.qualified_name)
+      def to_text_tree(node, indent = "", visited = Set.new)
+        return "" if visited.include?(node.qualified_name)
 
         visited.add(node.qualified_name)
 
@@ -223,7 +227,7 @@ module Lutaml
             lines << "#{indent}  ↑ #{ancestor.qualified_name} (#{ancestor.category})"
             lines << to_text_tree(ancestor, "#{indent}    ", visited)
           end
-          lines << ''
+          lines << ""
         end
 
         # Show current node
@@ -342,7 +346,7 @@ module Lutaml
           category: @category,
           depth: @depth,
           ancestors: @ancestors.map(&:to_h),
-          descendants: @descendants.map(&:to_h)
+          descendants: @descendants.map(&:to_h),
         }
       end
     end

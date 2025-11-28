@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../validation_rule'
+require_relative "../validation_rule"
 
 module Lutaml
   module Xsd
@@ -33,7 +33,7 @@ module Lutaml
           #
           # @return [String]
           def description
-            'Validates minOccurs and maxOccurs constraints on elements'
+            "Validates minOccurs and maxOccurs constraints on elements"
           end
 
           # Validate occurrence constraints
@@ -128,14 +128,14 @@ module Lutaml
             if present_count < min_occurs
               report_error(
                 collector,
-                code: 'choice_min_occurs_violation',
+                code: "choice_min_occurs_violation",
                 message: "Choice must have at least #{min_occurs} " \
                          "alternative(s), found #{present_count}",
                 location: parent_element.xpath,
                 context: {
                   min_occurs: min_occurs,
-                  actual: present_count
-                }
+                  actual: present_count,
+                },
               )
             end
 
@@ -143,14 +143,14 @@ module Lutaml
 
             report_error(
               collector,
-              code: 'choice_max_occurs_violation',
+              code: "choice_max_occurs_violation",
               message: "Choice must have at most #{max_occurs} " \
                        "alternative(s), found #{present_count}",
               location: parent_element.xpath,
               context: {
                 max_occurs: max_occurs,
-                actual: present_count
-              }
+                actual: present_count,
+              },
             )
           end
 
@@ -242,17 +242,17 @@ module Lutaml
 
             report_error(
               collector,
-              code: 'min_occurs_violation',
+              code: "min_occurs_violation",
               message: "Element '#{schema_element.name}' must occur at " \
                        "least #{min_occurs} time(s), found #{actual_count}",
               location: parent_element.xpath,
               context: {
                 element: schema_element.name,
                 min_occurs: min_occurs,
-                actual: actual_count
+                actual: actual_count,
               },
               suggestion: build_min_occurs_suggestion(schema_element,
-                                                      min_occurs, actual_count)
+                                                      min_occurs, actual_count),
             )
           end
 
@@ -271,17 +271,17 @@ module Lutaml
 
             report_error(
               collector,
-              code: 'max_occurs_violation',
+              code: "max_occurs_violation",
               message: "Element '#{schema_element.name}' must occur at " \
                        "most #{max_occurs} time(s), found #{actual_count}",
               location: parent_element.xpath,
               context: {
                 element: schema_element.name,
                 max_occurs: max_occurs,
-                actual: actual_count
+                actual: actual_count,
               },
               suggestion: "Remove #{actual_count - max_occurs} " \
-                          "occurrence(s) of '#{schema_element.name}'"
+                          "occurrence(s) of '#{schema_element.name}'",
             )
           end
 
@@ -303,7 +303,7 @@ module Lutaml
           # @return [Integer, Symbol]
           def parse_max_occurs(value, default)
             return default if value.nil? || value.to_s.empty?
-            return :unbounded if value.to_s == 'unbounded'
+            return :unbounded if value.to_s == "unbounded"
 
             value.to_i
           end
@@ -318,7 +318,7 @@ module Lutaml
 
             # Try to get from parent schema
             if schema_element.respond_to?(:schema) &&
-               schema_element.schema.respond_to?(:target_namespace)
+                schema_element.schema.respond_to?(:target_namespace)
               return schema_element.schema.target_namespace
             end
 

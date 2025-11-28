@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'base_command'
+require_relative "base_command"
 
 module Lutaml
   module Xsd
@@ -12,7 +12,7 @@ module Lutaml
           super(options)
           @package_path = package_path
           @entry_types = parse_entry_types(options[:entry])
-          @format = options[:format] || 'text'
+          @format = options[:format] || "text"
         end
 
         def run
@@ -33,7 +33,7 @@ module Lutaml
           return [] unless entry_option
 
           # Split by comma and trim whitespace
-          entry_option.split(',').map(&:strip).reject(&:empty?)
+          entry_option.split(",").map(&:strip).reject(&:empty?)
         end
 
         def perform_coverage_analysis
@@ -42,7 +42,7 @@ module Lutaml
           ensure_resolved(repository)
 
           if @entry_types.empty?
-            error 'No entry types specified. Use --entry to specify entry point types.'
+            error "No entry types specified. Use --entry to specify entry point types."
             error 'Example: --entry "gml:Point,gml:LineString"'
             exit 1
           end
@@ -63,9 +63,9 @@ module Lutaml
 
         def display_results(report)
           case @format
-          when 'json'
+          when "json"
             output_json(report)
-          when 'yaml'
+          when "yaml"
             output_yaml(report)
           else
             output_text(report)
@@ -73,73 +73,73 @@ module Lutaml
         end
 
         def output_json(report)
-          require 'json'
+          require "json"
           output JSON.pretty_generate(report.to_h)
         end
 
         def output_yaml(report)
-          require 'yaml'
+          require "yaml"
           output report.to_h.to_yaml
         end
 
         def output_text(report)
-          require 'table_tennis'
+          require "table_tennis"
 
-          output '=' * 80
-          output 'Schema Coverage Analysis'
-          output '=' * 80
-          output ''
+          output "=" * 80
+          output "Schema Coverage Analysis"
+          output "=" * 80
+          output ""
 
           # Summary section
-          output 'Summary:'
+          output "Summary:"
           output "  Entry Types: #{report.entry_types.join(', ')}"
           output "  Total Types: #{report.total_types}"
           output "  Used Types: #{report.used_count}"
           output "  Unused Types: #{report.unused_count}"
           output "  Coverage: #{report.coverage_percentage}%"
-          output ''
+          output ""
 
           # Coverage by namespace
           output_namespace_coverage(report)
 
           # Unused types (if any)
           if report.unused_count.positive?
-            output ''
+            output ""
             output_unused_types(report)
           end
 
-          output ''
-          output '=' * 80
+          output ""
+          output "=" * 80
         end
 
         def output_namespace_coverage(report)
-          output '-' * 80
-          output 'Coverage by Namespace'
-          output '-' * 80
+          output "-" * 80
+          output "Coverage by Namespace"
+          output "-" * 80
 
           # Build table data
           namespace_data = report.by_namespace.map do |ns, data|
             {
-              'Namespace' => truncate_namespace(ns),
-              'Total' => data[:total],
-              'Used' => data[:used],
-              'Unused' => data[:total] - data[:used],
-              'Coverage %' => data[:coverage_percentage]
+              "Namespace" => truncate_namespace(ns),
+              "Total" => data[:total],
+              "Used" => data[:used],
+              "Unused" => data[:total] - data[:used],
+              "Coverage %" => data[:coverage_percentage],
             }
-          end.sort_by { |row| -row['Coverage %'] }
+          end.sort_by { |row| -row["Coverage %"] }
 
           if namespace_data.any?
             table = TableTennis.new(namespace_data)
             output table
           else
-            output '  (no namespaces)'
+            output "  (no namespaces)"
           end
         end
 
         def output_unused_types(report)
-          output '-' * 80
+          output "-" * 80
           output "Unused Types (#{report.unused_count})"
-          output '-' * 80
+          output "-" * 80
 
           # Group unused types by namespace
           unused_by_ns = {}
@@ -150,16 +150,16 @@ module Lutaml
 
           # Display each namespace's unused types
           unused_by_ns.each do |ns, types|
-            output ''
+            output ""
             output "#{truncate_namespace(ns)} (#{types.size} unused):"
 
             # Build table for this namespace
             type_data = types.map do |type_info|
               {
-                'Type Name' => type_info[:name] || '(anonymous)',
-                'Category' => type_info[:category].to_s
+                "Type Name" => type_info[:name] || "(anonymous)",
+                "Category" => type_info[:category].to_s,
               }
-            end.sort_by { |row| row['Type Name'] }
+            end.sort_by { |row| row["Type Name"] }
 
             # Limit display to first 20 types per namespace
             if type_data.size > 20

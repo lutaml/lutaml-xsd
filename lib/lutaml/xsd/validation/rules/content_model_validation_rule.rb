@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../validation_rule'
+require_relative "../validation_rule"
 
 module Lutaml
   module Xsd
@@ -33,7 +33,7 @@ module Lutaml
           #
           # @return [String]
           def description
-            'Validates element content models (sequence, choice, all)'
+            "Validates element content models (sequence, choice, all)"
           end
 
           # Validate content model
@@ -81,15 +81,15 @@ module Lutaml
 
             # For complex types, check content model
             return schema_def.sequence if schema_def.respond_to?(:sequence) &&
-                                          schema_def.sequence
+              schema_def.sequence
             return schema_def.choice if schema_def.respond_to?(:choice) &&
-                                        schema_def.choice
+              schema_def.choice
             return schema_def.all if schema_def.respond_to?(:all) &&
-                                     schema_def.all
+              schema_def.all
 
             # Check complex content
             if schema_def.respond_to?(:complex_content) &&
-               schema_def.complex_content
+                schema_def.complex_content
               return resolve_from_complex_content(schema_def.complex_content)
             end
 
@@ -102,7 +102,7 @@ module Lutaml
           # @return [Lutaml::Xsd::ComplexType, nil]
           def resolve_type(element)
             return element.complex_type if element.respond_to?(:complex_type) &&
-                                           element.complex_type
+              element.complex_type
 
             # TODO: Resolve type reference from repository
             nil
@@ -115,7 +115,7 @@ module Lutaml
           #   Lutaml::Xsd::All, nil]
           def resolve_from_complex_content(complex_content)
             if complex_content.respond_to?(:extension) &&
-               complex_content.extension
+                complex_content.extension
               ext = complex_content.extension
               return ext.sequence if ext.respond_to?(:sequence) && ext.sequence
               return ext.choice if ext.respond_to?(:choice) && ext.choice
@@ -123,10 +123,10 @@ module Lutaml
             end
 
             if complex_content.respond_to?(:restriction) &&
-               complex_content.restriction
+                complex_content.restriction
               restr = complex_content.restriction
               return restr.sequence if restr.respond_to?(:sequence) &&
-                                       restr.sequence
+                restr.sequence
               return restr.choice if restr.respond_to?(:choice) && restr.choice
               return restr.all if restr.respond_to?(:all) && restr.all
             end
@@ -165,7 +165,7 @@ module Lutaml
 
                 # Stop if we've reached max occurrences
                 break if max_occurs != :unbounded &&
-                         matched_count >= max_occurs
+                  matched_count >= max_occurs
 
                 # Child doesn't match, move to next particle
 
@@ -176,7 +176,7 @@ module Lutaml
 
               report_error(
                 collector,
-                code: 'sequence_min_occurs_violation',
+                code: "sequence_min_occurs_violation",
                 message: "Element '#{particle_name(particle)}' must occur " \
                          "at least #{min_occurs} time(s) in sequence, " \
                          "found #{matched_count}",
@@ -184,8 +184,8 @@ module Lutaml
                 context: {
                   particle: particle_name(particle),
                   min_occurs: min_occurs,
-                  actual: matched_count
-                }
+                  actual: matched_count,
+                },
               )
             end
 
@@ -196,14 +196,14 @@ module Lutaml
             unexpected.each do |child|
               report_error(
                 collector,
-                code: 'unexpected_element_in_sequence',
+                code: "unexpected_element_in_sequence",
                 message: "Unexpected element '#{child.qualified_name}' " \
-                         'in sequence',
+                         "in sequence",
                 location: child.xpath,
                 context: {
-                  element: child.qualified_name
+                  element: child.qualified_name,
                 },
-                suggestion: 'Remove this element or check sequence order'
+                suggestion: "Remove this element or check sequence order",
               )
             end
           end
@@ -225,7 +225,9 @@ module Lutaml
 
             # Find which particles match
             particles.each do |particle|
-              matches = children.select { |child| particle_matches?(child, particle) }
+              matches = children.select do |child|
+                particle_matches?(child, particle)
+              end
               matched_particles << particle if matches.any?
             end
 
@@ -236,27 +238,27 @@ module Lutaml
               particle_names = particles.map { |p| particle_name(p) }
               report_error(
                 collector,
-                code: 'choice_not_satisfied',
-                message: 'One of the following elements must be present: ' \
+                code: "choice_not_satisfied",
+                message: "One of the following elements must be present: " \
                          "#{particle_names.join(', ')}",
                 location: xml_element.xpath,
                 context: {
-                  choices: particle_names
+                  choices: particle_names,
                 },
-                suggestion: "Add one of: #{particle_names.join(', ')}"
+                suggestion: "Add one of: #{particle_names.join(', ')}",
               )
             elsif matched_particles.size > 1
               # Multiple alternatives present (ambiguous choice)
               report_error(
                 collector,
-                code: 'choice_ambiguous',
-                message: 'Only one choice alternative should be present, ' \
+                code: "choice_ambiguous",
+                message: "Only one choice alternative should be present, " \
                          "found #{matched_particles.size}",
                 location: xml_element.xpath,
                 context: {
-                  matched: matched_particles.map { |p| particle_name(p) }
+                  matched: matched_particles.map { |p| particle_name(p) },
                 },
-                suggestion: 'Use only one of the choice alternatives'
+                suggestion: "Use only one of the choice alternatives",
               )
             end
           end
@@ -288,7 +290,7 @@ module Lutaml
               if matched_count < min_occurs
                 report_error(
                   collector,
-                  code: 'all_min_occurs_violation',
+                  code: "all_min_occurs_violation",
                   message: "Element '#{particle_name(particle)}' must occur " \
                            "at least #{min_occurs} time(s), found " \
                            "#{matched_count}",
@@ -296,8 +298,8 @@ module Lutaml
                   context: {
                     element: particle_name(particle),
                     min_occurs: min_occurs,
-                    actual: matched_count
-                  }
+                    actual: matched_count,
+                  },
                 )
               end
 
@@ -306,7 +308,7 @@ module Lutaml
 
               report_error(
                 collector,
-                code: 'all_max_occurs_violation',
+                code: "all_max_occurs_violation",
                 message: "Element '#{particle_name(particle)}' must occur " \
                          "at most #{max_occurs} time(s), found " \
                          "#{matched_count}",
@@ -314,8 +316,8 @@ module Lutaml
                 context: {
                   element: particle_name(particle),
                   max_occurs: max_occurs,
-                  actual: matched_count
-                }
+                  actual: matched_count,
+                },
               )
             end
           end
@@ -390,7 +392,7 @@ module Lutaml
             if particle.respond_to?(:name)
               particle.name
             else
-              particle.class.name.split('::').last
+              particle.class.name.split("::").last
             end
           end
 
@@ -412,7 +414,7 @@ module Lutaml
           # @return [Integer, Symbol]
           def parse_max_occurs(value, default)
             return default if value.nil? || value.to_s.empty?
-            return :unbounded if value.to_s == 'unbounded'
+            return :unbounded if value.to_s == "unbounded"
 
             value.to_i
           end
@@ -427,7 +429,7 @@ module Lutaml
 
             # Try to get from parent schema
             if schema_element.respond_to?(:schema) &&
-               schema_element.schema.respond_to?(:target_namespace)
+                schema_element.schema.respond_to?(:target_namespace)
               return schema_element.schema.target_namespace
             end
 

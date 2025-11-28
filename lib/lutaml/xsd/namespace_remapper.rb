@@ -30,15 +30,26 @@ module Lutaml
       def validate_changes(changes)
         changes.each do |old_prefix, new_prefix|
           # Check old prefix exists
-          raise ArgumentError, "Prefix '#{old_prefix}' not found in repository" unless repository.namespace_mappings.any? { |m| m.prefix == old_prefix }
+          unless repository.namespace_mappings.any? do |m|
+            m.prefix == old_prefix
+          end
+            raise ArgumentError,
+                  "Prefix '#{old_prefix}' not found in repository"
+          end
 
           # Check new prefix is valid
-          raise ArgumentError, 'New prefix cannot be empty' if new_prefix.nil? || new_prefix.empty?
+          if new_prefix.nil? || new_prefix.empty?
+            raise ArgumentError,
+                  "New prefix cannot be empty"
+          end
 
           # Check new prefix doesn't conflict (unless it's being swapped)
-          if repository.namespace_mappings.any? { |m| m.prefix == new_prefix } &&
-             !changes.key?(new_prefix)
-            raise ArgumentError, "Prefix '#{new_prefix}' already exists in repository"
+          if repository.namespace_mappings.any? do |m|
+            m.prefix == new_prefix
+          end &&
+              !changes.key?(new_prefix)
+            raise ArgumentError,
+                  "Prefix '#{new_prefix}' already exists in repository"
           end
         end
       end
@@ -56,7 +67,7 @@ module Lutaml
         new_repo = SchemaRepository.new(
           files: repository.files,
           schema_location_mappings: repository.schema_location_mappings,
-          namespace_mappings: new_mappings
+          namespace_mappings: new_mappings,
         )
 
         # Copy internal state from original repository
@@ -68,13 +79,18 @@ module Lutaml
       def copy_internal_state(new_repo)
         # Copy parsed schemas
         original_parsed_schemas = repository.instance_variable_get(:@parsed_schemas)
-        new_repo.instance_variable_set(:@parsed_schemas, original_parsed_schemas.dup)
+        new_repo.instance_variable_set(:@parsed_schemas,
+                                       original_parsed_schemas.dup)
 
         # Copy resolution state
-        new_repo.instance_variable_set(:@resolved, repository.instance_variable_get(:@resolved))
-        new_repo.instance_variable_set(:@validated, repository.instance_variable_get(:@validated))
-        new_repo.instance_variable_set(:@lazy_load, repository.instance_variable_get(:@lazy_load))
-        new_repo.instance_variable_set(:@verbose, repository.instance_variable_get(:@verbose))
+        new_repo.instance_variable_set(:@resolved,
+                                       repository.instance_variable_get(:@resolved))
+        new_repo.instance_variable_set(:@validated,
+                                       repository.instance_variable_get(:@validated))
+        new_repo.instance_variable_set(:@lazy_load,
+                                       repository.instance_variable_get(:@lazy_load))
+        new_repo.instance_variable_set(:@verbose,
+                                       repository.instance_variable_get(:@verbose))
 
         # Re-register namespace mappings with the new registry
         namespace_registry = new_repo.instance_variable_get(:@namespace_registry)

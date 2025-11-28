@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'fileutils'
+require "fileutils"
 
 module Lutaml
   module Xsd
@@ -112,7 +112,7 @@ module Lutaml
         # @param content [String] File content
         # @return [String] File path that was written
         def write_file(path, content)
-          content ||= '' # Handle nil content
+          content ||= "" # Handle nil content
           File.write(path, content)
           log "✓ Wrote: #{path} (#{format_size(content.bytesize)})"
           path

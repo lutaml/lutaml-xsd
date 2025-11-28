@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'json'
-require_relative 'xml_instance_generator'
-require_relative 'svg/diagram_generator'
+require "json"
+require_relative "xml_instance_generator"
+require_relative "svg/diagram_generator"
 
 module Lutaml
   module Xsd
@@ -54,7 +54,7 @@ module Lutaml
           {
             metadata: build_metadata,
             schemas: serialize_schemas,
-            index: build_index
+            index: build_index,
           }
         end
 
@@ -78,8 +78,8 @@ module Lutaml
           {
             generated: current_timestamp,
             generator: generator_info,
-            title: config['title'] || default_title,
-            schema_count: get_schemas.size
+            title: config["title"] || default_title,
+            schema_count: get_schemas.size,
           }
         end
 
@@ -113,7 +113,7 @@ module Lutaml
             complex_types: serialize_complex_types(schema),
             simple_types: serialize_simple_types(schema),
             attributes: serialize_attributes(schema),
-            groups: serialize_groups(schema)
+            groups: serialize_groups(schema),
           }
         end
 
@@ -126,7 +126,7 @@ module Lutaml
           {
             by_id: build_id_index,
             by_name: build_name_index,
-            by_type: build_type_index
+            by_type: build_type_index,
           }
         end
 
@@ -156,7 +156,7 @@ module Lutaml
             min_occurs: element.min_occurs,
             max_occurs: element.max_occurs,
             documentation: extract_documentation(element),
-            instance_xml: generate_instance_xml(element)
+            instance_xml: generate_instance_xml(element),
           }
 
           # Add SVG diagram
@@ -192,7 +192,7 @@ module Lutaml
             attributes: serialize_type_attributes(type),
             elements: serialize_type_elements(type),
             documentation: extract_documentation(type),
-            instance_xml: generate_instance_xml(type)
+            instance_xml: generate_instance_xml(type),
           }
 
           # Add SVG diagram
@@ -226,7 +226,7 @@ module Lutaml
             base: extract_simple_base(type),
             restriction: serialize_restriction(type),
             documentation: extract_documentation(type),
-            instance_xml: generate_instance_xml(type)
+            instance_xml: generate_instance_xml(type),
           }
         end
 
@@ -255,7 +255,7 @@ module Lutaml
             type: attr.type,
             use: attr.use,
             default: attr.default,
-            documentation: extract_documentation(attr)
+            documentation: extract_documentation(attr),
           }
         end
 
@@ -281,7 +281,7 @@ module Lutaml
           {
             id: group_id(index, group),
             name: group.name,
-            documentation: extract_documentation(group)
+            documentation: extract_documentation(group),
           }
         end
 
@@ -296,7 +296,7 @@ module Lutaml
             {
               name: attr.name,
               type: attr.type,
-              use: attr.use
+              use: attr.use,
             }
           end
         end
@@ -313,7 +313,7 @@ module Lutaml
               name: elem.name,
               type: elem.type,
               min_occurs: elem.min_occurs,
-              max_occurs: elem.max_occurs
+              max_occurs: elem.max_occurs,
             }
           end
         end
@@ -330,7 +330,7 @@ module Lutaml
 
           {
             base: restriction.base,
-            facets: serialize_facets(restriction)
+            facets: serialize_facets(restriction),
           }
         end
 
@@ -341,13 +341,25 @@ module Lutaml
         def serialize_facets(restriction)
           facets = []
 
-          facets << { type: 'enumeration', values: restriction.enumerations } if restriction.respond_to?(:enumerations) && restriction.enumerations
+          if restriction.respond_to?(:enumerations) && restriction.enumerations
+            facets << { type: "enumeration",
+                        values: restriction.enumerations }
+          end
 
-          facets << { type: 'pattern', value: restriction.pattern } if restriction.respond_to?(:pattern) && restriction.pattern
+          if restriction.respond_to?(:pattern) && restriction.pattern
+            facets << { type: "pattern",
+                        value: restriction.pattern }
+          end
 
-          facets << { type: 'min_length', value: restriction.min_length } if restriction.respond_to?(:min_length) && restriction.min_length
+          if restriction.respond_to?(:min_length) && restriction.min_length
+            facets << { type: "min_length",
+                        value: restriction.min_length }
+          end
 
-          facets << { type: 'max_length', value: restriction.max_length } if restriction.respond_to?(:max_length) && restriction.max_length
+          if restriction.respond_to?(:max_length) && restriction.max_length
+            facets << { type: "max_length",
+                        value: restriction.max_length }
+          end
 
           facets
         end
@@ -372,13 +384,13 @@ module Lutaml
         # @param type [ComplexType] Complex type
         # @return [String] Content model type
         def extract_content_model(type)
-          return 'sequence' if type.respond_to?(:sequence) && type.sequence
-          return 'choice' if type.respond_to?(:choice) && type.choice
-          return 'all' if type.respond_to?(:all) && type.all
-          return 'complex_content' if type.respond_to?(:complex_content) && type.complex_content
-          return 'simple_content' if type.respond_to?(:simple_content) && type.simple_content
+          return "sequence" if type.respond_to?(:sequence) && type.sequence
+          return "choice" if type.respond_to?(:choice) && type.choice
+          return "all" if type.respond_to?(:all) && type.all
+          return "complex_content" if type.respond_to?(:complex_content) && type.complex_content
+          return "simple_content" if type.respond_to?(:simple_content) && type.simple_content
 
-          'empty'
+          "empty"
         end
 
         # Extract base type from complex type
@@ -419,7 +431,7 @@ module Lutaml
           return type.list.item_type if type.respond_to?(:list) && type.list.respond_to?(:item_type)
 
           if type.respond_to?(:union) && type.union
-            return 'union' # Union types have multiple bases
+            return "union" # Union types have multiple bases
           end
 
           nil
@@ -432,14 +444,14 @@ module Lutaml
         # @param name [String, nil] Name to slugify
         # @return [String] URL-safe slug
         def slugify(name)
-          return 'unnamed' unless name
+          return "unnamed" unless name
 
           name.to_s
-              .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')  # Split acronyms: HTTPParser → HTTP-Parser
-              .gsub(/([a-z\d])([A-Z])/, '\1-\2')      # Split camelCase: fooBar → foo-Bar
-              .downcase # Convert to lowercase
-              .gsub(/[^a-z0-9]+/, '-') # Replace non-alphanumeric with dash
-              .gsub(/^-|-$/, '') # Remove leading/trailing dashes
+            .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')  # Split acronyms: HTTPParser → HTTP-Parser
+            .gsub(/([a-z\d])([A-Z])/, '\1-\2')      # Split camelCase: fooBar → foo-Bar
+            .downcase # Convert to lowercase
+            .gsub(/[^a-z0-9]+/, "-") # Replace non-alphanumeric with dash
+            .gsub(/^-|-$/, "") # Remove leading/trailing dashes
         end
 
         def schema_id(index, schema = nil, file_path = nil)
@@ -495,13 +507,13 @@ module Lutaml
         end
 
         def default_title
-          'XSD Schema Documentation'
+          "XSD Schema Documentation"
         end
 
         def schema_name(schema, file_path = nil)
           # Prioritize filename if available and meaningful
           if file_path.is_a?(String) && !file_path.empty?
-            basename = File.basename(file_path, '.*')
+            basename = File.basename(file_path, ".*")
             # Use filename unless it's generic (schema, unnamed, or just numbers)
             return basename unless basename.match?(/^(schema|unnamed|\d+)$/i)
           end
@@ -512,15 +524,18 @@ module Lutaml
             uri = schema.target_namespace
             # For URNs like "urn:oasis:names:tc:unitsml:schema:xsd:UnitsML-Schema-1.0"
             # extract the last part
-            last_part = uri.split('/').last || uri.split(':').last || 'unnamed'
+            last_part = uri.split("/").last || uri.split(":").last || "unnamed"
             # Don't return if it's just a version number (e.g., "3.2")
             return last_part unless last_part.match?(/^\d+(\.\d+)*$/)
           end
 
           # Final fallback: use filename if we have one, even if generic
-          return File.basename(file_path, '.*') if file_path.is_a?(String) && !file_path.empty?
+          if file_path.is_a?(String) && !file_path.empty?
+            return File.basename(file_path,
+                                 ".*")
+          end
 
-          'unnamed'
+          "unnamed"
         end
 
         # Check if file path is an entrypoint
@@ -537,7 +552,7 @@ module Lutaml
 
           if package.respond_to?(:metadata)
             metadata = package.metadata || {}
-            entrypoint_files = metadata[:files] || metadata['files'] || []
+            entrypoint_files = metadata[:files] || metadata["files"] || []
           elsif repository.respond_to?(:files) && !repository.respond_to?(:all_schemas)
             # Direct repository has files attribute
             entrypoint_files = repository.files || []
@@ -563,8 +578,8 @@ module Lutaml
           # Extract path relative to package (strip temp directory)
           # Transform: /var/folders/.../T/package.../schemas/file.xsd
           # To: schemas/file.xsd
-          if file_path.include?('/schemas/')
-            parts = file_path.split('/schemas/')
+          if file_path.include?("/schemas/")
+            parts = file_path.split("/schemas/")
             "schemas/#{parts.last}"
           else
             File.basename(file_path)
@@ -614,7 +629,7 @@ module Lutaml
             schema,
             component,
             repository,
-            all_schemas: get_schemas
+            all_schemas: get_schemas,
           )
           generator.generate
         rescue StandardError => e
@@ -661,7 +676,7 @@ module Lutaml
           end
         rescue StandardError => e
           # Graceful failure - diagram generation should not break serialization
-          warn "Warning: Failed to generate SVG diagram: #{e.message}" if ENV['DEBUG']
+          warn "Warning: Failed to generate SVG diagram: #{e.message}" if ENV["DEBUG"]
           nil
         end
 

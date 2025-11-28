@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'thor'
-require_relative 'base_command'
+require "thor"
+require_relative "base_command"
 
 module Lutaml
   module Xsd
@@ -12,9 +12,10 @@ module Lutaml
         class_option :verbose,
                      type: :boolean,
                      default: false,
-                     desc: 'Enable verbose output'
+                     desc: "Enable verbose output"
 
-        desc 'validate FILES SCHEMA', 'Validate XML instance files against XSD schema'
+        desc "validate FILES SCHEMA",
+             "Validate XML instance files against XSD schema"
         long_desc <<~DESC
           Validate one or more XML instance files against an XSD schema package.
 
@@ -39,25 +40,25 @@ module Lutaml
         DESC
         option :config,
                type: :string,
-               desc: 'Path to validation configuration file'
+               desc: "Path to validation configuration file"
         option :format,
                type: :string,
-               default: 'text',
+               default: "text",
                enum: %w[text json yaml],
-               desc: 'Output format'
+               desc: "Output format"
         option :max_errors,
                type: :numeric,
                default: 10,
-               desc: 'Maximum number of errors to display per file'
+               desc: "Maximum number of errors to display per file"
         def validate(*args)
           if args.length < 2
-            error 'Usage: lutaml-xsd xml validate FILES SCHEMA [options]'
+            error "Usage: lutaml-xsd xml validate FILES SCHEMA [options]"
             exit 1
           end
 
           schema = args.pop
           files = args
-          require_relative 'validate_command'
+          require_relative "validate_command"
           ValidateCommand.new(files, schema, options).run
         end
 

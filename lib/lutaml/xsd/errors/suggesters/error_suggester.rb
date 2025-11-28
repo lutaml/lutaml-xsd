@@ -26,7 +26,8 @@ module Lutaml
           # @return [Array<Suggestion>] List of suggestions
           # @abstract Subclasses must implement this method
           def generate_suggestions(error)
-            raise NotImplementedError, "#{self.class} must implement #generate_suggestions"
+            raise NotImplementedError,
+                  "#{self.class} must implement #generate_suggestions"
           end
 
           protected

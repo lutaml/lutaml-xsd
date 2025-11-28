@@ -7,12 +7,12 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
     it "accepts FileValidationResult objects" do
       file1 = Lutaml::Xsd::FileValidationResult.new(
         file: "schema1.xsd",
-        valid: true
+        valid: true,
       )
       file2 = Lutaml::Xsd::FileValidationResult.new(
         file: "schema2.xsd",
         valid: false,
-        error: "Invalid"
+        error: "Invalid",
       )
 
       result = described_class.new([file1, file2])
@@ -23,7 +23,7 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
     it "converts hash format to FileValidationResult objects" do
       hashes = [
         { file: "schema1.xsd", valid: true },
-        { file: "schema2.xsd", valid: false, error: "Invalid" }
+        { file: "schema2.xsd", valid: false, error: "Invalid" },
       ]
 
       result = described_class.new(hashes)
@@ -42,9 +42,9 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
         Lutaml::Xsd::FileValidationResult.new(
           file: "b.xsd",
           valid: false,
-          error: "Error"
+          error: "Error",
         ),
-        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true)
+        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true),
       ]
       result = described_class.new(files)
 
@@ -59,9 +59,9 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
         Lutaml::Xsd::FileValidationResult.new(
           file: "b.xsd",
           valid: false,
-          error: "Error"
+          error: "Error",
         ),
-        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true)
+        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true),
       ]
       result = described_class.new(files)
 
@@ -76,9 +76,9 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
         Lutaml::Xsd::FileValidationResult.new(
           file: "b.xsd",
           valid: false,
-          error: "Error"
+          error: "Error",
         ),
-        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true)
+        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true),
       ]
       result = described_class.new(files)
 
@@ -93,13 +93,13 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
         Lutaml::Xsd::FileValidationResult.new(
           file: "bad1.xsd",
           valid: false,
-          error: "Error1"
+          error: "Error1",
         ),
         Lutaml::Xsd::FileValidationResult.new(
           file: "bad2.xsd",
           valid: false,
-          error: "Error2"
-        )
+          error: "Error2",
+        ),
       ]
       result = described_class.new(files)
 
@@ -109,7 +109,7 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
     it "returns empty array when all files valid" do
       files = [
         Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(file: "b.xsd", valid: true)
+        Lutaml::Xsd::FileValidationResult.new(file: "b.xsd", valid: true),
       ]
       result = described_class.new(files)
 
@@ -121,7 +121,7 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
     it "returns true when all files valid" do
       files = [
         Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(file: "b.xsd", valid: true)
+        Lutaml::Xsd::FileValidationResult.new(file: "b.xsd", valid: true),
       ]
       result = described_class.new(files)
 
@@ -134,8 +134,8 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
         Lutaml::Xsd::FileValidationResult.new(
           file: "b.xsd",
           valid: false,
-          error: "Error"
-        )
+          error: "Error",
+        ),
       ]
       result = described_class.new(files)
 
@@ -147,7 +147,7 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
     it "returns false when all files valid" do
       files = [
         Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(file: "b.xsd", valid: true)
+        Lutaml::Xsd::FileValidationResult.new(file: "b.xsd", valid: true),
       ]
       result = described_class.new(files)
 
@@ -160,8 +160,8 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
         Lutaml::Xsd::FileValidationResult.new(
           file: "b.xsd",
           valid: false,
-          error: "Error"
-        )
+          error: "Error",
+        ),
       ]
       result = described_class.new(files)
 
@@ -175,13 +175,13 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
         Lutaml::Xsd::FileValidationResult.new(
           file: "valid.xsd",
           valid: true,
-          detected_version: "1.0"
+          detected_version: "1.0",
         ),
         Lutaml::Xsd::FileValidationResult.new(
           file: "invalid.xsd",
           valid: false,
-          error: "Not a valid XSD"
-        )
+          error: "Not a valid XSD",
+        ),
       ]
       result = described_class.new(files)
 
@@ -204,9 +204,9 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
         Lutaml::Xsd::FileValidationResult.new(
           file: "b.xsd",
           valid: false,
-          error: "Error"
+          error: "Error",
         ),
-        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true)
+        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true),
       ]
       result = described_class.new(files)
 

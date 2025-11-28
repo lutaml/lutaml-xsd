@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'yaml'
+require "yaml"
 
 module Lutaml
   module Xsd
@@ -27,7 +27,7 @@ module Lutaml
 
         # Default configuration file path
         DEFAULT_CONFIG_PATH = File.join(
-          __dir__, '..', '..', '..', '..', 'config', 'validation.yml'
+          __dir__, "..", "..", "..", "..", "config", "validation.yml"
         )
 
         # Initialize configuration from hash
@@ -68,21 +68,21 @@ module Lutaml
         #
         # @return [Boolean]
         def strict_mode?
-          get_nested('validation', 'strict_mode') || false
+          get_nested("validation", "strict_mode") || false
         end
 
         # Check if validation should stop on first error
         #
         # @return [Boolean]
         def stop_on_first_error?
-          get_nested('validation', 'stop_on_first_error') || false
+          get_nested("validation", "stop_on_first_error") || false
         end
 
         # Get maximum number of errors to collect
         #
         # @return [Integer]
         def max_errors
-          get_nested('validation', 'max_errors') || 100
+          get_nested("validation", "max_errors") || 100
         end
 
         # Check if a validation feature is enabled
@@ -90,29 +90,29 @@ module Lutaml
         # @param feature [Symbol] Feature name (e.g., :validate_types)
         # @return [Boolean]
         def feature_enabled?(feature)
-          get_nested('validation', 'features', feature.to_s) != false
+          get_nested("validation", "features", feature.to_s) != false
         end
 
         # Get error reporting verbosity level
         #
         # @return [Symbol] :minimal, :normal, :verbose, or :debug
         def verbosity
-          level = get_nested('validation', 'error_reporting', 'verbosity')
-          (level || 'normal').to_sym
+          level = get_nested("validation", "error_reporting", "verbosity")
+          (level || "normal").to_sym
         end
 
         # Check if colorized output is enabled
         #
         # @return [Boolean]
         def colorize_output?
-          get_nested('validation', 'error_reporting', 'colorize') != false
+          get_nested("validation", "error_reporting", "colorize") != false
         end
 
         # Check if XPath should be included in errors
         #
         # @return [Boolean]
         def include_xpath?
-          get_nested('validation', 'error_reporting', 'include_xpath') != false
+          get_nested("validation", "error_reporting", "include_xpath") != false
         end
 
         # Check if line numbers should be included in errors
@@ -120,7 +120,7 @@ module Lutaml
         # @return [Boolean]
         def include_line_number?
           get_nested(
-            'validation', 'error_reporting', 'include_line_number'
+            "validation", "error_reporting", "include_line_number"
           ) != false
         end
 
@@ -129,7 +129,7 @@ module Lutaml
         # @return [Boolean]
         def include_suggestions?
           get_nested(
-            'validation', 'error_reporting', 'include_suggestions'
+            "validation", "error_reporting", "include_suggestions"
           ) != false
         end
 
@@ -138,7 +138,7 @@ module Lutaml
         # @return [Boolean]
         def allow_network?
           get_nested(
-            'validation', 'schema_resolution', 'allow_network'
+            "validation", "schema_resolution", "allow_network"
           ) != false
         end
 
@@ -146,22 +146,23 @@ module Lutaml
         #
         # @return [Boolean]
         def cache_schemas?
-          get_nested('validation', 'schema_resolution', 'cache_schemas') != false
+          get_nested("validation", "schema_resolution",
+                     "cache_schemas") != false
         end
 
         # Get schema cache directory
         #
         # @return [String]
         def cache_dir
-          get_nested('validation', 'schema_resolution', 'cache_dir') ||
-            'tmp/schema_cache'
+          get_nested("validation", "schema_resolution", "cache_dir") ||
+            "tmp/schema_cache"
         end
 
         # Get network timeout for schema fetching
         #
         # @return [Integer] Timeout in seconds
         def network_timeout
-          get_nested('validation', 'schema_resolution', 'network_timeout') || 30
+          get_nested("validation", "schema_resolution", "network_timeout") || 30
         end
 
         # Convert configuration to hash
@@ -224,33 +225,33 @@ module Lutaml
         # @return [Hash]
         def self.default_config_hash
           {
-            'validation' => {
-              'strict_mode' => true,
-              'stop_on_first_error' => false,
-              'max_errors' => 100,
-              'features' => {
-                'validate_types' => true,
-                'validate_attributes' => true,
-                'validate_occurrences' => true,
-                'validate_identity_constraints' => true,
-                'validate_facets' => true,
-                'validate_content_models' => true,
-                'validate_namespaces' => true
+            "validation" => {
+              "strict_mode" => true,
+              "stop_on_first_error" => false,
+              "max_errors" => 100,
+              "features" => {
+                "validate_types" => true,
+                "validate_attributes" => true,
+                "validate_occurrences" => true,
+                "validate_identity_constraints" => true,
+                "validate_facets" => true,
+                "validate_content_models" => true,
+                "validate_namespaces" => true,
               },
-              'error_reporting' => {
-                'include_xpath' => true,
-                'include_line_number' => true,
-                'include_suggestions' => true,
-                'colorize' => true,
-                'verbosity' => 'normal'
+              "error_reporting" => {
+                "include_xpath" => true,
+                "include_line_number" => true,
+                "include_suggestions" => true,
+                "colorize" => true,
+                "verbosity" => "normal",
               },
-              'schema_resolution' => {
-                'allow_network' => true,
-                'cache_schemas' => true,
-                'cache_dir' => 'tmp/schema_cache',
-                'network_timeout' => 30
-              }
-            }
+              "schema_resolution" => {
+                "allow_network" => true,
+                "cache_schemas" => true,
+                "cache_dir" => "tmp/schema_cache",
+                "network_timeout" => 30,
+              },
+            },
           }
         end
       end

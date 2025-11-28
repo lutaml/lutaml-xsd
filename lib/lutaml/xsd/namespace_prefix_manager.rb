@@ -75,7 +75,7 @@ module Lutaml
           original_schema_location: original_schema_location,
           package_location: package_location,
           type_count: type_count,
-          types_by_category: types_by_category
+          types_by_category: types_by_category,
         }
       end
 

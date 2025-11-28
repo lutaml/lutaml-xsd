@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'json'
+require "json"
 
 module Lutaml
   module Xsd
@@ -11,9 +11,9 @@ module Lutaml
       attribute :schema_data, :string
 
       yaml do
-        map 'file_path', to: :file_path
-        map 'target_namespace', to: :target_namespace
-        map 'schema_data', to: :schema_data
+        map "file_path", to: :file_path
+        map "target_namespace", to: :target_namespace
+        map "schema_data", to: :schema_data
       end
 
       # Create from a parsed Schema object
@@ -32,13 +32,13 @@ module Lutaml
           complex_types: serialize_types(schema.complex_type),
           elements: serialize_elements(schema.element),
           attribute_groups: serialize_attribute_groups(schema.attribute_group),
-          groups: serialize_groups(schema.group)
+          groups: serialize_groups(schema.group),
         }
 
         new(
           file_path: file_path,
           target_namespace: schema.target_namespace,
-          schema_data: JSON.generate(schema_hash)
+          schema_data: JSON.generate(schema_hash),
         )
       end
 
@@ -49,18 +49,25 @@ module Lutaml
 
         # Create a minimal Schema object with the essential data
         schema = Schema.new(
-          target_namespace: data['target_namespace'],
-          element_form_default: data['element_form_default'],
-          attribute_form_default: data['attribute_form_default'],
-          version: data['version']
+          target_namespace: data["target_namespace"],
+          element_form_default: data["element_form_default"],
+          attribute_form_default: data["attribute_form_default"],
+          version: data["version"],
         )
 
         # Reconstruct collections
-        schema.instance_variable_set(:@simple_type, deserialize_types(data['simple_types'], :simple_type))
-        schema.instance_variable_set(:@complex_type, deserialize_types(data['complex_types'], :complex_type))
-        schema.instance_variable_set(:@element, deserialize_elements(data['elements']))
-        schema.instance_variable_set(:@attribute_group, deserialize_attribute_groups(data['attribute_groups']))
-        schema.instance_variable_set(:@group, deserialize_groups(data['groups']))
+        schema.instance_variable_set(:@simple_type,
+                                     deserialize_types(data["simple_types"],
+                                                       :simple_type))
+        schema.instance_variable_set(:@complex_type,
+                                     deserialize_types(data["complex_types"],
+                                                       :complex_type))
+        schema.instance_variable_set(:@element,
+                                     deserialize_elements(data["elements"]))
+        schema.instance_variable_set(:@attribute_group,
+                                     deserialize_attribute_groups(data["attribute_groups"]))
+        schema.instance_variable_set(:@group,
+                                     deserialize_groups(data["groups"]))
 
         schema
       end
@@ -74,7 +81,7 @@ module Lutaml
         types.map do |type|
           {
             name: type.name,
-            class: type.class.name
+            class: type.class.name,
           }
         end
       end
@@ -86,8 +93,8 @@ module Lutaml
         # Create stub objects that respond to common type methods
         # This avoids circular references and lutaml-model initialization issues
         types_data.map do |type_data|
-          class_name = type_data['class']
-          type_name = type_data['name']
+          class_name = type_data["class"]
+          type_name = type_data["name"]
 
           # Create a stub that behaves like a ComplexType/SimpleType
           Object.new.tap do |obj|
@@ -101,7 +108,9 @@ module Lutaml
             end
             # Add common type methods that might be called
             obj.define_singleton_method(:to_s) { "#{class_name}(#{type_name})" }
-            obj.define_singleton_method(:inspect) { "#<#{class_name} name=#{type_name.inspect}>" }
+            obj.define_singleton_method(:inspect) do
+              "#<#{class_name} name=#{type_name.inspect}>"
+            end
           end
         end
       end
@@ -113,7 +122,7 @@ module Lutaml
         elements.map do |elem|
           {
             name: elem.name,
-            type: elem.type
+            type: elem.type,
           }
         end
       end
@@ -124,8 +133,8 @@ module Lutaml
 
         elements_data.map do |elem_data|
           Object.new.tap do |obj|
-            obj.define_singleton_method(:name) { elem_data['name'] }
-            obj.define_singleton_method(:type) { elem_data['type'] }
+            obj.define_singleton_method(:name) { elem_data["name"] }
+            obj.define_singleton_method(:type) { elem_data["type"] }
           end
         end
       end
@@ -143,7 +152,7 @@ module Lutaml
 
         groups_data.map do |g|
           Object.new.tap do |obj|
-            obj.define_singleton_method(:name) { g['name'] }
+            obj.define_singleton_method(:name) { g["name"] }
           end
         end
       end
@@ -161,7 +170,7 @@ module Lutaml
 
         groups_data.map do |g|
           Object.new.tap do |obj|
-            obj.define_singleton_method(:name) { g['name'] }
+            obj.define_singleton_method(:name) { g["name"] }
           end
         end
       end

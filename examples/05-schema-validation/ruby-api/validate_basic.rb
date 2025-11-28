@@ -1,14 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'bundler/setup'
-require 'lutaml/xsd'
+require "bundler/setup"
+require "lutaml/xsd"
 
 puts "=== Basic Schema Validation Example ==="
 puts
 
 # Read a valid XSD 1.0 schema
-schema_path = File.join(__dir__, '../schemas/valid_xsd_1_0.xsd')
+schema_path = File.join(__dir__, "../schemas/valid_xsd_1_0.xsd")
 schema_content = File.read(schema_path)
 
 # Create a validator for XSD 1.0

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'thor'
-require_relative 'base_command'
+require "thor"
+require_relative "base_command"
 
 module Lutaml
   module Xsd
@@ -9,15 +9,15 @@ module Lutaml
       # Thor subcommand for displaying repository statistics
       class StatsCommand < Thor
         # Command aliases
-        map 's' => :show
+        map "s" => :show
 
         class_option :verbose,
                      type: :boolean,
                      default: false,
-                     desc: 'Enable verbose output'
+                     desc: "Enable verbose output"
 
-        desc 'show PATH',
-             'Display statistics for a schema repository package'
+        desc "show PATH",
+             "Display statistics for a schema repository package"
         long_desc <<~DESC
           Display comprehensive statistics for a schema repository package (.lxr file).
 
@@ -40,8 +40,8 @@ module Lutaml
         option :format,
                type: :string,
                enum: %w[text json yaml],
-               default: 'text',
-               desc: 'Output format (text, json, yaml)'
+               default: "text",
+               desc: "Output format (text, json, yaml)"
         def show(path)
           ShowCommand.new(path, options).run
         end
@@ -51,7 +51,7 @@ module Lutaml
           def initialize(path, options = {})
             super(options)
             @path = path
-            @format = options[:format] || 'text'
+            @format = options[:format] || "text"
           end
 
           def run
@@ -70,9 +70,9 @@ module Lutaml
 
           def output_statistics(stats)
             case @format
-            when 'json'
+            when "json"
               output_json(stats)
-            when 'yaml'
+            when "yaml"
               output_yaml(stats)
             else
               output_text(stats)
@@ -80,21 +80,21 @@ module Lutaml
           end
 
           def output_text(stats)
-            require 'table_tennis'
+            require "table_tennis"
 
-            output 'Repository Statistics:'
-            output '=' * 80
-            output ''
+            output "Repository Statistics:"
+            output "=" * 80
+            output ""
             output "Total schemas parsed: #{stats[:total_schemas]}"
             output "Total types indexed: #{stats[:total_types]}"
             output "Total namespaces: #{stats[:total_namespaces]}"
-            output ''
-            output 'Types by category:'
-            output '-' * 80
+            output ""
+            output "Types by category:"
+            output "-" * 80
 
             # Build table data as array of hashes
             category_data = stats[:types_by_category].sort.map do |category, count|
-              { 'Category' => category.to_s, 'Count' => count }
+              { "Category" => category.to_s, "Count" => count }
             end
 
             category_table = TableTennis.new(category_data)
@@ -102,12 +102,12 @@ module Lutaml
           end
 
           def output_json(stats)
-            require 'json'
+            require "json"
             output JSON.pretty_generate(stats)
           end
 
           def output_yaml(stats)
-            require 'yaml'
+            require "yaml"
             output stats.to_yaml
           end
         end

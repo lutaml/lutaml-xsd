@@ -1,25 +1,25 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
+require "spec_helper"
 
 RSpec.describe Lutaml::Xsd::SchemaClassifier do
   let(:repository) { Lutaml::Xsd::SchemaRepository.new }
   let(:classifier) { described_class.new(repository) }
 
-  describe '#initialize' do
-    it 'stores the repository' do
+  describe "#initialize" do
+    it "stores the repository" do
       expect(classifier.repository).to eq(repository)
     end
   end
 
-  describe '#classify' do
-    context 'with empty repository' do
+  describe "#classify" do
+    context "with empty repository" do
       before do
         # Clear global schema cache to ensure truly empty repository
         Lutaml::Xsd::Schema.reset_processed_schemas
       end
 
-      it 'returns classification structure with empty categories' do
+      it "returns classification structure with empty categories" do
         result = classifier.classify
 
         expect(result).to be_a(Hash)
@@ -28,13 +28,13 @@ RSpec.describe Lutaml::Xsd::SchemaClassifier do
           :dependency_schemas,
           :fully_resolved,
           :partially_resolved,
-          :summary
+          :summary,
         )
         expect(result[:entrypoint_schemas]).to eq([])
         expect(result[:dependency_schemas]).to eq([])
       end
 
-      it 'returns summary with zero counts' do
+      it "returns summary with zero counts" do
         result = classifier.classify
         summary = result[:summary]
 
@@ -47,29 +47,29 @@ RSpec.describe Lutaml::Xsd::SchemaClassifier do
       end
     end
 
-    context 'with mock schemas in processed cache' do
-      let(:schema1_path) { '/path/to/schema1.xsd' }
-      let(:schema2_path) { '/path/to/schema2.xsd' }
+    context "with mock schemas in processed cache" do
+      let(:schema1_path) { "/path/to/schema1.xsd" }
+      let(:schema2_path) { "/path/to/schema2.xsd" }
       let(:schema1) do
         instance_double(
           Lutaml::Xsd::Schema,
-          target_namespace: 'http://example.com/schema1',
+          target_namespace: "http://example.com/schema1",
           element: [],
           complex_type: [],
           simple_type: [],
           import: [],
-          include: []
+          include: [],
         )
       end
       let(:schema2) do
         instance_double(
           Lutaml::Xsd::Schema,
-          target_namespace: 'http://example.com/schema2',
+          target_namespace: "http://example.com/schema2",
           element: [],
           complex_type: [],
           simple_type: [],
           import: [],
-          include: []
+          include: [],
         )
       end
 
@@ -85,7 +85,7 @@ RSpec.describe Lutaml::Xsd::SchemaClassifier do
         Lutaml::Xsd::Schema.reset_processed_schemas
       end
 
-      it 'classifies entrypoint schemas correctly' do
+      it "classifies entrypoint schemas correctly" do
         result = classifier.classify
         entrypoints = result[:entrypoint_schemas]
 
@@ -95,7 +95,7 @@ RSpec.describe Lutaml::Xsd::SchemaClassifier do
         expect(entrypoints.first.location).to eq(schema1_path)
       end
 
-      it 'classifies dependency schemas correctly' do
+      it "classifies dependency schemas correctly" do
         result = classifier.classify
         dependencies = result[:dependency_schemas]
 
@@ -105,7 +105,7 @@ RSpec.describe Lutaml::Xsd::SchemaClassifier do
         expect(dependencies.first.location).to eq(schema2_path)
       end
 
-      it 'generates accurate summary statistics' do
+      it "generates accurate summary statistics" do
         result = classifier.classify
         summary = result[:summary]
 
@@ -119,41 +119,41 @@ RSpec.describe Lutaml::Xsd::SchemaClassifier do
     end
   end
 
-  describe 'private methods' do
-    describe '#calculate_resolution_percentage' do
-      it 'returns 0 for zero total' do
+  describe "private methods" do
+    describe "#calculate_resolution_percentage" do
+      it "returns 0 for zero total" do
         percentage = classifier.send(:calculate_resolution_percentage, 0, 0)
         expect(percentage).to eq(0.0)
       end
 
-      it 'calculates percentage correctly' do
+      it "calculates percentage correctly" do
         percentage = classifier.send(:calculate_resolution_percentage, 3, 10)
         expect(percentage).to eq(30.0)
       end
 
-      it 'rounds to 2 decimal places' do
+      it "rounds to 2 decimal places" do
         percentage = classifier.send(:calculate_resolution_percentage, 1, 3)
         expect(percentage).to eq(33.33)
       end
 
-      it 'handles 100% correctly' do
+      it "handles 100% correctly" do
         percentage = classifier.send(:calculate_resolution_percentage, 10, 10)
         expect(percentage).to eq(100.0)
       end
     end
 
-    describe '#determine_category' do
+    describe "#determine_category" do
       before do
-        repository.instance_variable_set(:@files, ['/path/to/schema.xsd'])
+        repository.instance_variable_set(:@files, ["/path/to/schema.xsd"])
       end
 
-      it 'identifies entrypoint schemas' do
-        category = classifier.send(:determine_category, '/path/to/schema.xsd')
+      it "identifies entrypoint schemas" do
+        category = classifier.send(:determine_category, "/path/to/schema.xsd")
         expect(category).to eq(:entrypoint)
       end
 
-      it 'identifies dependency schemas' do
-        category = classifier.send(:determine_category, '/path/to/other.xsd')
+      it "identifies dependency schemas" do
+        category = classifier.send(:determine_category, "/path/to/other.xsd")
         expect(category).to eq(:dependency)
       end
     end
@@ -164,107 +164,116 @@ RSpec.describe Lutaml::Xsd::SchemaClassificationInfo do
   let(:schema) do
     instance_double(
       Lutaml::Xsd::Schema,
-      target_namespace: 'http://example.com/schema',
+      target_namespace: "http://example.com/schema",
       element: [],
       complex_type: [],
       simple_type: [],
       import: [],
-      include: []
+      include: [],
     )
   end
 
-  let(:location) { '/path/to/schema.xsd' }
+  let(:location) { "/path/to/schema.xsd" }
   let(:category) { :entrypoint }
-  let(:info) { described_class.new(schema: schema, location: location, category: category) }
+  let(:info) do
+    described_class.new(schema: schema, location: location, category: category)
+  end
 
-  describe '#initialize' do
-    it 'extracts basic information from schema' do
+  describe "#initialize" do
+    it "extracts basic information from schema" do
       expect(info.location).to eq(location)
       expect(info.category).to eq(category)
-      expect(info.namespace).to eq('http://example.com/schema')
+      expect(info.namespace).to eq("http://example.com/schema")
     end
 
-    it 'counts elements correctly' do
+    it "counts elements correctly" do
       allow(schema).to receive(:element).and_return([1, 2, 3])
-      info = described_class.new(schema: schema, location: location, category: category)
+      info = described_class.new(schema: schema, location: location,
+                                 category: category)
       expect(info.elements_count).to eq(3)
     end
 
-    it 'counts types correctly' do
+    it "counts types correctly" do
       allow(schema).to receive(:complex_type).and_return([1, 2])
       allow(schema).to receive(:simple_type).and_return([1, 2, 3])
-      info = described_class.new(schema: schema, location: location, category: category)
+      info = described_class.new(schema: schema, location: location,
+                                 category: category)
       expect(info.types_count).to eq(5)
     end
   end
 
-  describe '#fully_resolved?' do
-    context 'with no external references' do
-      it 'returns true' do
+  describe "#fully_resolved?" do
+    context "with no external references" do
+      it "returns true" do
         expect(info.fully_resolved?).to be true
       end
     end
 
-    context 'with unresolved external references' do
+    context "with unresolved external references" do
       let(:import_obj) do
         instance_double(
           Lutaml::Xsd::Import,
-          namespace: 'http://example.com/other',
-          schema_path: '/path/to/unresolved.xsd'
+          namespace: "http://example.com/other",
+          schema_path: "/path/to/unresolved.xsd",
         )
       end
 
       before do
         allow(schema).to receive(:import).and_return([import_obj])
         allow(Lutaml::Xsd::Schema).to receive(:schema_processed?)
-          .with('/path/to/unresolved.xsd')
+          .with("/path/to/unresolved.xsd")
           .and_return(false)
       end
 
-      it 'returns false' do
-        info = described_class.new(schema: schema, location: location, category: category)
+      it "returns false" do
+        info = described_class.new(schema: schema, location: location,
+                                   category: category)
         expect(info.fully_resolved?).to be false
       end
     end
   end
 
-  describe '#partially_resolved?' do
-    it 'is opposite of fully_resolved?' do
+  describe "#partially_resolved?" do
+    it "is opposite of fully_resolved?" do
       expect(info.partially_resolved?).to eq(!info.fully_resolved?)
     end
   end
 
-  describe '#to_h' do
-    it 'returns hash representation' do
+  describe "#to_h" do
+    it "returns hash representation" do
       hash = info.to_h
 
       expect(hash).to be_a(Hash)
       expect(hash[:location]).to eq(location)
-      expect(hash[:filename]).to eq('schema.xsd')
+      expect(hash[:filename]).to eq("schema.xsd")
       expect(hash[:category]).to eq(category)
-      expect(hash[:namespace]).to eq('http://example.com/schema')
+      expect(hash[:namespace]).to eq("http://example.com/schema")
       expect(hash[:elements_count]).to eq(0)
       expect(hash[:types_count]).to eq(0)
-      expect(%i[fully_resolved partially_resolved]).to include(hash[:resolution_status])
+      expect(%i[fully_resolved
+                partially_resolved]).to include(hash[:resolution_status])
     end
 
-    it 'handles nil namespace' do
+    it "handles nil namespace" do
       allow(schema).to receive(:target_namespace).and_return(nil)
-      info = described_class.new(schema: schema, location: location, category: category)
+      info = described_class.new(schema: schema, location: location,
+                                 category: category)
       hash = info.to_h
 
-      expect(hash[:namespace]).to eq('(no namespace)')
+      expect(hash[:namespace]).to eq("(no namespace)")
     end
 
-    it 'includes correct counts' do
+    it "includes correct counts" do
       elem1 = instance_double(Lutaml::Xsd::Element)
       elem2 = instance_double(Lutaml::Xsd::Element)
       type1 = instance_double(Lutaml::Xsd::ComplexType)
       type2 = instance_double(Lutaml::Xsd::ComplexType)
       type3 = instance_double(Lutaml::Xsd::ComplexType)
       stype1 = instance_double(Lutaml::Xsd::SimpleType)
-      import1 = instance_double(Lutaml::Xsd::Import, namespace: 'ns1', schema_path: nil)
-      import2 = instance_double(Lutaml::Xsd::Import, namespace: 'ns2', schema_path: nil)
+      import1 = instance_double(Lutaml::Xsd::Import, namespace: "ns1",
+                                                     schema_path: nil)
+      import2 = instance_double(Lutaml::Xsd::Import, namespace: "ns2",
+                                                     schema_path: nil)
       include1 = instance_double(Lutaml::Xsd::Include, schema_path: nil)
 
       allow(schema).to receive(:element).and_return([elem1, elem2])
@@ -273,7 +282,8 @@ RSpec.describe Lutaml::Xsd::SchemaClassificationInfo do
       allow(schema).to receive(:import).and_return([import1, import2])
       allow(schema).to receive(:include).and_return([include1])
 
-      info = described_class.new(schema: schema, location: location, category: category)
+      info = described_class.new(schema: schema, location: location,
+                                 category: category)
       hash = info.to_h
 
       expect(hash[:elements_count]).to eq(2)
@@ -285,19 +295,19 @@ RSpec.describe Lutaml::Xsd::SchemaClassificationInfo do
     end
   end
 
-  describe 'external references extraction' do
+  describe "external references extraction" do
     let(:import_obj) do
       instance_double(
         Lutaml::Xsd::Import,
-        namespace: 'http://example.com/import',
-        schema_path: '/path/to/import.xsd'
+        namespace: "http://example.com/import",
+        schema_path: "/path/to/import.xsd",
       )
     end
 
     let(:include_obj) do
       instance_double(
         Lutaml::Xsd::Include,
-        schema_path: '/path/to/include.xsd'
+        schema_path: "/path/to/include.xsd",
       )
     end
 
@@ -306,55 +316,58 @@ RSpec.describe Lutaml::Xsd::SchemaClassificationInfo do
       allow(schema).to receive(:include).and_return([include_obj])
     end
 
-    it 'extracts import references' do
-      info = described_class.new(schema: schema, location: location, category: category)
+    it "extracts import references" do
+      info = described_class.new(schema: schema, location: location,
+                                 category: category)
       hash = info.to_h
 
       expect(hash[:external_refs_count]).to eq(2)
     end
   end
 
-  describe 'resolution status determination' do
-    context 'with all references resolved' do
+  describe "resolution status determination" do
+    context "with all references resolved" do
       let(:import_obj) do
         instance_double(
           Lutaml::Xsd::Import,
-          namespace: 'http://example.com/import',
-          schema_path: '/path/to/import.xsd'
+          namespace: "http://example.com/import",
+          schema_path: "/path/to/import.xsd",
         )
       end
 
       before do
         allow(schema).to receive(:import).and_return([import_obj])
         allow(Lutaml::Xsd::Schema).to receive(:schema_processed?)
-          .with('/path/to/import.xsd')
+          .with("/path/to/import.xsd")
           .and_return(true)
       end
 
-      it 'sets status to fully_resolved' do
-        info = described_class.new(schema: schema, location: location, category: category)
+      it "sets status to fully_resolved" do
+        info = described_class.new(schema: schema, location: location,
+                                   category: category)
         expect(info.to_h[:resolution_status]).to eq(:fully_resolved)
       end
     end
 
-    context 'with unresolved references' do
+    context "with unresolved references" do
       let(:import_obj) do
         instance_double(
           Lutaml::Xsd::Import,
-          namespace: 'http://example.com/import',
-          schema_path: '/path/to/unresolved.xsd'
+          namespace: "http://example.com/import",
+          schema_path: "/path/to/unresolved.xsd",
         )
       end
 
       before do
         allow(schema).to receive(:import).and_return([import_obj])
         allow(Lutaml::Xsd::Schema).to receive(:schema_processed?)
-          .with('/path/to/unresolved.xsd')
+          .with("/path/to/unresolved.xsd")
           .and_return(false)
       end
 
-      it 'sets status to partially_resolved' do
-        info = described_class.new(schema: schema, location: location, category: category)
+      it "sets status to partially_resolved" do
+        info = described_class.new(schema: schema, location: location,
+                                   category: category)
         expect(info.to_h[:resolution_status]).to eq(:partially_resolved)
       end
     end

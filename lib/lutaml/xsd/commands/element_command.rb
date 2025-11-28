@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'thor'
-require_relative 'base_command'
+require "thor"
+require_relative "base_command"
 
 module Lutaml
   module Xsd
@@ -10,17 +10,17 @@ module Lutaml
       # Handles listing, showing, and analyzing element definitions
       class ElementCommand < Thor
         # Command aliases
-        map 'ls' => :list
-        map 's' => :show
-        map 't' => :tree
-        map 'u' => :usage
+        map "ls" => :list
+        map "s" => :show
+        map "t" => :tree
+        map "u" => :usage
 
         class_option :verbose,
                      type: :boolean,
                      default: false,
-                     desc: 'Enable verbose output'
+                     desc: "Enable verbose output"
 
-        desc 'list PACKAGE_FILE', 'List all elements in the repository'
+        desc "list PACKAGE_FILE", "List all elements in the repository"
         long_desc <<~DESC
           List all top-level element definitions in the schema repository.
           Elements can be filtered by namespace.
@@ -37,17 +37,18 @@ module Lutaml
         DESC
         option :namespace,
                type: :string,
-               desc: 'Filter by namespace URI'
+               desc: "Filter by namespace URI"
         option :format,
                type: :string,
-               default: 'text',
+               default: "text",
                enum: %w[text json yaml],
-               desc: 'Output format'
+               desc: "Output format"
         def list(package_file)
           ListCommand.new(package_file, options).run
         end
 
-        desc 'show ELEMENT_NAME PACKAGE_FILE', 'Show details about a specific element'
+        desc "show ELEMENT_NAME PACKAGE_FILE",
+             "Show details about a specific element"
         long_desc <<~DESC
           Display detailed information about a specific element including its type,
           attributes, and documentation.
@@ -74,12 +75,12 @@ module Lutaml
         option :show_attributes,
                type: :boolean,
                default: true,
-               desc: 'Show element attributes'
+               desc: "Show element attributes"
         def show(element_name, package_file)
           ShowCommand.new(element_name, package_file, options).run
         end
 
-        desc 'tree ELEMENT_NAME PACKAGE_FILE', 'Show element structure tree'
+        desc "tree ELEMENT_NAME PACKAGE_FILE", "Show element structure tree"
         long_desc <<~DESC
           Display the nested structure of an element showing its composition
           and child elements.
@@ -97,12 +98,12 @@ module Lutaml
         option :depth,
                type: :numeric,
                default: 3,
-               desc: 'Maximum depth to display'
+               desc: "Maximum depth to display"
         def tree(element_name, package_file)
           TreeCommand.new(element_name, package_file, options).run
         end
 
-        desc 'usage ELEMENT_NAME PACKAGE_FILE', 'Show where element is used'
+        desc "usage ELEMENT_NAME PACKAGE_FILE", "Show where element is used"
         long_desc <<~DESC
           Display information about where an element is referenced or used
           within the schema repository.
@@ -118,7 +119,7 @@ module Lutaml
           UsageCommand.new(element_name, package_file, options).run
         end
 
-        desc 'by_namespace PACKAGE', 'List elements grouped by namespace'
+        desc "by_namespace PACKAGE", "List elements grouped by namespace"
         long_desc <<~DESC
           Display all elements organized by namespace, showing their types and details.
 
@@ -127,13 +128,14 @@ module Lutaml
             lutaml-xsd element by_namespace schemas.lxr --namespace "http://..."
             lutaml-xsd element by_namespace schemas.lxr --format json
         DESC
-        option :namespace, type: :string, desc: 'Filter by specific namespace URI'
-        option :format, type: :string, default: 'text', enum: %w[text json yaml]
+        option :namespace, type: :string,
+                           desc: "Filter by specific namespace URI"
+        option :format, type: :string, default: "text", enum: %w[text json yaml]
         def by_namespace(package_path)
           ByNamespaceCommand.new(package_path, options).run
         end
 
-        map 'bn' => :by_namespace
+        map "bn" => :by_namespace
 
         # List command implementation
         class ListCommand < BaseCommand
@@ -154,10 +156,10 @@ module Lutaml
           def list_elements(repository)
             elements = collect_elements(repository)
 
-            format = options[:format] || 'text'
+            format = options[:format] || "text"
 
             case format
-            when 'json', 'yaml'
+            when "json", "yaml"
               output format_output(elements, format)
             else
               display_text_list(elements, repository)
@@ -184,7 +186,7 @@ module Lutaml
                 name: type_info[:definition]&.name,
                 namespace: type_info[:namespace],
                 type: extract_element_type(type_info[:definition]),
-                schema_file: File.basename(type_info[:schema_file])
+                schema_file: File.basename(type_info[:schema_file]),
               }
             end.compact
           end
@@ -194,56 +196,60 @@ module Lutaml
 
             # If element has a complex or simple type definition
             if element.respond_to?(:complex_type) && element.complex_type
-              '(inline complex type)'
+              "(inline complex type)"
             elsif element.respond_to?(:simple_type) && element.simple_type
-              '(inline simple type)'
+              "(inline simple type)"
             else
-              '(untyped)'
+              "(untyped)"
             end
           end
 
           def display_text_list(elements, repository)
-            require 'table_tennis'
+            require "table_tennis"
 
-            output 'Elements in Repository'
-            output '=' * 80
-            output ''
+            output "Elements in Repository"
+            output "=" * 80
+            output ""
             output "Total Elements: #{elements.size}"
 
             if options[:namespace]
               namespace_registry = repository.instance_variable_get(:@namespace_registry)
               prefix = namespace_registry.get_primary_prefix(options[:namespace])
-              prefix_str = prefix ? " (#{prefix})" : ''
+              prefix_str = prefix ? " (#{prefix})" : ""
               output "Filtered by Namespace: #{options[:namespace]}#{prefix_str}"
             end
 
-            output ''
+            output ""
 
             # Group by namespace
             by_namespace = elements.group_by { |e| e[:namespace] }
-            by_namespace.sort_by { |ns, _| ns || '' }.each do |ns, ns_elements|
+            by_namespace.sort_by { |ns, _| ns || "" }.each do |ns, ns_elements|
               namespace_registry = repository.instance_variable_get(:@namespace_registry)
               prefix = namespace_registry.get_primary_prefix(ns)
-              prefix_str = prefix ? " (#{prefix})" : ''
+              prefix_str = prefix ? " (#{prefix})" : ""
 
-              output ''
+              output ""
               output "#{ns || '(no namespace)'}#{prefix_str} - #{ns_elements.size} elements"
-              output '-' * 80
+              output "-" * 80
 
               # Build table data as array of hashes
               element_data = if verbose?
-                               ns_elements.sort_by { |e| e[:name] }.map do |elem|
+                               ns_elements.sort_by do |e|
+                                 e[:name]
+                               end.map do |elem|
                                  {
-                                   'Name' => elem[:name],
-                                   'Type' => elem[:type] || '(untyped)',
-                                   'Schema File' => elem[:schema_file]
+                                   "Name" => elem[:name],
+                                   "Type" => elem[:type] || "(untyped)",
+                                   "Schema File" => elem[:schema_file],
                                  }
                                end
                              else
-                               ns_elements.sort_by { |e| e[:name] }.map do |elem|
+                               ns_elements.sort_by do |e|
+                                 e[:name]
+                               end.map do |elem|
                                  {
-                                   'Name' => elem[:name],
-                                   'Type' => elem[:type] || '(untyped)'
+                                   "Name" => elem[:name],
+                                   "Type" => elem[:type] || "(untyped)",
                                  }
                                end
                              end
@@ -276,7 +282,7 @@ module Lutaml
 
             unless result.resolved?
               error "Element not found: #{@element_name}"
-              output ''
+              output ""
               output result.error_message if result.error_message
               exit 1
             end
@@ -288,10 +294,10 @@ module Lutaml
 
             element_info = build_element_info(result, repository)
 
-            format = options[:format] || 'text'
+            format = options[:format] || "text"
 
             case format
-            when 'json', 'yaml'
+            when "json", "yaml"
               output format_output(element_info, format)
             else
               display_text_info(element_info, result.definition)
@@ -304,14 +310,20 @@ module Lutaml
               name: element.name,
               namespace: result.namespace,
               qualified_name: result.qname,
-              schema_file: File.basename(result.schema_file)
+              schema_file: File.basename(result.schema_file),
             }
 
             # Extract type information
-            info[:type_ref] = element.type if element.respond_to?(:type) && element.type
+            if element.respond_to?(:type) && element.type
+              info[:type_ref] =
+                element.type
+            end
 
             # Extract attributes if requested
-            info[:attributes] = extract_attributes(element) if options[:show_attributes]
+            if options[:show_attributes]
+              info[:attributes] =
+                extract_attributes(element)
+            end
 
             # Extract documentation
             if element.respond_to?(:annotation) && element.annotation
@@ -332,7 +344,7 @@ module Lutaml
               {
                 name: attr.respond_to?(:name) ? attr.name : nil,
                 type: attr.respond_to?(:type) ? attr.type : nil,
-                use: attr.respond_to?(:use) ? attr.use : nil
+                use: attr.respond_to?(:use) ? attr.use : nil,
               }
             end.compact
           end
@@ -347,10 +359,10 @@ module Lutaml
           end
 
           def display_text_info(info, element)
-            output '=' * 80
+            output "=" * 80
             output "Element: #{info[:name]}"
-            output '=' * 80
-            output ''
+            output "=" * 80
+            output ""
             output "Qualified Name: #{info[:qualified_name]}"
             output "Namespace: #{info[:namespace]}"
             output "Schema File: #{info[:schema_file]}"
@@ -358,14 +370,14 @@ module Lutaml
             if info[:type_ref]
               output "Type Reference: #{info[:type_ref]}"
             elsif element.respond_to?(:complex_type) && element.complex_type
-              output 'Type: (inline complex type)'
+              output "Type: (inline complex type)"
             elsif element.respond_to?(:simple_type) && element.simple_type
-              output 'Type: (inline simple type)'
+              output "Type: (inline simple type)"
             end
 
             if info[:documentation] && !info[:documentation].empty?
-              output ''
-              output 'Documentation:'
+              output ""
+              output "Documentation:"
               info[:documentation].split("\n").each do |line|
                 output "  #{line.strip}"
               end
@@ -373,10 +385,10 @@ module Lutaml
 
             return unless options[:show_attributes] && info[:attributes]&.any?
 
-            output ''
-            output 'Attributes:'
+            output ""
+            output "Attributes:"
             info[:attributes].each do |attr|
-              use_str = attr[:use] ? " (#{attr[:use]})" : ''
+              use_str = attr[:use] ? " (#{attr[:use]})" : ""
               output "  - #{attr[:name]}: #{attr[:type]}#{use_str}"
             end
           end
@@ -414,17 +426,17 @@ module Lutaml
             end
 
             output "Element Structure: #{result.qname}"
-            output '=' * 80
-            output ''
+            output "=" * 80
+            output ""
 
-            display_element_node(result.definition, '', true, 0, repository)
+            display_element_node(result.definition, "", true, 0, repository)
           end
 
           def display_element_node(element, indent, is_last, depth, repository)
             return if depth > @max_depth
 
-            connector = is_last ? '└── ' : '├── '
-            name = element.respond_to?(:name) ? element.name : '(unnamed)'
+            connector = is_last ? "└── " : "├── "
+            name = element.respond_to?(:name) ? element.name : "(unnamed)"
             type_info = get_type_info(element)
 
             output "#{indent}#{connector}#{name}#{type_info}"
@@ -432,11 +444,12 @@ module Lutaml
             # Don't recurse further if we're at max depth
             return if depth >= @max_depth
 
-            child_indent = indent + (is_last ? '    ' : '│   ')
+            child_indent = indent + (is_last ? "    " : "│   ")
 
             # Display child elements from complex type
             if element.respond_to?(:complex_type) && element.complex_type
-              display_complex_type_children(element.complex_type, child_indent, depth, repository)
+              display_complex_type_children(element.complex_type, child_indent,
+                                            depth, repository)
             elsif element.respond_to?(:type) && element.type
               # Try to resolve the type reference
               type_result = repository.find_type(element.type)
@@ -451,15 +464,16 @@ module Lutaml
             if element.respond_to?(:type) && element.type
               " : #{element.type}"
             elsif element.respond_to?(:complex_type) && element.complex_type
-              ' : (complex type)'
+              " : (complex type)"
             elsif element.respond_to?(:simple_type) && element.simple_type
-              ' : (simple type)'
+              " : (simple type)"
             else
-              ''
+              ""
             end
           end
 
-          def display_complex_type_children(complex_type, indent, depth, repository)
+          def display_complex_type_children(complex_type, indent, depth,
+repository)
             # Display sequence elements
             if complex_type.respond_to?(:sequence) && complex_type.sequence
               display_sequence_children(complex_type.sequence, indent, depth,
@@ -469,7 +483,8 @@ module Lutaml
             # Display choice elements
             return unless complex_type.respond_to?(:choice) && complex_type.choice
 
-            display_choice_children(complex_type.choice, indent, depth, repository)
+            display_choice_children(complex_type.choice, indent, depth,
+                                    repository)
           end
 
           def display_sequence_children(sequence, indent, depth, repository)
@@ -491,7 +506,8 @@ module Lutaml
 
             elements.each_with_index do |elem, idx|
               is_last = idx == elements.size - 1
-              display_element_node(elem, choice_indent, is_last, depth + 1, repository)
+              display_element_node(elem, choice_indent, is_last, depth + 1,
+                                   repository)
             end
           end
         end
@@ -522,15 +538,15 @@ module Lutaml
             end
 
             output "Element Usage: #{result.qname}"
-            output '=' * 80
-            output ''
+            output "=" * 80
+            output ""
 
             output "Namespace: #{result.namespace}"
             output "Schema File: #{File.basename(result.schema_file)}"
-            output ''
+            output ""
 
-            output 'Note: Full usage tracking is not yet implemented.'
-            output 'This feature will show which types reference this element in future versions.'
+            output "Note: Full usage tracking is not yet implemented."
+            output "This feature will show which types reference this element in future versions."
           end
         end
 
@@ -546,11 +562,11 @@ module Lutaml
             repository = ensure_resolved(repository)
 
             elements = repository.elements_by_namespace(
-              namespace_uri: options[:namespace]
+              namespace_uri: options[:namespace],
             )
 
             case options[:format]
-            when 'json', 'yaml'
+            when "json", "yaml"
               output format_output(elements, options[:format])
             else
               display_text_output(elements, repository)
@@ -560,26 +576,26 @@ module Lutaml
           private
 
           def display_text_output(elements, repository)
-            require 'table_tennis'
+            require "table_tennis"
 
             elements.each do |namespace_uri, elems|
-              prefix = repository.namespace_to_prefix(namespace_uri) || '(no prefix)'
+              prefix = repository.namespace_to_prefix(namespace_uri) || "(no prefix)"
 
-              output ''
-              output '=' * 80
+              output ""
+              output "=" * 80
               output "Namespace: #{prefix}"
               output "URI: #{namespace_uri}"
               output "Elements: #{elems.size}"
-              output '=' * 80
-              output ''
+              output "=" * 80
+              output ""
 
               # Create table for elements
               elems_data = elems.map do |elem|
                 {
-                  'Element' => elem[:qualified_name],
-                  'Type' => elem[:type],
-                  'Cardinality' => "[#{elem[:min_occurs]}..#{elem[:max_occurs] == 'unbounded' ? '*' : elem[:max_occurs]}]",
-                  'Documentation' => elem[:documentation]
+                  "Element" => elem[:qualified_name],
+                  "Type" => elem[:type],
+                  "Cardinality" => "[#{elem[:min_occurs]}..#{elem[:max_occurs] == 'unbounded' ? '*' : elem[:max_occurs]}]",
+                  "Documentation" => elem[:documentation],
                 }
               end
 

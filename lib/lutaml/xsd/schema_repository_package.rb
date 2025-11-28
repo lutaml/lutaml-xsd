@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require 'yaml'
-require 'zip'
-require 'fileutils'
-require 'tmpdir'
-require 'set'
+require "yaml"
+require "zip"
+require "fileutils"
+require "tmpdir"
+require "set"
 
 module Lutaml
   module Xsd
@@ -32,7 +32,7 @@ module Lutaml
             valid?: valid?,
             errors: errors,
             warnings: warnings,
-            metadata: metadata
+            metadata: metadata,
           }
         end
       end
@@ -78,7 +78,7 @@ module Lutaml
         unless File.exist?(zip_path)
           return ValidationResult.new(
             valid: false,
-            errors: ["Package file not found: #{zip_path}"]
+            errors: ["Package file not found: #{zip_path}"],
           )
         end
 
@@ -91,11 +91,11 @@ module Lutaml
           Zip::File.open(zip_path) do |zipfile|
             zipfile.each do |entry|
               case entry.name
-              when 'metadata.yaml'
+              when "metadata.yaml"
                 has_metadata = true
                 metadata = YAML.safe_load(
                   entry.get_input_stream.read,
-                  permitted_classes: [Time, Date, Symbol]
+                  permitted_classes: [Time, Date, Symbol],
                 )
               when %r{^schemas/.+\.xsd$}
                 schema_entries << entry.name
@@ -106,7 +106,10 @@ module Lutaml
           # Validate structure
           validate_structure(has_metadata, schema_entries, errors)
 
-          return ValidationResult.new(valid: false, errors: errors) unless metadata
+          unless metadata
+            return ValidationResult.new(valid: false,
+                                        errors: errors)
+          end
 
           # Validate metadata
           validate_metadata(metadata, schema_entries, errors, warnings)
@@ -125,7 +128,7 @@ module Lutaml
           valid: errors.empty?,
           errors: errors,
           warnings: warnings,
-          metadata: metadata
+          metadata: metadata,
         )
       end
 
@@ -133,7 +136,10 @@ module Lutaml
       # @return [SchemaRepository]
       def load_repository
         validation = validate
-        raise Error, "Invalid package: #{validation.errors.join(', ')}" unless validation.valid?
+        unless validation.valid?
+          raise Error,
+                "Invalid package: #{validation.errors.join(', ')}"
+        end
 
         @metadata = validation.metadata
         @repository = extract_and_build_repository
@@ -165,7 +171,7 @@ module Lutaml
         # Create ZIP file
         Zip::File.open(zip_path, create: true) do |zipfile|
           # Write metadata using Lutaml::Model's to_yaml
-          zipfile.get_output_stream('metadata.yaml') do |f|
+          zipfile.get_output_stream("metadata.yaml") do |f|
             f.write(@metadata.to_yaml)
           end
 
@@ -189,7 +195,7 @@ module Lutaml
               serialized_schemas,
               xsd_files,
               config.serialization_format,
-              repository.namespace_mappings
+              repository.namespace_mappings,
             )
           end
         end
@@ -204,11 +210,11 @@ module Lutaml
       # @param schema_entries [Array<String>] Schema file entries
       # @param errors [Array<String>] Error collection
       def validate_structure(has_metadata, schema_entries, errors)
-        errors << 'Invalid package structure: missing metadata.yaml' unless has_metadata
+        errors << "Invalid package structure: missing metadata.yaml" unless has_metadata
 
         return unless schema_entries.empty?
 
-        errors << 'Invalid package structure: no schemas found in schemas/ directory'
+        errors << "Invalid package structure: no schemas found in schemas/ directory"
       end
 
       # Validate metadata content
@@ -226,17 +232,18 @@ module Lutaml
       # @param metadata [Hash] Metadata hash
       # @param errors [Array<String>] Error collection
       def validate_metadata_structure(metadata, errors)
-        required_fields = %w[files namespace_mappings created_at lutaml_xsd_version]
+        required_fields = %w[files namespace_mappings created_at
+                             lutaml_xsd_version]
         required_fields.each do |field|
           errors << "Metadata missing required field: #{field}" unless metadata.key?(field)
         end
 
         # Validate field types
-        validate_field_type(metadata, 'files', Array, errors)
-        validate_field_type(metadata, 'namespace_mappings', Array, errors)
-        return unless metadata.key?('schema_location_mappings')
+        validate_field_type(metadata, "files", Array, errors)
+        validate_field_type(metadata, "namespace_mappings", Array, errors)
+        return unless metadata.key?("schema_location_mappings")
 
-        validate_field_type(metadata, 'schema_location_mappings', Array,
+        validate_field_type(metadata, "schema_location_mappings", Array,
                             errors)
       end
 
@@ -257,10 +264,10 @@ module Lutaml
       # @param warnings [Array<String>] Warning collection
       def validate_metadata_fields(metadata, errors, warnings)
         # Validate namespace mappings
-        validate_namespace_mappings(metadata['namespace_mappings'], errors)
+        validate_namespace_mappings(metadata["namespace_mappings"], errors)
 
         # Check version compatibility
-        validate_version_compatibility(metadata['lutaml_xsd_version'], warnings)
+        validate_version_compatibility(metadata["lutaml_xsd_version"], warnings)
       end
 
       # Validate namespace mappings structure
@@ -274,7 +281,7 @@ module Lutaml
             errors << "Namespace mapping at index #{idx} must be a hash"
             next
           end
-          errors << "Namespace mapping at index #{idx} missing required fields: prefix, uri" unless mapping['prefix'] && mapping['uri']
+          errors << "Namespace mapping at index #{idx} missing required fields: prefix, uri" unless mapping["prefix"] && mapping["uri"]
         end
       end
 
@@ -297,13 +304,13 @@ module Lutaml
       # @param schema_entries [Array<String>] Actual schema entries in ZIP
       # @param errors [Array<String>] Error collection
       def validate_schema_references(metadata, schema_entries, errors)
-        return unless metadata['files'].is_a?(Array)
+        return unless metadata["files"].is_a?(Array)
 
         # Extract basenames from schema entries
         schema_basenames = schema_entries.map { |e| File.basename(e) }
 
         # Check each file in metadata has corresponding entry
-        metadata['files'].each do |file_ref|
+        metadata["files"].each do |file_ref|
           basename = File.basename(file_ref)
           errors << "Metadata references schema '#{file_ref}' not found in package" unless schema_basenames.include?(basename)
         end
@@ -315,16 +322,16 @@ module Lutaml
       # @param warnings [Array<String>] Warning collection
       def validate_self_containment(metadata, errors, warnings)
         # Extract all schema locations from schema_location_mappings
-        return unless metadata['schema_location_mappings'].is_a?(Array)
+        return unless metadata["schema_location_mappings"].is_a?(Array)
 
-        metadata['schema_location_mappings'].each do |mapping|
-          to_location = mapping['to']
+        metadata["schema_location_mappings"].each do |mapping|
+          to_location = mapping["to"]
           next unless to_location
 
           # Check if location points outside package
-          if to_location.start_with?('http://', 'https://')
+          if to_location.start_with?("http://", "https://")
             errors << "Package has external dependency: #{to_location}"
-          elsif to_location.start_with?('/', '../')
+          elsif to_location.start_with?("/", "../")
             warnings << "Package may have external file dependency: #{to_location}"
           end
         end
@@ -343,7 +350,7 @@ module Lutaml
         schema_files = []
         serialized_data_files = {}
 
-        temp_dir = Dir.mktmpdir('lutaml_xsd_package')
+        temp_dir = Dir.mktmpdir("lutaml_xsd_package")
 
         # Extract package contents to temporary directory
         Zip::File.open(zip_path) do |zipfile|
@@ -360,11 +367,11 @@ module Lutaml
             File.binwrite(extract_path, entry.get_input_stream.read)
 
             # Categorize extracted files
-            if entry.name == 'metadata.yaml'
+            if entry.name == "metadata.yaml"
               metadata = YAML.load_file(extract_path)
-            elsif entry.name.start_with?('schemas/')
+            elsif entry.name.start_with?("schemas/")
               schema_files << extract_path
-            elsif entry.name.start_with?('schemas_data/')
+            elsif entry.name.start_with?("schemas_data/")
               # Track serialized schema files for later deserialization
               serialized_data_files[entry.name] = extract_path
             end
@@ -375,7 +382,10 @@ module Lutaml
         repository = build_repository_from_metadata(metadata, schema_files)
 
         # Load serialized schemas if present
-        load_serialized_schemas_from_files(repository, serialized_data_files, metadata) if serialized_data_files.any?
+        if serialized_data_files.any?
+          load_serialized_schemas_from_files(repository, serialized_data_files,
+                                             metadata)
+        end
 
         # Store temp directory path so it can be cleaned up later
         # The repository needs these files to exist during parse/resolve
@@ -396,29 +406,29 @@ module Lutaml
       def build_repository_from_metadata(metadata, schema_files)
         repository = SchemaRepository.new(
           files: schema_files,
-          schema_location_mappings: parse_schema_location_mappings(metadata['schema_location_mappings']),
-          namespace_mappings: parse_namespace_mappings(metadata['namespace_mappings'])
+          schema_location_mappings: parse_schema_location_mappings(metadata["schema_location_mappings"]),
+          namespace_mappings: parse_namespace_mappings(metadata["namespace_mappings"]),
         )
 
         # Get serialization format from metadata (default to parse for backward compatibility)
-        serialization_format = (metadata['serialization_format'] || 'parse').to_sym
+        serialization_format = (metadata["serialization_format"] || "parse").to_sym
 
         # Load schemas based on serialization format
         case serialization_format
         when :parse
           # Parse XSD files (slowest but most compatible)
-          repository.parse if metadata['xsd_mode'] == 'include_all' && metadata['resolution_mode'] == 'resolved'
+          repository.parse if metadata["xsd_mode"] == "include_all" && metadata["resolution_mode"] == "resolved"
         when :marshal, :json, :yaml
           # Load from serialized schemas_data/ (fast)
           # This will be handled during ZIP extraction
         end
 
         # Backward compatibility: load from old serialized_schemas format
-        if metadata['serialized_schemas']&.any?
+        if metadata["serialized_schemas"]&.any?
           config = PackageConfiguration.new(
-            xsd_mode: metadata['xsd_mode'] || :include_all,
-            resolution_mode: metadata['resolution_mode'] || :resolved,
-            serialization_format: serialization_format
+            xsd_mode: metadata["xsd_mode"] || :include_all,
+            resolution_mode: metadata["resolution_mode"] || :resolved,
+            serialization_format: serialization_format,
           )
           builder = PackageBuilder.new(config)
           builder.load(repository, metadata)
@@ -482,7 +492,8 @@ module Lutaml
 
         all_schemas.each_key do |schema_location|
           # Resolve the schema location to actual file path using mappings
-          resolved_path = resolve_schema_location(schema_location, glob_mappings)
+          resolved_path = resolve_schema_location(schema_location,
+                                                  glob_mappings)
 
           next unless resolved_path && File.exist?(resolved_path)
 
@@ -542,11 +553,12 @@ module Lutaml
       # @param xsd_files [Hash] Map of source_path => package info (with renamed paths)
       # @param format [Symbol] Serialization format
       # @param namespace_mappings [Array<NamespaceMapping>] Namespace mappings
-      def write_serialized_schemas(zipfile, serialized_schemas, xsd_files, format, namespace_mappings)
+      def write_serialized_schemas(zipfile, serialized_schemas, xsd_files,
+format, namespace_mappings)
         extension = case format
-                    when :marshal then 'marshal'
-                    when :json then 'json'
-                    when :yaml then 'yaml'
+                    when :marshal then "marshal"
+                    when :json then "json"
+                    when :yaml then "yaml"
                     else return
                     end
 
@@ -555,7 +567,10 @@ module Lutaml
         source_to_basename = {}
         xsd_files.each do |source_abs_path, package_info|
           renamed_path = package_info.is_a?(Hash) ? package_info[:package_path] : package_info
-          source_to_basename[source_abs_path] = File.basename(renamed_path, '.*') if renamed_path
+          if renamed_path
+            source_to_basename[source_abs_path] =
+              File.basename(renamed_path, ".*")
+          end
         end
 
         # Get all schemas from global cache
@@ -572,7 +587,7 @@ module Lutaml
           xsd_files.each_key do |source_abs_path|
             # Check if this source file matches the schema location
             # Schema locations in cache can be relative or absolute
-            if schema_location.start_with?('/')
+            if schema_location.start_with?("/")
               # Absolute path in cache
               if File.absolute_path(schema_location) == File.absolute_path(source_abs_path)
                 matching_basename = source_to_basename[source_abs_path]
@@ -582,7 +597,8 @@ module Lutaml
               # Relative path in cache - check if it refers to the same file
               # by comparing the actual file's basename and checking if source path ends with it
               schema_basename = File.basename(schema_location)
-              if source_abs_path.end_with?(schema_basename) || source_abs_path.end_with?("/#{schema_location}")
+              if source_abs_path.end_with?(schema_basename,
+                                           "/#{schema_location}")
                 matching_basename = source_to_basename[source_abs_path]
                 break
               end
@@ -590,10 +606,11 @@ module Lutaml
           end
 
           # Use the renamed basename from bundler, or fall back to schema location basename
-          basename = matching_basename || File.basename(schema_location, '.*')
+          basename = matching_basename || File.basename(schema_location, ".*")
 
           # Use basename directly (bundler has already made it unique)
-          unique_name = resolve_schema_name(basename, schema, namespace_mappings)
+          unique_name = resolve_schema_name(basename, schema,
+                                            namespace_mappings)
 
           zip_path = "schemas_data/#{unique_name}.#{extension}"
 
@@ -613,16 +630,17 @@ module Lutaml
       # @param serialized_files [Hash] Map of zip_path => extracted file path
       # @param metadata [Hash] Package metadata containing serialization format
       # @return [void]
-      def load_serialized_schemas_from_files(repository, serialized_files, metadata)
-        serialization_format = (metadata['serialization_format'] || 'parse').to_sym
+      def load_serialized_schemas_from_files(repository, serialized_files,
+metadata)
+        serialization_format = (metadata["serialization_format"] || "parse").to_sym
         return if serialization_format == :parse
 
         builder = PackageBuilder.new(
           PackageConfiguration.new(
-            xsd_mode: metadata['xsd_mode'] || :include_all,
-            resolution_mode: metadata['resolution_mode'] || :resolved,
-            serialization_format: serialization_format
-          )
+            xsd_mode: metadata["xsd_mode"] || :include_all,
+            resolution_mode: metadata["resolution_mode"] || :resolved,
+            serialization_format: serialization_format,
+          ),
         )
 
         namespace_mappings = repository.namespace_mappings || []
@@ -633,14 +651,15 @@ module Lutaml
 
           # Extract unique name from serialized file (includes prefix or hash)
           # The name may include a namespace prefix for disambiguation
-          serialized_basename = File.basename(file_path, '.*')
+          serialized_basename = File.basename(file_path, ".*")
 
           # Find matching XSD file by generating unique name from schema's namespace
           # This matches the naming strategy used during package creation
           actual_schema_path = repository.files.find do |schema_file|
-            xsd_basename = File.basename(schema_file, '.*')
+            xsd_basename = File.basename(schema_file, ".*")
             # Generate unique name using namespace prefix approach
-            unique_name = resolve_schema_name(xsd_basename, schema, namespace_mappings)
+            unique_name = resolve_schema_name(xsd_basename, schema,
+                                              namespace_mappings)
             unique_name == serialized_basename
           end
 
@@ -648,9 +667,9 @@ module Lutaml
             # Fallback: try to match just by basename (without prefix/hash suffix)
             # This handles both old hash format (_[a-f0-9]+) and new prefix format (_prefix)
             # Provides backward compatibility with older package formats
-            xsd_basename_only = serialized_basename.sub(/_[a-z0-9]+$/i, '')
+            xsd_basename_only = serialized_basename.sub(/_[a-z0-9]+$/i, "")
             actual_schema_path = repository.files.find do |f|
-              File.basename(f, '.*') == xsd_basename_only
+              File.basename(f, ".*") == xsd_basename_only
             end || "#{xsd_basename_only}.xsd"
           end
 
@@ -682,7 +701,7 @@ module Lutaml
 
           if from.is_a?(Regexp)
             # Pattern matching
-            if location =~ from
+            if location&.match?(from)
               # Use gsub to apply the pattern replacement
               return location.gsub(from, to)
             end

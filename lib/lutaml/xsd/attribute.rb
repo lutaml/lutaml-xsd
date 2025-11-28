@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'liquid_methods/attribute'
+require_relative "liquid_methods/attribute"
 
 module Lutaml
   module Xsd
@@ -8,7 +8,9 @@ module Lutaml
       include LiquidMethods::Attribute
 
       attribute :id, :string
-      attribute :use, :string, values: %w[required prohibited optional], default: -> { 'optional' }
+      attribute :use, :string, values: %w[required prohibited optional], default: -> {
+        "optional"
+      }
       attribute :ref, :string
       attribute :name, :string
       attribute :type, :string
@@ -19,8 +21,8 @@ module Lutaml
       attribute :simple_type, :simple_type
 
       xml do
-        root 'attribute', mixed: true
-        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
+        root "attribute", mixed: true
+        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :id, to: :id
         map_attribute :use, to: :use

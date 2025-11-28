@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'base_command'
-require_relative '../spa/generator'
+require_relative "base_command"
+require_relative "../spa/generator"
 
 module Lutaml
   module Xsd
@@ -52,8 +52,8 @@ module Lutaml
         # @return [void]
         def validate_inputs
           unless package_path
-            error 'No package file specified'
-            error 'Usage: lutaml-xsd generate-spa PACKAGE [options]'
+            error "No package file specified"
+            error "Usage: lutaml-xsd generate-spa PACKAGE [options]"
             exit 1
           end
 
@@ -69,17 +69,17 @@ module Lutaml
         #
         # @return [void]
         def validate_output_options
-          mode = options[:mode] || 'single_file'
+          mode = options[:mode] || "single_file"
 
           case mode
-          when 'single_file'
+          when "single_file"
             unless output_path
-              error 'Single-file mode requires --output option'
+              error "Single-file mode requires --output option"
               exit 1
             end
-          when 'multi_file', 'api'
+          when "multi_file", "api"
             unless output_dir
-              mode_name = mode.tr('_', '-').capitalize
+              mode_name = mode.tr("_", "-").capitalize
               error "#{mode_name} mode requires --output-dir option"
               exit 1
             end
@@ -97,7 +97,7 @@ module Lutaml
 
           package_obj = SchemaRepositoryPackage.load(package_path)
 
-          verbose_output '✓ Package loaded successfully'
+          verbose_output "✓ Package loaded successfully"
           package_obj
         end
 
@@ -106,17 +106,17 @@ module Lutaml
         # @param package [SchemaRepositoryPackage] Schema package
         # @return [Spa::Generator] Generator instance
         def create_generator(package)
-          verbose_output 'Initializing SPA generator...'
+          verbose_output "Initializing SPA generator..."
 
           # Determine output path based on mode
-          mode = options[:mode] || 'single_file'
-          output_location = mode == 'single_file' ? output_path : output_dir
+          mode = options[:mode] || "single_file"
+          output_location = mode == "single_file" ? output_path : output_dir
 
           generator = Spa::Generator.new(
             package,
             output_location,
             mode: mode,
-            verbose: verbose?
+            verbose: verbose?,
           )
 
           verbose_output "✓ Generator initialized in #{mode} mode"
@@ -128,13 +128,13 @@ module Lutaml
         # @param output_files [Array<String>] List of generated files
         # @return [void]
         def display_results(output_files)
-          output ''
-          output 'SPA Documentation Generated Successfully'
-          output '=' * 80
-          output ''
+          output ""
+          output "SPA Documentation Generated Successfully"
+          output "=" * 80
+          output ""
 
           if output_files.size == 1
-            output 'Output file:'
+            output "Output file:"
             output "  #{output_files.first}"
           else
             output "Output files (#{output_files.size} total):"
@@ -143,8 +143,8 @@ module Lutaml
             end
           end
 
-          output ''
-          output '✓ Generation complete'
+          output ""
+          output "✓ Generation complete"
         end
       end
     end

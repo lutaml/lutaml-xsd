@@ -34,7 +34,7 @@ module Lutaml
           file: file,
           valid: success?,
           error: error,
-          detected_version: detected_version
+          detected_version: detected_version,
         }.compact
       end
 

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'rule_registry'
-require_relative 'result_collector'
+require_relative "rule_registry"
+require_relative "result_collector"
 
 module Lutaml
   module Xsd
@@ -131,7 +131,7 @@ module Lutaml
             categories: @registry.categories.size,
             errors_collected: @collector.errors.size,
             warnings_collected: @collector.warnings.size,
-            infos_collected: @collector.infos.size
+            infos_collected: @collector.infos.size,
           }
         end
 
@@ -141,7 +141,7 @@ module Lutaml
         def to_h
           {
             registry: @registry.to_h,
-            statistics: statistics
+            statistics: statistics,
           }
         end
 
@@ -172,16 +172,16 @@ module Lutaml
         def handle_rule_error(rule, error)
           @collector.add_error(
             ValidationError.new(
-              code: 'rule_execution_error',
+              code: "rule_execution_error",
               message: "Error executing #{rule.class.name}: #{error.message}",
               severity: :error,
               context: {
                 rule: rule.class.name,
                 category: rule.category,
                 error_class: error.class.name,
-                backtrace: error.backtrace&.first(5)
-              }
-            )
+                backtrace: error.backtrace&.first(5),
+              },
+            ),
           )
         end
       end

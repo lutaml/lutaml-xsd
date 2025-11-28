@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'base_type_validator'
+require_relative "base_type_validator"
 
 module Lutaml
   module Xsd
@@ -54,7 +54,7 @@ module Lutaml
           # @return [String] Error message
           def error_message(value)
             "Value '#{value}' is not a valid dateTime. " \
-              'Expected format: YYYY-MM-DDTHH:MM:SS[.sss][Z|(+|-)HH:MM]'
+              "Expected format: YYYY-MM-DDTHH:MM:SS[.sss][Z|(+|-)HH:MM]"
           end
         end
       end

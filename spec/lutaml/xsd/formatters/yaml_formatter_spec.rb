@@ -16,9 +16,9 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
           invalid: 0,
           files: [
             { file: "schema1.xsd", valid: true },
-            { file: "schema2.xsd", valid: true }
+            { file: "schema2.xsd", valid: true },
           ],
-          failed_files: []
+          failed_files: [],
         }
       end
 
@@ -30,10 +30,10 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
       it "includes summary section with correct counts" do
         output = YAML.safe_load(formatter.format(results))
         expect(output["summary"]).to eq({
-          "total" => 2,
-          "valid" => 2,
-          "invalid" => 0
-        })
+                                          "total" => 2,
+                                          "valid" => 2,
+                                          "invalid" => 0,
+                                        })
       end
 
       it "includes results array with file information" do
@@ -42,7 +42,7 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
         expect(output["results"].size).to eq(2)
         expect(output["results"][0]).to include(
           "file" => "schema1.xsd",
-          "valid" => true
+          "valid" => true,
         )
       end
 
@@ -60,10 +60,11 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
           valid: 0,
           invalid: 2,
           files: [
-            { file: "invalid1.xsd", valid: false, error: "Not a valid XSD schema" },
-            { file: "invalid2.xsd", valid: false, error: "Invalid XML syntax" }
+            { file: "invalid1.xsd", valid: false,
+              error: "Not a valid XSD schema" },
+            { file: "invalid2.xsd", valid: false, error: "Invalid XML syntax" },
           ],
-          failed_files: ["invalid1.xsd", "invalid2.xsd"]
+          failed_files: ["invalid1.xsd", "invalid2.xsd"],
         }
       end
 
@@ -72,20 +73,20 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
         expect(output["results"][0]).to include(
           "file" => "invalid1.xsd",
           "valid" => false,
-          "error" => "Not a valid XSD schema"
+          "error" => "Not a valid XSD schema",
         )
         expect(output["results"][1]).to include(
-          "error" => "Invalid XML syntax"
+          "error" => "Invalid XML syntax",
         )
       end
 
       it "has correct summary counts" do
         output = YAML.safe_load(formatter.format(results))
         expect(output["summary"]).to eq({
-          "total" => 2,
-          "valid" => 0,
-          "invalid" => 2
-        })
+                                          "total" => 2,
+                                          "valid" => 0,
+                                          "invalid" => 2,
+                                        })
       end
     end
 
@@ -98,9 +99,9 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
           files: [
             { file: "valid1.xsd", valid: true },
             { file: "invalid.xsd", valid: false, error: "File not found" },
-            { file: "valid2.xsd", valid: true }
+            { file: "valid2.xsd", valid: true },
           ],
-          failed_files: ["invalid.xsd"]
+          failed_files: ["invalid.xsd"],
         }
       end
 
@@ -109,7 +110,7 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
         expect(output["results"][0]).to include("valid" => true)
         expect(output["results"][1]).to include(
           "valid" => false,
-          "error" => "File not found"
+          "error" => "File not found",
         )
         expect(output["results"][2]).to include("valid" => true)
       end
@@ -123,9 +124,9 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
           invalid: 0,
           files: [
             { file: "schema1.xsd", valid: true, detected_version: "1.0" },
-            { file: "schema2.xsd", valid: true, detected_version: "1.1" }
+            { file: "schema2.xsd", valid: true, detected_version: "1.1" },
           ],
-          failed_files: []
+          failed_files: [],
         }
       end
 
@@ -134,10 +135,10 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
         expect(output["results"][0]).to include(
           "file" => "schema1.xsd",
           "valid" => true,
-          "detected_version" => "1.0"
+          "detected_version" => "1.0",
         )
         expect(output["results"][1]).to include(
-          "detected_version" => "1.1"
+          "detected_version" => "1.1",
         )
       end
     end
@@ -149,17 +150,17 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
           valid: 0,
           invalid: 0,
           files: [],
-          failed_files: []
+          failed_files: [],
         }
       end
 
       it "formats empty results as valid YAML" do
         output = YAML.safe_load(formatter.format(results))
         expect(output["summary"]).to eq({
-          "total" => 0,
-          "valid" => 0,
-          "invalid" => 0
-        })
+                                          "total" => 0,
+                                          "valid" => 0,
+                                          "invalid" => 0,
+                                        })
         expect(output["results"]).to eq([])
       end
     end
@@ -171,9 +172,10 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
           valid: false,
           invalid: 1,
           files: [
-            { file: "path/to/my schema (v1.0).xsd", valid: false, error: "Error with special chars: @#$%^&*()" }
+            { file: "path/to/my schema (v1.0).xsd", valid: false,
+              error: "Error with special chars: @#$%^&*()" },
           ],
-          failed_files: ["path/to/my schema (v1.0).xsd"]
+          failed_files: ["path/to/my schema (v1.0).xsd"],
         }
       end
 
@@ -193,7 +195,7 @@ RSpec.describe Lutaml::Xsd::Formatters::YamlFormatter do
           valid: 1,
           invalid: 0,
           files: [{ file: "test.xsd", valid: true }],
-          failed_files: []
+          failed_files: [],
         }
       end
 

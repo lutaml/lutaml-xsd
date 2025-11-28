@@ -8,8 +8,8 @@ module Lutaml
       attribute :value, :string
 
       xml do
-        root 'whiteSpace', mixed: true
-        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
+        root "whiteSpace", mixed: true
+        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :id, to: :id
         map_attribute :fixed, to: :fixed

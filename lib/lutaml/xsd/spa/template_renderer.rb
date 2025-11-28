@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'liquid'
-require_relative 'multiply_local_file_system'
+require "liquid"
+require_relative "multiply_local_file_system"
 
 module Lutaml
   module Xsd
@@ -25,7 +25,7 @@ module Lutaml
       #   renderer.register_filter(TextFilters)
       class TemplateRenderer
         # Default template directory
-        DEFAULT_TEMPLATE_DIR = File.expand_path('templates', __dir__)
+        DEFAULT_TEMPLATE_DIR = File.expand_path("templates", __dir__)
 
         attr_reader :template_dir, :environment
 
@@ -58,7 +58,7 @@ module Lutaml
           template = load_template(template_name)
           template.render(
             stringify_keys(context),
-            registers: { file_system: @environment.file_system }
+            registers: { file_system: @environment.file_system },
           )
         end
 
@@ -69,7 +69,8 @@ module Lutaml
         # @return [String] Rendered template
         def render_string(template_str, context = {})
           template = Liquid::Template.parse(template_str)
-          template.render(stringify_keys(context), registers: { file_system: @environment.file_system })
+          template.render(stringify_keys(context),
+                          registers: { file_system: @environment.file_system })
         end
 
         # Register custom filter module
@@ -104,10 +105,15 @@ module Lutaml
         # @return [String] Full path to template file
         def template_path(template_name)
           # Return as-is if already has an extension
-          return File.join(template_dir, template_name) if template_name.end_with?('.liquid') || template_name.end_with?('.html.liquid')
+          if template_name.end_with?(".liquid",
+                                     ".html.liquid")
+            return File.join(template_dir,
+                             template_name)
+          end
 
           # Try .html.liquid first, then .liquid
-          html_liquid_path = File.join(template_dir, "#{template_name}.html.liquid")
+          html_liquid_path = File.join(template_dir,
+                                       "#{template_name}.html.liquid")
           return html_liquid_path if File.exist?(html_liquid_path)
 
           File.join(template_dir, "#{template_name}.liquid")
@@ -158,12 +164,15 @@ module Lutaml
 
           path = template_path(template_name)
 
-          raise ArgumentError, "Template not found: #{path}" unless File.exist?(path)
+          unless File.exist?(path)
+            raise ArgumentError,
+                  "Template not found: #{path}"
+          end
 
           template_content = File.read(path)
           template = Liquid::Template.parse(
             template_content,
-            environment: @environment
+            environment: @environment,
           )
 
           @template_cache[template_name] = template if @cache_enabled

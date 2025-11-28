@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'liquid_methods/attribute_group'
+require_relative "liquid_methods/attribute_group"
 
 module Lutaml
   module Xsd
@@ -13,11 +13,12 @@ module Lutaml
       attribute :annotation, :annotation
       attribute :any_attribute, :any_attribute
       attribute :attribute, :attribute, collection: true, initialize_empty: true
-      attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
+      attribute :attribute_group, :attribute_group, collection: true,
+                                                    initialize_empty: true
 
       xml do
-        root 'attributeGroup', mixed: true
-        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
+        root "attributeGroup", mixed: true
+        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :id, to: :id
         map_attribute :ref, to: :ref

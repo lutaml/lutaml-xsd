@@ -11,8 +11,8 @@ module Lutaml
       attribute :uri, :string
 
       yaml do
-        map 'prefix', to: :prefix
-        map 'uri', to: :uri
+        map "prefix", to: :prefix
+        map "uri", to: :uri
       end
 
       # Create from a hash entry

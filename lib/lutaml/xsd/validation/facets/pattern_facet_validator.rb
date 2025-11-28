@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'facet_validator'
+require_relative "facet_validator"
 
 module Lutaml
   module Xsd

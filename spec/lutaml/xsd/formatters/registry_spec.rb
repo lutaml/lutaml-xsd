@@ -10,7 +10,7 @@ RSpec.describe Lutaml::Xsd::Formatters::Registry do
   # Create a test formatter class
   let(:test_formatter_class) do
     Class.new(base_formatter) do
-      def format(results)
+      def format(_results)
         "test output"
       end
     end
@@ -19,7 +19,7 @@ RSpec.describe Lutaml::Xsd::Formatters::Registry do
   # Create another test formatter class
   let(:another_formatter_class) do
     Class.new(base_formatter) do
-      def format(results)
+      def format(_results)
         "another output"
       end
     end
@@ -43,11 +43,11 @@ RSpec.describe Lutaml::Xsd::Formatters::Registry do
 
     it "raises ArgumentError if class doesn't inherit from Base" do
       invalid_class = Class.new
-      expect {
+      expect do
         registry.register("invalid", invalid_class)
-      }.to raise_error(
+      end.to raise_error(
         ArgumentError,
-        /Formatter must inherit from.*Base/
+        /Formatter must inherit from.*Base/,
       )
     end
 
@@ -86,11 +86,11 @@ RSpec.describe Lutaml::Xsd::Formatters::Registry do
     end
 
     it "raises ArgumentError for unknown format" do
-      expect {
+      expect do
         registry.create("unknown")
-      }.to raise_error(
+      end.to raise_error(
         ArgumentError,
-        /Unknown format: unknown/
+        /Unknown format: unknown/,
       )
     end
 
@@ -98,11 +98,11 @@ RSpec.describe Lutaml::Xsd::Formatters::Registry do
       registry.register("format1", test_formatter_class)
       registry.register("format2", another_formatter_class)
 
-      expect {
+      expect do
         registry.create("unknown")
-      }.to raise_error(
+      end.to raise_error(
         ArgumentError,
-        /Supported formats: format1, format2/
+        /Supported formats: format1, format2/,
       )
     end
   end

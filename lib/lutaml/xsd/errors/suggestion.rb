@@ -46,7 +46,7 @@ module Lutaml
           {
             text: @text,
             similarity: @similarity,
-            explanation: @explanation
+            explanation: @explanation,
           }
         end
 

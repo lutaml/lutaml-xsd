@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative 'validation_configuration'
-require_relative 'validation_job'
-require_relative 'validation_result'
+require_relative "validation_configuration"
+require_relative "validation_job"
+require_relative "validation_result"
 
 module Lutaml
   module Xsd
@@ -55,14 +55,18 @@ module Lutaml
         #
         # @raise [ArgumentError] if xml_content is nil or empty
         def validate(xml_content)
-          raise ArgumentError, 'xml_content cannot be nil' if xml_content.nil?
-          raise ArgumentError, 'xml_content cannot be empty' if xml_content.empty?
+          raise ArgumentError, "xml_content cannot be nil" if xml_content.nil?
+
+          if xml_content.empty?
+            raise ArgumentError,
+                  "xml_content cannot be empty"
+          end
 
           job = Validation::ValidationJob.new(
             xml_content: xml_content,
             repository: @repository,
             rule_registry: @rule_registry,
-            config: @config
+            config: @config,
           )
 
           job.execute
@@ -84,7 +88,7 @@ module Lutaml
           else
             raise ArgumentError,
                   "Invalid schema source type: #{source.class}. " \
-                  'Expected String (package path) or SchemaRepository'
+                  "Expected String (package path) or SchemaRepository"
           end
         end
 
@@ -113,7 +117,7 @@ module Lutaml
         #
         # @return [RuleRegistry] The initialized rule registry
         def build_rule_registry
-          require_relative 'rule_registry'
+          require_relative "rule_registry"
           Validation::RuleRegistry.new(@config)
         end
       end

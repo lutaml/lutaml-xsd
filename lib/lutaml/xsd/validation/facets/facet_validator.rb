@@ -70,7 +70,7 @@ module Lutaml
           # @param value [Object] The value to convert
           # @return [String] String representation of the value
           def to_string(value)
-            return '' if value.nil?
+            return "" if value.nil?
 
             value.to_s
           end

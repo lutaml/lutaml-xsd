@@ -25,10 +25,10 @@ module Lutaml
 
           def build_gradients
             [
-              build_gradient('elementGradient', config.colors.element),
-              build_gradient('typeGradient', config.colors.type),
-              build_gradient('attributeGradient', config.colors.attribute),
-              build_gradient('groupGradient', config.colors.group)
+              build_gradient("elementGradient", config.colors.element),
+              build_gradient("typeGradient", config.colors.type),
+              build_gradient("attributeGradient", config.colors.attribute),
+              build_gradient("groupGradient", config.colors.group),
             ].join("\n")
           end
 

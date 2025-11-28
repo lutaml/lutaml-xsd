@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'facet_validator'
+require_relative "facet_validator"
 
 module Lutaml
   module Xsd
@@ -54,13 +54,13 @@ module Lutaml
           def count_fraction_digits(value)
             str = to_string(value)
             # Find decimal point
-            decimal_index = str.index('.')
+            decimal_index = str.index(".")
             return 0 unless decimal_index
 
             # Count digits after decimal point (excluding trailing zeros)
             fraction_part = str[(decimal_index + 1)..]
             # Remove trailing zeros
-            fraction_part = fraction_part.sub(/0+$/, '')
+            fraction_part = fraction_part.sub(/0+$/, "")
             fraction_part.length
           end
         end

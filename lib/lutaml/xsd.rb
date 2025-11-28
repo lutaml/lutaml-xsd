@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
+require "lutaml/model"
 
-adapter = RUBY_ENGINE == 'opal' ? :oga : :nokogiri
+adapter = RUBY_ENGINE == "opal" ? :oga : :nokogiri
 Lutaml::Model::Config.xml_adapter_type = adapter
 
 module Lutaml
@@ -11,7 +11,7 @@ module Lutaml
 
     def register
       @register ||= Lutaml::Model::GlobalRegister.register(
-        Lutaml::Model::Register.new(:xsd)
+        Lutaml::Model::Register.new(:xsd),
       )
     end
 
@@ -19,7 +19,8 @@ module Lutaml
       register.register_model(klass, id: id)
     end
 
-    def parse(xsd, location: nil, nested_schema: false, register: nil, schema_mappings: nil, validate_schema: true)
+    def parse(xsd, location: nil, nested_schema: false, register: nil,
+schema_mappings: nil, validate_schema: true)
       # Validate XSD schema structure before parsing (unless disabled)
       if validate_schema && !nested_schema
         detected_version = SchemaValidator.detect_version(xsd)
@@ -37,74 +38,74 @@ module Lutaml
   end
 end
 
-require_relative 'xsd/version'
-require_relative 'xsd/errors'
-require_relative 'xsd/schema_validator'
-require_relative 'xsd/file_validation_result'
-require_relative 'xsd/validation_result'
-require_relative 'xsd/base'
-require_relative 'xsd/schema_location_mapping'
-require_relative 'xsd/namespace_mapping'
-require_relative 'xsd/type_resolution_result'
-require_relative 'xsd/type_index_entry'
-require_relative 'xsd/serialized_schema'
-require_relative 'xsd/package_configuration'
-require_relative 'xsd/schema_resolver'
-require_relative 'xsd/xsd_bundler'
-require_relative 'xsd/package_builder'
-require_relative 'xsd/schema_name_resolver'
-require_relative 'xsd/schema_repository_metadata'
-require_relative 'xsd/schema_repository_package'
-require_relative 'xsd/schema_repository'
-require_relative 'xsd/schema_classifier'
-require_relative 'xsd/package_validator'
-require_relative 'xsd/package_tree_formatter'
-require_relative 'xsd/all'
-require_relative 'xsd/annotation'
-require_relative 'xsd/any'
-require_relative 'xsd/any_attribute'
-require_relative 'xsd/appinfo'
-require_relative 'xsd/attribute'
-require_relative 'xsd/attribute_group'
-require_relative 'xsd/choice'
-require_relative 'xsd/complex_content'
-require_relative 'xsd/complex_type'
-require_relative 'xsd/documentation'
-require_relative 'xsd/element'
-require_relative 'xsd/enumeration'
-require_relative 'xsd/extension_complex_content'
-require_relative 'xsd/extension_simple_content'
-require_relative 'xsd/field'
-require_relative 'xsd/fraction_digits'
-require_relative 'xsd/glob'
-require_relative 'xsd/group'
-require_relative 'xsd/import'
-require_relative 'xsd/include'
-require_relative 'xsd/key'
-require_relative 'xsd/keyref'
-require_relative 'xsd/length'
-require_relative 'xsd/list'
-require_relative 'xsd/max_exclusive'
-require_relative 'xsd/max_inclusive'
-require_relative 'xsd/max_length'
-require_relative 'xsd/min_exclusive'
-require_relative 'xsd/min_inclusive'
-require_relative 'xsd/min_length'
-require_relative 'xsd/notation'
-require_relative 'xsd/pattern'
-require_relative 'xsd/redefine'
-require_relative 'xsd/restriction_complex_content'
-require_relative 'xsd/restriction_simple_content'
-require_relative 'xsd/restriction_simple_type'
-require_relative 'xsd/schema'
-require_relative 'xsd/selector'
-require_relative 'xsd/sequence'
-require_relative 'xsd/simple_content'
-require_relative 'xsd/simple_type'
-require_relative 'xsd/total_digits'
-require_relative 'xsd/union'
-require_relative 'xsd/unique'
-require_relative 'xsd/white_space'
-require_relative 'xsd/type_searcher'
-require_relative 'xsd/batch_type_query'
-require_relative 'xsd/validation/validator'
+require_relative "xsd/version"
+require_relative "xsd/errors"
+require_relative "xsd/schema_validator"
+require_relative "xsd/file_validation_result"
+require_relative "xsd/validation_result"
+require_relative "xsd/base"
+require_relative "xsd/schema_location_mapping"
+require_relative "xsd/namespace_mapping"
+require_relative "xsd/type_resolution_result"
+require_relative "xsd/type_index_entry"
+require_relative "xsd/serialized_schema"
+require_relative "xsd/package_configuration"
+require_relative "xsd/schema_resolver"
+require_relative "xsd/xsd_bundler"
+require_relative "xsd/package_builder"
+require_relative "xsd/schema_name_resolver"
+require_relative "xsd/schema_repository_metadata"
+require_relative "xsd/schema_repository_package"
+require_relative "xsd/schema_repository"
+require_relative "xsd/schema_classifier"
+require_relative "xsd/package_validator"
+require_relative "xsd/package_tree_formatter"
+require_relative "xsd/all"
+require_relative "xsd/annotation"
+require_relative "xsd/any"
+require_relative "xsd/any_attribute"
+require_relative "xsd/appinfo"
+require_relative "xsd/attribute"
+require_relative "xsd/attribute_group"
+require_relative "xsd/choice"
+require_relative "xsd/complex_content"
+require_relative "xsd/complex_type"
+require_relative "xsd/documentation"
+require_relative "xsd/element"
+require_relative "xsd/enumeration"
+require_relative "xsd/extension_complex_content"
+require_relative "xsd/extension_simple_content"
+require_relative "xsd/field"
+require_relative "xsd/fraction_digits"
+require_relative "xsd/glob"
+require_relative "xsd/group"
+require_relative "xsd/import"
+require_relative "xsd/include"
+require_relative "xsd/key"
+require_relative "xsd/keyref"
+require_relative "xsd/length"
+require_relative "xsd/list"
+require_relative "xsd/max_exclusive"
+require_relative "xsd/max_inclusive"
+require_relative "xsd/max_length"
+require_relative "xsd/min_exclusive"
+require_relative "xsd/min_inclusive"
+require_relative "xsd/min_length"
+require_relative "xsd/notation"
+require_relative "xsd/pattern"
+require_relative "xsd/redefine"
+require_relative "xsd/restriction_complex_content"
+require_relative "xsd/restriction_simple_content"
+require_relative "xsd/restriction_simple_type"
+require_relative "xsd/schema"
+require_relative "xsd/selector"
+require_relative "xsd/sequence"
+require_relative "xsd/simple_content"
+require_relative "xsd/simple_type"
+require_relative "xsd/total_digits"
+require_relative "xsd/union"
+require_relative "xsd/unique"
+require_relative "xsd/white_space"
+require_relative "xsd/type_searcher"
+require_relative "xsd/batch_type_query"
+require_relative "xsd/validation/validator"

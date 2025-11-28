@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'facet_validator'
+require_relative "facet_validator"
 
 module Lutaml
   module Xsd
@@ -55,9 +55,9 @@ module Lutaml
           def count_digits(value)
             # Convert to string and remove sign, decimal point, and
             # leading/trailing zeros
-            str = to_string(value).gsub(/[+-]/, '').gsub('.', '')
+            str = to_string(value).gsub(/[+-]/, "").gsub(".", "")
             # Remove leading zeros
-            str = str.sub(/^0+/, '')
+            str = str.sub(/^0+/, "")
             # For decimals, remove trailing zeros after decimal point
             str.length
           end

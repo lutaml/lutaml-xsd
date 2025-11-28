@@ -71,7 +71,7 @@ module Lutaml
             value: @value,
             namespace_uri: @namespace_uri,
             prefix: @prefix,
-            qualified_name: qualified_name
+            qualified_name: qualified_name,
           }.compact
         end
 

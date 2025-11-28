@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'base_command'
-require_relative '../package_tree_formatter'
+require_relative "base_command"
+require_relative "../package_tree_formatter"
 
 module Lutaml
   module Xsd
@@ -70,7 +70,7 @@ module Lutaml
 
           output tree_output
 
-          verbose_output '✓ Tree display complete'
+          verbose_output "✓ Tree display complete"
         end
 
         # Create tree formatter instance
@@ -81,7 +81,7 @@ module Lutaml
             package_path,
             show_sizes: options[:show_sizes] || false,
             no_color: options[:no_color] || false,
-            format: parse_format_option
+            format: parse_format_option,
           )
         end
 
@@ -89,7 +89,7 @@ module Lutaml
         #
         # @return [Symbol] Format as symbol (:tree or :flat)
         def parse_format_option
-          format_str = options[:format] || 'tree'
+          format_str = options[:format] || "tree"
           format_str.to_sym
         end
 
@@ -98,14 +98,14 @@ module Lutaml
         # @param error [StandardError] Error to handle
         # @return [void]
         def handle_error(error)
-          case error
-          when Zip::Error
-            error_msg = "Failed to read package file: #{error.message}"
-          when Lutaml::Xsd::Error
-            error_msg = "Package error: #{error.message}"
-          else
-            error_msg = "Failed to display tree: #{error.message}"
-          end
+          error_msg = case error
+                      when Zip::Error
+                        "Failed to read package file: #{error.message}"
+                      when Lutaml::Xsd::Error
+                        "Package error: #{error.message}"
+                      else
+                        "Failed to display tree: #{error.message}"
+                      end
           error error_msg
           verbose_output error.backtrace.join("\n") if verbose?
           raise error

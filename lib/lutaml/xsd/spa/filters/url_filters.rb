@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'cgi'
+require "cgi"
 
 module Lutaml
   module Xsd
@@ -16,7 +16,7 @@ module Lutaml
           # @param text [String] Text to encode
           # @return [String] URL-encoded text
           def url_encode(text)
-            return '' unless text
+            return "" unless text
 
             CGI.escape(text.to_s)
           end
@@ -26,7 +26,7 @@ module Lutaml
           # @param text [String] Encoded text
           # @return [String] Decoded text
           def url_decode(text)
-            return '' unless text
+            return "" unless text
 
             CGI.unescape(text.to_s)
           end
@@ -36,13 +36,13 @@ module Lutaml
           # @param text [String] Text to convert
           # @return [String] Anchor-friendly ID
           def anchor_id(text)
-            return '' unless text
+            return "" unless text
 
             text.to_s
-                .downcase
-                .gsub(/[^\w\s-]/, '')
-                .gsub(/[\s_]+/, '-')
-                .gsub(/^-+|-+$/, '')
+              .downcase
+              .gsub(/[^\w\s-]/, "")
+              .gsub(/[\s_]+/, "-")
+              .gsub(/^-+|-+$/, "")
           end
 
           # Generate link to item by ID
@@ -51,7 +51,7 @@ module Lutaml
           # @param text [String, nil] Link text (defaults to ID)
           # @return [String] HTML link
           def link_to_id(id, text = nil)
-            return '' unless id
+            return "" unless id
 
             display_text = text || id
             %(<a href="##{anchor_id(id)}">#{display_text}</a>)
@@ -65,7 +65,7 @@ module Lutaml
           # @param text [String, nil] Link text
           # @return [String] HTML link
           def link_to_schema_item(schema_id, item_type, item_id, text = nil)
-            return '' unless schema_id && item_type && item_id
+            return "" unless schema_id && item_type && item_id
 
             anchor = "#{schema_id}-#{item_type}-#{item_id}"
             display_text = text || item_id
@@ -79,9 +79,9 @@ module Lutaml
           # @param external_icon [Boolean] Show external link icon
           # @return [String] HTML link
           def external_link(url, text, external_icon: true)
-            return '' unless url && text
+            return "" unless url && text
 
-            icon = external_icon ? ' <span class="external-icon">↗</span>' : ''
+            icon = external_icon ? ' <span class="external-icon">↗</span>' : ""
             %(<a href="#{url}" target="_blank" rel="noopener noreferrer">#{text}#{icon}</a>)
           end
 
@@ -94,7 +94,7 @@ module Lutaml
           def add_url_param(url, param, value)
             return url unless url && param
 
-            separator = url.include?('?') ? '&' : '?'
+            separator = url.include?("?") ? "&" : "?"
             "#{url}#{separator}#{url_encode(param)}=#{url_encode(value)}"
           end
 
@@ -108,7 +108,7 @@ module Lutaml
 
             query_string = params.map do |key, value|
               "#{url_encode(key)}=#{url_encode(value)}"
-            end.join('&')
+            end.join("&")
 
             "#{base}?#{query_string}"
           end
@@ -130,7 +130,7 @@ module Lutaml
           # @param text [String, nil] Link text (defaults to email)
           # @return [String] Mailto link
           def mailto_link(email, text = nil)
-            return '' unless email
+            return "" unless email
 
             display_text = text || email
             %(<a href="mailto:#{email}">#{display_text}</a>)
@@ -144,7 +144,7 @@ module Lutaml
             return false unless url
 
             url_str = url.to_s
-            url_str.start_with?('http://', 'https://', '//')
+            url_str.start_with?("http://", "https://", "//")
           end
 
           # Get file extension from path
@@ -152,10 +152,10 @@ module Lutaml
           # @param path [String] File path
           # @return [String] File extension (without dot)
           def file_extension(path)
-            return '' unless path
+            return "" unless path
 
             ext = File.extname(path.to_s)
-            ext.empty? ? '' : ext[1..]
+            ext.empty? ? "" : ext[1..]
           end
 
           # Get filename from path
@@ -164,10 +164,10 @@ module Lutaml
           # @param include_ext [Boolean] Include extension
           # @return [String] Filename
           def filename_from_path(path, include_ext: true)
-            return '' unless path
+            return "" unless path
 
             name = File.basename(path.to_s)
-            include_ext ? name : File.basename(name, '.*')
+            include_ext ? name : File.basename(name, ".*")
           end
 
           # Generate breadcrumb link
@@ -175,14 +175,14 @@ module Lutaml
           # @param parts [Array<Hash>] Breadcrumb parts with :text and :url
           # @param separator [String] Separator character
           # @return [String] Breadcrumb HTML
-          def breadcrumb(parts, separator: '›')
-            return '' unless parts && !parts.empty?
+          def breadcrumb(parts, separator: "›")
+            return "" unless parts && !parts.empty?
 
             parts.map.with_index do |part, index|
               if index == parts.size - 1
                 %(<span class="breadcrumb-current">#{part[:text]}</span>)
               else
-                url = part[:url] || '#'
+                url = part[:url] || "#"
                 %(<a href="#{url}" class="breadcrumb-link">#{part[:text]}</a>)
               end
             end.join(%( <span class="breadcrumb-separator">#{separator}</span> ))

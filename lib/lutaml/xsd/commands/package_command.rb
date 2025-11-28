@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require 'thor'
-require 'fileutils'
-require_relative 'base_command'
-require_relative 'init_command'
-require_relative 'metadata_command'
-require_relative 'tree_command'
+require "thor"
+require "fileutils"
+require_relative "base_command"
+require_relative "init_command"
+require_relative "metadata_command"
+require_relative "tree_command"
 
 module Lutaml
   module Xsd
@@ -14,19 +14,20 @@ module Lutaml
       # Handles build, validate, and info operations for .lxr packages
       class PackageCommand < Thor
         # Command aliases
-        map 'b' => :build
-        map 'v' => :validate
-        map 'i' => :info
-        map 'q' => :quick
-        map 'ab' => :auto_build
-        map 'init' => :init
+        map "b" => :build
+        map "v" => :validate
+        map "i" => :info
+        map "q" => :quick
+        map "ab" => :auto_build
+        map "init" => :init
 
         class_option :verbose,
                      type: :boolean,
                      default: false,
-                     desc: 'Enable verbose output'
+                     desc: "Enable verbose output"
 
-        desc 'init ENTRY_POINTS', 'Initialize package with interactive dependency resolution'
+        desc "init ENTRY_POINTS",
+             "Initialize package with interactive dependency resolution"
         long_desc <<~DESC
           Start interactive package builder session.
 
@@ -39,90 +40,91 @@ module Lutaml
         DESC
         option :search_paths,
                type: :array,
-               desc: 'Directories to search for schemas'
+               desc: "Directories to search for schemas"
         option :output,
                type: :string,
-               default: 'repository.yml',
-               desc: 'Configuration file path'
+               default: "repository.yml",
+               desc: "Configuration file path"
         option :local,
                type: :boolean,
-               desc: 'Never fetch from URLs'
+               desc: "Never fetch from URLs"
         option :no_fetch,
                type: :boolean,
-               desc: 'Disable automatic URL fetching'
+               desc: "Disable automatic URL fetching"
         option :fetch_timeout,
                type: :numeric,
                default: 30,
-               desc: 'Timeout for URL downloads (seconds)'
+               desc: "Timeout for URL downloads (seconds)"
         option :resume,
                type: :boolean,
-               desc: 'Resume previous session'
+               desc: "Resume previous session"
         def init(*entry_points)
           InitCommand.new(entry_points, options).run
         end
 
-        desc 'build CONFIG_FILE', 'Build a schema repository package from YAML configuration'
+        desc "build CONFIG_FILE",
+             "Build a schema repository package from YAML configuration"
         option :output,
                type: :string,
-               aliases: '-o',
-               desc: 'Output package path (default: pkg/<name>.lxr)'
+               aliases: "-o",
+               desc: "Output package path (default: pkg/<name>.lxr)"
         option :xsd_mode,
                type: :string,
-               default: 'include_all',
+               default: "include_all",
                enum: %w[include_all allow_external],
-               desc: 'XSD bundling mode'
+               desc: "XSD bundling mode"
         option :resolution_mode,
                type: :string,
-               default: 'resolved',
+               default: "resolved",
                enum: %w[resolved bare],
-               desc: 'Resolution mode'
+               desc: "Resolution mode"
         option :serialization_format,
                type: :string,
-               default: 'marshal',
+               default: "marshal",
                enum: %w[marshal json yaml parse],
-               desc: 'Serialization format'
+               desc: "Serialization format"
         option :name,
                type: :string,
-               desc: 'Package name'
+               desc: "Package name"
         option :version,
                type: :string,
-               desc: 'Package version'
+               desc: "Package version"
         option :description,
                type: :string,
-               desc: 'Package description'
+               desc: "Package description"
         option :validate,
                type: :boolean,
                default: false,
-               desc: 'Validate package after building'
+               desc: "Validate package after building"
         def build(config_file)
           BuildCommand.new(config_file, options).run
         end
 
-        desc 'validate PACKAGE_FILE', 'Validate a schema repository package'
+        desc "validate PACKAGE_FILE", "Validate a schema repository package"
         option :format,
                type: :string,
-               default: 'text',
+               default: "text",
                enum: %w[text json yaml],
-               desc: 'Output format'
+               desc: "Output format"
         option :strict,
                type: :boolean,
                default: false,
-               desc: 'Fail on warnings'
+               desc: "Fail on warnings"
         def validate(package_file)
           ValidateCommand.new(package_file, options).run
         end
 
-        desc 'info PACKAGE_FILE', 'Display package metadata and statistics'
+        desc "info PACKAGE_FILE", "Display package metadata and statistics"
         option :format,
                type: :string,
-               default: 'text',
+               default: "text",
                enum: %w[text json yaml],
-               desc: 'Output format'
+               desc: "Output format"
         def info(package_file)
           InfoCommand.new(package_file, options).run
         end
 
-        desc 'quick CONFIG', 'Quick build + validate + stats workflow'
+        desc "quick CONFIG", "Quick build + validate + stats workflow"
         long_desc <<~DESC
           Build, validate, and show statistics in one command.
 
@@ -135,12 +137,12 @@ module Lutaml
             lutaml-xsd package quick config.yml
             lutaml-xsd package quick config.yml --no-validate
         DESC
-        option :output, type: :string, aliases: '-o', desc: 'Output path'
-        option :no_validate, type: :boolean, desc: 'Skip validation step'
-        option :no_stats, type: :boolean, desc: 'Skip statistics display'
-        option :xsd_mode, type: :string, default: 'include_all'
-        option :resolution_mode, type: :string, default: 'resolved'
-        option :serialization_format, type: :string, default: 'marshal'
+        option :output, type: :string, aliases: "-o", desc: "Output path"
+        option :no_validate, type: :boolean, desc: "Skip validation step"
+        option :no_stats, type: :boolean, desc: "Skip statistics display"
+        option :xsd_mode, type: :string, default: "include_all"
+        option :resolution_mode, type: :string, default: "resolved"
+        option :serialization_format, type: :string, default: "marshal"
         option :name, type: :string
         option :version, type: :string
         option :description, type: :string
@@ -148,7 +150,7 @@ module Lutaml
           QuickCommand.new(config_file, options).run
         end
 
-        desc 'auto_build CONFIG', 'Auto-build with smart caching'
+        desc "auto_build CONFIG", "Auto-build with smart caching"
         long_desc <<~DESC
           Build package only if source config/schemas have changed.
 
@@ -158,11 +160,11 @@ module Lutaml
             lutaml-xsd package auto-build config.yml
             lutaml-xsd package auto-build config.yml --force
         DESC
-        option :output, type: :string, aliases: '-o'
-        option :force, type: :boolean, aliases: '-f', desc: 'Force rebuild'
-        option :xsd_mode, type: :string, default: 'include_all'
-        option :resolution_mode, type: :string, default: 'resolved'
-        option :serialization_format, type: :string, default: 'marshal'
+        option :output, type: :string, aliases: "-o"
+        option :force, type: :boolean, aliases: "-f", desc: "Force rebuild"
+        option :xsd_mode, type: :string, default: "include_all"
+        option :resolution_mode, type: :string, default: "resolved"
+        option :serialization_format, type: :string, default: "marshal"
         option :name, type: :string
         option :version, type: :string
         option :description, type: :string
@@ -170,7 +172,7 @@ module Lutaml
           AutoBuildCommand.new(config_file, options).run
         end
 
-        desc 'stats PACKAGE_FILE', 'Display package statistics'
+        desc "stats PACKAGE_FILE", "Display package statistics"
         long_desc <<~DESC
           Display comprehensive statistics for a schema repository package (.lxr file).
 
@@ -193,14 +195,14 @@ module Lutaml
         option :format,
                type: :string,
                enum: %w[text json yaml],
-               default: 'text',
-               desc: 'Output format (text, json, yaml)'
+               default: "text",
+               desc: "Output format (text, json, yaml)"
         def stats(package_file)
-          require_relative 'stats_command'
+          require_relative "stats_command"
           StatsCommand::ShowCommand.new(package_file, options).run
         end
 
-        desc 'schemas PACKAGE_FILE', 'List XSD schemas in the package'
+        desc "schemas PACKAGE_FILE", "List XSD schemas in the package"
         long_desc <<~DESC
           Display all XSD schema files contained in a schema repository package.
 
@@ -225,18 +227,19 @@ module Lutaml
         DESC
         option :format,
                type: :string,
-               default: 'text',
+               default: "text",
                enum: %w[text json yaml],
-               desc: 'Output format (text, json, yaml)'
+               desc: "Output format (text, json, yaml)"
         option :classify,
                type: :boolean,
                default: false,
-               desc: 'Classify schemas by role and resolution status'
+               desc: "Classify schemas by role and resolution status"
         def schemas(package_file)
           SchemasCommand.new(package_file, options).run
         end
 
-        desc 'validate_resolution PACKAGE', 'Validate all references are fully resolved'
+        desc "validate_resolution PACKAGE",
+             "Validate all references are fully resolved"
         long_desc <<~DESC
           Validate that all type, element, attribute, and group references in the
           package are fully resolved (no external dependencies).
@@ -253,19 +256,19 @@ module Lutaml
             lutaml-xsd package validate-resolution schemas.lxr --strict
             lutaml-xsd package validate-resolution schemas.lxr --format json
         DESC
-        option :strict, type: :boolean, desc: 'Fail on warnings too'
+        option :strict, type: :boolean, desc: "Fail on warnings too"
         option :format,
                type: :string,
-               default: 'text',
+               default: "text",
                enum: %w[text json yaml],
-               desc: 'Output format'
+               desc: "Output format"
         def validate_resolution(package_file)
           ValidateResolutionCommand.new(package_file, options).run
         end
 
-        map 'vr' => :validate_resolution
+        map "vr" => :validate_resolution
 
-        desc 'coverage PACKAGE', 'Analyze schema coverage from entry points'
+        desc "coverage PACKAGE", "Analyze schema coverage from entry points"
         long_desc <<~DESC
           Analyze which types are reachable from entry point types.
           Shows used vs unused types and coverage percentage.
@@ -290,17 +293,17 @@ module Lutaml
                desc: "Comma-separated entry types (e.g., 'Type1,ns:Type2')"
         option :format,
                type: :string,
-               default: 'text',
+               default: "text",
                enum: %w[text json yaml],
-               desc: 'Output format'
+               desc: "Output format"
         def coverage(package_path)
-          require_relative 'coverage_command'
+          require_relative "coverage_command"
           CoverageCommand.new(package_path, options).run
         end
 
-        map 'cov' => :coverage
+        map "cov" => :coverage
 
-        desc 'verify PACKAGE', 'Verify XSD specification compliance'
+        desc "verify PACKAGE", "Verify XSD specification compliance"
         long_desc <<~DESC
           Validate schemas against W3C XSD specification.
 
@@ -320,23 +323,24 @@ module Lutaml
         DESC
         option :xsd_version,
                type: :string,
-               default: '1.0',
+               default: "1.0",
                enum: %w[1.0 1.1],
-               desc: 'XSD version to validate against'
+               desc: "XSD version to validate against"
         option :strict,
                type: :boolean,
-               desc: 'Fail on warnings'
+               desc: "Fail on warnings"
         option :format,
                type: :string,
-               default: 'text',
+               default: "text",
                enum: %w[text json yaml],
-               desc: 'Output format'
+               desc: "Output format"
         def verify(package_path)
-          require_relative 'verify_command'
+          require_relative "verify_command"
           VerifyCommand.new(package_path, options).run
         end
 
-        desc 'extract PACKAGE_FILE SCHEMA_NAME', 'Extract a schema from the package'
+        desc "extract PACKAGE_FILE SCHEMA_NAME",
+             "Extract a schema from the package"
         long_desc <<~DESC
           Extract a specific XSD schema file from a schema repository package.
 
@@ -355,16 +359,16 @@ module Lutaml
         DESC
         option :output,
                type: :string,
-               aliases: '-o',
-               desc: 'Output file path (default: stdout)'
+               aliases: "-o",
+               desc: "Output file path (default: stdout)"
         def extract(package_file, schema_name)
           ExtractCommand.new(package_file, schema_name, options).run
         end
 
-        desc 'metadata SUBCOMMAND', 'Manage package metadata'
-        subcommand 'metadata', Commands::MetadataCommand
+        desc "metadata SUBCOMMAND", "Manage package metadata"
+        subcommand "metadata", Commands::MetadataCommand
 
-        desc 'tree PACKAGE_FILE', 'Display package contents as colorized tree'
+        desc "tree PACKAGE_FILE", "Display package contents as colorized tree"
         long_desc <<~DESC
           Display all contents of an LXR package file in a colorized tree structure.
 
@@ -391,16 +395,16 @@ module Lutaml
         option :show_sizes,
                type: :boolean,
                default: false,
-               desc: 'Show file sizes'
+               desc: "Show file sizes"
         option :no_color,
                type: :boolean,
                default: false,
-               desc: 'Disable colored output'
+               desc: "Disable colored output"
         option :format,
                type: :string,
-               default: 'tree',
+               default: "tree",
                enum: %w[tree flat],
-               desc: 'Output format (tree or flat)'
+               desc: "Output format (tree or flat)"
         def tree(package_file)
           TreeCommand.new(package_file, options).run
         end
@@ -429,16 +433,16 @@ module Lutaml
           def build_package
             verbose_output "Loading repository configuration from: #{@config_file}"
             repository = SchemaRepository.from_yaml_file(@config_file)
-            verbose_output '✓ Configuration loaded'
+            verbose_output "✓ Configuration loaded"
             verbose_output "  Files: #{(repository.files || []).size}"
             verbose_output "  Schema Location Mappings: #{(repository.schema_location_mappings || []).size}"
             verbose_output "  Namespace Mappings: #{(repository.namespace_mappings || []).size}"
-            verbose_output ''
+            verbose_output ""
 
-            verbose_output 'Parsing and resolving schemas...'
+            verbose_output "Parsing and resolving schemas..."
             repository.parse.resolve
-            verbose_output '✓ Schemas parsed and resolved'
-            verbose_output ''
+            verbose_output "✓ Schemas parsed and resolved"
+            verbose_output ""
 
             output_path = determine_output_path(repository)
             FileUtils.mkdir_p(File.dirname(output_path))
@@ -453,7 +457,7 @@ module Lutaml
               xsd_mode: options[:xsd_mode].to_sym,
               resolution_mode: options[:resolution_mode].to_sym,
               serialization_format: options[:serialization_format].to_sym,
-              metadata: build_metadata
+              metadata: build_metadata,
             )
 
             output "✓ Package created: #{output_path}"
@@ -475,36 +479,39 @@ module Lutaml
           end
 
           def derive_name_from_repository(repository)
-            return 'schema_repository' if repository.files.empty?
+            return "schema_repository" if repository.files.empty?
 
-            File.basename(repository.files.first, '.*')
+            File.basename(repository.files.first, ".*")
           end
 
           def build_metadata
             metadata = {}
             metadata[:name] = options[:name] if options[:name]
             metadata[:version] = options[:version] if options[:version]
-            metadata[:description] = options[:description] if options[:description]
-            metadata[:created_by] = 'lutaml-xsd CLI'
+            if options[:description]
+              metadata[:description] =
+                options[:description]
+            end
+            metadata[:created_by] = "lutaml-xsd CLI"
             metadata
           end
 
           def validate_package(package)
-            verbose_output ''
-            verbose_output 'Validating package...'
+            verbose_output ""
+            verbose_output "Validating package..."
             validation = package.validate
 
             if validation.valid?
-              output '✓ Package is valid'
+              output "✓ Package is valid"
             else
-              error 'Package validation failed'
+              error "Package validation failed"
               validation.errors.each { |err| error "  - #{err}" }
               exit 1 if options[:strict]
             end
 
             return unless validation.warnings.any?
 
-            output 'Warnings:'
+            output "Warnings:"
             validation.warnings.each { |warn| output "  - #{warn}" }
             exit 1 if options[:strict]
           end
@@ -537,10 +544,10 @@ module Lutaml
             package = SchemaRepositoryPackage.new(@package_file)
             validation = package.validate
 
-            format = options[:format] || 'text'
+            format = options[:format] || "text"
 
             case format
-            when 'json', 'yaml'
+            when "json", "yaml"
               output format_output(validation.to_h, format)
             else
               display_text_validation(validation)
@@ -555,27 +562,27 @@ module Lutaml
 
           def display_text_validation(validation)
             if validation.valid?
-              output '✓ Package is VALID'
+              output "✓ Package is VALID"
             else
-              output '✗ Package is INVALID'
+              output "✗ Package is INVALID"
             end
 
             if validation.errors.any?
-              output ''
+              output ""
               output "Errors (#{validation.errors.size}):"
               validation.errors.each { |err| output "  - #{err}" }
             end
 
             if validation.warnings.any?
-              output ''
+              output ""
               output "Warnings (#{validation.warnings.size}):"
               validation.warnings.each { |warn| output "  - #{warn}" }
             end
 
             return unless verbose? && validation.metadata
 
-            output ''
-            output 'Metadata:'
+            output ""
+            output "Metadata:"
             validation.metadata.each do |key, value|
               output "  #{key}: #{value.inspect}"
             end
@@ -610,15 +617,15 @@ module Lutaml
             validation = package.validate
 
             unless validation.valid?
-              error 'Cannot display info for invalid package'
+              error "Cannot display info for invalid package"
               validation.errors.each { |err| error "  - #{err}" }
               exit 1
             end
 
-            format = options[:format] || 'text'
+            format = options[:format] || "text"
 
             case format
-            when 'json', 'yaml'
+            when "json", "yaml"
               output format_output(validation.metadata, format)
             else
               display_text_info(validation.metadata)
@@ -632,15 +639,15 @@ module Lutaml
           def display_text_info(metadata)
             output "Package: #{File.basename(@package_file)}"
             output "Size: #{File.size(@package_file)} bytes"
-            output ''
-            output 'Metadata:'
-            output '-' * 80
+            output ""
+            output "Metadata:"
+            output "-" * 80
 
             metadata.each do |key, value|
               if value.is_a?(Array)
                 output "#{key}: (#{value.size} items)"
                 value.first(3).each { |item| output "  - #{item.inspect}" }
-                output '  ...' if value.size > 3
+                output "  ..." if value.size > 3
               elsif value.is_a?(Hash)
                 output "#{key}:"
                 value.each { |k, v| output "  #{k}: #{v}" }
@@ -660,47 +667,47 @@ module Lutaml
 
           def run
             # Step 1: Build package
-            output '═' * 80
-            output 'Step 1: Building package'
-            output '═' * 80
+            output "═" * 80
+            output "Step 1: Building package"
+            output "═" * 80
             build_cmd = BuildCommand.new(@config_file, options)
             build_cmd.run
-            output ''
+            output ""
 
             # Determine package path
             package_path = determine_package_path
 
             # Step 2: Validate (unless skipped)
             unless options[:no_validate]
-              output '═' * 80
-              output 'Step 2: Validating package'
-              output '═' * 80
+              output "═" * 80
+              output "Step 2: Validating package"
+              output "═" * 80
               validate_options = options.dup
-              validate_options[:format] = 'text'
+              validate_options[:format] = "text"
               validate_cmd = ValidateCommand.new(package_path, validate_options)
               validate_cmd.run
-              output ''
+              output ""
             end
 
             # Step 3: Show stats (unless skipped)
             unless options[:no_stats]
-              output '═' * 80
-              output 'Step 3: Package statistics'
-              output '═' * 80
-              require_relative 'stats_command'
+              output "═" * 80
+              output "Step 3: Package statistics"
+              output "═" * 80
+              require_relative "stats_command"
               stats_options = options.dup
-              stats_options[:format] = 'text'
+              stats_options[:format] = "text"
               stats_cmd = StatsCommand::ShowCommand.new(
                 package_path,
-                stats_options
+                stats_options,
               )
               stats_cmd.run
-              output ''
+              output ""
             end
 
-            output '═' * 80
-            output '✓ Quick workflow completed successfully'
-            output '═' * 80
+            output "═" * 80
+            output "✓ Quick workflow completed successfully"
+            output "═" * 80
           rescue StandardError => e
             error "Quick workflow failed: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
@@ -721,9 +728,9 @@ module Lutaml
           end
 
           def derive_name_from_repository(repository)
-            return 'schema_repository' if repository.files.empty?
+            return "schema_repository" if repository.files.empty?
 
-            File.basename(repository.files.first, '.*')
+            File.basename(repository.files.first, ".*")
           end
         end
 
@@ -740,11 +747,11 @@ module Lutaml
             package_path = determine_package_path
 
             if should_rebuild?(package_path)
-              verbose_output 'Cache is stale or --force specified, rebuilding...'
+              verbose_output "Cache is stale or --force specified, rebuilding..."
               build_package
             else
               output "✓ Package is up-to-date: #{package_path}"
-              output '  Use --force to rebuild anyway'
+              output "  Use --force to rebuild anyway"
             end
           rescue StandardError => e
             error "Auto-build failed: #{e.message}"
@@ -803,9 +810,9 @@ module Lutaml
           end
 
           def derive_name_from_repository(repository)
-            return 'schema_repository' if repository.files.empty?
+            return "schema_repository" if repository.files.empty?
 
-            File.basename(repository.files.first, '.*')
+            File.basename(repository.files.first, ".*")
           end
 
           def build_package
@@ -854,16 +861,16 @@ module Lutaml
             schemas_info = all_schemas.map do |file_path, schema|
               {
                 filename: File.basename(file_path),
-                target_namespace: schema.target_namespace || '(no namespace)',
+                target_namespace: schema.target_namespace || "(no namespace)",
                 elements: schema.element.size,
-                total_types: schema.simple_type.size + schema.complex_type.size
+                total_types: schema.simple_type.size + schema.complex_type.size,
               }
             end
 
-            format = options[:format] || 'text'
+            format = options[:format] || "text"
 
             case format
-            when 'json', 'yaml'
+            when "json", "yaml"
               output format_output(schemas_info, format)
             else
               display_text_list(schemas_info)
@@ -875,7 +882,7 @@ module Lutaml
           end
 
           def display_text_list(schemas_info)
-            require 'table_tennis'
+            require "table_tennis"
 
             # Build table data
             rows = schemas_info.map do |info|
@@ -883,7 +890,7 @@ module Lutaml
                 uri: info[:target_namespace],
                 file: info[:filename],
                 elements: info[:elements],
-                types: info[:total_types]
+                types: info[:total_types],
               }
             end
 
@@ -893,10 +900,10 @@ module Lutaml
                                     zebra: true,
                                     columns: %i[uri file elements types],
                                     headers: {
-                                      uri: 'Namespace URI',
-                                      file: 'File Name',
-                                      elements: 'Elements',
-                                      types: 'Types'
+                                      uri: "Namespace URI",
+                                      file: "File Name",
+                                      elements: "Elements",
+                                      types: "Types",
                                     })
 
             output table
@@ -911,17 +918,17 @@ module Lutaml
             # Get classification
             classification = repository.classify_schemas
 
-            format = options[:format] || 'text'
+            format = options[:format] || "text"
 
             case format
-            when 'json', 'yaml'
+            when "json", "yaml"
               # Convert SchemaClassificationInfo objects to hashes
               serializable = {
                 entrypoint_schemas: classification[:entrypoint_schemas].map(&:to_h),
                 dependency_schemas: classification[:dependency_schemas].map(&:to_h),
                 fully_resolved: classification[:fully_resolved].map(&:to_h),
                 partially_resolved: classification[:partially_resolved].map(&:to_h),
-                summary: classification[:summary]
+                summary: classification[:summary],
               }
               output format_output(serializable, format)
             else
@@ -934,71 +941,72 @@ module Lutaml
           end
 
           def display_text_classification(classification)
-            require 'table_tennis'
+            require "table_tennis"
 
-            output 'Schema Classification'
-            output '=' * 80
-            output ''
+            output "Schema Classification"
+            output "=" * 80
+            output ""
 
             # Summary
             summary = classification[:summary]
-            output 'Summary:'
+            output "Summary:"
             output "  Total Schemas: #{summary[:total_schemas]}"
             output "  Entrypoint Schemas: #{summary[:entrypoint_count]}"
             output "  Dependency Schemas: #{summary[:dependency_count]}"
             output "  Fully Resolved: #{summary[:fully_resolved_count]}"
             output "  Partially Resolved: #{summary[:partially_resolved_count]}"
             output "  Resolution: #{summary[:resolution_percentage]}%"
-            output ''
+            output ""
 
             # Entrypoint schemas
             if classification[:entrypoint_schemas].any?
-              output '─' * 80
+              output "─" * 80
               output "Entrypoint Schemas (#{classification[:entrypoint_schemas].size})"
-              output '─' * 80
+              output "─" * 80
               display_schema_table(classification[:entrypoint_schemas])
-              output ''
+              output ""
             end
 
             # Dependency schemas
             if classification[:dependency_schemas].any?
-              output '─' * 80
+              output "─" * 80
               output "Dependency Schemas (#{classification[:dependency_schemas].size})"
-              output '─' * 80
+              output "─" * 80
               display_schema_table(classification[:dependency_schemas])
-              output ''
+              output ""
             end
 
             # Fully resolved
             if classification[:fully_resolved].any?
-              output '─' * 80
+              output "─" * 80
               output "Fully Resolved Schemas (#{classification[:fully_resolved].size})"
-              output '─' * 80
+              output "─" * 80
               display_schema_table(classification[:fully_resolved])
-              output ''
+              output ""
             end
 
             # Partially resolved
             if classification[:partially_resolved].any?
-              output '─' * 80
+              output "─" * 80
               output "Partially Resolved Schemas (#{classification[:partially_resolved].size})"
-              output '─' * 80
+              output "─" * 80
               display_schema_table(classification[:partially_resolved])
-              output ''
+              output ""
             end
 
-            output '=' * 80
+            output "=" * 80
           end
 
           def display_schema_table(schema_infos)
             table_data = schema_infos.map do |info|
               info_hash = info.to_h
               {
-                'Filename' => info_hash[:filename],
-                'Namespace' => truncate_namespace(info_hash[:namespace]),
-                'Elements' => info_hash[:elements_count],
-                'Types' => info_hash[:types_count],
-                'Status' => info_hash[:resolution_status].to_s.gsub('_', ' ').capitalize
+                "Filename" => info_hash[:filename],
+                "Namespace" => truncate_namespace(info_hash[:namespace]),
+                "Elements" => info_hash[:elements_count],
+                "Types" => info_hash[:types_count],
+                "Status" => info_hash[:resolution_status].to_s.gsub("_",
+                                                                    " ").capitalize,
               }
             end
 
@@ -1042,19 +1050,19 @@ module Lutaml
             found = false
 
             begin
-              require 'zip'
+              require "zip"
               Zip::File.open(@package_file) do |zipfile|
                 # Normalize schema name - add .xsd if not present
-                search_name = @schema_name.end_with?('.xsd') ? @schema_name : "#{@schema_name}.xsd"
+                search_name = @schema_name.end_with?(".xsd") ? @schema_name : "#{@schema_name}.xsd"
 
                 # Search for the schema file
                 entry = zipfile.find_entry("schemas/#{search_name}")
 
                 unless entry
                   error "Schema not found in package: #{search_name}"
-                  error 'Available schemas:'
+                  error "Available schemas:"
                   zipfile.each do |e|
-                    next unless e.name.start_with?('schemas/') && e.name.end_with?('.xsd')
+                    next unless e.name.start_with?("schemas/") && e.name.end_with?(".xsd")
 
                     error "  - #{File.basename(e.name)}"
                   end
@@ -1077,7 +1085,7 @@ module Lutaml
             return unless found
 
             write_output(content)
-            verbose_output '✓ Schema extracted successfully'
+            verbose_output "✓ Schema extracted successfully"
           end
 
           def write_output(content)
@@ -1122,20 +1130,20 @@ module Lutaml
             # Ensure it's resolved
             ensure_resolved(repository)
 
-            verbose_output 'Validating all references are fully resolved...'
+            verbose_output "Validating all references are fully resolved..."
 
             # Create validator and run validation
-            require_relative '../package_validator'
+            require_relative "../package_validator"
             validator = PackageValidator.new(repository)
             result = validator.validate_full_resolution
 
             # Format and display results
-            format = options[:format] || 'text'
+            format = options[:format] || "text"
 
             case format
-            when 'json'
+            when "json"
               output format_as_json(result)
-            when 'yaml'
+            when "yaml"
               output format_as_yaml(result)
             else
               display_text_results(result)
@@ -1151,68 +1159,68 @@ module Lutaml
           end
 
           def format_as_json(result)
-            require 'json'
+            require "json"
             JSON.pretty_generate(result)
           end
 
           def format_as_yaml(result)
-            require 'yaml'
+            require "yaml"
             result.to_yaml
           end
 
           def display_text_results(result)
-            output '=' * 80
-            output 'Package Resolution Validation'
-            output '=' * 80
-            output ''
+            output "=" * 80
+            output "Package Resolution Validation"
+            output "=" * 80
+            output ""
 
             # Overall status
             if result[:valid]
-              output '✓ VALID - All references are fully resolved'
+              output "✓ VALID - All references are fully resolved"
             else
-              output '✗ INVALID - Unresolved references found'
+              output "✗ INVALID - Unresolved references found"
             end
-            output ''
+            output ""
 
             # Statistics
             stats = result[:statistics]
-            output 'Statistics:'
+            output "Statistics:"
             output "  Types checked: #{stats[:types_checked]}"
             output "  Elements checked: #{stats[:elements_checked]}"
             output "  Attributes checked: #{stats[:attributes_checked]}"
             output "  Groups checked: #{stats[:groups_checked]}"
             output "  Attribute groups checked: #{stats[:attribute_groups_checked]}"
-            output ''
+            output ""
 
             # Errors
             if result[:errors].any?
               output "Errors (#{result[:errors].size}):"
-              output '-' * 80
+              output "-" * 80
               result[:errors].each_with_index do |err, idx|
                 output "#{idx + 1}. #{err}"
               end
-              output ''
+              output ""
             end
 
             # Warnings
             if result[:warnings].any?
               output "Warnings (#{result[:warnings].size}):"
-              output '-' * 80
+              output "-" * 80
               result[:warnings].each_with_index do |warn, idx|
                 output "#{idx + 1}. #{warn}"
               end
-              output ''
+              output ""
             end
 
             # Summary
-            output '=' * 80
+            output "=" * 80
             if result[:valid]
-              output '✓ Package is fully resolved and ready for use'
+              output "✓ Package is fully resolved and ready for use"
             else
-              output '✗ Package has unresolved references'
-              output '  Fix the errors above to create a fully resolved package'
+              output "✗ Package has unresolved references"
+              output "  Fix the errors above to create a fully resolved package"
             end
-            output '=' * 80
+            output "=" * 80
           end
 
           def determine_exit_code(result)

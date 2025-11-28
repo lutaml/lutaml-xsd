@@ -48,9 +48,12 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
       it "exits with error and usage message" do
         command = described_class.new
         # Stub options to return defaults with symbol keys
-        allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "text" })
+        allow(command).to receive(:options).and_return({ version: "1.0",
+                                                         verbose: false, format: "text" })
 
-        expect { command.validate }.to output(/No schema files specified/).to_stdout
+        expect do
+          command.validate
+        end.to output(/No schema files specified/).to_stdout
           .and raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
       end
     end
@@ -66,8 +69,12 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
 
  "text" })
 
-          expect { command.validate(file.path) }.to output(/✓ #{Regexp.escape(file.path)}/).to_stdout
-            .and raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+          expect do
+            command.validate(file.path)
+          end.to output(/✓ #{Regexp.escape(file.path)}/).to_stdout
+            .and raise_error(SystemExit) { |error|
+                   expect(error.status).to eq(0)
+                 }
         end
       end
     end
@@ -82,11 +89,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
             file2.rewind
 
             command = described_class.new
-            allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "text" })
+            allow(command).to receive(:options).and_return({ version: "1.0",
+                                                             verbose: false, format: "text" })
 
             output = capture(:stdout) do
               expect { command.validate(file1.path, file2.path) }
-                .to raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+                .to raise_error(SystemExit) { |error|
+                      expect(error.status).to eq(0)
+                    }
             end
 
             expect(output).to match(/✓ #{Regexp.escape(file1.path)}/)
@@ -102,12 +112,15 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
     context "with non-existent file" do
       it "reports file not found" do
         command = described_class.new
-        allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "text" })
+        allow(command).to receive(:options).and_return({ version: "1.0",
+                                                         verbose: false, format: "text" })
         non_existent = "non_existent_schema.xsd"
 
         output = capture(:stdout) do
           expect { command.validate(non_existent) }
-            .to raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+            .to raise_error(SystemExit) { |error|
+                  expect(error.status).to eq(1)
+                }
         end
 
         expect(output).to match(/✗ #{non_existent}/)
@@ -124,11 +137,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "text" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: false, format: "text" })
 
           output = capture(:stdout) do
             expect { command.validate(file.path) }
-              .to raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+              .to raise_error(SystemExit) { |error|
+                    expect(error.status).to eq(1)
+                  }
           end
 
           expect(output).to match(/✗ #{Regexp.escape(file.path)}/)
@@ -145,10 +161,13 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "text" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: false, format: "text" })
 
           expect { command.validate(file.path) }.to output(/✓/).to_stdout
-            .and raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+            .and raise_error(SystemExit) { |error|
+                   expect(error.status).to eq(0)
+                 }
         end
       end
 
@@ -158,10 +177,13 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.1", verbose: false, format: "text" })
+          allow(command).to receive(:options).and_return({ version: "1.1",
+                                                           verbose: false, format: "text" })
 
           expect { command.validate(file.path) }.to output(/✓/).to_stdout
-            .and raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+            .and raise_error(SystemExit) { |error|
+                   expect(error.status).to eq(0)
+                 }
         end
       end
 
@@ -171,11 +193,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "text" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: false, format: "text" })
 
           output = capture(:stdout) do
             expect { command.validate(file.path) }
-              .to raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+              .to raise_error(SystemExit) { |error|
+                    expect(error.status).to eq(1)
+                  }
           end
 
           expect(output).to match(/✗/)
@@ -191,11 +216,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: true, format: "text" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: true, format: "text" })
 
           output = capture(:stdout) do
             expect { command.validate(file.path) }
-              .to raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+              .to raise_error(SystemExit) { |error|
+                    expect(error.status).to eq(0)
+                  }
           end
 
           expect(output).to match(/✓ #{Regexp.escape(file.path)} \(XSD 1\.0\)/)
@@ -213,11 +241,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
             invalid_file.rewind
 
             command = described_class.new
-            allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "text" })
+            allow(command).to receive(:options).and_return({ version: "1.0",
+                                                             verbose: false, format: "text" })
 
             output = capture(:stdout) do
               expect { command.validate(valid_file.path, invalid_file.path) }
-                .to raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+                .to raise_error(SystemExit) { |error|
+                      expect(error.status).to eq(1)
+                    }
             end
 
             expect(output).to match(/Total: 2/)
@@ -235,11 +266,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "json" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: false, format: "json" })
 
           output = capture(:stdout) do
             expect { command.validate(file.path) }
-              .to raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+              .to raise_error(SystemExit) { |error|
+                    expect(error.status).to eq(0)
+                  }
           end
 
           json = JSON.parse(output)
@@ -259,11 +293,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "json" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: false, format: "json" })
 
           output = capture(:stdout) do
             expect { command.validate(file.path) }
-              .to raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+              .to raise_error(SystemExit) { |error|
+                    expect(error.status).to eq(1)
+                  }
           end
 
           json = JSON.parse(output)
@@ -284,11 +321,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
             invalid_file.rewind
 
             command = described_class.new
-            allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "json" })
+            allow(command).to receive(:options).and_return({ version: "1.0",
+                                                             verbose: false, format: "json" })
 
             output = capture(:stdout) do
               expect { command.validate(valid_file.path, invalid_file.path) }
-                .to raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+                .to raise_error(SystemExit) { |error|
+                      expect(error.status).to eq(1)
+                    }
             end
 
             json = JSON.parse(output)
@@ -306,11 +346,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: true, format: "json" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: true, format: "json" })
 
           output = capture(:stdout) do
             expect { command.validate(file.path) }
-              .to raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+              .to raise_error(SystemExit) { |error|
+                    expect(error.status).to eq(0)
+                  }
           end
 
           json = JSON.parse(output)
@@ -326,11 +369,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "yaml" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: false, format: "yaml" })
 
           output = capture(:stdout) do
             expect { command.validate(file.path) }
-              .to raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+              .to raise_error(SystemExit) { |error|
+                    expect(error.status).to eq(0)
+                  }
           end
 
           yaml = YAML.safe_load(output)
@@ -350,11 +396,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "yaml" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: false, format: "yaml" })
 
           output = capture(:stdout) do
             expect { command.validate(file.path) }
-              .to raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+              .to raise_error(SystemExit) { |error|
+                    expect(error.status).to eq(1)
+                  }
           end
 
           yaml = YAML.safe_load(output)
@@ -375,11 +424,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
             invalid_file.rewind
 
             command = described_class.new
-            allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "yaml" })
+            allow(command).to receive(:options).and_return({ version: "1.0",
+                                                             verbose: false, format: "yaml" })
 
             output = capture(:stdout) do
               expect { command.validate(valid_file.path, invalid_file.path) }
-                .to raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+                .to raise_error(SystemExit) { |error|
+                      expect(error.status).to eq(1)
+                    }
             end
 
             yaml = YAML.safe_load(output)
@@ -397,11 +449,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
           file.rewind
 
           command = described_class.new
-          allow(command).to receive(:options).and_return({ version: "1.0", verbose: true, format: "yaml" })
+          allow(command).to receive(:options).and_return({ version: "1.0",
+                                                           verbose: true, format: "yaml" })
 
           output = capture(:stdout) do
             expect { command.validate(file.path) }
-              .to raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+              .to raise_error(SystemExit) { |error|
+                    expect(error.status).to eq(0)
+                  }
           end
 
           yaml = YAML.safe_load(output)
@@ -413,11 +468,14 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateSchemaCommand do
     context "with invalid format option" do
       it "exits with error for invalid format" do
         command = described_class.new
-        allow(command).to receive(:options).and_return({ version: "1.0", verbose: false, format: "xml" })
+        allow(command).to receive(:options).and_return({ version: "1.0",
+                                                         verbose: false, format: "xml" })
 
         output = capture(:stdout) do
           expect { command.validate("schema.xsd") }
-            .to raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+            .to raise_error(SystemExit) { |error|
+                  expect(error.status).to eq(1)
+                }
         end
 
         expect(output).to match(/Invalid format 'xml'/)

@@ -5,7 +5,9 @@ module Lutaml
     module LiquidMethods
       module Element
         def used_by
-          @__root.complex_type.select { |object| object.find_elements_used(name) }
+          @__root.complex_type.select do |object|
+            object.find_elements_used(name)
+          end
         end
 
         def attributes
@@ -17,7 +19,7 @@ module Lutaml
         end
 
         def max_occurrences
-          return '*' if @max_occurs == 'unbounded'
+          return "*" if @max_occurs == "unbounded"
 
           @max_occurs&.to_i || 1
         end

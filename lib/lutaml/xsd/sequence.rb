@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'liquid_methods/sequence'
+require_relative "liquid_methods/sequence"
 
 module Lutaml
   module Xsd
@@ -18,8 +18,8 @@ module Lutaml
       attribute :any, :any, collection: true, initialize_empty: true
 
       xml do
-        root 'sequence', mixed: true
-        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
+        root "sequence", mixed: true
+        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_attribute :id, to: :id
         map_attribute :minOccurs, to: :min_occurs

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'base_command'
-require_relative '../interactive_builder'
+require_relative "base_command"
+require_relative "../interactive_builder"
 
 module Lutaml
   module Xsd
@@ -24,8 +24,8 @@ module Lutaml
 
         def validate_entry_points
           if entry_points.empty?
-            error 'No entry points specified'
-            error 'Usage: lutaml-xsd package init ENTRY_POINTS [options]'
+            error "No entry points specified"
+            error "Usage: lutaml-xsd package init ENTRY_POINTS [options]"
             exit 1
           end
 
@@ -42,21 +42,21 @@ module Lutaml
           success = builder.run
 
           unless success
-            error 'Interactive builder failed'
+            error "Interactive builder failed"
             exit 1
           end
 
-          output ''
-          output 'Next steps:'
-          output '  1. Review the generated configuration file'
-          output '  2. Build the package:'
+          output ""
+          output "Next steps:"
+          output "  1. Review the generated configuration file"
+          output "  2. Build the package:"
           output "     lutaml-xsd package build #{options[:output] || 'repository.yml'} output.lxr"
         rescue Interrupt
-          output ''
-          output ''
-          output 'Interrupted by user'
-          output 'Session saved. Resume with:'
-          output '  lutaml-xsd package init --resume'
+          output ""
+          output ""
+          output "Interrupted by user"
+          output "Session saved. Resume with:"
+          output "  lutaml-xsd package init --resume"
           exit 130
         rescue StandardError => e
           error "Init command failed: #{e.message}"

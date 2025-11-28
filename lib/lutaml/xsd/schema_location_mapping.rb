@@ -14,9 +14,9 @@ module Lutaml
       attribute :pattern, :boolean, default: -> { false }
 
       yaml do
-        map 'from', to: :from
-        map 'to', to: :to
-        map 'pattern', to: :pattern
+        map "from", to: :from
+        map "to", to: :to
+        map "pattern", to: :pattern
       end
 
       # Override initialize to auto-detect Regexp patterns
@@ -25,12 +25,13 @@ module Lutaml
       # @param from [String, Regexp] The source pattern
       # @param to [String] The target path
       # @param pattern [Boolean, nil] Explicit pattern flag (optional)
-      def initialize(attributes = nil, from: nil, to: nil, pattern: nil, **options)
+      def initialize(attributes = nil, from: nil, to: nil, pattern: nil,
+**options)
         # Handle hash argument from Lutaml::Model deserialization
         if attributes.is_a?(Hash)
-          from = attributes[:from] || attributes['from']
-          to = attributes[:to] || attributes['to']
-          pattern = attributes[:pattern] || attributes['pattern']
+          from = attributes[:from] || attributes["from"]
+          to = attributes[:to] || attributes["to"]
+          pattern = attributes[:pattern] || attributes["pattern"]
         end
 
         # Auto-detect if from is a Regexp
@@ -49,9 +50,9 @@ module Lutaml
       # @param mapping [Hash] Hash with :from/:to or "from"/"to" keys
       # @return [SchemaLocationMapping]
       def self.from_hash(mapping)
-        from = mapping[:from] || mapping['from']
-        to = mapping[:to] || mapping['to']
-        pattern = mapping[:pattern] || mapping['pattern']
+        from = mapping[:from] || mapping["from"]
+        to = mapping[:to] || mapping["to"]
+        pattern = mapping[:pattern] || mapping["pattern"]
 
         new(from: from, to: to, pattern: pattern)
       end
@@ -61,7 +62,7 @@ module Lutaml
       def to_glob_format
         {
           from: pattern ? Regexp.new(from) : from,
-          to: to
+          to: to,
         }
       end
     end

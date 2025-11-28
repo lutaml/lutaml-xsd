@@ -28,25 +28,25 @@ RSpec.describe Lutaml::Xsd::Formatters::FormatterFactory do
 
     context "with unknown format" do
       it "raises ArgumentError" do
-        expect {
+        expect do
           described_class.create("unknown")
-        }.to raise_error(ArgumentError, /Unknown format: unknown/)
+        end.to raise_error(ArgumentError, /Unknown format: unknown/)
       end
     end
 
     context "with nil format" do
       it "raises ArgumentError" do
-        expect {
+        expect do
           described_class.create(nil)
-        }.to raise_error(ArgumentError)
+        end.to raise_error(ArgumentError)
       end
     end
 
     context "with empty string format" do
       it "raises ArgumentError" do
-        expect {
+        expect do
           described_class.create("")
-        }.to raise_error(ArgumentError)
+        end.to raise_error(ArgumentError)
       end
     end
   end

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'date'
-require 'time'
-require 'uri'
+require "date"
+require "time"
+require "uri"
 
 module Lutaml
   module Xsd
@@ -54,7 +54,7 @@ module Lutaml
           #
           # @return [String] The XSD type name
           def type_name
-            self.class.name.split('::').last.sub(/Validator$/, '')
+            self.class.name.split("::").last.sub(/Validator$/, "")
           end
 
           class << self
@@ -65,7 +65,7 @@ module Lutaml
             # @return [BaseTypeValidator] Validator instance for the type
             def for(type_name)
               # Load registry on first access
-              require_relative 'base_type_validator_registry' unless defined?(BaseTypeValidatorRegistry)
+              require_relative "base_type_validator_registry" unless defined?(BaseTypeValidatorRegistry)
 
               BaseTypeValidatorRegistry.validator_for(type_name)
             end
@@ -75,7 +75,7 @@ module Lutaml
             # @param type_name [String] The XSD type name
             # @return [Boolean] true if type is registered
             def registered?(type_name)
-              require_relative 'base_type_validator_registry' unless defined?(BaseTypeValidatorRegistry)
+              require_relative "base_type_validator_registry" unless defined?(BaseTypeValidatorRegistry)
 
               BaseTypeValidatorRegistry.registered?(type_name)
             end
@@ -88,7 +88,7 @@ module Lutaml
           # @param value [Object] The value to convert
           # @return [String] String representation of the value
           def to_string(value)
-            return '' if value.nil?
+            return "" if value.nil?
 
             value.to_s
           end

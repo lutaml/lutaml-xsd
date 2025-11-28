@@ -14,14 +14,14 @@ valid_schema = File.read("../schemas/valid_schema.xsd")
 
 begin
   validator = Lutaml::Xsd::SchemaValidator.new(version: "1.0")
-  result = validator.validate(valid_schema)
+  validator.validate(valid_schema)
   puts "✓ Schema is valid (XSD 1.0)"
 rescue Lutaml::Xsd::SchemaValidationError => e
   puts "✗ Validation failed: #{e.message}"
 end
 
 # Example 2: Validating an XSD 1.1 schema
-puts "\n" + "=" * 70
+puts "\n#{'=' * 70}"
 puts "Example 2: Validating an XSD 1.1 schema"
 puts "=" * 70
 
@@ -48,20 +48,20 @@ rescue Lutaml::Xsd::SchemaValidationError => e
 end
 
 # Example 3: Automatic version detection
-puts "\n" + "=" * 70
+puts "\n#{'=' * 70}"
 puts "Example 3: Automatic version detection"
 puts "=" * 70
 
 schemas = {
   "valid_schema.xsd" => valid_schema,
-  "xsd11_schema.xsd" => xsd11_schema
+  "xsd11_schema.xsd" => xsd11_schema,
 }
 
 schemas.each do |filename, content|
   detected_version = Lutaml::Xsd::SchemaValidator.detect_version(content)
   puts "\n#{filename}:"
   puts "  Detected version: XSD #{detected_version}"
-  
+
   validator = Lutaml::Xsd::SchemaValidator.new(version: detected_version)
   begin
     validator.validate(content)
@@ -72,14 +72,14 @@ schemas.each do |filename, content|
 end
 
 # Example 4: Validating invalid schemas
-puts "\n" + "=" * 70
+puts "\n#{'=' * 70}"
 puts "Example 4: Validating invalid schemas"
 puts "=" * 70
 
 invalid_schemas = [
   "../schemas/invalid_wrong_namespace.xsd",
   "../schemas/invalid_no_namespace.xsd",
-  "../schemas/invalid_non_schema.xsd"
+  "../schemas/invalid_non_schema.xsd",
 ]
 
 validator = Lutaml::Xsd::SchemaValidator.new
@@ -96,7 +96,7 @@ invalid_schemas.each do |schema_file|
 end
 
 # Example 5: Integration with Lutaml::Xsd.parse
-puts "\n" + "=" * 70
+puts "\n#{'=' * 70}"
 puts "Example 5: Integration with Lutaml::Xsd.parse"
 puts "=" * 70
 
@@ -112,14 +112,14 @@ end
 
 puts "\nDisabling validation:"
 begin
-  schema = Lutaml::Xsd.parse(valid_schema, validate_schema: false)
+  Lutaml::Xsd.parse(valid_schema, validate_schema: false)
   puts "✓ Schema parsed (validation skipped)"
-rescue => e
+rescue StandardError => e
   puts "✗ Parsing failed: #{e.message}"
 end
 
 # Example 6: Batch validation workflow
-puts "\n" + "=" * 70
+puts "\n#{'=' * 70}"
 puts "Example 6: Batch validation workflow"
 puts "=" * 70
 
@@ -128,17 +128,17 @@ schema_files = Dir.glob("#{schema_dir}/*.xsd")
 
 results = {
   valid: [],
-  invalid: []
+  invalid: [],
 }
 
 schema_files.each do |file|
   filename = File.basename(file)
   content = File.read(file)
-  
+
   # Detect version
   version = Lutaml::Xsd::SchemaValidator.detect_version(content)
   validator = Lutaml::Xsd::SchemaValidator.new(version: version)
-  
+
   begin
     validator.validate(content)
     results[:valid] << { file: filename, version: version }
@@ -159,6 +159,6 @@ results[:invalid].each do |r|
   puts "    Error: #{r[:error]}"
 end
 
-puts "\n" + "=" * 70
+puts "\n#{'=' * 70}"
 puts "Examples completed!"
 puts "=" * 70

@@ -22,7 +22,7 @@ module Lutaml
           return {
             resolved: false,
             error: result.error_message,
-            qname: qname
+            qname: qname,
           }
         end
 
@@ -30,12 +30,13 @@ module Lutaml
           resolved: true,
           root: qname,
           namespace: result.namespace,
-          type_category: result.definition.class.name.split('::').last,
-          dependencies: {}
+          type_category: result.definition.class.name.split("::").last,
+          dependencies: {},
         }
 
         visited = Set.new
-        collect_dependencies(result.definition, graph[:dependencies], depth, 0, visited)
+        collect_dependencies(result.definition, graph[:dependencies], depth, 0,
+                             visited)
 
         graph
       end
@@ -49,7 +50,7 @@ module Lutaml
           return {
             resolved: false,
             error: result.error_message,
-            qname: qname
+            qname: qname,
           }
         end
 
@@ -65,14 +66,17 @@ module Lutaml
           deps = extract_type_references(definition)
 
           # Check if this type references our target
-          next unless deps.any? { |dep| matches_target?(dep, result.namespace, result.local_name) }
+          next unless deps.any? do |dep|
+            matches_target?(dep, result.namespace, result.local_name)
+          end
 
           dependents_list << {
-            qname: build_qname(type_info[:namespace], type_info[:definition].name),
+            qname: build_qname(type_info[:namespace],
+                               type_info[:definition].name),
             namespace: type_info[:namespace],
             local_name: type_info[:definition].name,
             type_category: type_info[:type].to_s,
-            schema_file: File.basename(type_info[:schema_file])
+            schema_file: File.basename(type_info[:schema_file]),
           }
         end
 
@@ -81,7 +85,7 @@ module Lutaml
           target: qname,
           namespace: result.namespace,
           dependents: dependents_list,
-          count: dependents_list.size
+          count: dependents_list.size,
         }
       end
 
@@ -91,7 +95,7 @@ module Lutaml
       def to_mermaid(graph)
         return "graph TD\n  error[Error: #{graph[:error]}]" unless graph[:resolved]
 
-        lines = ['graph TD']
+        lines = ["graph TD"]
         node_id = 0
         node_map = {}
 
@@ -112,7 +116,10 @@ module Lutaml
           lines << "  #{root_id} --> #{dep_id}"
 
           # Add nested dependencies
-          add_mermaid_dependencies(dep_info[:dependencies], dep_id, lines, node_map, node_id) if dep_info[:dependencies]
+          if dep_info[:dependencies]
+            add_mermaid_dependencies(dep_info[:dependencies], dep_id, lines,
+                                     node_map, node_id)
+          end
         end
 
         lines.join("\n")
@@ -124,10 +131,10 @@ module Lutaml
       def to_dot(graph)
         return "digraph {\n  error [label=\"Error: #{graph[:error]}\"];\n}" unless graph[:resolved]
 
-        lines = ['digraph dependencies {']
-        lines << '  rankdir=LR;'
-        lines << '  node [shape=box, style=rounded];'
-        lines << ''
+        lines = ["digraph dependencies {"]
+        lines << "  rankdir=LR;"
+        lines << "  node [shape=box, style=rounded];"
+        lines << ""
 
         node_id = 0
         node_map = {}
@@ -148,10 +155,13 @@ module Lutaml
           lines << "  #{root_id} -> #{dep_id};"
 
           # Add nested dependencies
-          add_dot_dependencies(dep_info[:dependencies], dep_id, lines, node_map, node_id) if dep_info[:dependencies]
+          if dep_info[:dependencies]
+            add_dot_dependencies(dep_info[:dependencies], dep_id, lines,
+                                 node_map, node_id)
+          end
         end
 
-        lines << '}'
+        lines << "}"
         lines.join("\n")
       end
 
@@ -159,21 +169,21 @@ module Lutaml
       # @param graph [Hash] Dependency graph
       # @param direction [String] Direction of display (both, up, down)
       # @return [String] Text representation
-      def to_text(graph, direction: 'both')
+      def to_text(graph, direction: "both")
         return "Error: #{graph[:error]}" unless graph[:resolved]
 
         lines = []
         lines << "Type: #{graph[:root]}"
         lines << "Namespace: #{graph[:namespace]}"
         lines << "Category: #{graph[:type_category]}"
-        lines << ''
+        lines << ""
 
         if %w[both down].include?(direction)
-          lines << 'Dependencies (what this type depends on):'
+          lines << "Dependencies (what this type depends on):"
           if graph[:dependencies].empty?
-            lines << '  (none)'
+            lines << "  (none)"
           else
-            add_text_dependencies(graph[:dependencies], lines, '  ')
+            add_text_dependencies(graph[:dependencies], lines, "  ")
           end
         end
 
@@ -183,7 +193,8 @@ module Lutaml
       private
 
       # Collect dependencies recursively
-      def collect_dependencies(definition, graph, max_depth, current_depth, visited)
+      def collect_dependencies(definition, graph, max_depth, current_depth,
+visited)
         return if current_depth >= max_depth
 
         refs = extract_type_references(definition)
@@ -202,9 +213,9 @@ module Lutaml
           graph[dep_key] = {
             namespace: type_result.namespace,
             local_name: type_result.local_name,
-            type_category: type_result.definition.class.name.split('::').last,
+            type_category: type_result.definition.class.name.split("::").last,
             schema_file: File.basename(type_result.schema_file),
-            dependencies: {}
+            dependencies: {},
           }
 
           # Recurse
@@ -213,7 +224,7 @@ module Lutaml
             graph[dep_key][:dependencies],
             max_depth,
             current_depth + 1,
-            visited
+            visited,
           )
         end
       end
@@ -364,7 +375,7 @@ module Lutaml
 
       # Escape string for Mermaid
       def escape_mermaid(str)
-        str.gsub('"', '&quot;')
+        str.gsub('"', "&quot;")
       end
 
       # Escape string for DOT
@@ -382,7 +393,10 @@ module Lutaml
           lines << "  #{dep_id}[\"#{escape_mermaid(dep_name)}\"]"
           lines << "  #{parent_id} --> #{dep_id}"
 
-          add_mermaid_dependencies(dep_info[:dependencies], dep_id, lines, node_map, node_id) if dep_info[:dependencies]
+          if dep_info[:dependencies]
+            add_mermaid_dependencies(dep_info[:dependencies], dep_id, lines,
+                                     node_map, node_id)
+          end
         end
       end
 
@@ -396,7 +410,10 @@ module Lutaml
           lines << "  #{dep_id} [label=\"#{escape_dot(dep_name)}\"];"
           lines << "  #{parent_id} -> #{dep_id};"
 
-          add_dot_dependencies(dep_info[:dependencies], dep_id, lines, node_map, node_id) if dep_info[:dependencies]
+          if dep_info[:dependencies]
+            add_dot_dependencies(dep_info[:dependencies], dep_id, lines,
+                                 node_map, node_id)
+          end
         end
       end
 
@@ -405,7 +422,10 @@ module Lutaml
         deps.each do |dep_name, dep_info|
           lines << "#{indent}#{dep_name} (#{dep_info[:type_category]})"
 
-          add_text_dependencies(dep_info[:dependencies], lines, "#{indent}  ") if dep_info[:dependencies] && !dep_info[:dependencies].empty?
+          if dep_info[:dependencies] && !dep_info[:dependencies].empty?
+            add_text_dependencies(dep_info[:dependencies], lines,
+                                  "#{indent}  ")
+          end
         end
       end
     end

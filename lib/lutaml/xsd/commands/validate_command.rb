@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'base_command'
-require_relative '../validation/validator'
+require_relative "base_command"
+require_relative "../validation/validator"
 
 module Lutaml
   module Xsd
@@ -35,7 +35,7 @@ module Lutaml
           files = expand_file_patterns
 
           if files.empty?
-            error 'No XML files found matching the specified patterns'
+            error "No XML files found matching the specified patterns"
             exit 1
           end
 
@@ -57,8 +57,8 @@ module Lutaml
         # @return [void]
         def validate_inputs
           if xml_files.empty?
-            error 'No XML files specified'
-            error 'Usage: lutaml-xsd validate FILES SCHEMA [options]'
+            error "No XML files specified"
+            error "Usage: lutaml-xsd validate FILES SCHEMA [options]"
             exit 1
           end
 
@@ -74,7 +74,7 @@ module Lutaml
         def expand_file_patterns
           files = []
           xml_files.each do |pattern|
-            if pattern.include?('*') || pattern.include?('?')
+            if pattern.include?("*") || pattern.include?("?")
               files.concat(Dir.glob(pattern))
             elsif File.exist?(pattern)
               files << pattern
@@ -92,9 +92,10 @@ module Lutaml
           verbose_output "Loading schema source: #{schema_source}"
 
           config = options[:config] ? load_config(options[:config]) : nil
-          validator = Lutaml::Xsd::Validation::Validator.new(schema_source, config: config)
+          validator = Lutaml::Xsd::Validation::Validator.new(schema_source,
+                                                             config: config)
 
-          verbose_output '✓ Validator initialized'
+          verbose_output "✓ Validator initialized"
           validator
         end
 
@@ -141,8 +142,8 @@ module Lutaml
             valid: false,
             errors: [{
               message: "Failed to read or parse file: #{e.message}",
-              location: file
-            }]
+              location: file,
+            }],
           }
         end
 
@@ -151,12 +152,12 @@ module Lutaml
         # @param results [Array<Hash>] Validation results
         # @return [void]
         def output_results(results)
-          format = options[:format] || 'text'
+          format = options[:format] || "text"
 
           case format
-          when 'json'
+          when "json"
             output_json(results)
-          when 'yaml'
+          when "yaml"
             output_yaml(results)
           else
             output_text(results)
@@ -184,16 +185,16 @@ module Lutaml
         # @param results [Array<Hash>] Validation results
         # @return [void]
         def output_text(results)
-          output ''
-          output 'Validation Results'
-          output '=' * 80
-          output ''
+          output ""
+          output "Validation Results"
+          output "=" * 80
+          output ""
 
           results.each do |item|
             output_file_result(item[:file], item[:result])
           end
 
-          output ''
+          output ""
           output_summary(results)
         end
 
@@ -209,7 +210,7 @@ module Lutaml
             output "✗ #{file}"
             output_errors(result)
           end
-          output ''
+          output ""
         end
 
         # Output validation errors
@@ -224,7 +225,7 @@ module Lutaml
             if error.respond_to?(:to_detailed_message)
               output "  #{error.to_detailed_message.gsub("\n", "\n  ")}"
             else
-              location = error[:location] ? " at #{error[:location]}" : ''
+              location = error[:location] ? " at #{error[:location]}" : ""
               output "  • #{error[:message]}#{location}"
             end
           end
@@ -240,11 +241,13 @@ module Lutaml
         # @return [void]
         def output_summary(results)
           total = results.size
-          valid = results.count { |r| r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid] }
+          valid = results.count do |r|
+            r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid]
+          end
           invalid = total - valid
 
-          output 'Summary'
-          output '-' * 80
+          output "Summary"
+          output "-" * 80
           output "Total files: #{total}"
           output "Valid: #{valid}"
           output "Invalid: #{invalid}"
@@ -258,16 +261,20 @@ module Lutaml
           {
             summary: {
               total: results.size,
-              valid: results.count { |r| r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid] },
-              invalid: results.count { |r| !(r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid]) }
+              valid: results.count do |r|
+                r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid]
+              end,
+              invalid: results.count do |r|
+                !(r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid])
+              end,
             },
             files: results.map do |item|
               {
                 file: item[:file],
                 valid: item[:result].respond_to?(:valid?) ? item[:result].valid? : item[:result][:valid],
-                errors: format_errors_for_json(item[:result])
+                errors: format_errors_for_json(item[:result]),
               }
-            end
+            end,
           }
         end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'utils/svg_builder'
+require_relative "utils/svg_builder"
 
 module Lutaml
   module Xsd
@@ -33,8 +33,8 @@ module Lutaml
               to_point.x, to_point.y,
               {
                 stroke: options[:stroke] || config.colors.ui.border,
-                'stroke-width' => options[:stroke_width] || style.stroke_width,
-                'stroke-dasharray' => options[:dash_pattern]
+                "stroke-width" => options[:stroke_width] || style.stroke_width,
+                "stroke-dasharray" => options[:dash_pattern],
               }.compact
             )
           end
@@ -45,7 +45,7 @@ module Lutaml
             points = [
               point,
               point.offset(-size, -size * 1.25),
-              point.offset(size, -size * 1.25)
+              point.offset(size, -size * 1.25),
             ]
 
             Utils::SvgBuilder.polygon(
@@ -53,8 +53,8 @@ module Lutaml
               {
                 fill: options[:fill] || config.colors.ui.border,
                 stroke: options[:stroke],
-                'stroke-width' => options[:stroke_width]
-              }.compact
+                "stroke-width" => options[:stroke_width],
+              }.compact,
             )
           end
 
@@ -64,7 +64,7 @@ module Lutaml
             points = [
               point,
               point.offset(-size, size * 1.25),
-              point.offset(size, size * 1.25)
+              point.offset(size, size * 1.25),
             ]
 
             Utils::SvgBuilder.polygon(
@@ -72,8 +72,8 @@ module Lutaml
               {
                 fill: options[:fill] || config.colors.ui.border,
                 stroke: options[:stroke],
-                'stroke-width' => options[:stroke_width]
-              }.compact
+                "stroke-width" => options[:stroke_width],
+              }.compact,
             )
           end
 

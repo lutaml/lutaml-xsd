@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'fileutils'
+require "fileutils"
 
 module Lutaml
   module Xsd
@@ -17,11 +17,12 @@ module Lutaml
         # @param output_dir [String, nil] Output directory (multi mode)
         # @param verbose [Boolean] Enable verbose output
         # @return [OutputMode] Output mode handler
-        def self.create(mode:, output_path: nil, output_dir: nil, verbose: false)
+        def self.create(mode:, output_path: nil, output_dir: nil,
+verbose: false)
           case mode
-          when 'single'
+          when "single"
             SingleFileMode.new(output_path, verbose)
-          when 'multi'
+          when "multi"
             MultiFileMode.new(output_dir, verbose)
           else
             raise ArgumentError, "Invalid mode: #{mode}"
@@ -79,20 +80,20 @@ module Lutaml
         def write(html_content, schema_data)
           # Ensure output directory structure exists
           FileUtils.mkdir_p(output_dir)
-          FileUtils.mkdir_p(File.join(output_dir, 'data'))
-          FileUtils.mkdir_p(File.join(output_dir, 'js'))
-          FileUtils.mkdir_p(File.join(output_dir, 'css'))
+          FileUtils.mkdir_p(File.join(output_dir, "data"))
+          FileUtils.mkdir_p(File.join(output_dir, "js"))
+          FileUtils.mkdir_p(File.join(output_dir, "css"))
 
           written_files = []
 
           # Write HTML file
-          html_path = File.join(output_dir, 'index.html')
+          html_path = File.join(output_dir, "index.html")
           File.write(html_path, html_content)
           log "✓ Wrote: #{html_path}"
           written_files << html_path
 
           # Write JSON data file
-          json_path = File.join(output_dir, 'data', 'schemas.json')
+          json_path = File.join(output_dir, "data", "schemas.json")
           File.write(json_path, JSON.pretty_generate(schema_data))
           log "✓ Wrote: #{json_path}"
           written_files << json_path

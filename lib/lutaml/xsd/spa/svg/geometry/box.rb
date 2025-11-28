@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'point'
+require_relative "point"
 
 module Lutaml
   module Xsd

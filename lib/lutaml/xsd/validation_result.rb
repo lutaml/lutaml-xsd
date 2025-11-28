@@ -19,7 +19,7 @@ module Lutaml
                        file: f[:file],
                        valid: f[:valid],
                        error: f[:error],
-                       detected_version: f[:detected_version]
+                       detected_version: f[:detected_version],
                      )
                    end
                  end
@@ -63,7 +63,7 @@ module Lutaml
           valid: valid,
           invalid: invalid,
           files: files.map(&:to_h),
-          failed_files: failed_files
+          failed_files: failed_files,
         }
       end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'paint'
+require "paint"
 
 module Lutaml
   module Xsd
@@ -34,17 +34,17 @@ module Lutaml
         index_file: :magenta,
         file_size: :black,
         summary_label: [:bold],
-        summary_value: %i[cyan bold]
+        summary_value: %i[cyan bold],
       }.freeze
 
       # Icons for different file types
       ICONS = {
-        directory: '📁',
-        metadata: '📋',
-        xsd: '📄',
-        index: '🔍',
-        mapping: '🔖',
-        relation: '🔗'
+        directory: "📁",
+        metadata: "📋",
+        xsd: "📄",
+        index: "🔍",
+        mapping: "🔖",
+        relation: "🔗",
       }.freeze
 
       attr_reader :package_path, :options
@@ -61,7 +61,7 @@ module Lutaml
         @options = {
           show_sizes: false,
           no_color: false,
-          format: :tree
+          format: :tree,
         }.merge(options)
       end
 
@@ -76,7 +76,7 @@ module Lutaml
         output << format_header(stats[:total_size])
         output << format_entries(entries) if options[:format] == :tree
         output << format_flat_list(entries) if options[:format] == :flat
-        output << ''
+        output << ""
         output << format_summary(stats)
 
         output.join("\n")
@@ -88,14 +88,14 @@ module Lutaml
       #
       # @return [Hash] Organized entries by category
       def extract_entries
-        require 'zip'
+        require "zip"
 
         entries = {
           metadata: [],
           xsd_files: [],
           schemas_data: [],
           indexes: [],
-          mappings: []
+          mappings: [],
         }
 
         Zip::File.open(package_path) do |zipfile|
@@ -117,7 +117,7 @@ module Lutaml
       # @param entries [Hash] Entries hash to update
       def categorize_entry(entry, entries)
         case entry.name
-        when 'metadata.yaml'
+        when "metadata.yaml"
           entries[:metadata] << create_entry_info(entry)
         when %r{^schemas/.+\.xsd$}
           entries[:xsd_files] << create_entry_info(entry)
@@ -141,7 +141,7 @@ module Lutaml
           name: File.basename(entry.name),
           path: entry.name,
           size: entry.size,
-          directory: entry.name.include?('/') ? File.dirname(entry.name).split('/').last : nil
+          directory: entry.name.include?("/") ? File.dirname(entry.name).split("/").last : nil,
         }
       end
 
@@ -164,7 +164,7 @@ module Lutaml
           serialized_schemas: serialized_count,
           configuration_files: config_count,
           indexes: index_count,
-          total_size: total_size
+          total_size: total_size,
         }
       end
 
@@ -188,13 +188,16 @@ module Lutaml
         # Metadata
         if entries[:metadata].any?
           entries[:metadata].each do |entry|
-            lines << format_tree_line(entry, ICONS[:metadata], :metadata_file, 0)
+            lines << format_tree_line(entry, ICONS[:metadata], :metadata_file,
+                                      0)
           end
         end
 
         # XSD files (grouped) - show ALL files, no truncation
         if entries[:xsd_files].any?
-          lines << format_directory_line('xsd_files', entries[:xsd_files].sum { |e| e[:size] }, 0)
+          lines << format_directory_line("xsd_files", entries[:xsd_files].sum { |e|
+            e[:size]
+          }, 0)
           entries[:xsd_files].each do |entry|
             lines << format_tree_line(entry, ICONS[:xsd], :xsd_file, 1)
           end
@@ -202,9 +205,11 @@ module Lutaml
 
         # Serialized schemas - show ALL files, no truncation
         if entries[:schemas_data].any?
-          lines << format_directory_line('schemas_data', entries[:schemas_data].sum { |e| e[:size] }, 0)
+          lines << format_directory_line("schemas_data", entries[:schemas_data].sum { |e|
+            e[:size]
+          }, 0)
           entries[:schemas_data].each do |entry|
-            lines << format_tree_line(entry, '📦', :serialized_file, 1)
+            lines << format_tree_line(entry, "📦", :serialized_file, 1)
           end
         end
 
@@ -215,7 +220,7 @@ module Lutaml
 
         # Mappings
         entries[:mappings].each do |entry|
-          icon = entry[:name].include?('namespace') ? ICONS[:mapping] : ICONS[:relation]
+          icon = entry[:name].include?("namespace") ? ICONS[:mapping] : ICONS[:relation]
           lines << format_tree_line(entry, icon, :metadata_file, 0)
         end
 
@@ -230,7 +235,7 @@ module Lutaml
       # @return [String] Formatted line
       def format_directory_line(name, total_size, level)
         prefix = indent_prefix(level, false)
-        size_str = options[:show_sizes] ? " (#{format_size(total_size)})" : ''
+        size_str = options[:show_sizes] ? " (#{format_size(total_size)})" : ""
         line = "#{prefix}#{ICONS[:directory]} #{name}/#{size_str}"
         colorize(line, :directory)
       end
@@ -244,7 +249,13 @@ module Lutaml
       # @return [String] Formatted line
       def format_tree_line(entry, icon, color_key, level)
         prefix = indent_prefix(level, true)
-        size_str = options[:show_sizes] ? " #{colorize(format_size(entry[:size]), :file_size)}" : ''
+        size_str = if options[:show_sizes]
+                     " #{colorize(
+                       format_size(entry[:size]), :file_size
+                     )}"
+                   else
+                     ""
+                   end
         line = "#{prefix}#{icon} #{entry[:name]}#{size_str}"
         colorize(line, color_key)
       end
@@ -255,11 +266,11 @@ module Lutaml
       # @param is_item [Boolean] Whether this is an item (vs directory)
       # @return [String] Indentation prefix
       def indent_prefix(level, is_item)
-        return '├── ' if level.zero? && is_item
-        return '' if level.zero?
+        return "├── " if level.zero? && is_item
+        return "" if level.zero?
 
-        base = '│   ' * (level - 1)
-        connector = is_item ? '├── ' : '├── '
+        base = "│   " * (level - 1)
+        connector = is_item ? "├── " : "├── "
         "│   #{base}#{connector}"
       end
 
@@ -269,7 +280,7 @@ module Lutaml
       # @param level [Integer] Indentation level
       # @return [String] Indented line
       def indent_line(text, level)
-        prefix = '│   ' * level
+        prefix = "│   " * level
         "#{prefix}#{text}"
       end
 
@@ -283,12 +294,20 @@ module Lutaml
         all_files = []
         all_files.concat(entries[:metadata].map { |e| [e, :metadata_file] })
         all_files.concat(entries[:xsd_files].map { |e| [e, :xsd_file] })
-        all_files.concat(entries[:schemas_data].map { |e| [e, :serialized_file] })
+        all_files.concat(entries[:schemas_data].map do |e|
+          [e, :serialized_file]
+        end)
         all_files.concat(entries[:indexes].map { |e| [e, :index_file] })
         all_files.concat(entries[:mappings].map { |e| [e, :metadata_file] })
 
         all_files.each do |entry, color_key|
-          size_str = options[:show_sizes] ? " #{colorize(format_size(entry[:size]), :file_size)}" : ''
+          size_str = if options[:show_sizes]
+                       " #{colorize(
+                         format_size(entry[:size]), :file_size
+                       )}"
+                     else
+                       ""
+                     end
           lines << colorize("#{entry[:path]}#{size_str}", color_key)
         end
 
@@ -301,14 +320,27 @@ module Lutaml
       # @return [String] Formatted summary
       def format_summary(stats)
         lines = []
-        lines << colorize('Summary:', :summary_label)
-        lines << "  #{colorize('Total files:', :summary_label)} #{colorize(stats[:total_files].to_s, :summary_value)}"
-        lines << "  #{colorize('XSD files:', :summary_label)} #{colorize(stats[:xsd_files].to_s, :summary_value)}"
+        lines << colorize("Summary:", :summary_label)
+        lines << "  #{colorize('Total files:',
+                               :summary_label)} #{colorize(
+                                 stats[:total_files].to_s, :summary_value
+                               )}"
+        lines << "  #{colorize('XSD files:',
+                               :summary_label)} #{colorize(
+                                 stats[:xsd_files].to_s, :summary_value
+                               )}"
         lines << "  #{colorize('Serialized schemas:',
-                               :summary_label)} #{colorize(stats[:serialized_schemas].to_s, :summary_value)}"
+                               :summary_label)} #{colorize(
+                                 stats[:serialized_schemas].to_s, :summary_value
+                               )}"
         lines << "  #{colorize('Configuration files:',
-                               :summary_label)} #{colorize(stats[:configuration_files].to_s, :summary_value)}"
-        lines << "  #{colorize('Indexes:', :summary_label)} #{colorize(stats[:indexes].to_s, :summary_value)}"
+                               :summary_label)} #{colorize(
+                                 stats[:configuration_files].to_s, :summary_value
+                               )}"
+        lines << "  #{colorize('Indexes:',
+                               :summary_label)} #{colorize(
+                                 stats[:indexes].to_s, :summary_value
+                               )}"
         lines.join("\n")
       end
 
@@ -317,13 +349,13 @@ module Lutaml
       # @param bytes [Integer] Size in bytes
       # @return [String] Formatted size
       def format_size(bytes)
-        return '0 B' if bytes.zero?
+        return "0 B" if bytes.zero?
 
         units = %w[B KB MB GB TB]
         exp = (Math.log(bytes) / Math.log(1024)).to_i
         exp = [exp, units.length - 1].min
 
-        Kernel.format('%.1f %s', bytes.to_f / (1024**exp), units[exp])
+        Kernel.format("%.1f %s", bytes.to_f / (1024**exp), units[exp])
       end
 
       # Colorize text if colors enabled

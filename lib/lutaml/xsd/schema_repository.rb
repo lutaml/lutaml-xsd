@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'yaml'
-require 'zip'
-require_relative 'errors'
+require "yaml"
+require "zip"
+require_relative "errors"
 
 module Lutaml
   module Xsd
@@ -11,13 +11,14 @@ module Lutaml
     class SchemaRepository < Lutaml::Model::Serializable
       # Serializable attributes
       attribute :files, :string, collection: true
-      attribute :schema_location_mappings, SchemaLocationMapping, collection: true
+      attribute :schema_location_mappings, SchemaLocationMapping,
+                collection: true
       attribute :namespace_mappings, NamespaceMapping, collection: true
 
       yaml do
-        map 'files', to: :files
-        map 'schema_location_mappings', to: :schema_location_mappings
-        map 'namespace_mappings', to: :namespace_mappings
+        map "files", to: :files
+        map "schema_location_mappings", to: :schema_location_mappings
+        map "namespace_mappings", to: :namespace_mappings
       end
 
       # Internal state (not serialized)
@@ -110,14 +111,14 @@ module Lutaml
               imports = schema.respond_to?(:import) ? schema.import : []
               (imports || []).each do |import|
                 processed += 1
-                namespace_info = import.respond_to?(:namespace) ? (import.namespace || 'no namespace') : 'unknown'
+                namespace_info = import.respond_to?(:namespace) ? (import.namespace || "no namespace") : "unknown"
                 print "\r[#{processed}/#{total_imports}] #{namespace_info}"
                 $stdout.flush
               end
             end
             puts "\n✓ All dependencies resolved"
           else
-            puts '✓ No schema dependencies to resolve'
+            puts "✓ No schema dependencies to resolve"
           end
         end
 
@@ -167,7 +168,7 @@ module Lutaml
         # Check that namespace mappings are valid
         (namespace_mappings || []).each do |mapping|
           if mapping.prefix.nil? || mapping.prefix.empty?
-            error = 'Invalid namespace mapping: prefix cannot be empty'
+            error = "Invalid namespace mapping: prefix cannot be empty"
             errors << error
             raise Error, error if strict
           end
@@ -199,14 +200,16 @@ module Lutaml
       def configure_namespaces(mappings)
         case mappings
         when Hash
-          mappings.each { |prefix, uri| configure_namespace(prefix: prefix, uri: uri) }
+          mappings.each do |prefix, uri|
+            configure_namespace(prefix: prefix, uri: uri)
+          end
         when Array
           mappings.each do |mapping|
             if mapping.is_a?(NamespaceMapping)
               configure_namespace(prefix: mapping.prefix, uri: mapping.uri)
             elsif mapping.is_a?(Hash)
-              prefix = mapping[:prefix] || mapping['prefix']
-              uri = mapping[:uri] || mapping['uri']
+              prefix = mapping[:prefix] || mapping["prefix"]
+              uri = mapping[:uri] || mapping["uri"]
               configure_namespace(prefix: prefix, uri: uri)
             end
           end
@@ -226,7 +229,7 @@ module Lutaml
           return TypeResolutionResult.failure(
             qname: qname,
             error_message: "Failed to parse qualified name: #{qname}",
-            resolution_path: resolution_path
+            resolution_path: resolution_path,
           )
         end
 
@@ -244,12 +247,13 @@ module Lutaml
             qname: qname,
             local_name: local_name,
             error_message: "Namespace prefix '#{parsed[:prefix]}' not registered",
-            resolution_path: resolution_path
+            resolution_path: resolution_path,
           )
         end
 
         # Look up type in index
-        type_info = @type_index.find_by_namespace_and_name(namespace, local_name)
+        type_info = @type_index.find_by_namespace_and_name(namespace,
+                                                           local_name)
 
         if type_info
           resolution_path << "#{type_info[:schema_file]}##{local_name}"
@@ -260,19 +264,19 @@ module Lutaml
             local_name: local_name,
             definition: type_info[:definition],
             schema_file: type_info[:schema_file],
-            resolution_path: resolution_path
+            resolution_path: resolution_path,
           )
         else
           # Provide suggestions for similar types
           suggestions = @type_index.suggest_similar(namespace, local_name)
-          suggestion_text = suggestions.empty? ? '' : " Did you mean: #{suggestions.join(', ')}?"
+          suggestion_text = suggestions.empty? ? "" : " Did you mean: #{suggestions.join(', ')}?"
 
           TypeResolutionResult.failure(
             qname: qname,
             namespace: namespace,
             local_name: local_name,
             error_message: "Type '#{local_name}' not found in namespace '#{namespace}'.#{suggestion_text}",
-            resolution_path: resolution_path
+            resolution_path: resolution_path,
           )
         end
       end
@@ -398,14 +402,14 @@ module Lutaml
           total_namespaces: type_stats[:namespaces],
           namespace_prefixes: @namespace_registry.all_prefixes.size,
           resolved: @resolved,
-          validated: @validated
+          validated: @validated,
         }
       end
 
       # Classify schemas by role and resolution status
       # @return [Hash] Classification results
       def classify_schemas
-        require_relative 'schema_classifier'
+        require_relative "schema_classifier"
         classifier = SchemaClassifier.new(self)
         classifier.classify
       end
@@ -458,10 +462,10 @@ module Lutaml
 
         case format
         when :yaml
-          require 'yaml'
+          require "yaml"
           stats.to_yaml
         when :json
-          require 'json'
+          require "json"
           JSON.pretty_generate(stats)
         when :text
           format_statistics_as_text(stats)
@@ -477,7 +481,7 @@ module Lutaml
           {
             uri: ns,
             prefix: namespace_to_prefix(ns),
-            types: types_in_namespace(ns).size
+            types: types_in_namespace(ns).size,
           }
         end
       end
@@ -511,7 +515,7 @@ module Lutaml
       # @param depth [Integer] Maximum depth to traverse (default: 10)
       # @return [Hash, nil] Hierarchy analysis result or nil if type not found
       def analyze_type_hierarchy(qualified_name, depth: 10)
-        require_relative 'type_hierarchy_analyzer'
+        require_relative "type_hierarchy_analyzer"
         analyzer = TypeHierarchyAnalyzer.new(self)
         analyzer.analyze(qualified_name, depth: depth)
       end
@@ -520,7 +524,7 @@ module Lutaml
       # @param entry_types [Array<String>] Entry point type names
       # @return [CoverageReport] Coverage analysis results
       def analyze_coverage(entry_types: [])
-        require_relative 'coverage_analyzer'
+        require_relative "coverage_analyzer"
         analyzer = CoverageAnalyzer.new(self)
         analyzer.analyze(entry_types: entry_types)
       end
@@ -528,8 +532,8 @@ module Lutaml
       # Validate XSD specification compliance
       # @param version [String] XSD version to validate against ('1.0' or '1.1')
       # @return [SpecComplianceReport] Validation report
-      def validate_xsd_spec(version: '1.0')
-        require_relative 'xsd_spec_validator'
+      def validate_xsd_spec(version: "1.0")
+        require_relative "xsd_spec_validator"
         validator = XsdSpecValidator.new(self, version: version)
         validator.validate
       end
@@ -563,10 +567,10 @@ module Lutaml
             results[ns] << {
               name: elem.name,
               qualified_name: "#{namespace_to_prefix(ns)}:#{elem.name}",
-              type: elem.type || '(inline complex type)',
-              min_occurs: elem.min_occurs || '1',
-              max_occurs: elem.max_occurs || '1',
-              documentation: extract_element_documentation(elem)
+              type: elem.type || "(inline complex type)",
+              min_occurs: elem.min_occurs || "1",
+              max_occurs: elem.max_occurs || "1",
+              documentation: extract_element_documentation(elem),
             }
           end
         end
@@ -590,7 +594,7 @@ module Lutaml
         config = PackageConfiguration.new(
           xsd_mode: xsd_mode,
           resolution_mode: resolution_mode,
-          serialization_format: serialization_format
+          serialization_format: serialization_format,
         )
 
         # Delegate to SchemaRepositoryPackage
@@ -598,7 +602,7 @@ module Lutaml
           repository: self,
           output_path: output_path,
           config: config,
-          metadata: metadata
+          metadata: metadata,
         )
       end
 
@@ -650,8 +654,13 @@ module Lutaml
           repository.instance_variable_set(
             :@files,
             repository.files.map do |file|
-              File.absolute_path?(file) ? file : File.expand_path(file, base_dir)
-            end
+              if File.absolute_path?(file)
+                file
+              else
+                File.expand_path(file,
+                                 base_dir)
+              end
+            end,
           )
         end
 
@@ -659,7 +668,8 @@ module Lutaml
         repository.schema_location_mappings&.each do |mapping|
           unless File.absolute_path?(mapping.to)
             mapping.instance_variable_set(:@to,
-                                          File.expand_path(mapping.to, base_dir))
+                                          File.expand_path(mapping.to,
+                                                           base_dir))
           end
         end
 
@@ -671,26 +681,30 @@ module Lutaml
       # @return [SchemaRepository] Loaded repository
       def self.from_file(path)
         # Check file exists first
-        raise Errno::ENOENT, "No such file or directory - #{path}" unless File.exist?(path)
+        unless File.exist?(path)
+          raise Errno::ENOENT,
+                "No such file or directory - #{path}"
+        end
 
         case File.extname(path).downcase
-        when '.lxr'
+        when ".lxr"
           repo = from_package(path)
           # Ensure loaded repository is resolved
           repo.resolve unless repo.instance_variable_get(:@resolved)
           repo
-        when '.xsd'
+        when ".xsd"
           repo = new
           repo.instance_variable_set(:@files, [File.expand_path(path)])
           repo.parse.resolve
           repo
-        when '.yml', '.yaml'
+        when ".yml", ".yaml"
           repo = from_yaml_file(path)
           # Parse and resolve if needed
           repo.parse.resolve	if repo.needs_parsing?
           repo
         else
-          raise ConfigurationError, "Unsupported file type: #{path}. Expected .xsd, .lxr, .yml, or .yaml"
+          raise ConfigurationError,
+                "Unsupported file type: #{path}. Expected .xsd, .lxr, .yml, or .yaml"
         end
       end
 
@@ -699,11 +713,11 @@ module Lutaml
       # @param lxr_path [String, nil] Optional path to cache file (default: source with .lxr extension)
       # @return [SchemaRepository] Loaded repository
       def self.from_file_cached(source_path, lxr_path: nil)
-        lxr_path ||= source_path.sub(/\.(xsd|ya?ml)$/, '.lxr')
+        lxr_path ||= source_path.sub(/\.(xsd|ya?ml)$/, ".lxr")
 
         # Check if cache exists and is fresh
         if File.exist?(lxr_path) &&
-           File.mtime(lxr_path) >= File.mtime(source_path)
+            File.mtime(lxr_path) >= File.mtime(source_path)
           # Use from_file to ensure proper resolution
           from_file(lxr_path)
         else
@@ -715,7 +729,7 @@ module Lutaml
             lxr_path,
             xsd_mode: :include_all,
             resolution_mode: :resolved,
-            serialization_format: :marshal
+            serialization_format: :marshal,
           )
 
           repo
@@ -742,7 +756,7 @@ module Lutaml
         parsed_schema = Lutaml::Xsd.parse(
           xsd_content,
           location: File.dirname(file_path),
-          schema_mappings: glob_mappings
+          schema_mappings: glob_mappings,
         )
 
         @parsed_schemas[file_path] = parsed_schema
@@ -799,7 +813,8 @@ module Lutaml
         path.push(file)
 
         (dependencies[file] || []).each do |dep|
-          return true if has_circular_dependency?(dep, dependencies, visited, path)
+          return true if has_circular_dependency?(dep, dependencies, visited,
+                                                  path)
         end
 
         path.pop
@@ -819,18 +834,18 @@ module Lutaml
       # @return [String] Formatted text
       def format_statistics_as_text(stats)
         lines = []
-        lines << 'Schema Repository Statistics'
-        lines << ('=' * 40)
+        lines << "Schema Repository Statistics"
+        lines << ("=" * 40)
         lines << "Total Schemas: #{stats[:total_schemas]}"
         lines << "Total Types: #{stats[:total_types]}"
         lines << "Total Namespaces: #{stats[:total_namespaces]}"
         lines << "Namespace Prefixes: #{stats[:namespace_prefixes]}"
-        lines << ''
-        lines << 'Types by Category:'
+        lines << ""
+        lines << "Types by Category:"
         stats[:types_by_category].each do |type, count|
           lines << "  #{type}: #{count}"
         end
-        lines << ''
+        lines << ""
         lines << "Resolved: #{stats[:resolved]}"
         lines << "Validated: #{stats[:validated]}"
         lines.join("\n")
@@ -850,7 +865,7 @@ module Lutaml
       # @param elem [Element] The element to extract documentation from
       # @return [String] The documentation text or empty string
       def extract_element_documentation(elem)
-        return '' unless elem.annotation&.documentation
+        return "" unless elem.annotation&.documentation
 
         docs = elem.annotation.documentation
         docs = [docs] unless docs.is_a?(Array)
@@ -858,14 +873,14 @@ module Lutaml
         docs.map do |doc|
           content = doc.respond_to?(:content) ? doc.content : doc.to_s
           content&.strip
-        end.compact.first || ''
+        end.compact.first || ""
       end
     end
   end
 end
 
-require_relative 'schema_repository/namespace_registry'
-require_relative 'schema_repository/type_index'
-require_relative 'schema_repository/qualified_name_parser'
-require_relative 'namespace_prefix_manager'
-require_relative 'namespace_remapper'
+require_relative "schema_repository/namespace_registry"
+require_relative "schema_repository/type_index"
+require_relative "schema_repository/qualified_name_parser"
+require_relative "namespace_prefix_manager"
+require_relative "namespace_remapper"

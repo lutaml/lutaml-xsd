@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'moxml'
-require_relative 'xml_document'
-require_relative 'xml_element'
+require "moxml"
+require_relative "xml_document"
+require_relative "xml_element"
 
 module Lutaml
   module Xsd
@@ -34,8 +34,12 @@ module Lutaml
         # @raise [ArgumentError] if xml_content is nil or empty
         # @raise [Moxml::ParseError] if XML parsing fails
         def initialize(xml_content, adapter: :nokogiri)
-          raise ArgumentError, 'XML content cannot be nil' if xml_content.nil?
-          raise ArgumentError, 'XML content cannot be empty' if xml_content.empty?
+          raise ArgumentError, "XML content cannot be nil" if xml_content.nil?
+
+          if xml_content.empty?
+            raise ArgumentError,
+                  "XML content cannot be empty"
+          end
 
           @moxml_document = parse_xml(xml_content, adapter)
           @current_path = []
@@ -62,11 +66,11 @@ module Lutaml
         #
         # @return [String] XPath string (e.g., "/root/child[1]")
         def current_xpath
-          return '/' if @current_path.empty?
+          return "/" if @current_path.empty?
 
-          '/' + @current_path.map.with_index do |segment, idx|
+          "/" + @current_path.map.with_index do |segment, idx|
             format_xpath_segment(segment, idx)
-          end.join('/')
+          end.join("/")
         end
 
         # Execute a block within an element's context
@@ -124,9 +128,9 @@ module Lutaml
         def parent_xpath
           return nil if @current_path.length <= 1
 
-          '/' + @current_path[0..-2].map.with_index do |segment, idx|
+          "/" + @current_path[0..-2].map.with_index do |segment, idx|
             format_xpath_segment(segment, idx)
-          end.join('/')
+          end.join("/")
         end
 
         # Reset navigation to root
@@ -186,7 +190,7 @@ module Lutaml
             name: element.name,
             namespace_uri: element.namespace_uri,
             prefix: element.prefix,
-            index: index
+            index: index,
           }
         end
 

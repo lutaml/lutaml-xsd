@@ -37,7 +37,7 @@ module Lutaml
         #
         # @return [String] Error header
         def header
-          severity = @error.respond_to?(:severity) ? @error.severity.to_s.upcase : 'ERROR'
+          severity = @error.respond_to?(:severity) ? @error.severity.to_s.upcase : "ERROR"
           "#{severity}: #{@error.message}"
         end
 
@@ -50,7 +50,7 @@ module Lutaml
           details = @error.context.to_h
           return nil if details.empty?
 
-          lines = ['Context:']
+          lines = ["Context:"]
           details.each do |key, value|
             lines << "  #{format_key(key)}: #{value}"
           end
@@ -64,9 +64,9 @@ module Lutaml
           suggestions = @error.suggestions
           return nil if suggestions.empty?
 
-          lines = ['Did you mean?']
+          lines = ["Did you mean?"]
           suggestions.take(5).each do |suggestion|
-            similarity_info = suggestion.similarity < 1.0 ? " (#{suggestion.similarity_percentage}% match)" : ''
+            similarity_info = suggestion.similarity < 1.0 ? " (#{suggestion.similarity_percentage}% match)" : ""
             lines << "  • #{suggestion.text}#{similarity_info}"
           end
           lines.join("\n")
@@ -79,7 +79,7 @@ module Lutaml
           tips = @error.troubleshooting_tips
           return nil if tips.empty?
 
-          lines = ['Troubleshooting tips:']
+          lines = ["Troubleshooting tips:"]
           tips.each_with_index do |tip, i|
             lines << "  #{i + 1}. #{tip}"
           end
@@ -91,7 +91,7 @@ module Lutaml
         # @param key [Symbol, String] Context key
         # @return [String] Formatted key
         def format_key(key)
-          key.to_s.split('_').map(&:capitalize).join(' ')
+          key.to_s.split("_").map(&:capitalize).join(" ")
         end
       end
     end

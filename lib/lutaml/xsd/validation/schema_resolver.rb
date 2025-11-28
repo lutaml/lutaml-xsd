@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'schema_location_extractor'
+require_relative "schema_location_extractor"
 
 module Lutaml
   module Xsd
@@ -132,7 +132,7 @@ module Lutaml
           {
             schemas: schemas,
             unresolved: unresolved,
-            namespaces: locations.keys
+            namespaces: locations.keys,
           }
         end
       end

@@ -20,7 +20,8 @@ module Lutaml
         visited = Set.new
 
         entrypoints.map do |entrypoint|
-          build_tree_node(entrypoint[:schema], entrypoint[:file], visited, 0, depth)
+          build_tree_node(entrypoint[:schema], entrypoint[:file], visited, 0,
+                          depth)
         end
       end
 
@@ -37,7 +38,7 @@ module Lutaml
         node = {
           file: filename,
           namespace: schema.target_namespace,
-          dependencies: []
+          dependencies: [],
         }
 
         # Stop if we've reached max depth
@@ -59,11 +60,12 @@ module Lutaml
 
           import_file = find_schema_filename(import_schema)
           node[:dependencies] << {
-            type: 'import',
+            type: "import",
             namespace: import.namespace,
             file: import_file,
             schema: import_schema,
-            children: build_tree_node(import_schema, import_file, visited.dup, current_depth + 1, max_depth)
+            children: build_tree_node(import_schema, import_file, visited.dup,
+                                      current_depth + 1, max_depth),
           }
         end
 
@@ -74,10 +76,11 @@ module Lutaml
 
           include_file = find_schema_filename(include_schema)
           node[:dependencies] << {
-            type: 'include',
+            type: "include",
             file: include_file,
             schema: include_schema,
-            children: build_tree_node(include_schema, include_file, visited.dup, current_depth + 1, max_depth)
+            children: build_tree_node(include_schema, include_file,
+                                      visited.dup, current_depth + 1, max_depth),
           }
         end
 
@@ -124,7 +127,7 @@ module Lutaml
           return File.basename(location) if s == schema
         end
 
-        'unknown.xsd'
+        "unknown.xsd"
       end
     end
   end

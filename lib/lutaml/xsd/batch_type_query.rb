@@ -21,7 +21,7 @@ module Lutaml
           BatchQueryResult.new(
             query: qname,
             resolved: result.resolved?,
-            result: result
+            result: result,
           )
         end
       end
@@ -61,7 +61,7 @@ module Lutaml
           resolved: resolved,
           qualified_name: result.qname,
           namespace: result.namespace,
-          type_class: resolved ? result.definition.class.name : nil
+          type_class: resolved ? result.definition.class.name : nil,
         }
       end
     end

@@ -26,7 +26,7 @@ module Lutaml
           when SimpleType
             generate_simple_type_instance(@component)
           else
-            '<!-- Unknown component type -->'
+            "<!-- Unknown component type -->"
           end
         end
 
@@ -35,12 +35,12 @@ module Lutaml
         # Generate element instance with attributes and content
         def generate_element_instance(element, indent: 0)
           lines = []
-          indent_str = '  ' * indent
+          indent_str = "  " * indent
 
           # Build opening tag with all attributes on one line
           tag_name = element.name
           schema_id = get_schema_id_for_element(element)
-          link_marker = schema_id ? " data-element-link=\"#{schema_id}/elements/#{tag_name}\"" : ''
+          link_marker = schema_id ? " data-element-link=\"#{schema_id}/elements/#{tag_name}\"" : ""
 
           # Collect attributes
           attr_parts = []
@@ -54,7 +54,7 @@ module Lutaml
 
                 occurs = attribute_occurs(attr)
                 default_val = attr.fixed || attr.default
-                attr_type = attr.type || 'string'
+                attr_type = attr.type || "string"
                 type_link = get_type_link_marker(attr_type)
 
                 attr_parts << if default_val
@@ -116,7 +116,7 @@ module Lutaml
         # Generate content for a type
         def generate_type_content(type, indent)
           lines = []
-          indent_str = '  ' * indent
+          indent_str = "  " * indent
 
           return lines if @visited_types.include?(type.object_id)
 
@@ -223,15 +223,15 @@ module Lutaml
 
         # Extract simple type constraints
         def extract_simple_constraints(simple_content)
-          return 'string' unless simple_content
+          return "string" unless simple_content
 
           if simple_content.respond_to?(:restriction) && simple_content.restriction
             restriction = simple_content.restriction
-            base = restriction.base || 'string'
+            base = restriction.base || "string"
 
             # Check for enumerations
             if restriction.respond_to?(:enumeration) && restriction.enumeration&.any?
-              enums = restriction.enumeration.map(&:value).join(' | ')
+              enums = restriction.enumeration.map(&:value).join(" | ")
               return "(#{enums})"
             end
 
@@ -250,31 +250,31 @@ module Lutaml
 
             base
           elsif simple_content.respond_to?(:extension) && simple_content.extension
-            simple_content.extension.base || 'string'
+            simple_content.extension.base || "string"
           else
-            'string'
+            "string"
           end
         end
 
         # Calculate element occurrence notation
         def element_occurs(element)
-          min = element.min_occurs || '1'
-          max = element.max_occurs == 'unbounded' ? '*' : (element.max_occurs || '1')
+          min = element.min_occurs || "1"
+          max = element.max_occurs == "unbounded" ? "*" : (element.max_occurs || "1")
           "[#{min}..#{max}]"
         end
 
         # Calculate attribute occurrence notation
         def attribute_occurs(attr)
-          use = attr.use || 'optional'
-          use == 'required' ? '[1]' : '[0..1]'
+          use = attr.use || "optional"
+          use == "required" ? "[1]" : "[0..1]"
         end
 
         # Calculate model group occurrence notation
         def model_group_occurs(group)
-          return '[1]' unless group
+          return "[1]" unless group
 
-          min = group.min_occurs || '1'
-          max = group.max_occurs == 'unbounded' ? '*' : (group.max_occurs || '1')
+          min = group.min_occurs || "1"
+          max = group.max_occurs == "unbounded" ? "*" : (group.max_occurs || "1")
           "[#{min}..#{max}]"
         end
 
@@ -290,7 +290,7 @@ module Lutaml
           # Element uses ref - extract the local name from the ref
           return unless elem.ref
 
-          elem.ref.split(':').last
+          elem.ref.split(":").last
         end
 
         # Resolve attribute name from attribute (handles ref attribute)
@@ -300,7 +300,7 @@ module Lutaml
           # Attribute uses ref - extract the local name from the ref
           return unless attr.ref
 
-          attr.ref.split(':').last
+          attr.ref.split(":").last
         end
 
         # Collect all attributes from a type (including inherited)
@@ -324,7 +324,10 @@ module Lutaml
               # Recursively get base type attributes
               if cc.extension.base
                 base_type = find_type(cc.extension.base)
-                attrs.concat(collect_attributes(base_type, visited)) if base_type
+                if base_type
+                  attrs.concat(collect_attributes(base_type,
+                                                  visited))
+                end
               end
             elsif cc.respond_to?(:restriction) && cc.restriction
               attrs.concat(cc.restriction.attribute) if cc.restriction.respond_to?(:attribute) && cc.restriction.attribute
@@ -349,7 +352,7 @@ module Lutaml
           return nil unless type_name
 
           # Strip namespace prefix
-          local_name = type_name.split(':').last
+          local_name = type_name.split(":").last
 
           # Search in current schema
           if @schema.respond_to?(:complex_type) && @schema.complex_type
@@ -385,7 +388,7 @@ module Lutaml
         # Generate content for an extension (combining base and extension elements)
         def generate_extension_content(extension, indent)
           lines = []
-          indent_str = '  ' * indent
+          indent_str = "  " * indent
 
           # Collect all elements from base type and extension into a single sequence
           all_elements = []
@@ -409,7 +412,7 @@ module Lutaml
 
           # Display as a single combined sequence if we have elements
           if all_elements.any?
-            occurs = '[1..1]' # Extension sequences are typically required
+            occurs = "[1..1]" # Extension sequences are typically required
             lines << "#{indent_str}Start Sequence #{occurs}"
 
             all_elements.each do |elem|
@@ -447,7 +450,10 @@ module Lutaml
               # Get base type elements
               if cc.extension.base
                 base_type = find_type(cc.extension.base)
-                elements.concat(collect_type_elements(base_type, visited)) if base_type
+                if base_type
+                  elements.concat(collect_type_elements(base_type,
+                                                        visited))
+                end
               end
 
               # Get extension sequence elements
@@ -461,7 +467,7 @@ module Lutaml
         # Generate choice content
         def generate_choice_content(choice, indent)
           lines = []
-          indent_str = '  ' * indent
+          indent_str = "  " * indent
 
           occurs = model_group_occurs(choice)
           lines << "#{indent_str}Start Choice #{occurs}"
@@ -484,7 +490,7 @@ module Lutaml
         # Generate all content
         def generate_all_content(all_group, indent)
           lines = []
-          indent_str = '  ' * indent
+          indent_str = "  " * indent
 
           occurs = model_group_occurs(all_group)
           lines << "#{indent_str}Start All #{occurs}"
@@ -514,7 +520,7 @@ module Lutaml
 
           # Extract last part of namespace as schema ID
           uri = @schema.target_namespace
-          uri.split('/').last || uri.split(':').last
+          uri.split("/").last || uri.split(":").last
         end
 
         # Get link marker for an element with cross-schema support
@@ -532,8 +538,8 @@ module Lutaml
         # Resolve which schema defines an element
         def resolve_element_schema(elem_name)
           # Parse the element name - might have namespace prefix
-          if elem_name.include?(':')
-            prefix, local_name = elem_name.split(':', 2)
+          if elem_name.include?(":")
+            prefix, local_name = elem_name.split(":", 2)
 
             # Find schema with this namespace prefix
             target_schema = find_schema_by_prefix(prefix)
@@ -543,18 +549,18 @@ module Lutaml
                 schema: target_schema,
                 schema_id: get_schema_id(target_schema),
                 prefix: prefix,
-                name: local_name
+                name: local_name,
               }
             end
           end
 
           # Element in same schema (no prefix or prefix not found)
-          local_name = elem_name.split(':').last
+          local_name = elem_name.split(":").last
           {
             schema: @schema,
             schema_id: get_schema_id(@schema),
             prefix: nil,
-            name: local_name
+            name: local_name,
           }
         end
 
@@ -564,11 +570,11 @@ module Lutaml
 
           # Common namespace mappings
           namespace_uris = {
-            'uro' => 'https://www.geospatial.jp/iur/uro/3.2',
-            'urf' => 'https://www.geospatial.jp/iur/urf/3.2',
-            'gml' => 'http://www.opengis.net/gml/3.2',
-            'xlink' => 'http://www.w3.org/1999/xlink',
-            'gco' => 'http://www.isotc211.org/2005/gco'
+            "uro" => "https://www.geospatial.jp/iur/uro/3.2",
+            "urf" => "https://www.geospatial.jp/iur/urf/3.2",
+            "gml" => "http://www.opengis.net/gml/3.2",
+            "xlink" => "http://www.w3.org/1999/xlink",
+            "gco" => "http://www.isotc211.org/2005/gco",
           }
 
           namespace_uri = namespace_uris[prefix]
@@ -577,7 +583,7 @@ module Lutaml
           # Search all_schemas for one with matching target_namespace
           @all_schemas.each_value do |schema|
             if schema.respond_to?(:target_namespace) &&
-               schema.target_namespace == namespace_uri
+                schema.target_namespace == namespace_uri
               return schema
             end
           end
@@ -587,33 +593,33 @@ module Lutaml
 
         # Get schema ID for a schema
         def get_schema_id(schema)
-          return 'unnamed' unless schema
+          return "unnamed" unless schema
 
           # Use target namespace to derive schema ID
           if schema.respond_to?(:target_namespace) && schema.target_namespace
             uri = schema.target_namespace
             # Extract last part of namespace as schema ID (e.g., "uro/3.2" -> "uro")
-            parts = uri.split('/')
+            parts = uri.split("/")
             if parts.length >= 2
               name = parts[-2] # Get second-to-last part
               return slugify(name)
             end
-            return slugify(parts.last || 'unnamed')
+            return slugify(parts.last || "unnamed")
           end
 
-          'unnamed'
+          "unnamed"
         end
 
         # Slugify helper
         def slugify(name)
-          return 'unnamed' unless name
+          return "unnamed" unless name
 
           name.to_s
-              .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')
-              .gsub(/([a-z\d])([A-Z])/, '\1-\2')
-              .downcase
-              .gsub(/[^a-z0-9]+/, '-')
-              .gsub(/^-|-$/, '')
+            .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')
+            .gsub(/([a-z\d])([A-Z])/, '\1-\2')
+            .downcase
+            .gsub(/[^a-z0-9]+/, "-")
+            .gsub(/^-|-$/, "")
         end
 
         # Get display name with namespace prefix if cross-schema
@@ -629,13 +635,13 @@ module Lutaml
 
         # Get link marker for a type
         def get_type_link_marker(type_name)
-          return '' unless type_name
+          return "" unless type_name
 
           # Don't link built-in XSD types
-          return '' if type_name =~ /^(xs:|xsd:|string|integer|boolean|date|time|anyURI|double|float|decimal)/
+          return "" if /^(xs:|xsd:|string|integer|boolean|date|time|anyURI|double|float|decimal)/.match?(type_name)
 
           # Strip namespace prefix for link
-          local_name = type_name.split(':').last
+          local_name = type_name.split(":").last
           " data-type-ref=\"#{local_name}\""
         end
       end

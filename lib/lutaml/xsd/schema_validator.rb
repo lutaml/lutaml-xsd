@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'nokogiri'
+require "nokogiri"
 
 module Lutaml
   module Xsd
@@ -21,8 +21,8 @@ module Lutaml
     #
     class SchemaValidator
       # W3C XML Schema namespace
-      XSD_NAMESPACE_1_0 = 'http://www.w3.org/2001/XMLSchema'
-      XSD_NAMESPACE_1_1 = 'http://www.w3.org/2001/XMLSchema'
+      XSD_NAMESPACE_1_0 = "http://www.w3.org/2001/XMLSchema"
+      XSD_NAMESPACE_1_1 = "http://www.w3.org/2001/XMLSchema"
       XSD_NAMESPACE = XSD_NAMESPACE_1_0 # They use the same namespace
 
       # XSD 1.1 specific elements
@@ -55,8 +55,13 @@ module Lutaml
       #
       # @param version [String] XSD version to validate against ("1.0" or "1.1")
       # @raise [ArgumentError] if version is not "1.0" or "1.1"
-      def initialize(version: '1.0')
-        raise ArgumentError, "Invalid XSD version: #{version}. Must be '1.0' or '1.1'" unless %w[1.0 1.1].include?(version)
+      def initialize(version: "1.0")
+        unless %w[
+          1.0 1.1
+        ].include?(version)
+          raise ArgumentError,
+                "Invalid XSD version: #{version}. Must be '1.0' or '1.1'"
+        end
 
         @version = version
       end
@@ -81,22 +86,22 @@ module Lutaml
       def self.detect_version(content)
         doc = Nokogiri::XML(content)
         root = doc.root
-        return '1.0' unless root
+        return "1.0" unless root
 
         # Check for XSD 1.1 specific features
         if has_xsd_1_1_features?(doc)
-          '1.1'
+          "1.1"
         else
           # Check version attribute if present
-          version_attr = root['version']
-          if version_attr&.start_with?('1.1')
-            '1.1'
+          version_attr = root["version"]
+          if version_attr&.start_with?("1.1")
+            "1.1"
           else
-            '1.0'
+            "1.0"
           end
         end
       rescue Nokogiri::XML::SyntaxError
-        '1.0' # Default to 1.0 if cannot parse
+        "1.0" # Default to 1.0 if cannot parse
       end
 
       # Check if document has XSD 1.1 specific features
@@ -106,10 +111,10 @@ module Lutaml
       def self.has_xsd_1_1_features?(doc)
         # Check for XSD 1.1 specific elements
         XSD_1_1_ELEMENTS.each do |element_name|
-          nodes = doc.xpath("//xs:#{element_name}", 'xs' => XSD_NAMESPACE)
+          nodes = doc.xpath("//xs:#{element_name}", "xs" => XSD_NAMESPACE)
           return true if nodes.any?
 
-          nodes = doc.xpath("//xsd:#{element_name}", 'xsd' => XSD_NAMESPACE)
+          nodes = doc.xpath("//xsd:#{element_name}", "xsd" => XSD_NAMESPACE)
           return true if nodes.any?
         end
 
@@ -118,17 +123,17 @@ module Lutaml
         return false unless root
 
         XSD_1_1_ATTRIBUTES.each do |attr_name|
-          return true if root[attr_name] && attr_name == 'defaultAttributes'
-          return true if root[attr_name] && attr_name == 'xpathDefaultNamespace'
+          return true if root[attr_name] && attr_name == "defaultAttributes"
+          return true if root[attr_name] && attr_name == "xpathDefaultNamespace"
         end
 
         # Check for XSD 1.1 specific types in type attributes
-        type_attrs = doc.xpath('//*[@type]').map { |node| node['type'] }
+        type_attrs = doc.xpath("//*[@type]").map { |node| node["type"] }
         type_attrs.each do |type_ref|
           next unless type_ref
 
           # Extract local name from QName
-          local_name = type_ref.include?(':') ? type_ref.split(':').last : type_ref
+          local_name = type_ref.include?(":") ? type_ref.split(":").last : type_ref
           return true if XSD_1_1_TYPES.include?(local_name)
         end
 
@@ -165,10 +170,10 @@ module Lutaml
       def validate_schema_root(doc)
         root = doc.root
 
-        raise SchemaValidationError, 'Empty or invalid XML document' unless root
+        raise SchemaValidationError, "Empty or invalid XML document" unless root
 
         # Check if root element is named "schema"
-        unless root.name == 'schema'
+        unless root.name == "schema"
           raise SchemaValidationError,
                 "Not a valid XSD schema: root element must be 'schema', " \
                 "found '#{root.name}'"
@@ -194,14 +199,14 @@ module Lutaml
       # @param doc [Nokogiri::XML::Document] Parsed XML document
       # @raise [SchemaValidationError] if schema uses features incompatible with target version
       def validate_schema_version(doc)
-        return if @version == '1.1' # 1.1 accepts all features
+        return if @version == "1.1" # 1.1 accepts all features
 
         # If validating as 1.0, check for 1.1 features
         return unless self.class.has_xsd_1_1_features?(doc)
 
         features = detect_1_1_features(doc)
         raise SchemaValidationError,
-              'Schema uses XSD 1.1 features but validator is set to version 1.0. ' \
+              "Schema uses XSD 1.1 features but validator is set to version 1.0. " \
               "Features found: #{features.join(', ')}. " \
               "Use SchemaValidator.new(version: '1.1') to validate XSD 1.1 schemas."
       end
@@ -215,24 +220,24 @@ module Lutaml
 
         # Check for specific elements
         XSD_1_1_ELEMENTS.each do |element_name|
-          nodes = doc.xpath("//xs:#{element_name}", 'xs' => XSD_NAMESPACE)
-          nodes += doc.xpath("//xsd:#{element_name}", 'xsd' => XSD_NAMESPACE)
+          nodes = doc.xpath("//xs:#{element_name}", "xs" => XSD_NAMESPACE)
+          nodes += doc.xpath("//xsd:#{element_name}", "xsd" => XSD_NAMESPACE)
           features << "xs:#{element_name}" if nodes.any?
         end
 
         # Check for specific attributes
         root = doc.root
         if root
-          features << 'defaultAttributes' if root['defaultAttributes']
-          features << 'xpathDefaultNamespace' if root['xpathDefaultNamespace']
+          features << "defaultAttributes" if root["defaultAttributes"]
+          features << "xpathDefaultNamespace" if root["xpathDefaultNamespace"]
         end
 
         # Check for specific types
-        type_attrs = doc.xpath('//*[@type]').map { |node| node['type'] }
+        type_attrs = doc.xpath("//*[@type]").map { |node| node["type"] }
         type_attrs.each do |type_ref|
           next unless type_ref
 
-          local_name = type_ref.include?(':') ? type_ref.split(':').last : type_ref
+          local_name = type_ref.include?(":") ? type_ref.split(":").last : type_ref
           features << "xs:#{local_name}" if XSD_1_1_TYPES.include?(local_name)
         end
 

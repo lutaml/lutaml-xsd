@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'error_suggester'
-require_relative 'fuzzy_matcher'
+require_relative "error_suggester"
+require_relative "fuzzy_matcher"
 
 module Lutaml
   module Xsd
@@ -44,7 +44,8 @@ module Lutaml
             repository = repository_from(error)
             return [] unless repository
 
-            matcher = FuzzyMatcher.new(repository, min_similarity: min_similarity)
+            matcher = FuzzyMatcher.new(repository,
+                                       min_similarity: min_similarity)
             matcher.find_similar_types(query, limit: suggestion_limit)
           end
 

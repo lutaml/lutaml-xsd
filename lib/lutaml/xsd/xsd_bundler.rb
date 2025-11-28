@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'set'
+require "set"
 
 module Lutaml
   module Xsd
@@ -45,7 +45,8 @@ module Lutaml
         glob_mappings = (repository.schema_location_mappings || []).map(&:to_glob_format)
 
         all_schemas.each_key do |schema_location|
-          resolved_path = resolve_schema_location(schema_location, glob_mappings)
+          resolved_path = resolve_schema_location(schema_location,
+                                                  glob_mappings)
           add_xsd_file(resolved_path, xsd_files, added_paths) if resolved_path
         end
 
@@ -84,7 +85,7 @@ module Lutaml
         package_path = "schemas/#{basename}"
 
         # Handle name conflicts by appending directory name
-        while xsd_files.values.include?(package_path)
+        while xsd_files.value?(package_path)
           dir_name = File.basename(File.dirname(abs_path))
           basename = "#{dir_name}_#{basename}"
           package_path = "schemas/#{basename}"
@@ -104,7 +105,7 @@ module Lutaml
           to = mapping[:to]
 
           if from.is_a?(Regexp)
-            return location.gsub(from, to) if location =~ from
+            return location.gsub(from, to) if location&.match?(from)
           elsif location == from
             return to
           end
@@ -132,9 +133,10 @@ module Lutaml
 
         all_schemas.each_key do |schema_location|
           # For HTTP URLs, resolve to file path and map to basename
-          next unless schema_location.start_with?('http://', 'https://')
+          next unless schema_location.start_with?("http://", "https://")
 
-          resolved_path = resolve_schema_location(schema_location, glob_mappings)
+          resolved_path = resolve_schema_location(schema_location,
+                                                  glob_mappings)
           if resolved_path && path_to_basename.key?(File.absolute_path(resolved_path))
             url_to_basename[schema_location] =
               path_to_basename[File.absolute_path(resolved_path)]
@@ -150,11 +152,11 @@ module Lutaml
             content,
             source_path,
             path_to_basename,
-            url_to_basename
+            url_to_basename,
           )
           rewritten_files[source_path] = {
             package_path: package_path,
-            content: rewritten_content
+            content: rewritten_content,
           }
         end
 
@@ -168,33 +170,34 @@ module Lutaml
       # @param path_mapping [Hash] Map of abs paths to package basenames
       # @param url_to_basename [Hash] Map of HTTP URLs to package basenames
       # @return [String] Rewritten content
-      def rewrite_file_content(content, source_path, path_mapping, url_to_basename)
+      def rewrite_file_content(content, source_path, path_mapping,
+url_to_basename)
         source_dir = File.dirname(File.absolute_path(source_path))
 
         # Rewrite import schemaLocation (with or without xs: prefix)
         content = content.gsub(/<(xs:)?import([^>]*)schemaLocation="([^"]+)"/) do
-          prefix = Regexp.last_match(1) || ''
+          prefix = Regexp.last_match(1) || ""
           attrs = Regexp.last_match(2)
           location = Regexp.last_match(3)
           new_location = resolve_to_package_location(
             location,
             source_dir,
             path_mapping,
-            url_to_basename
+            url_to_basename,
           )
           %(<#{prefix}import#{attrs}schemaLocation="#{new_location}")
         end
 
         # Rewrite include schemaLocation (with or without xs: prefix)
         content.gsub(/<(xs:)?include([^>]*)schemaLocation="([^"]+)"/) do
-          prefix = Regexp.last_match(1) || ''
+          prefix = Regexp.last_match(1) || ""
           attrs = Regexp.last_match(2)
           location = Regexp.last_match(3)
           new_location = resolve_to_package_location(
             location,
             source_dir,
             path_mapping,
-            url_to_basename
+            url_to_basename,
           )
           %(<#{prefix}include#{attrs}schemaLocation="#{new_location}")
         end
@@ -206,9 +209,10 @@ module Lutaml
       # @param path_mapping [Hash] Map of abs paths to package basenames
       # @param url_to_basename [Hash] Map of HTTP URLs to package basenames
       # @return [String] New location (just the basename)
-      def resolve_to_package_location(location, source_dir, path_mapping, url_to_basename)
+      def resolve_to_package_location(location, source_dir, path_mapping,
+url_to_basename)
         # For HTTP URLs, check the url_to_basename mapping
-        if location.start_with?('http://', 'https://')
+        if location.start_with?("http://", "https://")
           return url_to_basename[location] if url_to_basename.key?(location)
 
           # If not in mapping, keep original URL (external dependency)

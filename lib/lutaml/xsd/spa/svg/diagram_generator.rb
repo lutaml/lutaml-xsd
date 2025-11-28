@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require_relative 'style_configuration'
-require_relative 'layout_engine'
-require_relative 'document_builder'
-require_relative 'renderers/element_renderer'
-require_relative 'renderers/type_renderer'
-require_relative 'renderers/attribute_renderer'
-require_relative 'renderers/group_renderer'
-require_relative 'connectors/inheritance_connector'
-require_relative 'connectors/containment_connector'
-require_relative 'connectors/reference_connector'
+require_relative "style_configuration"
+require_relative "layout_engine"
+require_relative "document_builder"
+require_relative "renderers/element_renderer"
+require_relative "renderers/type_renderer"
+require_relative "renderers/attribute_renderer"
+require_relative "renderers/group_renderer"
+require_relative "connectors/inheritance_connector"
+require_relative "connectors/containment_connector"
+require_relative "connectors/reference_connector"
 
 module Lutaml
   module Xsd
@@ -76,41 +76,43 @@ module Lutaml
           end
 
           def get_renderer(component_data)
-            kind = component_data['kind'] || infer_kind(component_data)
+            kind = component_data["kind"] || infer_kind(component_data)
 
-            @renderers[kind] || @renderers['element']
+            @renderers[kind] || @renderers["element"]
           end
 
           def get_connector(connector_type)
-            @connectors[connector_type] || @connectors['containment']
+            @connectors[connector_type] || @connectors["containment"]
           end
 
           def infer_kind(component_data)
-            if component_data['type'] && !component_data['elements']
-              'element'
-            elsif component_data['base_type'] || component_data['content_model']
-              'type'
-            elsif component_data['use']
-              'attribute'
+            if component_data["type"] && !component_data["elements"]
+              "element"
+            elsif component_data["base_type"] || component_data["content_model"]
+              "type"
+            elsif component_data["use"]
+              "attribute"
             else
-              'element'
+              "element"
             end
           end
 
           def build_renderers
             {
-              'element' => Renderers::ElementRenderer.new(@config, @schema_name),
-              'type' => Renderers::TypeRenderer.new(@config, @schema_name),
-              'attribute' => Renderers::AttributeRenderer.new(@config, @schema_name),
-              'group' => Renderers::GroupRenderer.new(@config, @schema_name)
+              "element" => Renderers::ElementRenderer.new(@config,
+                                                          @schema_name),
+              "type" => Renderers::TypeRenderer.new(@config, @schema_name),
+              "attribute" => Renderers::AttributeRenderer.new(@config,
+                                                              @schema_name),
+              "group" => Renderers::GroupRenderer.new(@config, @schema_name),
             }
           end
 
           def build_connectors
             {
-              'inheritance' => Connectors::InheritanceConnector.new(@config),
-              'containment' => Connectors::ContainmentConnector.new(@config),
-              'reference' => Connectors::ReferenceConnector.new(@config)
+              "inheritance" => Connectors::InheritanceConnector.new(@config),
+              "containment" => Connectors::ContainmentConnector.new(@config),
+              "reference" => Connectors::ReferenceConnector.new(@config),
             }
           end
 

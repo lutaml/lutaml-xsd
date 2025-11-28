@@ -81,7 +81,7 @@ module Lutaml
               file: hash[:file],
               valid: hash[:valid],
               error: hash[:error],
-              detected_version: hash[:detected_version]
+              detected_version: hash[:detected_version],
             )
           end
 
@@ -94,7 +94,7 @@ module Lutaml
             file: file,
             valid: false,
             error: nil,
-            detected_version: nil
+            detected_version: nil,
           }
 
           unless File.exist?(file)
@@ -106,7 +106,10 @@ module Lutaml
             content = File.read(file)
             validator.validate(content)
             result[:valid] = true
-            result[:detected_version] = SchemaValidator.detect_version(content) if verbose
+            if verbose
+              result[:detected_version] =
+                SchemaValidator.detect_version(content)
+            end
           rescue SchemaValidationError => e
             result[:error] = e.message
           rescue StandardError => e

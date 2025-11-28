@@ -48,8 +48,8 @@ module Lutaml
             attributes_checked: count_attribute_references,
             groups_checked: count_group_references,
             attribute_groups_checked: count_attribute_group_references,
-            all_resolved: @errors.empty?
-          }
+            all_resolved: @errors.empty?,
+          },
         }
       end
 
@@ -176,7 +176,8 @@ module Lutaml
           next if builtin_type?(st.restriction.base)
 
           # Qualify unprefixed types with schema's namespace
-          qualified_type = qualify_type_reference(st.restriction.base, schema_namespace)
+          qualified_type = qualify_type_reference(st.restriction.base,
+                                                  schema_namespace)
           result = repository.find_type(qualified_type)
           next if result&.resolved?
 
@@ -337,7 +338,8 @@ module Lutaml
             # Groups can contain sequences, choices with element refs
             next unless grp.sequence || grp.choice || grp.all
 
-            [grp.sequence, grp.choice, grp.all].flatten.compact.each do |content|
+            [grp.sequence, grp.choice,
+             grp.all].flatten.compact.each do |content|
               check_element_refs_in_group_content(content, schema)
             end
           end
@@ -362,7 +364,8 @@ module Lutaml
           next unless ag.ref
 
           # Qualify unprefixed attribute group references with schema's namespace
-          qualified_ref = qualify_attribute_group_reference(ag.ref, schema_namespace)
+          qualified_ref = qualify_attribute_group_reference(ag.ref,
+                                                            schema_namespace)
           result = repository.find_attribute_group(qualified_ref)
           next if result
 
@@ -379,7 +382,8 @@ module Lutaml
           next unless ag.ref
 
           # Qualify unprefixed attribute group references with schema's namespace
-          qualified_ref = qualify_attribute_group_reference(ag.ref, schema_namespace)
+          qualified_ref = qualify_attribute_group_reference(ag.ref,
+                                                            schema_namespace)
           result = repository.find_attribute_group(qualified_ref)
           unless result
             @errors << "Unresolved attributeGroup reference: #{ag.ref} " \
@@ -414,7 +418,9 @@ module Lutaml
             next unless inc.respond_to?(:schema_path) && inc.schema_path
 
             # Verify the included schema is in the repository
-            found = repository.files&.any? { |f| f.end_with?(File.basename(inc.schema_path)) }
+            found = repository.files&.any? do |f|
+              f.end_with?(File.basename(inc.schema_path))
+            end
             unless found
               @warnings << "Include schema not found in package: #{inc.schema_path} " \
                            "(#{schema_location(schema)})"
@@ -428,7 +434,9 @@ module Lutaml
         count = 0
         all_schemas.each do |schema|
           count += schema.element.count { |e| e.type && !builtin_type?(e.type) }
-          count += schema.attribute.count { |a| a.type && !builtin_type?(a.type) }
+          count += schema.attribute.count do |a|
+            a.type && !builtin_type?(a.type)
+          end
           count += schema.complex_type.size
           count += schema.simple_type.size
         end
@@ -522,7 +530,7 @@ module Lutaml
       def builtin_type?(type)
         return false unless type
 
-        type.start_with?('xs:', 'xsd:', 'xsi:')
+        type.start_with?("xs:", "xsd:", "xsi:")
       end
 
       # Qualify an unprefixed type reference with the schema's namespace
@@ -531,7 +539,7 @@ module Lutaml
       # @return [String] The qualified type reference
       def qualify_type_reference(type_ref, schema_namespace)
         # If already prefixed or no namespace, return as-is
-        return type_ref if type_ref.include?(':') || schema_namespace.nil?
+        return type_ref if type_ref.include?(":") || schema_namespace.nil?
 
         # Get prefix for this namespace
         prefix = repository.send(:namespace_to_prefix, schema_namespace)
@@ -546,7 +554,7 @@ module Lutaml
       # @return [String] The qualified attribute group reference
       def qualify_attribute_group_reference(ref, schema_namespace)
         # If already prefixed or no namespace, return as-is
-        return ref if ref.include?(':') || schema_namespace.nil?
+        return ref if ref.include?(":") || schema_namespace.nil?
 
         # Get prefix for this namespace
         prefix = repository.send(:namespace_to_prefix, schema_namespace)
@@ -557,7 +565,7 @@ module Lutaml
 
       # Get a readable location for a schema
       def schema_location(schema)
-        schema.instance_variable_get(:@location) || 'unknown location'
+        schema.instance_variable_get(:@location) || "unknown location"
       end
     end
   end

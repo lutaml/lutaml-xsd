@@ -30,13 +30,13 @@ module Lutaml
       attribute :error_message, :string
 
       yaml do
-        map 'resolved', to: :resolved
-        map 'qname', to: :qname
-        map 'namespace', to: :namespace
-        map 'local_name', to: :local_name
-        map 'schema_file', to: :schema_file
-        map 'resolution_path', to: :resolution_path
-        map 'error_message', to: :error_message
+        map "resolved", to: :resolved
+        map "qname", to: :qname
+        map "namespace", to: :namespace
+        map "local_name", to: :local_name
+        map "schema_file", to: :schema_file
+        map "resolution_path", to: :resolution_path
+        map "error_message", to: :error_message
       end
 
       # Check if the type was successfully resolved
@@ -65,7 +65,8 @@ module Lutaml
       # @param schema_file [String] The source schema file
       # @param resolution_path [Array<String>] Steps taken to resolve
       # @return [TypeResolutionResult]
-      def self.success(qname:, namespace:, local_name:, definition:, schema_file:, resolution_path: [])
+      def self.success(qname:, namespace:, local_name:, definition:,
+schema_file:, resolution_path: [])
         result = new(
           resolved: true,
           qname: qname,
@@ -73,7 +74,7 @@ module Lutaml
           local_name: local_name,
           schema_file: schema_file,
           resolution_path: resolution_path,
-          error_message: nil
+          error_message: nil,
         )
         # Set definition separately since it's attr_accessor, not attribute
         result.definition = definition
@@ -87,7 +88,8 @@ module Lutaml
       # @param error_message [String] The error message
       # @param resolution_path [Array<String>] Steps taken before failure
       # @return [TypeResolutionResult]
-      def self.failure(qname:, error_message:, namespace: nil, local_name: nil, resolution_path: [])
+      def self.failure(qname:, error_message:, namespace: nil, local_name: nil,
+resolution_path: [])
         result = new(
           resolved: false,
           qname: qname,
@@ -95,7 +97,7 @@ module Lutaml
           local_name: local_name,
           schema_file: nil,
           resolution_path: resolution_path,
-          error_message: error_message
+          error_message: error_message,
         )
         # Set definition separately since it's attr_accessor, not attribute
         result.definition = nil

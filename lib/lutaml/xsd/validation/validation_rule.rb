@@ -148,7 +148,7 @@ module Lutaml
             description: description,
             enabled: enabled?,
             priority: priority,
-            options: @options
+            options: @options,
           }
         end
 
@@ -188,7 +188,7 @@ module Lutaml
             severity: :error,
             location: location,
             context: context,
-            suggestion: suggestion
+            suggestion: suggestion,
           )
           collector.add_error(error)
         end
@@ -210,7 +210,7 @@ module Lutaml
             severity: :warning,
             location: location,
             context: context,
-            suggestion: suggestion
+            suggestion: suggestion,
           )
           collector.add_warning(warning)
         end
@@ -230,7 +230,7 @@ module Lutaml
             message: message,
             severity: :info,
             location: location,
-            context: context
+            context: context,
           )
           collector.add_info(info)
         end

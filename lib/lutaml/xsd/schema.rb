@@ -24,14 +24,18 @@ module Lutaml
       attribute :notation, :notation, collection: true, initialize_empty: true
       attribute :redefine, :redefine, collection: true, initialize_empty: true
       attribute :attribute, :attribute, collection: true, initialize_empty: true
-      attribute :annotation, :annotation, collection: true, initialize_empty: true
-      attribute :simple_type, :simple_type, collection: true, initialize_empty: true
-      attribute :complex_type, :complex_type, collection: true, initialize_empty: true
-      attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
+      attribute :annotation, :annotation, collection: true,
+                                          initialize_empty: true
+      attribute :simple_type, :simple_type, collection: true,
+                                            initialize_empty: true
+      attribute :complex_type, :complex_type, collection: true,
+                                              initialize_empty: true
+      attribute :attribute_group, :attribute_group, collection: true,
+                                                    initialize_empty: true
 
       xml do
-        root 'schema', mixed: true
-        namespace 'http://www.w3.org/2001/XMLSchema', 'xsd'
+        root "schema", mixed: true
+        namespace "http://www.w3.org/2001/XMLSchema", "xsd"
 
         map_element :group, to: :group
         map_element :element, to: :element
@@ -42,8 +46,10 @@ module Lutaml
         map_element :simpleType, to: :simple_type
         map_element :complexType, to: :complex_type
         map_element :attributeGroup, to: :attribute_group
-        map_element :import, to: :import, with: { from: :import_from_schema, to: :import_to_schema }
-        map_element :include, to: :include, with: { from: :include_from_schema, to: :include_to_schema }
+        map_element :import, to: :import,
+                             with: { from: :import_from_schema, to: :import_to_schema }
+        map_element :include, to: :include,
+                              with: { from: :include_from_schema, to: :include_to_schema }
 
         map_attribute :attributeFormDefault, to: :attribute_form_default
         map_attribute :elementFormDefault, to: :element_form_default
@@ -58,10 +64,10 @@ module Lutaml
       def import_from_schema(model, value)
         value.each do |schema|
           setup_import_and_include(
-            'import',
+            "import",
             model,
             schema,
-            namespace: schema.attributes['namespace'].value
+            namespace: schema.attributes["namespace"].value,
           )
         end
       end
@@ -78,9 +84,9 @@ module Lutaml
       def include_from_schema(model, value)
         value.each do |schema|
           setup_import_and_include(
-            'include',
+            "include",
             model,
-            schema
+            schema,
           )
         end
       end
@@ -147,7 +153,7 @@ module Lutaml
           attribute_groups: attribute_group.size,
           imports: import.size,
           includes: include.size,
-          namespaces: all_namespaces.size
+          namespaces: all_namespaces.size,
         }
       end
 
@@ -161,7 +167,7 @@ module Lutaml
       # Human-readable summary
       # @return [String] A summary of the schema
       def summary
-        ns = target_namespace || '(no namespace)'
+        ns = target_namespace || "(no namespace)"
         "#{ns}: #{stats[:elements]} elements, " \
           "#{stats[:complex_types]} complex types, " \
           "#{stats[:simple_types]} simple types"
@@ -174,7 +180,7 @@ module Lutaml
 
         # Extract the last part of the namespace URI as the name
         # e.g., "http://example.com/test" => "test"
-        target_namespace.split('/').last || target_namespace
+        target_namespace.split("/").last || target_namespace
       end
 
       # Convenience plural accessors for collections
@@ -205,8 +211,11 @@ module Lutaml
       end
 
       def init_instance_of(klass, schema_hash, args = {})
-        args[:id] = schema_hash['id'].value if schema_hash&.key?('id')
-        args[:schema_path] = schema_hash['schemaLocation'].value if schema_hash&.key?('schemaLocation')
+        args[:id] = schema_hash["id"].value if schema_hash&.key?("id")
+        if schema_hash&.key?("schemaLocation")
+          args[:schema_path] =
+            schema_hash["schemaLocation"].value
+        end
         Lutaml::Xsd.register.get_class(klass.to_sym).new(**args)
       end
 
@@ -228,20 +237,22 @@ module Lutaml
             location: Glob.location,
             nested_schema: true,
             register: Lutaml::Xsd.register.id,
-            schema_mappings: Glob.schema_mappings
+            schema_mappings: Glob.schema_mappings,
           )
       end
 
       def annotation_object(instance, schema)
         elements = schema.children || []
-        annotation_key = elements.find { |element| element.unprefixed_name == 'annotation' }
+        annotation_key = elements.find do |element|
+          element.unprefixed_name == "annotation"
+        end
         return unless annotation_key
 
         annotation = Lutaml::Xsd.register.get_class(:annotation)
         instance.annotation = annotation.apply_mappings(
           annotation_key,
           :xml,
-          register: Lutaml::Xsd.register.id
+          register: Lutaml::Xsd.register.id,
         )
       end
 

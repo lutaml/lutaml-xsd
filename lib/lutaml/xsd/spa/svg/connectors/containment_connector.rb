@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../connector_renderer'
+require_relative "../connector_renderer"
 
 module Lutaml
   module Xsd
@@ -11,7 +11,7 @@ module Lutaml
           # (e.g., Element has Type)
           class ContainmentConnector < ConnectorRenderer
             def initialize(config)
-              super(config, 'containment')
+              super(config, "containment")
             end
 
             # Renders a containment connector

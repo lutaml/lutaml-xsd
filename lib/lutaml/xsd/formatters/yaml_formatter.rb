@@ -18,9 +18,9 @@ module Lutaml
             "summary" => {
               "total" => results[:total],
               "valid" => results[:valid],
-              "invalid" => results[:invalid]
+              "invalid" => results[:invalid],
             },
-            "results" => format_file_results(results[:files])
+            "results" => format_file_results(results[:files]),
           }
 
           YAML.dump(output)
@@ -35,7 +35,7 @@ module Lutaml
               "file" => file_result[:file],
               "valid" => file_result[:valid],
               "error" => file_result[:error],
-              "detected_version" => file_result[:detected_version]
+              "detected_version" => file_result[:detected_version],
             }.compact
           end
         end

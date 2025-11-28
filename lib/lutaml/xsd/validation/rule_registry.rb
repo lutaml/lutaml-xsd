@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'validation_rule'
+require_relative "validation_rule"
 
 module Lutaml
   module Xsd
@@ -185,7 +185,7 @@ module Lutaml
             enabled_rules: all_rules.size,
             categories: categories,
             rule_counts: rule_counts,
-            rules: @rules.map(&:to_h)
+            rules: @rules.map(&:to_h),
           }
         end
 

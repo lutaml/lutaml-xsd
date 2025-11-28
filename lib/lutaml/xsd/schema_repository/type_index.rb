@@ -28,16 +28,19 @@ module Lutaml
           namespace = schema.target_namespace
 
           # Index simple types
-          index_collection(schema.simple_type, namespace, file_path, :simple_type)
+          index_collection(schema.simple_type, namespace, file_path,
+                           :simple_type)
 
           # Index complex types
-          index_collection(schema.complex_type, namespace, file_path, :complex_type)
+          index_collection(schema.complex_type, namespace, file_path,
+                           :complex_type)
 
           # Index top-level elements
           index_collection(schema.element, namespace, file_path, :element)
 
           # Index attribute groups
-          index_collection(schema.attribute_group, namespace, file_path, :attribute_group)
+          index_collection(schema.attribute_group, namespace, file_path,
+                           :attribute_group)
 
           # Index groups
           index_collection(schema.group, namespace, file_path, :group)
@@ -113,7 +116,7 @@ module Lutaml
           {
             total_types: @index.size,
             by_type: type_counts,
-            namespaces: namespace_count
+            namespaces: namespace_count,
           }
         end
 
@@ -141,7 +144,7 @@ module Lutaml
               type: type_symbol,
               definition: item,
               namespace: namespace,
-              schema_file: file_path
+              schema_file: file_path,
             }
             @schema_files[file_path] ||= true
           end

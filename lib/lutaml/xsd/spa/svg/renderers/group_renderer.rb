@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../component_renderer'
+require_relative "../component_renderer"
 
 module Lutaml
   module Xsd
@@ -10,13 +10,13 @@ module Lutaml
           # Renders model group components (sequence, choice, all)
           class GroupRenderer < ComponentRenderer
             def render(component_data, box)
-              type = component_data['type'] || component_data['kind']
+              type = component_data["type"] || component_data["kind"]
 
               parts = []
 
               # Box
               fill = if config.effects.gradient_enabled?
-                       'url(#groupGradient)'
+                       "url(#groupGradient)"
                      else
                        config.colors.group.base
                      end
@@ -25,7 +25,7 @@ module Lutaml
                 box,
                 fill,
                 stroke: config.colors.ui.border,
-                stroke_width: 1
+                stroke_width: 1,
               )
 
               # Text
@@ -35,13 +35,13 @@ module Lutaml
                 type,
                 {
                   fill: config.colors.ui.text,
-                  'font-size' => 12,
-                  'font-weight' => 'bold',
-                  'text-anchor' => 'middle'
-                }
+                  "font-size" => 12,
+                  "font-weight" => "bold",
+                  "text-anchor" => "middle",
+                },
               )
 
-              Utils::SvgBuilder.group({ class: 'group-box' }) { parts.join("\n") }
+              Utils::SvgBuilder.group({ class: "group-box" }) { parts.join("\n") }
             end
           end
         end

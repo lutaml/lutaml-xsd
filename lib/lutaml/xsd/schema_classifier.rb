@@ -20,7 +20,7 @@ module Lutaml
           dependency_schemas: classify_dependency_schemas,
           fully_resolved: fully_resolved_schemas,
           partially_resolved: partially_resolved_schemas,
-          summary: generate_summary
+          summary: generate_summary,
         }
       end
 
@@ -38,7 +38,7 @@ module Lutaml
           SchemaClassificationInfo.new(
             schema: schema,
             location: file_path,
-            category: :entrypoint
+            category: :entrypoint,
           )
         end.compact
       end
@@ -53,7 +53,7 @@ module Lutaml
           SchemaClassificationInfo.new(
             schema: schema,
             location: path,
-            category: :dependency
+            category: :dependency,
           )
         end
       end
@@ -67,7 +67,7 @@ module Lutaml
           info = SchemaClassificationInfo.new(
             schema: schema,
             location: path,
-            category: determine_category(path)
+            category: determine_category(path),
           )
 
           all_classified << info if info.fully_resolved?
@@ -85,7 +85,7 @@ module Lutaml
           info = SchemaClassificationInfo.new(
             schema: schema,
             location: path,
-            category: determine_category(path)
+            category: determine_category(path),
           )
 
           all_classified << info unless info.fully_resolved?
@@ -110,8 +110,8 @@ module Lutaml
           partially_resolved_count: partially_resolved.size,
           resolution_percentage: calculate_resolution_percentage(
             fully_resolved.size,
-            get_all_schemas.size
-          )
+            get_all_schemas.size,
+          ),
         }
       end
 
@@ -188,7 +188,7 @@ module Lutaml
           location: @location,
           filename: File.basename(@location),
           category: @category,
-          namespace: @namespace || '(no namespace)',
+          namespace: @namespace || "(no namespace)",
           elements_count: @elements_count,
           types_count: @types_count,
           complex_types_count: @complex_types_count,
@@ -196,7 +196,7 @@ module Lutaml
           imports_count: @imports_count,
           includes_count: @includes_count,
           resolution_status: @resolution_status,
-          external_refs_count: @external_refs.size
+          external_refs_count: @external_refs.size,
         }
       end
 
@@ -215,7 +215,7 @@ module Lutaml
           refs << {
             type: :import,
             namespace: import.respond_to?(:namespace) ? import.namespace : import.target_namespace,
-            schema_location: import.respond_to?(:schema_path) ? import.schema_path : nil
+            schema_location: import.respond_to?(:schema_path) ? import.schema_path : nil,
           }
         end
 
@@ -225,7 +225,7 @@ module Lutaml
 
           refs << {
             type: :include,
-            schema_location: include.respond_to?(:schema_path) ? include.schema_path : nil
+            schema_location: include.respond_to?(:schema_path) ? include.schema_path : nil,
           }
         end
 

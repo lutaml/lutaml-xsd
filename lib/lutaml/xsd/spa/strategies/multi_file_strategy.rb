@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../output_strategy'
-require 'json'
+require_relative "../output_strategy"
+require "json"
 
 module Lutaml
   module Xsd
@@ -46,7 +46,7 @@ module Lutaml
           # @param renderer [TemplateRenderer] Template renderer
           # @return [Array<String>] List of generated file paths
           def generate(data, renderer)
-            log 'Generating multi-file SPA...'
+            log "Generating multi-file SPA..."
 
             # Load configurations
             theme = config_loader.load_ui_theme
@@ -85,9 +85,9 @@ module Lutaml
           # @return [void]
           def prepare_output
             ensure_directory(output_dir)
-            ensure_directory(File.join(output_dir, 'css'))
-            ensure_directory(File.join(output_dir, 'js'))
-            ensure_directory(File.join(output_dir, 'data'))
+            ensure_directory(File.join(output_dir, "css"))
+            ensure_directory(File.join(output_dir, "js"))
+            ensure_directory(File.join(output_dir, "data"))
           end
 
           # Build template context
@@ -99,12 +99,12 @@ module Lutaml
           # @return [Hash] Template context
           def build_context(data, theme, features, templates_config)
             {
-              'metadata' => data[:metadata],
-              'schemas' => data[:schemas],
-              'theme' => theme['theme'],
-              'features' => features['features'],
-              'templates' => templates_config['templates'],
-              'multi_file_mode' => true
+              "metadata" => data[:metadata],
+              "schemas" => data[:schemas],
+              "theme" => theme["theme"],
+              "features" => features["features"],
+              "templates" => templates_config["templates"],
+              "multi_file_mode" => true,
             }
           end
 
@@ -119,14 +119,14 @@ module Lutaml
             content_html = render_content(data, renderer)
 
             # Render layout with external resources
-            html = renderer.render('layout.html.liquid', context.merge(
-                                                           content: content_html
+            html = renderer.render("layout.html.liquid", context.merge(
+                                                           content: content_html,
                                                          ))
 
             # Update links to external resources
             html = inject_external_resources(html)
 
-            path = File.join(output_dir, 'index.html')
+            path = File.join(output_dir, "index.html")
             write_file(path, html)
           end
 
@@ -139,7 +139,7 @@ module Lutaml
             # This would be extracted in a future enhancement
             css = "/* Styles are embedded in HTML for now */\n"
 
-            path = File.join(output_dir, 'css', 'styles.css')
+            path = File.join(output_dir, "css", "styles.css")
             write_file(path, css)
           end
 
@@ -152,7 +152,7 @@ module Lutaml
             # This would be extracted in a future enhancement
             js = "/* Scripts are embedded in HTML for now */\n"
 
-            path = File.join(output_dir, 'js', 'app.js')
+            path = File.join(output_dir, "js", "app.js")
             write_file(path, js)
           end
 
@@ -163,7 +163,7 @@ module Lutaml
           def generate_data_file(data)
             json = JSON.pretty_generate(data)
 
-            path = File.join(output_dir, 'data', 'schemas.json')
+            path = File.join(output_dir, "data", "schemas.json")
             write_file(path, json)
           end
 
@@ -176,7 +176,7 @@ module Lutaml
             schemas = data[:schemas] || []
 
             schemas.map do |schema|
-              renderer.render_partial('schema_card', { 'schema' => schema })
+              renderer.render_partial("schema_card", { "schema" => schema })
             end.join("\n")
           end
 
@@ -187,20 +187,20 @@ module Lutaml
           def inject_external_resources(html)
             # Add external CSS link
             html = html.sub(
-              '</head>',
-              '<link rel="stylesheet" href="css/styles.css"></head>'
+              "</head>",
+              '<link rel="stylesheet" href="css/styles.css"></head>',
             )
 
             # Add external JS link
             html = html.sub(
-              '</body>',
-              '<script src="js/app.js"></script></body>'
+              "</body>",
+              '<script src="js/app.js"></script></body>',
             )
 
             # Update data source to external JSON
             html.sub(
               /const Search = \{[^}]*data: \{[^}]*\}/m,
-              "const Search = {\n      data: null, // Loaded from external file"
+              "const Search = {\n      data: null, // Loaded from external file",
             )
           end
         end

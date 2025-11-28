@@ -12,27 +12,27 @@ module Lutaml
             end
 
             def element
-              ComponentColors.new(@colors['element'] || {})
+              ComponentColors.new(@colors["element"] || {})
             end
 
             def type
-              ComponentColors.new(@colors['type'] || {})
+              ComponentColors.new(@colors["type"] || {})
             end
 
             def attribute
-              ComponentColors.new(@colors['attribute'] || {})
+              ComponentColors.new(@colors["attribute"] || {})
             end
 
             def group
-              ComponentColors.new(@colors['group'] || {})
+              ComponentColors.new(@colors["group"] || {})
             end
 
             def ui
-              UIColors.new(@colors['ui'] || {})
+              UIColors.new(@colors["ui"] || {})
             end
 
             def indicators
-              IndicatorColors.new(@colors['indicators'] || {})
+              IndicatorColors.new(@colors["indicators"] || {})
             end
           end
 
@@ -41,9 +41,9 @@ module Lutaml
             attr_reader :base, :gradient_start, :gradient_end
 
             def initialize(colors_hash)
-              @base = colors_hash['base']
-              @gradient_start = colors_hash['gradient_start']
-              @gradient_end = colors_hash['gradient_end']
+              @base = colors_hash["base"]
+              @gradient_start = colors_hash["gradient_start"]
+              @gradient_end = colors_hash["gradient_end"]
             end
           end
 
@@ -52,10 +52,10 @@ module Lutaml
             attr_reader :text, :border, :shadow, :background
 
             def initialize(colors_hash)
-              @text = colors_hash['text']
-              @border = colors_hash['border']
-              @shadow = colors_hash['shadow']
-              @background = colors_hash['background']
+              @text = colors_hash["text"]
+              @border = colors_hash["border"]
+              @shadow = colors_hash["shadow"]
+              @background = colors_hash["background"]
             end
           end
 
@@ -64,9 +64,9 @@ module Lutaml
             attr_reader :required, :optional, :abstract
 
             def initialize(colors_hash)
-              @required = colors_hash['required']
-              @optional = colors_hash['optional']
-              @abstract = colors_hash['abstract']
+              @required = colors_hash["required"]
+              @optional = colors_hash["optional"]
+              @abstract = colors_hash["abstract"]
             end
           end
         end

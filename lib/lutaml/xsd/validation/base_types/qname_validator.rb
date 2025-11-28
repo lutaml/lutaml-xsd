@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'base_type_validator'
+require_relative "base_type_validator"
 
 module Lutaml
   module Xsd
@@ -42,8 +42,8 @@ module Lutaml
             return false unless str.match?(QNAME_PATTERN)
 
             # If it has a colon, validate both parts
-            if str.include?(':')
-              prefix, local = str.split(':', 2)
+            if str.include?(":")
+              prefix, local = str.split(":", 2)
               return false if prefix.empty? || local.empty?
               return false unless prefix.match?(NCNAME_PATTERN)
               return false unless local.match?(NCNAME_PATTERN)
@@ -58,7 +58,7 @@ module Lutaml
           # @return [String] Error message
           def error_message(value)
             "Value '#{value}' is not a valid QName. " \
-              'Expected format: [prefix:]localName'
+              "Expected format: [prefix:]localName"
           end
         end
       end
