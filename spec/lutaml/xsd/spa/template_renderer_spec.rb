@@ -40,7 +40,9 @@ RSpec.describe Lutaml::Xsd::Spa::TemplateRenderer do
 
     it "creates Liquid file system" do
       expect(renderer.file_system).to be_a(Lutaml::Xsd::Spa::LocalFileSystem)
-      expect(renderer.file_system.roots.any? { |root| root.start_with?(temp_template_dir) }).to be true
+      expect(renderer.file_system.roots.any? do |root|
+        root.start_with?(temp_template_dir)
+      end).to be true
     end
   end
 
