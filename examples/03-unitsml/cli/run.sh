@@ -98,7 +98,7 @@ echo "Step 6: Viewing package metadata"
 echo "--------------------------------------------------------------------------------"
 echo
 
-bundle exec exe/lutaml-xsd pkg metadata get "$OUTPUT_PATH"
+bundle exec exe/lutaml-xsd pkg metadata get "$OUTPUT_PATH" --all
 
 echo
 
