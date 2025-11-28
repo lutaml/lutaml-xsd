@@ -10,6 +10,7 @@ require_relative 'commands/search_command'
 require_relative 'commands/namespace_command'
 require_relative 'commands/element_command'
 require_relative 'commands/validate_schema_command'
+require_relative 'commands/generate_spa_command'
 
 module Lutaml
   module Xsd
@@ -116,6 +117,35 @@ module Lutaml
           lutaml-xsd doc spa schemas.lxr --mode multi_file --output-dir ./docs
       DESC
       subcommand 'doc', Commands::DocCommand
+
+      desc 'generate-spa SCHEMA_LXR_FILE',
+           'SPA documentation generation commands'
+      long_desc <<~DESC
+        Generate SPA documentation from schema LXR file.
+
+        Examples:
+          lutaml-xsd generate-spa schemas.lxr --mode single_file --output docs.html
+          lutaml-xsd generate-spa schemas.lxr --mode multi_file --output_dir ./docs
+      DESC
+      option :mode,
+             type: :string,
+             default: 'single_file',
+             desc: "Use 'single_file', 'multi_file', or 'api' mode"
+      option :output,
+             type: :string,
+             desc: 'Specify output file'
+      option :config,
+             type: :string,
+             desc: 'Specify config file'
+      option :title,
+             type: :string,
+             desc: 'Specify title'
+      option :output_dir,
+             type: :string,
+             desc: 'Specify output directory'
+      def generate_spa(package_path)
+        Commands::GenerateSpaCommand.new(package_path, options).run
+      end
 
       desc 'version', 'Display lutaml-xsd version'
       def version
