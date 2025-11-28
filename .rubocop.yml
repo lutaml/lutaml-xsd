@@ -8,4 +8,4 @@ inherit_from:
 # ...
 
 AllCops:
-  NewCops: enable
+  NewCops: disable

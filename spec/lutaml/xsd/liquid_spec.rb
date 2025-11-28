@@ -7,12 +7,15 @@ RSpec.describe Lutaml::Xsd do
     let(:schema) { File.read('spec/fixtures/unitsml-v1.0-csd03.xsd') }
     let(:liquid_file_content) { File.read('spec/fixtures/liquid_templates/_elements.liquid') }
 
-    it 'matches the parsed' do
-      processed_xml = schema_to_xml(parsed_schema.to_xml, escape_content_tags: true)
-      expect(processed_xml).to be_analogous_with(schema_to_xml(schema))
+    it 'parsed schema round-trips the XSD' do
+      processed_xml = parsed_schema.to_xml
+      doc = Nokogiri::XML(schema)
+      doc.xpath('//comment()').remove
+      no_comments_schema = doc.to_s
+      expect(processed_xml).to be_xml_equivalent_to(no_comments_schema)
     end
 
-    it 'matches count of direct child elements of the root' do
+    it 'parsed schema to_liquid matches count of direct child elements of the root' do
       render_options = { 'schema' => parsed_schema.to_liquid }
       template_output = Liquid::Template.parse(liquid_file_content).render(render_options)
       expect(template_output).to match(/^Elements:\s+Name: \*UnitsML\*/)

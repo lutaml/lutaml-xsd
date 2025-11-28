@@ -41,8 +41,8 @@ RSpec.describe Lutaml::Xsd do
       end
 
       it 'matches parsed schema to xml with the input' do
-        processed_xml = schema_to_xml(parsed_schema.to_xml, escape_content_tags: true)
-        expect(processed_xml).to be_analogous_with(schema_to_xml(schema))
+        processed_xml = parsed_schema.to_xml
+        expect(processed_xml).to be_xml_equivalent_to(schema)
       end
     end
   end
