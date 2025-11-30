@@ -11,15 +11,15 @@ schema_location_mappings:
     to: ../../spec/fixtures/i-ur/urbanObject.xsd
     pattern: false
 
-  # Map relative gmd/ paths to ISO TC211 gmd directory
-  - from: '(?:\.\./)+(gmd/(.+\.xsd))$'
-    to: ../../spec/fixtures/isotc211/19139/-/gmd/1.0/\2
+  # Map relative ISO 19139 paths (gmd, gco, gss, gts, gmx, gsr)
+  - from: '(?:\.\./)+((?:gmd|gco|gss|gts|gmx|gsr)/(.+\.xsd))$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/\1
     pattern: true
 
-  # Map bare gmd.xsd (no path prefix)
-  - from: '^gmd\.xsd$'
-    to: ../../spec/fixtures/isotc211/19139/-/gmd/1.0/gmd.xsd
-    pattern: false
+  # Map bare ISO 19139 schema filenames
+  - from: '^(gmd|gco|gss|gts|gmx|gsr)\.xsd$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/\1/\1.xsd
+    pattern: true
 
   # Map GML bare filenames (no gml/ prefix)
   - from: '^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects|geometryComplexes)\.xsd$'
