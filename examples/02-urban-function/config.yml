@@ -4,9 +4,10 @@
 
 files:
   - ../../spec/fixtures/i-ur/urbanFunction.xsd
+  - ../../spec/fixtures/i-ur/urbanObject.xsd
 
 schema_location_mappings:
-  # Map specific relative path to local file
+  # Map urbanObject import to local file
   - from: "../../uro/3.2/urbanObject.xsd"
     to: ../../spec/fixtures/i-ur/urbanObject.xsd
     pattern: false
