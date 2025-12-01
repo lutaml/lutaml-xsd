@@ -646,7 +646,9 @@ metadata)
         namespace_mappings = repository.namespace_mappings || []
 
         serialized_files.each_value do |file_path|
-          data = File.read(file_path)
+          # Use binary mode for reading to avoid line ending conversion on Windows
+          # which would corrupt Marshal data
+          data = File.binread(file_path)
           schema = builder.deserialize_schema(data, serialization_format)
 
           # Extract unique name from serialized file (includes prefix or hash)

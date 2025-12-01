@@ -90,7 +90,13 @@ module Lutaml
           # Check for regex pattern match
           if from.is_a?(Regexp)
             match = schema_location.match(from)
-            return schema_location.gsub(from, to) if match
+            if match
+              # Perform regex substitution
+              result = schema_location.gsub(from, to)
+              # Normalize path separators for the platform
+              result = File.expand_path(result) if is_absolute_path?(result)
+              return result
+            end
           end
         end
 
