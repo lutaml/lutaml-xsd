@@ -436,7 +436,10 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
 
   describe "#write_from_repository" do
     it "writes package with all required components" do
-      temp_zip = Tempfile.new(["write_test", ".zip"]).path
+      # Keep reference to Tempfile to prevent premature GC
+      temp_file = Tempfile.new(["write_test", ".zip"])
+      temp_zip = temp_file.path
+      temp_file.close # Close but don't unlink
 
       # Create a minimal self-contained schema
       simple_schema = <<~XSD
@@ -473,6 +476,12 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         expect(result_path).to eq(temp_zip)
         expect(File.exist?(temp_zip)).to be true
 
+        # On Windows, ensure file handles are fully released before re-opening
+        # Force garbage collection to release any lingering file handles
+        GC.start
+        # Small delay to ensure OS releases file locks (Windows-specific)
+        sleep 0.1 if Gem.win_platform?
+
         # Verify ZIP contents
         Zip::File.open(temp_zip) do |zipfile|
           expect(zipfile.find_entry("metadata.yaml")).not_to be_nil
@@ -482,7 +491,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepositoryPackage do
         expect(package.metadata).to include("custom" => "value")
       ensure
         FileUtils.rm_f(simple_xsd_path)
-        FileUtils.rm_f(temp_zip)
+        temp_file&.unlink # Explicit cleanup
       end
     end
   end

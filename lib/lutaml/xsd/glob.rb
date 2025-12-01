@@ -91,11 +91,10 @@ module Lutaml
           if from.is_a?(Regexp)
             match = schema_location.match(from)
             if match
-              # Perform regex substitution
-              result = schema_location.gsub(from, to)
-              # Normalize path separators for the platform
-              result = File.expand_path(result) if is_absolute_path?(result)
-              return result
+              # Perform regex substitution - return literal result
+              # without platform normalization to preserve cross-platform
+              # path patterns in schema mappings
+              return schema_location.gsub(from, to)
             end
           end
         end
