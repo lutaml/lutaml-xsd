@@ -1072,18 +1072,22 @@ indent: "")
           end
 
           def display_dependency_tree(deps, indent)
-            deps.each do |dep_name, dep_info|
-              output "#{indent}├─ #{dep_name}"
-              output "#{indent}│  └─ Category: #{dep_info[:type_category]}"
-              output "#{indent}│  └─ Schema: #{dep_info[:schema_file]}"
+            deps.each_with_index do |(dep_name, dep_info), index|
+              is_last = index == deps.size - 1
+              connector = is_last ? "└─" : "├─"
+              continuation = is_last ? "   " : "│  "
+
+              output "#{indent}#{connector} #{dep_name}"
+              output "#{indent}#{continuation}└─ Category: #{dep_info[:type_category]}"
+              output "#{indent}#{continuation}└─ Schema: #{dep_info[:schema_file]}"
 
               if dep_info[:dependencies] && !dep_info[:dependencies].empty?
-                output "#{indent}│  └─ Dependencies:"
+                output "#{indent}#{continuation}└─ Dependencies:"
                 display_dependency_tree(dep_info[:dependencies],
-                                        "#{indent}│     ")
+                                        "#{indent}#{continuation}   ")
               end
 
-              output "#{indent}│" unless deps.keys.last == dep_name
+              output "#{indent}│" unless is_last
             end
           end
 
