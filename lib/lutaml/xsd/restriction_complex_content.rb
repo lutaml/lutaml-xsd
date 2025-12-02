@@ -12,7 +12,8 @@ module Lutaml
       attribute :annotation, :annotation
       attribute :any_attribute, :any_attribute
       attribute :attribute, :attribute, collection: true, initialize_empty: true
-      attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
+      attribute :attribute_group, :attribute_group, collection: true,
+                                                    initialize_empty: true
 
       xml do
         root "restriction", mixed: true

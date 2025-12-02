@@ -1,0 +1,291 @@
+<article class="schema-card" id="{{ schema.id }}">
+  <header class="schema-card-header">
+    <h2 class="schema-card-title">{{ schema.name }}</h2>
+    {% if schema.namespace %}
+    <div class="schema-namespace">
+      <span class="label">Namespace:</span>
+      <code>{{ schema.namespace }}</code>
+    </div>
+    {% endif %}
+  </header>
+
+  <div class="schema-card-stats">
+    {% if schema.elements.size > 0 %}
+    <div class="stat-item">
+      <span class="stat-value">{{ schema.elements.size }}</span>
+      <span class="stat-label">Elements</span>
+    </div>
+    {% endif %}
+
+    {% if schema.complex_types.size > 0 %}
+    <div class="stat-item">
+      <span class="stat-value">{{ schema.complex_types.size }}</span>
+      <span class="stat-label">Complex Types</span>
+    </div>
+    {% endif %}
+
+    {% if schema.simple_types.size > 0 %}
+    <div class="stat-item">
+      <span class="stat-value">{{ schema.simple_types.size }}</span>
+      <span class="stat-label">Simple Types</span>
+    </div>
+    {% endif %}
+
+    {% if schema.attributes.size > 0 %}
+    <div class="stat-item">
+      <span class="stat-value">{{ schema.attributes.size }}</span>
+      <span class="stat-label">Attributes</span>
+    </div>
+    {% endif %}
+
+    {% if schema.groups.size > 0 %}
+    <div class="stat-item">
+      <span class="stat-value">{{ schema.groups.size }}</span>
+      <span class="stat-label">Groups</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="schema-card-content">
+    {% if schema.elements.size > 0 %}
+    <section class="schema-section">
+      <h3>Elements</h3>
+      <div class="items-grid">
+        {% for element in schema.elements %}
+        <div class="item-card" id="{{ schema.id }}-element-{{ element.id }}">
+          <div class="item-header">
+            <span class="badge badge-primary">element</span>
+            <h4 class="item-name">{{ element.name }}</h4>
+          </div>
+          {% if element.type %}
+          <div class="item-meta">
+            <span class="meta-label">Type:</span>
+            <code>{{ element.type }}</code>
+          </div>
+          {% endif %}
+          {% if element.min_occurs or element.max_occurs %}
+          <div class="item-meta">
+            <span class="meta-label">Occurs:</span>
+            <span>{{ element.min_occurs | default: 1 }}..{{ element.max_occurs | default: 1 }}</span>
+          </div>
+          {% endif %}
+          {% if element.documentation %}
+          <div class="item-documentation">
+            <p>{{ element.documentation | truncate: 200 }}</p>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if schema.complex_types.size > 0 %}
+    <section class="schema-section">
+      <h3>Complex Types</h3>
+      <div class="items-grid">
+        {% for type in schema.complex_types %}
+        {% include 'components/type_detail', type: type, schema: schema, type_kind: 'complex' %}
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if schema.simple_types.size > 0 %}
+    <section class="schema-section">
+      <h3>Simple Types</h3>
+      <div class="items-grid">
+        {% for type in schema.simple_types %}
+        {% include 'components/type_detail', type: type, schema: schema, type_kind: 'simple' %}
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if schema.attributes.size > 0 %}
+    <section class="schema-section">
+      <h3>Attributes</h3>
+      <div class="items-grid">
+        {% for attr in schema.attributes %}
+        <div class="item-card" id="{{ schema.id }}-attribute-{{ attr.id }}">
+          <div class="item-header">
+            <span class="badge badge-secondary">attribute</span>
+            <h4 class="item-name">{{ attr.name }}</h4>
+          </div>
+          {% if attr.type %}
+          <div class="item-meta">
+            <span class="meta-label">Type:</span>
+            <code>{{ attr.type }}</code>
+          </div>
+          {% endif %}
+          {% if attr.use %}
+          <div class="item-meta">
+            <span class="meta-label">Use:</span>
+            <span class="badge badge-sm">{{ attr.use }}</span>
+          </div>
+          {% endif %}
+          {% if attr.default %}
+          <div class="item-meta">
+            <span class="meta-label">Default:</span>
+            <code>{{ attr.default }}</code>
+          </div>
+          {% endif %}
+          {% if attr.documentation %}
+          <div class="item-documentation">
+            <p>{{ attr.documentation | truncate: 200 }}</p>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</article>
+
+<style>
+  .schema-card {
+    margin-bottom: var(--spacing-2xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+
+  .schema-card-header {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 2px solid var(--border-light);
+  }
+
+  .schema-card-title {
+    font-size: 2rem;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .schema-namespace {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 0.875rem;
+  }
+
+  .schema-namespace .label {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .schema-namespace code {
+    font-size: 0.875rem;
+  }
+
+  .schema-card-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .stat-item {
+    text-align: center;
+    padding: var(--spacing-md);
+    background: var(--bg-primary);
+    border-radius: var(--radius-default);
+    border: 1px solid var(--border-light);
+  }
+
+  .stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+  }
+
+  .stat-label {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .schema-section {
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .schema-section h3 {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+  }
+
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+  }
+
+  .item-card {
+    padding: var(--spacing-md);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-default);
+    transition: all var(--transition-duration);
+  }
+
+  .item-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .item-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .item-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .item-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+  }
+
+  .meta-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .item-documentation {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--border-light);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .badge-sm {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.5rem;
+  }
+
+  @media (max-width: {{ theme.breakpoints.md }}) {
+    .items-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .schema-card-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

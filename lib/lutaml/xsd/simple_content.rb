@@ -24,9 +24,11 @@ module Lutaml
         map_element :extension, to: :extension
       end
 
-      liquid do
-        map "attribute_elements", to: :attribute_elements
-      end
+      # liquid do
+
+      #         map "attribute_elements", to: :attribute_elements
+
+      #       end
 
       Lutaml::Xsd.register_model(self, :simple_content)
     end

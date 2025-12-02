@@ -9,16 +9,26 @@ module Lutaml
       attribute :simple_type, :simple_type
       attribute :length, :length, collection: true, initialize_empty: true
       attribute :pattern, :pattern, collection: true, initialize_empty: true
-      attribute :min_length, :min_length, collection: true, initialize_empty: true
-      attribute :max_length, :max_length, collection: true, initialize_empty: true
-      attribute :white_space, :white_space, collection: true, initialize_empty: true
-      attribute :enumeration, :enumeration, collection: true, initialize_empty: true
-      attribute :total_digits, :total_digits, collection: true, initialize_empty: true
-      attribute :max_exclusive, :max_exclusive, collection: true, initialize_empty: true
-      attribute :min_exclusive, :min_exclusive, collection: true, initialize_empty: true
-      attribute :max_inclusive, :max_inclusive, collection: true, initialize_empty: true
-      attribute :min_inclusive, :min_inclusive, collection: true, initialize_empty: true
-      attribute :fraction_digits, :fraction_digits, collection: true, initialize_empty: true
+      attribute :min_length, :min_length, collection: true,
+                                          initialize_empty: true
+      attribute :max_length, :max_length, collection: true,
+                                          initialize_empty: true
+      attribute :white_space, :white_space, collection: true,
+                                            initialize_empty: true
+      attribute :enumeration, :enumeration, collection: true,
+                                            initialize_empty: true
+      attribute :total_digits, :total_digits, collection: true,
+                                              initialize_empty: true
+      attribute :max_exclusive, :max_exclusive, collection: true,
+                                                initialize_empty: true
+      attribute :min_exclusive, :min_exclusive, collection: true,
+                                                initialize_empty: true
+      attribute :max_inclusive, :max_inclusive, collection: true,
+                                                initialize_empty: true
+      attribute :min_inclusive, :min_inclusive, collection: true,
+                                                initialize_empty: true
+      attribute :fraction_digits, :fraction_digits, collection: true,
+                                                    initialize_empty: true
 
       xml do
         root "restriction", mixed: true

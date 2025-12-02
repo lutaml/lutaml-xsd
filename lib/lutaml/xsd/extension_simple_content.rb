@@ -12,7 +12,8 @@ module Lutaml
       attribute :annotation, :annotation
       attribute :any_attribute, :any_attribute
       attribute :attribute, :attribute, collection: true, initialize_empty: true
-      attribute :attribute_group, :attribute_group, collection: true, initialize_empty: true
+      attribute :attribute_group, :attribute_group, collection: true,
+                                                    initialize_empty: true
 
       xml do
         root "extension", mixed: true
@@ -26,9 +27,11 @@ module Lutaml
         map_element :attributeGroup, to: :attribute_group
       end
 
-      liquid do
-        map "attribute_elements", to: :attribute_elements
-      end
+      # liquid do
+
+      #         map "attribute_elements", to: :attribute_elements
+
+      #       end
 
       Lutaml::Xsd.register_model(self, :extension_simple_content)
     end

@@ -54,17 +54,27 @@ module Lutaml
         map_element :key, to: :key
       end
 
-      liquid do
-        map "used_by", to: :used_by
-        map "attributes", to: :attributes
-        map "child_elements", to: :child_elements
-        map "referenced_type", to: :referenced_type
-        map "min_occurrences", to: :min_occurrences
-        map "max_occurrences", to: :max_occurrences
-        map "referenced_name", to: :referenced_name
-        map "referenced_object", to: :referenced_object
-        map "referenced_complex_type", to: :referenced_complex_type
-      end
+      # liquid do
+
+      #         map "used_by", to: :used_by
+
+      #         map "attributes", to: :attributes
+
+      #         map "child_elements", to: :child_elements
+
+      #         map "referenced_type", to: :referenced_type
+
+      #         map "min_occurrences", to: :min_occurrences
+
+      #         map "max_occurrences", to: :max_occurrences
+
+      #         map "referenced_name", to: :referenced_name
+
+      #         map "referenced_object", to: :referenced_object
+
+      #         map "referenced_complex_type", to: :referenced_complex_type
+
+      #       end
 
       Lutaml::Xsd.register_model(self, :element)
     end

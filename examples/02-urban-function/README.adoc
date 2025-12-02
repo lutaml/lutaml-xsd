@@ -1,0 +1,214 @@
+= Urban Function Example (i-UR)
+
+== Purpose
+
+This example demonstrates working with complex, real-world schemas that have extensive import/include dependencies.
+
+Learn how to:
+
+* Build LXR packages from schemas with many imports
+* Configure schema location mappings for offline work
+* Handle large schema sets (100+ types)
+* Work with geographic/urban planning standards
+
+The i-UR (international Urban Revitalization) standard is used here to showcase real-world complexity found in Japanese urban planning data exchange formats.
+
+== What This Example Demonstrates
+
+=== Complex Schema Dependencies
+
+The i-UR schema imports multiple other schema families:
+
+* GML (Geography Markup Language) 3.2
+* ISO 19139 (Geographic Metadata)
+* XLink (XML Linking)
+* CityGML extensions
+
+Each import requires proper schema location mapping for offline processing.
+
+=== Schema Location Mapping
+
+Mapping relative schema locations to local files:
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: ../../spec/fixtures/i-ur/urbanObject.xsd
+  - from: '(?:\.\./)+(gml/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+----
+
+This allows building packages without network access.
+
+=== Large Schema Sets
+
+The urban function schema defines 200+ types including:
+
+* Zone types (residential, commercial, industrial)
+* District types (planning, preservation)
+* Urban facility types (parks, roads, utilities)
+* Development project types
+
+=== Domain-Specific Vocabulary
+
+Urban planning concepts modeled:
+
+* Land use classifications
+* Zoning regulations
+* Urban development projects
+* Infrastructure planning
+
+== Directory Structure
+
+[source]
+----
+02-urban-function/
+├── README.adoc           # This file
+├── config.yml            # Package configuration with mappings
+├── schemas/              # (empty - schemas in spec/fixtures)
+├── ruby-api/             # Ruby API examples
+│   └── example.rb
+└── cli/                  # CLI examples
+    └── run.sh
+----
+
+== Configuration
+
+The [`config.yml`](config.yml) file demonstrates:
+
+[source,yaml]
+----
+files:
+  - ../../spec/fixtures/i-ur/urbanFunction.xsd
+
+schema_location_mappings:
+  # Direct file mapping
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: ../../spec/fixtures/i-ur/urbanObject.xsd
+    pattern: false
+
+  # Pattern-based mapping (regex)
+  - from: '(?:\.\./)+(gml/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+namespace_mappings:
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+----
+
+Where:
+
+`schema_location_mappings`:: Maps import/include locations to local files
+`pattern`:: When true, treats 'from' as a regex pattern with capture groups
+
+== Running the Examples
+
+=== Ruby API Example
+
+[source,bash]
+----
+ruby examples/02-urban-function/ruby-api/example.rb
+----
+
+Features demonstrated:
+
+. Building packages with schema location mappings
+. Handling large type counts efficiently
+. Batch type queries
+. Namespace-aware searching
+
+=== CLI Example
+
+[source,bash]
+----
+bash examples/02-urban-function/cli/run.sh
+----
+
+CLI commands demonstrated:
+
+. Building with complex configurations
+. Package tree visualization
+. Searching in large schema sets
+. Type resolution across namespaces
+
+== Expected Output
+
+Creates `urban_function.lxr` containing:
+
+* Schemas: 50+ (from all imports)
+* Types: 200+ (urban planning types)
+* Namespaces: 10+ (urf, uro, gml, xlink, etc.)
+
+Building may take 5-10 seconds due to schema complexity.
+
+== Key Concepts
+
+=== Offline Schema Processing
+
+Schema location mappings enable:
+
+* Working without internet connectivity
+* Consistent build results
+* Version control of schema dependencies
+* Faster builds (no network delays)
+
+=== Pattern-Based Mappings
+
+Regular expressions in mappings support:
+
+* Multiple files with one rule
+* Flexible path transformations
+* Import path normalization
+* Dependency consolidation
+
+=== Real-World Schema Complexity
+
+This example represents realistic scenarios:
+
+* Government data standards
+* Industry specifications
+* Geographic information systems
+* Multi-organization schemas
+
+== Troubleshooting
+
+=== Import Resolution Failures
+
+If imports fail to resolve:
+
+. Check that fixture files exist in `spec/fixtures/`
+. Verify schema location mapping patterns
+. Enable verbose output for debugging
+
+=== Build Performance
+
+For large schemas:
+
+* Use Marshal serialization (fastest)
+* Enable caching for development
+* Consider resolution mode options
+
+== Next Steps
+
+After mastering complex schemas:
+
+. Try link:../03-unitsml/README.adoc[03-unitsml] for scientific domain schemas
+. Try link:../04-metaschema/README.adoc[04-metaschema] for self-referential schemas
+. Review link:../01-simple/README.adoc[01-simple] for basic concepts
+
+== Related Documentation
+
+* link:../../docs/PACKAGE_CONFIGURATION.adoc[Package Configuration]
+* link:../../docs/SCHEMA_LOCATION_MAPPING.adoc[Schema Location Mapping]
+* link:../../examples/urban_function_repository.yml[Full i-UR Configuration]
+
+== i-UR Standard Reference
+
+* Official URL: https://www.geospatial.jp/iur/
+* Standard Version: 3.2
+* Domain: Urban planning and revitalization (Japan)

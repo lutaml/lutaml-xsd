@@ -7,13 +7,11 @@ Lutaml::Model::Config.xml_adapter_type = adapter
 
 module Lutaml
   module Xsd
-    class Error < StandardError; end
-
     module_function
 
     def register
       @register ||= Lutaml::Model::GlobalRegister.register(
-        Lutaml::Model::Register.new(:xsd)
+        Lutaml::Model::Register.new(:xsd),
       )
     end
 
@@ -21,17 +19,57 @@ module Lutaml
       register.register_model(klass, id: id)
     end
 
-    def parse(xsd, location: nil, nested_schema: false, register: nil)
+    def parse(xsd, location: nil, nested_schema: false, register: nil,
+schema_mappings: nil, validate_schema: true)
+      # Validate XSD schema structure before parsing (unless disabled)
+      if validate_schema && !nested_schema
+        detected_version = SchemaValidator.detect_version(xsd)
+        validator = SchemaValidator.new(version: detected_version)
+        validator.validate(xsd)
+      end
+
       register ||= self.register
       Schema.reset_processed_schemas unless nested_schema
 
+      Glob.schema_mappings = schema_mappings
       Glob.path_or_url(location)
       Schema.from_xml(xsd, register: register)
     end
   end
 end
 
+require_relative "xsd/version"
+require_relative "xsd/errors"
+require_relative "xsd/schema_validator"
+require_relative "xsd/file_validation_result"
+require_relative "xsd/validation_error"
+require_relative "xsd/namespace_uri_remapping"
+require_relative "xsd/base_package_config"
+require_relative "xsd/package_source"
+require_relative "xsd/conflicts/namespace_conflict"
+require_relative "xsd/conflicts/type_conflict"
+require_relative "xsd/conflicts/schema_conflict"
+require_relative "xsd/package_conflict_detector"
+require_relative "xsd/package_conflict_resolver"
+require_relative "xsd/conflict_report"
+require_relative "xsd/validation_result"
 require_relative "xsd/base"
+require_relative "xsd/schema_location_mapping"
+require_relative "xsd/namespace_mapping"
+require_relative "xsd/type_resolution_result"
+require_relative "xsd/type_index_entry"
+require_relative "xsd/serialized_schema"
+require_relative "xsd/package_configuration"
+require_relative "xsd/schema_resolver"
+require_relative "xsd/xsd_bundler"
+require_relative "xsd/package_builder"
+require_relative "xsd/schema_name_resolver"
+require_relative "xsd/schema_repository_metadata"
+require_relative "xsd/schema_repository_package"
+require_relative "xsd/schema_repository"
+require_relative "xsd/schema_classifier"
+require_relative "xsd/package_validator"
+require_relative "xsd/package_tree_formatter"
 require_relative "xsd/all"
 require_relative "xsd/annotation"
 require_relative "xsd/any"
@@ -78,3 +116,6 @@ require_relative "xsd/total_digits"
 require_relative "xsd/union"
 require_relative "xsd/unique"
 require_relative "xsd/white_space"
+require_relative "xsd/type_searcher"
+require_relative "xsd/batch_type_query"
+require_relative "xsd/validation/validator"
