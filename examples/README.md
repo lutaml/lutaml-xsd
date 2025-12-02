@@ -165,6 +165,49 @@ end
 
 ## Additional Examples
 
+### 5. [Schema Validation](05-schema-validation/)
+**Complexity: ★☆☆☆☆** | **Feature: XSD Validation**
+
+Pre-parsing validation of XSD schema files with version detection.
+
+- Validate XSD 1.0 and 1.1 schemas
+- Automatic version detection
+- Multiple output formats (text, JSON, YAML)
+- CI/CD integration examples
+
+**When to use:** Validating schemas before parsing, CI/CD pipelines, pre-commit hooks
+
+**Read more:** [05-schema-validation/README.adoc](05-schema-validation/README.adoc)
+
+### 6. [Package Composition](06-package-composition/)
+**Complexity: ★★★☆☆** | **Feature: Multi-package Management**
+
+Combining multiple LXR packages with conflict detection and resolution.
+
+- Merge multiple LXR packages
+- Conflict resolution strategies (keep, override, error)
+- Priority-based merging
+- Namespace remapping
+- Schema filtering with glob patterns
+
+**When to use:** Managing multiple schema sources, enterprise schema integration, version migration
+
+**Read more:** [06-package-composition/README.adoc](06-package-composition/README.adoc)
+
+### 7. [Package Merge](07-package-merge/)
+**Complexity: ★★☆☆☆** | **Feature: Base + Generated Schemas**
+
+Merging base LXR packages with newly generated XSD files.
+
+- Combine base packages (GML, ISO standards) with generated schemas
+- Integration with lutaml-klin UML-to-XSD workflow
+- PLATEAU-style 3-process workflow
+- Reproducible builds from configuration
+
+**When to use:** UML-to-XSD workflows, combining standards with domain schemas, PLATEAU projects
+
+**Read more:** [07-package-merge/README.adoc](07-package-merge/README.adoc)
+
 ### Validation Examples
 The `validation/` directory contains XML validation examples:
 - [validate_xml_basic.rb](validation/validate_xml_basic.rb) - Basic validation
@@ -303,4 +346,4 @@ For issues or questions:
 
 ---
 
-**MECE Categories:** [01-simple](01-simple/) | [02-urban-function](02-urban-function/) | [03-unitsml](03-unitsml/) | [04-metaschema](04-metaschema/) | [validation](validation/)
+**MECE Categories:** [01-simple](01-simple/) | [02-urban-function](02-urban-function/) | [03-unitsml](03-unitsml/) | [04-metaschema](04-metaschema/) | [05-schema-validation](05-schema-validation/) | [06-package-composition](06-package-composition/) | [07-package-merge](07-package-merge/) | [validation](validation/)

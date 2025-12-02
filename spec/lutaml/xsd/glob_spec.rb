@@ -194,9 +194,13 @@ RSpec.describe Lutaml::Xsd::Glob do
 
     context "with regex pattern mapping" do
       before do
+        # Use forward slashes for cross-platform compatibility in regex patterns
+        # Ruby's File.join uses backslashes on Windows, but forward slashes work
+        # universally in file paths on all platforms including Windows
+        pattern_target = "#{base_dir.tr('\\', '/')}/\\1"
         described_class.schema_mappings = [
           { from: %r{http://example\.com/schemas/(.+)},
-            to: File.join(base_dir, '\\1') },
+            to: pattern_target },
         ]
       end
 

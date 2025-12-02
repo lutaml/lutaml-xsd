@@ -1,0 +1,100 @@
+= Package Merge Example
+
+This example demonstrates how to merge base LXR packages with newly generated XSD files into a unified package.
+
+== Use Case
+
+This pattern is common in workflows like PLATEAU where:
+
+1. Base schemas (GML, ISO standards) are packaged once as LXR
+2. Domain-specific schemas are generated from UML models
+3. Complete package combines base + generated schemas
+
+== Configuration
+
+The `merge_config.yaml` shows how to configure a composition:
+
+[source,yaml]
+----
+# Load base LXR packages
+base_packages:
+  - dependencies/base_gml_3.2.lxr
+  - dependencies/iso_19xxx.lxr
+
+# Add new XSD files
+files:
+  - generated/urbanObject.xsd
+  - generated/urbanFunction.xsd
+
+# Standard mappings
+schema_location_mappings: [...]
+namespace_mappings: [...]
+----
+
+== Usage
+
+=== CLI
+
+Build the composed package using the existing `package build` command:
+
+[source,bash]
+----
+lutaml-xsd package build merge_config.yaml --output complete.lxr
+----
+
+=== Ruby API
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load config with base_packages
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('merge_config.yaml')
+
+# Parse loads packages + files
+repo.parse.resolve
+
+# Export composed package
+repo.to_package(
+  'complete.lxr',
+  xsd_mode: :include_all,
+  resolution_mode: :resolved,
+  serialization_format: :marshal
+)
+----
+
+== Integration with lutaml-klin
+
+This enables the 3-process workflow:
+
+[source,bash]
+----
+# Process 1: Generate XSD from UML
+lutaml-klin xsd \
+  --lur plateau.lur \
+  --output generated/
+
+# Process 2: Compose base + generated (NEW!)
+lutaml-xsd package build merge_config.yaml \
+  --output complete_plateau.lxr
+
+# Process 3: Create SPA docs
+lutaml-klin spa \
+  --lur plateau.lur \
+  --lxr complete_plateau.lxr \
+  --output spa/
+----
+
+== Benefits
+
+* **Reproducible**: Same config → same output
+* **Declarative**: Pure data, no procedural logic
+* **Reuses existing infrastructure**: No new concepts
+* **Simple**: Just extends SchemaRepository model
+
+== See Also
+
+* link:../06-package-composition/README.adoc[Package Composition Example] - Combining multiple LXR packages with conflict resolution
+* link:../../docs/LXR_PACKAGES.adoc[LXR Packages Guide]
+* link:../../docs/PACKAGE_CONFIGURATION.adoc[Package Configuration Reference]
+* link:../../docs/PACKAGE_COMPOSITION.adoc[Package Composition Guide]

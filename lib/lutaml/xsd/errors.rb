@@ -87,5 +87,58 @@ available_namespaces: [])
 
     # Schema validation error (pre-parsing validation)
     class SchemaValidationError < Error; end
+
+    # Validation failed error with structured result
+    class ValidationFailedError < Error
+      attr_reader :validation_result
+
+      # @param validation_result [ValidationResult] The validation result
+      def initialize(validation_result)
+        @validation_result = validation_result
+        super(validation_result.to_s)
+      end
+
+      # Get all error messages
+      # @return [Array<String>]
+      def error_messages
+        @validation_result.error_messages
+      end
+
+      # Get errors for specific field
+      # @param field [Symbol, String] Field name
+      # @return [Array<ValidationError>]
+      def errors_for(field)
+        @validation_result.errors_for(field)
+      end
+    end
+
+    # Package merge error with structured conflict report
+    class PackageMergeError < Error
+      attr_reader :conflict_report, :error_strategy_sources
+
+      def initialize(message:, conflict_report:, error_strategy_sources: [])
+        @conflict_report = conflict_report
+        @error_strategy_sources = error_strategy_sources
+
+        full_message = build_message(message)
+        super(full_message)
+      end
+
+      private
+
+      def build_message(message)
+        lines = [message, "", @conflict_report.to_s]
+
+        if @error_strategy_sources.any?
+          lines << ""
+          lines << "Packages using 'error' strategy:"
+          @error_strategy_sources.each do |source|
+            lines << "  - #{source.package_path}"
+          end
+        end
+
+        lines.join("\n")
+      end
+    end
   end
 end

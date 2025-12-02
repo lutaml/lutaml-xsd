@@ -719,6 +719,207 @@ type_mappings:
 ----
 ====
 
+== Namespace URI remapping
+
+When composing multiple packages, namespace URI remapping allows you to transform namespace URIs to avoid conflicts or align with conventions. This is particularly useful when integrating external packages into your schema repository.
+
+=== Basic remapping
+
+Namespace remapping transforms all references from one URI to another during package composition.
+
+.Simple namespace remapping
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: external_package.lxr
+    namespace_remapping:
+      - from_uri: http://external.org/v1
+        to_uri: http://internal.example.com/external/v1
+----
+
+All references to `http://external.org/v1` in the external package become `http://internal.example.com/external/v1` in the composed repository.
+====
+
+=== Common use cases
+
+==== Avoiding conflicts
+
+When two packages define the same namespace URI with different content, remapping resolves the conflict.
+
+.Conflict resolution with remapping
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: vendor_a.lxr
+    priority: 0
+    namespace_remapping:
+      - from_uri: http://common.org/types
+        to_uri: http://internal.example.com/vendor_a/types
+
+  - package: vendor_b.lxr
+    priority: 1
+    namespace_remapping:
+      - from_uri: http://common.org/types
+        to_uri: http://internal.example.com/vendor_b/types
+----
+
+This allows both packages to coexist without namespace conflicts.
+====
+
+==== Version migration
+
+Map old version namespaces to new version for backward compatibility or migration.
+
+.Version namespace mapping
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: legacy_schemas.lxr
+    namespace_remapping:
+      - from_uri: http://example.com/schema/v1
+        to_uri: http://example.com/schema/v2
+----
+
+This redirects references from version 1 to version 2 namespaces.
+====
+
+==== Organization standards
+
+Align external schemas with internal namespace conventions.
+
+.Standardizing external namespaces
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: gml_3.2.1.lxr
+    namespace_remapping:
+      - from_uri: http://www.opengis.net/gml/3.2
+        to_uri: http://schemas.internal.com/gml/3.2
+----
+
+This brings external GML schemas under internal namespace control.
+====
+
+==== Testing and development
+
+Use local namespaces for development without affecting production schemas.
+
+.Development namespace mapping
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: production_schemas.lxr
+    namespace_remapping:
+      - from_uri: http://production.example.com/schemas
+        to_uri: http://localhost:8080/dev/schemas
+----
+
+This allows testing with local namespace URIs.
+====
+
+=== Multiple remappings
+
+A single package can have multiple namespace transformations applied simultaneously.
+
+.Multiple namespace remappings
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: multi_namespace.lxr
+    namespace_remapping:
+      - from_uri: http://old.com/ns1
+        to_uri: http://new.com/ns1
+      - from_uri: http://old.com/ns2
+        to_uri: http://new.com/ns2
+      - from_uri: http://old.com/ns3
+        to_uri: http://new.com/ns3
+----
+
+Each namespace is independently transformed.
+====
+
+=== Remapping behavior
+
+==== Type references
+
+All type references are automatically updated to use the new namespace URI:
+
+[source]
+----
+Original schema (in external_package.lxr):
+  <xs:element name="item" type="ext:ItemType"/>
+  where ext = http://external.org/v1
+
+After remapping to http://internal.example.com/external/v1:
+  Type reference resolves to:
+  {http://internal.example.com/external/v1}ItemType
+----
+
+==== Namespace registry
+
+The namespace registry is updated to reflect remapped URIs:
+
+[source,ruby]
+----
+# Before remapping
+registry.resolve_prefix("ext")
+# => "http://external.org/v1"
+
+# After remapping
+registry.resolve_prefix("ext")
+# => "http://internal.example.com/external/v1"
+----
+
+==== Import statements
+
+Import statements in schemas retain their original form, but type resolution uses remapped URIs internally.
+
+=== Validation and errors
+
+Namespace remapping is validated during composition:
+
+* **Missing source URI**: Error if `from_uri` doesn't exist in package
+* **Circular remapping**: Error if A→B and B→A
+* **Duplicate target**: Warning if multiple `from_uri` map to same `to_uri`
+
+.Example validation error
+[example]
+====
+[source]
+----
+Error: Namespace remapping failed
+  Package: external.lxr
+  From URI: http://nonexistent.org/ns
+  Problem: Source namespace not found in package
+  
+  Available namespaces:
+    - http://external.org/v1
+    - http://external.org/v2
+----
+====
+
+=== Best practices for remapping
+
+1. **Document remappings**: Maintain clear documentation of why each remapping exists
+2. **Use consistent patterns**: Follow predictable patterns for remapped URIs
+3. **Avoid circular mappings**: Ensure remappings don't create cycles
+4. **Test thoroughly**: Validate type resolution after remapping
+5. **Version control**: Track remapping configurations in version control
+
+See link:../PACKAGE_COMPOSITION.adoc#namespace-uri-remapping[Package Composition Guide] for detailed documentation and additional examples.
+
 == Complete namespace workflow
 
 .Comprehensive namespace configuration example

@@ -495,6 +495,275 @@ else
 end
 ----
 
+== Type index and package composition
+
+When loading composed packages, the type index respects package priorities during type resolution. This enables controlled conflict resolution when multiple packages define types with the same qualified name.
+
+=== Priority-based indexing
+
+Packages are loaded and indexed in priority order to ensure deterministic type resolution:
+
+[source]
+----
+Package Composition Indexing Flow:
+═══════════════════════════════════
+
+1. Load packages by priority (lower number = higher priority)
+   ┌────────────────────────────┐
+   │ Priority 0: core_gml.lxr   │ ← Loaded first
+   └──────────┬─────────────────┘
+              │
+              ▼
+   ┌────────────────────────────┐
+   │ Index all types            │
+   │ {http://.../gml}CodeType   │
+   └──────────┬─────────────────┘
+              │
+              ▼
+2. Load next priority package
+   ┌────────────────────────────┐
+   │ Priority 1: custom_gml.lxr │ ← Loaded second
+   └──────────┬─────────────────┘
+              │
+              ▼
+   ┌────────────────────────────┐
+   │ Conflict detection         │
+   │ {http://.../gml}CodeType   │ ← Already exists!
+   └──────────┬─────────────────┘
+              │
+              ▼
+3. Apply resolution strategy
+   ┌────────────────────────────┐
+   │ Strategy: keep             │ ← Keep first (priority 0)
+   │ OR                         │
+   │ Strategy: override         │ ← Replace with second
+   │ OR                         │
+   │ Strategy: error            │ ← Fail composition
+   └────────────────────────────┘
+----
+
+=== Type lookup with priorities
+
+The index stores the winning definition based on the resolution strategy:
+
+.Priority-based type resolution
+[example]
+====
+[source,ruby]
+----
+# Composition with priorities
+config = {
+  base_packages: [
+    {
+      package: 'gml_3.2.1.lxr',
+      priority: 0,           # Higher priority (loaded first)
+      conflict_resolution: 'keep'
+    },
+    {
+      package: 'custom_gml.lxr',
+      priority: 1,           # Lower priority (loaded second)
+      conflict_resolution: 'keep'
+    }
+  ]
+}
+
+# After composition, index lookup returns:
+result = repo.find_type('gml:CodeType')
+
+# With 'keep' strategy:
+#   Returns definition from gml_3.2.1.lxr (priority 0)
+#   custom_gml.lxr version is discarded
+
+# With 'override' strategy:
+#   Returns definition from custom_gml.lxr (priority 1)
+#   gml_3.2.1.lxr version is replaced
+----
+====
+
+=== Conflict resolution strategies
+
+==== Keep strategy (default)
+
+First definition wins - higher priority package definitions are preserved:
+
+[source,ruby]
+----
+# Priority 0 package defines CodeType
+@index["{http://www.opengis.net/gml/3.2}CodeType"] = {
+  type: :complex_type,
+  definition: <ComplexType from priority 0>,
+  namespace: "http://www.opengis.net/gml/3.2",
+  schema_file: "basicTypes.xsd",
+  source_package: "gml_3.2.1.lxr",
+  priority: 0
+}
+
+# Priority 1 package also defines CodeType
+# With 'keep' strategy: entry is NOT updated
+# Index retains priority 0 definition
+----
+
+==== Override strategy
+
+Later definition replaces earlier - lower priority packages can override:
+
+[source,ruby]
+----
+# Priority 0 package defines CodeType (indexed first)
+@index["{http://www.opengis.net/gml/3.2}CodeType"] = { ... }
+
+# Priority 1 package defines CodeType
+# With 'override' strategy: entry IS replaced
+@index["{http://www.opengis.net/gml/3.2}CodeType"] = {
+  type: :complex_type,
+  definition: <ComplexType from priority 1>,
+  namespace: "http://www.opengis.net/gml/3.2",
+  schema_file: "custom_types.xsd",
+  source_package: "custom_gml.lxr",
+  priority: 1
+}
+----
+
+==== Error strategy
+
+Composition fails if conflicts detected:
+
+[source]
+----
+Error: Type conflict detected during composition
+  Type: {http://www.opengis.net/gml/3.2}CodeType
+  
+  Defined in:
+    - gml_3.2.1.lxr (priority: 0)
+      File: basicTypes.xsd
+    
+    - custom_gml.lxr (priority: 1)
+      File: custom_types.xsd
+  
+  Resolution: Use 'keep' or 'override' strategy to resolve,
+              or remove conflicting definition from one package
+----
+
+=== Index structure with composition
+
+When packages are composed, the index stores metadata about the winning definition:
+
+[source,ruby]
+----
+@index = {
+  "{http://www.opengis.net/gml/3.2}CodeType" => {
+    type: :complex_type,
+    definition: <ComplexType>,
+    namespace: "http://www.opengis.net/gml/3.2",
+    schema_file: "basicTypes.xsd",
+    source_package: "gml_3.2.1.lxr",  # Which package won
+    priority: 0,                       # Winning priority
+    resolution: :keep                  # How it was resolved
+  },
+  
+  "{http://www.opengis.net/gml/3.2}MeasureType" => {
+    type: :complex_type,
+    definition: <ComplexType>,
+    namespace: "http://www.opengis.net/gml/3.2",
+    schema_file: "basicTypes.xsd",
+    source_package: "gml_3.2.1.lxr",
+    priority: 0,
+    resolution: :no_conflict          # No other package defined it
+  }
+}
+----
+
+=== Priority in package metadata
+
+Package metadata tracks which definitions came from which priority level:
+
+.Package composition report
+[example]
+====
+[source]
+----
+Composition Statistics:
+═══════════════════════
+
+Total packages: 2
+Total types: 2,850
+
+By source package:
+  gml_3.2.1.lxr (priority 0):     2,764 types
+  custom_gml.lxr (priority 1):       86 types
+
+Type conflicts:
+  Total conflicts: 12
+  Resolved by 'keep': 12
+  Resolved by 'override': 0
+  Failed (strategy: error): 0
+
+Priority distribution:
+  Priority 0 definitions: 2,776
+  Priority 1 definitions: 74
+----
+====
+
+=== Querying by priority
+
+While not commonly needed, you can query which priority level provided a type:
+
+.Finding type source and priority
+[example]
+====
+[source,ruby]
+----
+# Get type information including priority
+type_info = repo.type_index.find("{http://www.opengis.net/gml/3.2}CodeType")
+
+puts "Type: #{type_info[:definition].name}"
+puts "Source package: #{type_info[:source_package]}"
+puts "Priority: #{type_info[:priority]}"
+puts "Resolution: #{type_info[:resolution]}"
+
+# Output:
+# Type: CodeType
+# Source package: gml_3.2.1.lxr
+# Priority: 0
+# Resolution: keep
+----
+====
+
+=== Best practices for priority management
+
+1. **Lower numbers = higher priority**: Use 0 for most important packages
+2. **Group by trust level**: Core standards at priority 0, extensions at 1+
+3. **Document priorities**: Explain why each package has its priority
+4. **Test conflicts**: Verify expected types win in conflict scenarios
+5. **Use 'error' strategy initially**: Detect conflicts before deciding resolution
+
+.Priority assignment pattern
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  # Priority 0: Core standards (highest priority)
+  - package: gml_3.2.1.lxr
+    priority: 0
+    conflict_resolution: keep
+  
+  # Priority 1: Domain extensions
+  - package: citygml_2.0.lxr
+    priority: 1
+    conflict_resolution: keep
+  
+  # Priority 2: Application schemas (lowest priority)
+  - package: app_extensions.lxr
+    priority: 2
+    conflict_resolution: keep
+----
+
+This ensures core GML types are never overridden by extensions.
+====
+
+See link:../PACKAGE_COMPOSITION.adoc#priority-system[Priority System] for complete documentation on package priorities and conflict resolution.
+
 == Statistics and introspection
 
 The index provides statistics for package metadata:

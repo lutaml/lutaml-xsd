@@ -168,6 +168,10 @@ module Lutaml
         # Remove existing file if it exists to avoid duplicates
         FileUtils.rm_f(zip_path)
 
+        # On Windows, give OS time to fully release file handles after deletion
+        # This prevents "Permission denied" errors during ZIP file creation
+        sleep 0.05 if Gem.win_platform?
+
         # Create ZIP file
         Zip::File.open(zip_path, create: true) do |zipfile|
           # Write metadata using Lutaml::Model's to_yaml

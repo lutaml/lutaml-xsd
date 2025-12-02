@@ -3,7 +3,7 @@
 require "thor"
 require_relative "../schema_validator"
 require_relative "../file_validation_result"
-require_relative "../validation_result"
+require_relative "../schema_file_validation_results"
 require_relative "../formatters/formatter_factory"
 
 module Lutaml
@@ -85,7 +85,7 @@ module Lutaml
             )
           end
 
-          ValidationResult.new(file_results)
+          SchemaFileValidationResults.new(file_results)
         end
 
         # Validate a single schema file

@@ -1,0 +1,34 @@
+# Example: Merging base LXR packages with newly generated XSD files
+# This demonstrates the PLATEAU workflow where GML base schemas
+# are combined with URF (Urban Function) extensions
+
+# Load base LXR packages first
+base_packages:
+  - dependencies/base_gml_3.2.lxr
+  - dependencies/iso_19xxx.lxr
+
+# Then add new XSD files generated from UML
+files:
+  - generated/urbanObject.xsd
+  - generated/urbanFunction.xsd
+
+# Schema location mappings for import resolution
+schema_location_mappings:
+  - from: "../../gml/3.2/gml.xsd"
+    to: "dependencies/gml-3.2.1/gml.xsd"
+
+# Namespace prefix mappings
+namespace_mappings:
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+  - prefix: "uro"
+    uri: "https://www.geospatial.jp/iur/uro/3.2"
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+
+# Optional: Package metadata
+# (These will be included when building the package)
+metadata:
+  name: "PLATEAU Complete Schemas"
+  version: "3.2"
+  description: "Complete PLATEAU schema set with GML base and URF extensions"

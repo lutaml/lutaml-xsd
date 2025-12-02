@@ -1,75 +1,81 @@
 # frozen_string_literal: true
 
-require_relative "file_validation_result"
+require_relative "validation_error"
+require_relative "errors"
 
 module Lutaml
   module Xsd
-    # Value object representing the validation results for multiple files
-    class ValidationResult
-      attr_reader :files
+    # Result of validation with error collection
+    class ValidationResult < Lutaml::Model::Serializable
+      attribute :valid, Lutaml::Model::Type::Boolean
+      attribute :errors, ValidationError, collection: true
 
-      # @param files [Array<FileValidationResult>] Individual file results
-      def initialize(files)
-        @files = if files.first.is_a?(FileValidationResult)
-                   files
-                 else
-                   # Support backward compatibility with hash format
-                   files.map do |f|
-                     FileValidationResult.new(
-                       file: f[:file],
-                       valid: f[:valid],
-                       error: f[:error],
-                       detected_version: f[:detected_version],
-                     )
-                   end
-                 end
+      yaml do
+        map "valid", to: :valid
+        map "errors", to: :errors
       end
 
-      # @return [Integer] Total number of files validated
-      def total
-        files.size
+      # Create success result
+      # @return [ValidationResult]
+      def self.success
+        new(valid: true, errors: [])
       end
 
-      # @return [Integer] Number of valid files
-      def valid
-        files.count(&:success?)
+      # Create failure result with errors
+      # @param errors [Array<ValidationError>] Validation errors
+      # @return [ValidationResult]
+      def self.failure(errors)
+        new(valid: false, errors: errors)
       end
 
-      # @return [Integer] Number of invalid files
-      def invalid
-        files.count(&:failure?)
+      # Check if validation passed
+      # @return [Boolean]
+      def valid?
+        valid
       end
 
-      # @return [Array<String>] Paths of failed files
-      def failed_files
-        files.select(&:failure?).map(&:file)
+      # Check if validation failed
+      # @return [Boolean]
+      def invalid?
+        !valid
       end
 
-      # @return [Boolean] true if all files passed validation
-      def success?
-        invalid.zero?
+      # Get error count
+      # @return [Integer]
+      def error_count
+        (errors || []).size
       end
 
-      # @return [Boolean] true if any files failed validation
-      def failure?
-        !success?
+      # Get all error messages
+      # @return [Array<String>]
+      def error_messages
+        (errors || []).map(&:message)
       end
 
-      # Convert to hash for backward compatibility
-      # @return [Hash] Hash representation matching old format
-      def to_h
-        {
-          total: total,
-          valid: valid,
-          invalid: invalid,
-          files: files.map(&:to_h),
-          failed_files: failed_files,
-        }
+      # Get errors for specific field
+      # @param field [Symbol, String] Field name
+      # @return [Array<ValidationError>]
+      def errors_for(field)
+        field_str = field.to_s
+        (errors || []).select { |e| e.field == field_str }
       end
 
-      # @return [String] Human-readable summary
+      # Format as human-readable string
+      # @return [String]
       def to_s
-        "Validated #{total} file(s): #{valid} valid, #{invalid} invalid"
+        return "Valid" if valid?
+
+        lines = ["Validation failed with #{error_count} error(s):"]
+        errors.each_with_index do |error, idx|
+          lines << "  #{idx + 1}. #{error}"
+        end
+        lines.join("\n")
+      end
+
+      # Raise error if validation failed
+      # @raise [ValidationFailedError]
+      def validate!
+        raise ValidationFailedError.new(self) if invalid?
       end
     end
   end

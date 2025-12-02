@@ -421,6 +421,126 @@ lutaml-xsd package auto-build config.yml --force
 Forces a complete rebuild regardless of modification times.
 ====
 
+== Using composed packages
+
+=== General
+
+Package composition configurations can be used with all CLI commands that accept package files. This allows you to work with composed repositories just like regular LXR packages.
+
+See link:PACKAGE_COMPOSITION.adoc[Package Composition Guide] for configuration details.
+
+=== Listing schemas from composed repository
+
+.List all schemas in composed repository
+[example]
+====
+[source,bash]
+----
+# List all schemas
+lutaml-xsd package info my_composition.yml
+
+# View statistics
+lutaml-xsd stats show my_composition.yml
+----
+====
+
+=== Finding types in composed repository
+
+.Find a specific type
+[example]
+====
+[source,bash]
+----
+# Find by qualified name
+lutaml-xsd type find "gml:CodeType" --from my_composition.yml
+
+# List all types
+lutaml-xsd type list --from my_composition.yml
+
+# List types by namespace
+lutaml-xsd type list --from my_composition.yml \
+  --namespace "http://www.opengis.net/gml/3.2"
+----
+====
+
+=== Validating XML with composed repository
+
+.Validate XML instances
+[example]
+====
+[source,bash]
+----
+# Basic validation
+lutaml-xsd xml validate instance.xml --schema my_composition.yml
+
+# Validation with verbose output
+lutaml-xsd xml validate instance.xml \
+  --schema my_composition.yml \
+  --verbose
+----
+====
+
+=== Generating documentation from composed repository
+
+.Generate SPA documentation
+[example]
+====
+[source,bash]
+----
+# Single file output
+lutaml-xsd doc spa my_composition.yml \
+  --mode single_file \
+  --output docs.html
+
+# Multi-file output
+lutaml-xsd doc spa my_composition.yml \
+  --mode multi_file \
+  --output docs/
+
+# API mode output
+lutaml-xsd doc spa my_composition.yml \
+  --mode api \
+  --output api/
+----
+====
+
+=== Namespace operations with composed repository
+
+.Work with namespaces
+[example]
+====
+[source,bash]
+----
+# List all namespaces
+lutaml-xsd namespace list --from my_composition.yml
+
+# Show namespace details
+lutaml-xsd namespace show https://www.opengis.net/gml/3.2 \
+  --from my_composition.yml
+
+# Show namespace tree
+lutaml-xsd namespace tree --from my_composition.yml
+----
+====
+
+=== Element operations with composed repository
+
+.Query elements
+[example]
+====
+[source,bash]
+----
+# List all elements
+lutaml-xsd element list --from my_composition.yml
+
+# Show element details
+lutaml-xsd element show gml:Point --from my_composition.yml
+
+# Show element tree
+lutaml-xsd element tree gml:Point --from my_composition.yml
+----
+====
+
 == Command aliases
 
 The CLI provides convenient short aliases for frequently used commands:

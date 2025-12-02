@@ -52,6 +52,14 @@ allowing you to shape and structure your data into useful forms.
   - Automatic detection of XSD 1.0 vs 1.1 features
   - Support for both W3C XML Schema 1.0 and 1.1 standards
   - Comprehensive error messages for invalid schemas
+* <<package-composition,Package composition>> - Compose multiple LXR packages with
+  conflict detection and resolution
+  - Configurable conflict resolution strategies (keep, override, error)
+  - Namespace URI remapping to avoid conflicts
+  - Schema filtering with glob patterns (exclude/include)
+  - Priority-based conflict resolution
+  - Backward compatible with legacy string array format
+  - See link:docs/PACKAGE_COMPOSITION.adoc[Package Composition Guide]
 * <<cli-commands,Command-line interface>>
   - `pkg` commands for package inspection
   - `xml` commands for XML validation
@@ -1151,6 +1159,70 @@ pipeline:
     │ Output  │  │Template │  │  Gen    │
     └─────────┘  └─────────┘  └─────────┘
 ----
+
+[[package-composition]]
+== Package composition
+
+=== General
+
+Multiple LXR packages can be composed together with automatic conflict detection
+and resolution. This enables combining schemas from different sources while
+managing namespace conflicts, duplicate type definitions, and schema file
+collisions.
+
+Package composition is configured through YAML files using the enhanced
+`base_packages` format that supports conflict resolution strategies, namespace
+URI remapping, and schema filtering.
+
+=== Quick example
+
+.Composing two packages with conflict resolution
+[example]
+====
+[source,yaml]
+----
+# config.yml
+base_packages:
+  - package: package_a.lxr
+    priority: 0                    # Higher priority (loaded first)
+    conflict_resolution: keep      # Keep definitions from this package
+  
+  - package: package_b.lxr
+    priority: 10                   # Lower priority (loaded second)
+    conflict_resolution: override  # Override conflicts with this package
+----
+
+Load the configuration:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+repo.parse.resolve
+
+# Merged repository ready for use
+result = repo.find_type('gml:CodeType')
+----
+====
+
+=== Key capabilities
+
+* **Conflict detection**: Automatically detects namespace URI conflicts, type
+  name conflicts, and schema file conflicts
+* **Configurable resolution**: Choose how to handle conflicts (keep first,
+  override with last, or error)
+* **Namespace remapping**: Transform namespace URIs to avoid conflicts during
+  composition
+* **Schema filtering**: Exclude or include specific schemas using glob patterns
+* **Priority system**: Control which package wins in conflict scenarios (lower
+  number = higher priority)
+* **Backward compatible**: Legacy string array format still works
+
+=== See also
+
+For comprehensive documentation on package composition, see
+link:docs/PACKAGE_COMPOSITION.adoc[Package Composition Guide].
 
 [[lxr-packages]]
 == LutaML XML Repository (LXR) packages

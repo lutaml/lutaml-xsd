@@ -3,214 +3,274 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Xsd::ValidationResult do
-  describe "#initialize" do
-    it "accepts FileValidationResult objects" do
-      file1 = Lutaml::Xsd::FileValidationResult.new(
-        file: "schema1.xsd",
-        valid: true,
-      )
-      file2 = Lutaml::Xsd::FileValidationResult.new(
-        file: "schema2.xsd",
-        valid: false,
-        error: "Invalid",
-      )
+  let(:error1) do
+    Lutaml::Xsd::ValidationError.create(
+      field: :package,
+      message: "Package path is required",
+      constraint: "presence",
+    )
+  end
 
-      result = described_class.new([file1, file2])
+  let(:error2) do
+    Lutaml::Xsd::ValidationError.create(
+      field: :priority,
+      message: "Must be non-negative",
+      value: -1,
+      constraint: ">= 0",
+    )
+  end
 
-      expect(result.files).to contain_exactly(file1, file2)
-    end
+  describe ".success" do
+    it "creates a valid result with no errors" do
+      result = described_class.success
 
-    it "converts hash format to FileValidationResult objects" do
-      hashes = [
-        { file: "schema1.xsd", valid: true },
-        { file: "schema2.xsd", valid: false, error: "Invalid" },
-      ]
-
-      result = described_class.new(hashes)
-
-      expect(result.files.size).to eq(2)
-      expect(result.files.first).to be_a(Lutaml::Xsd::FileValidationResult)
-      expect(result.files.first.file).to eq("schema1.xsd")
-      expect(result.files.first.success?).to be true
+      expect(result).to be_valid
+      expect(result.errors).to be_empty
     end
   end
 
-  describe "#total" do
-    it "returns total number of files" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "b.xsd",
-          valid: false,
-          error: "Error",
-        ),
-        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true),
-      ]
-      result = described_class.new(files)
+  describe ".failure" do
+    it "creates an invalid result with errors" do
+      result = described_class.failure([error1, error2])
 
-      expect(result.total).to eq(3)
+      expect(result).to be_invalid
+      expect(result.errors.size).to eq(2)
+      expect(result.errors).to include(error1, error2)
+    end
+
+    it "accepts empty error array" do
+      result = described_class.failure([])
+
+      expect(result).to be_invalid
+      expect(result.errors).to be_empty
     end
   end
 
-  describe "#valid" do
-    it "returns count of valid files" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "b.xsd",
-          valid: false,
-          error: "Error",
-        ),
-        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true),
-      ]
-      result = described_class.new(files)
+  describe "#valid?" do
+    it "returns true for success result" do
+      result = described_class.success
+      expect(result.valid?).to be true
+    end
 
-      expect(result.valid).to eq(2)
+    it "returns false for failure result" do
+      result = described_class.failure([error1])
+      expect(result.valid?).to be false
     end
   end
 
-  describe "#invalid" do
-    it "returns count of invalid files" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "b.xsd",
-          valid: false,
-          error: "Error",
-        ),
-        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true),
-      ]
-      result = described_class.new(files)
+  describe "#invalid?" do
+    it "returns false for success result" do
+      result = described_class.success
+      expect(result.invalid?).to be false
+    end
 
-      expect(result.invalid).to eq(1)
+    it "returns true for failure result" do
+      result = described_class.failure([error1])
+      expect(result.invalid?).to be true
     end
   end
 
-  describe "#failed_files" do
-    it "returns array of failed file paths" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "valid.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "bad1.xsd",
-          valid: false,
-          error: "Error1",
-        ),
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "bad2.xsd",
-          valid: false,
-          error: "Error2",
-        ),
-      ]
-      result = described_class.new(files)
-
-      expect(result.failed_files).to contain_exactly("bad1.xsd", "bad2.xsd")
+  describe "#error_count" do
+    it "returns 0 for success result" do
+      result = described_class.success
+      expect(result.error_count).to eq(0)
     end
 
-    it "returns empty array when all files valid" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(file: "b.xsd", valid: true),
-      ]
-      result = described_class.new(files)
-
-      expect(result.failed_files).to be_empty
+    it "returns correct count for failure result" do
+      result = described_class.failure([error1, error2])
+      expect(result.error_count).to eq(2)
     end
   end
 
-  describe "#success?" do
-    it "returns true when all files valid" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(file: "b.xsd", valid: true),
-      ]
-      result = described_class.new(files)
-
-      expect(result.success?).to be true
+  describe "#error_messages" do
+    it "returns empty array for success result" do
+      result = described_class.success
+      expect(result.error_messages).to be_empty
     end
 
-    it "returns false when any file invalid" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "b.xsd",
-          valid: false,
-          error: "Error",
-        ),
-      ]
-      result = described_class.new(files)
+    it "returns all error messages" do
+      result = described_class.failure([error1, error2])
 
-      expect(result.success?).to be false
+      expect(result.error_messages).to eq([
+        "Package path is required",
+        "Must be non-negative",
+      ])
     end
   end
 
-  describe "#failure?" do
-    it "returns false when all files valid" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(file: "b.xsd", valid: true),
-      ]
-      result = described_class.new(files)
+  describe "#errors_for" do
+    let(:result) { described_class.failure([error1, error2]) }
 
-      expect(result.failure?).to be false
+    context "with symbol field name" do
+      it "returns errors for that field" do
+        errors = result.errors_for(:package)
+
+        expect(errors.size).to eq(1)
+        expect(errors.first).to eq(error1)
+      end
     end
 
-    it "returns true when any file invalid" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "b.xsd",
-          valid: false,
-          error: "Error",
-        ),
-      ]
-      result = described_class.new(files)
+    context "with string field name" do
+      it "returns errors for that field" do
+        errors = result.errors_for("priority")
 
-      expect(result.failure?).to be true
+        expect(errors.size).to eq(1)
+        expect(errors.first).to eq(error2)
+      end
     end
-  end
 
-  describe "#to_h" do
-    it "converts to hash matching old format" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "valid.xsd",
-          valid: true,
-          detected_version: "1.0",
-        ),
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "invalid.xsd",
-          valid: false,
-          error: "Not a valid XSD",
-        ),
-      ]
-      result = described_class.new(files)
+    context "with non-existent field" do
+      it "returns empty array" do
+        errors = result.errors_for(:nonexistent)
+        expect(errors).to be_empty
+      end
+    end
 
-      hash = result.to_h
+    context "with multiple errors for same field" do
+      let(:error3) do
+        Lutaml::Xsd::ValidationError.create(
+          field: :package,
+          message: "Package file does not exist",
+        )
+      end
 
-      expect(hash[:total]).to eq(2)
-      expect(hash[:valid]).to eq(1)
-      expect(hash[:invalid]).to eq(1)
-      expect(hash[:failed_files]).to eq(["invalid.xsd"])
-      expect(hash[:files]).to be_an(Array)
-      expect(hash[:files].size).to eq(2)
-      expect(hash[:files].first[:file]).to eq("valid.xsd")
+      it "returns all errors for that field" do
+        result = described_class.failure([error1, error3])
+        errors = result.errors_for(:package)
+
+        expect(errors.size).to eq(2)
+        expect(errors).to include(error1, error3)
+      end
     end
   end
 
   describe "#to_s" do
-    it "returns human-readable summary" do
-      files = [
-        Lutaml::Xsd::FileValidationResult.new(file: "a.xsd", valid: true),
-        Lutaml::Xsd::FileValidationResult.new(
-          file: "b.xsd",
-          valid: false,
-          error: "Error",
-        ),
-        Lutaml::Xsd::FileValidationResult.new(file: "c.xsd", valid: true),
-      ]
-      result = described_class.new(files)
+    context "for success result" do
+      it "returns 'Valid'" do
+        result = described_class.success
+        expect(result.to_s).to eq("Valid")
+      end
+    end
 
-      expect(result.to_s).to eq("Validated 3 file(s): 2 valid, 1 invalid")
+    context "for failure result with single error" do
+      it "formats with numbered list" do
+        result = described_class.failure([error1])
+
+        expect(result.to_s).to eq(
+          "Validation failed with 1 error(s):\n" \
+          "  1. package: Package path is required [constraint: presence]",
+        )
+      end
+    end
+
+    context "for failure result with multiple errors" do
+      it "formats with numbered list" do
+        result = described_class.failure([error1, error2])
+
+        expect(result.to_s).to eq(
+          "Validation failed with 2 error(s):\n" \
+          "  1. package: Package path is required [constraint: presence]\n" \
+          "  2. priority: Must be non-negative (value: -1) [constraint: >= 0]",
+        )
+      end
+    end
+  end
+
+  describe "#validate!" do
+    context "for valid result" do
+      it "does not raise error" do
+        result = described_class.success
+        expect { result.validate! }.not_to raise_error
+      end
+    end
+
+    context "for invalid result" do
+      it "raises ValidationFailedError" do
+        result = described_class.failure([error1])
+
+        expect { result.validate! }.to raise_error(
+          Lutaml::Xsd::ValidationFailedError,
+        )
+      end
+
+      it "raises error with validation result" do
+        result = described_class.failure([error1, error2])
+
+        begin
+          result.validate!
+        rescue Lutaml::Xsd::ValidationFailedError => e
+          expect(e.validation_result).to eq(result)
+          expect(e.validation_result.error_count).to eq(2)
+        end
+      end
+    end
+  end
+
+  describe "serialization" do
+    let(:result) { described_class.failure([error1, error2]) }
+
+    describe "#to_hash" do
+      it "converts to hash with all fields" do
+        hash = result.to_hash
+
+        expect(hash["valid"]).to be false
+        expect(hash["errors"]).to be_an(Array)
+        expect(hash["errors"].size).to eq(2)
+      end
+
+      it "includes serialized errors" do
+        hash = result.to_hash
+
+        expect(hash["errors"].first["field"]).to eq("package")
+        expect(hash["errors"].first["message"]).to eq(
+          "Package path is required",
+        )
+      end
+    end
+
+    describe "YAML round-trip" do
+      it "serializes and deserializes correctly" do
+        yaml = result.to_yaml
+        loaded = described_class.from_yaml(yaml)
+
+        expect(loaded.valid?).to eq(result.valid?)
+        expect(loaded.errors.size).to eq(result.errors.size)
+        expect(loaded.errors.first.field).to eq(result.errors.first.field)
+        expect(loaded.errors.first.message).to eq(
+          result.errors.first.message,
+        )
+      end
+    end
+
+    describe "JSON round-trip" do
+      it "serializes and deserializes correctly" do
+        json = result.to_json
+        loaded = described_class.from_json(json)
+
+        expect(loaded.valid?).to eq(result.valid?)
+        expect(loaded.errors.size).to eq(result.errors.size)
+        expect(loaded.errors.first.field).to eq(result.errors.first.field)
+      end
+    end
+
+    context "success result" do
+      let(:success_result) { described_class.success }
+
+      it "serializes as valid" do
+        hash = success_result.to_hash
+
+        expect(hash["valid"]).to be true
+        # Lutaml::Model may serialize empty collections as nil or []
+      end
+
+      it "round-trips successfully" do
+        yaml = success_result.to_yaml
+        loaded = described_class.from_yaml(yaml)
+
+        expect(loaded).to be_valid
+        # errors may be nil or empty array after deserialization
+        expect(loaded.errors || []).to be_empty
+      end
     end
   end
 end

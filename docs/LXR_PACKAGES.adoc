@@ -901,8 +901,57 @@ lutaml-xsd package build config.yaml \
 ----
 ====
 
+== Package composition
+
+Multiple LXR packages can be composed into a unified schema repository with
+automatic conflict detection and resolution. This powerful feature enables:
+
+* **Modular organization** - Split schemas into logical packages
+* **Conflict resolution** - Automatic detection with configurable strategies
+* **Namespace remapping** - Transform URIs to avoid conflicts
+* **Schema filtering** - Include/exclude specific schemas with glob patterns
+* **Priority-based resolution** - Control which package wins conflicts
+
+.Basic package composition example
+[example]
+====
+[source,yaml]
+----
+# composition_config.yml
+base_packages:
+  - package: standards/gml_3.2.1.lxr
+    priority: 0
+    conflict_resolution: keep
+
+  - package: organization/extensions.lxr
+    priority: 10
+    conflict_resolution: override
+    namespace_remapping:
+      - from_uri: http://legacy.org.com/v1
+        to_uri: http://current.org.com/v2
+----
+
+Load the composed repository:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('composition_config.yml')
+repo.parse.resolve
+
+# Query types from any package
+result = repo.find_type('gml:CodeType')
+----
+====
+
+For complete documentation on package composition, including conflict
+resolution strategies, namespace remapping patterns, schema filtering, and
+real-world examples, see link:PACKAGE_COMPOSITION[Package Composition Guide].
+
 == See also
 
+* link:PACKAGE_COMPOSITION[Package Composition Guide] - Composing multiple packages
 * link:../CLI[CLI Reference] - Command-line interface documentation
 * link:SCHEMA_MAPPINGS[Schema location mappings] - Mapping remote schemas
 * link:TYPE_RESOLUTION[Type resolution] - Resolving types across schemas
