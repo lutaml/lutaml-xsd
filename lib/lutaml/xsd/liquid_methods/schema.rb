@@ -3,7 +3,7 @@
 module Lutaml
   module Xsd
     module LiquidMethods
-      module AttributeGroup
+      module Schema
         def elements_sorted_by_name
           element.sort_by(&:name)
         end
