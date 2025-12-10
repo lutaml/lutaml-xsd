@@ -244,6 +244,31 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 {% endfor %}
 ----
 
+=== Schema Class Methods (`Lutaml::Xsd::Schema`)
+
+The `Schema` class exposes several helper methods in Liquid templates for easier access and navigation:
+
+- `elements_sorted_by_name` — Returns all `element` objects in the schema sorted by their `name` attribute.
+- `complex_types_sorted_by_name` — Returns all `complex_type` objects in the schema sorted by their `name` attribute.
+- `attribute_groups_sorted_by_name` — Returns all `attribute_group` objects in the schema sorted by their `name` attribute.
+
+These methods provide a predictable, alphabetical traversal of major parts of the XSD. Example usage:
+
+[source,liquid]
+----
+{% for el in schema.elements_sorted_by_name %}
+  - {{ el.name }}
+{% endfor %}
+
+{% for ct in schema.complex_types_sorted_by_name %}
+  - {{ ct.name }}
+{% endfor %}
+
+{% for ag in schema.attribute_groups_sorted_by_name %}
+  - {{ ag.name }}
+{% endfor %}
+----
+
 === Base Class Methods (`Lutaml::Xsd::Base`)
 
 The following methods are available on all XSD objects via the base class:

@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
+require_relative "liquid_methods/schema"
+
 module Lutaml
   module Xsd
     # rubocop:disable Metrics/ClassLength
     class Schema < Base
+      include LiquidMethods::Schema
+
       attribute :id, :string
       attribute :lang, :string
       attribute :xmlns, :string
@@ -54,6 +58,12 @@ module Lutaml
         map_attribute :version, to: :version
         map_attribute :id, to: :id
         map_attribute :lang, to: :lang
+      end
+
+      liquid do
+        map "elements_sorted_by_name", to: :elements_sorted_by_name
+        map "complex_types_sorted_by_name", to: :complex_types_sorted_by_name
+        map "attribute_groups_sorted_by_name", to: :attribute_groups_sorted_by_name
       end
 
       def import_from_schema(model, value)
