@@ -58,7 +58,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::Choice do
         <schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
                 targetNamespace="http://example.com/test"
                 xmlns="http://example.com/test">
-          <xs:element name="Element1" type="xsd:string"/>
+          <xs:element name="Element1" type="xs:string"/>
           <xs:complexType name="RootType">
             <xs:sequence>
               <xs:choice>
