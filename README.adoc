@@ -125,9 +125,8 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 
 - `used_by` — Returns complex_types that use/reference this element.
 - `attributes` — Returns attribute elements.
-- `min_occurrences` — Returns the element's minimum occurrences as Integer (default 1).
-- `max_occurrences` — Returns `*` for unbounded, otherwise Integer (default 1).
 - `child_elements` — Returns all nested child elements (resolved across groups/choices/sequences).
+- `referenced_name` — Returns the name of the element or its referenced element by `ref`.
 - `referenced_type` — Returns the name of the element's `type` if present, or the type name indicated by `ref` if defined.
 - `referenced_object` — Resolves and returns the element or its referenced element by `ref`.
 - `referenced_complex_type` — Resolves the complex type matching `referenced_type`.
@@ -165,6 +164,7 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 
 - `used_by` — Returns complex types that use this attribute group.
 - `attribute_elements` — Returns a flattened list of attributes, resolving nested groups.
+- `referenced_object` — Resolves and returns the attribute group or its referenced group by `ref`.
 
 [source,liquid]
 ----
@@ -184,8 +184,10 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 
 - `used_by` — Returns elements and group elements that reference this type.
 - `attribute_elements` — Returns all attributes (including those from groups and simple content extensions).
+- `direct_child_elements` — Returns direct child elements, excluding attributes, attribute groups, annotations, and any attributes.
 - `child_elements` — Returns all child elements (across sequences/choices/groups).
-- `find_elements_used(name)` — Boolean indicating if an element name is used within this type.
+- `find_elements_used(element_name)` — Boolean indicating if an element name is used within this type.
+- `find_used_by(object)` — Boolean indicating if this complex type is used by the given object.
 
 [source,liquid]
 ----
@@ -205,7 +207,7 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 === Group (`Lutaml::Xsd::LiquidMethods::Group`) and Sequence (`...::Sequence`) and Choice (`...::Choice`)
 
 - `child_elements` — Returns all nested `Element` instances contained within.
-- `find_elements_used(name)` — Boolean indicating if an element name is used within this container.
+- `find_elements_used(element_name)` — Boolean indicating if an element name is used within this container.
 - All three include the same helper surface and resolve nested structures consistently.
 
 [source,liquid]
@@ -221,6 +223,7 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 === SimpleContent (`Lutaml::Xsd::LiquidMethods::SimpleContent`)
 
 - `attribute_elements` — Returns attributes coming from the `extension` and nested attribute groups.
+- `base_type` — Returns the base type from `base`, `extension.base`, or `restriction.base`.
 
 [source,liquid]
 ----
@@ -241,9 +244,66 @@ This gem exposes convenient methods for use in Liquid templates via `to_liquid` 
 {% endfor %}
 ----
 
-=== ResolvedElementOrder (`Lutaml::Xsd::LiquidMethods::ResolvedElementOrder`)
+=== Schema Class Methods (`Lutaml::Xsd::Schema`)
 
-- `resolved_element_order` — A helper method that returns all elements in the order they originally appeared in the XSD.
+The `Schema` class exposes several helper methods in Liquid templates for easier access and navigation:
+
+- `elements_sorted_by_name` — Returns all `element` objects in the schema sorted by their `name` attribute.
+- `complex_types_sorted_by_name` — Returns all `complex_type` objects in the schema sorted by their `name` attribute.
+- `attribute_groups_sorted_by_name` — Returns all `attribute_group` objects in the schema sorted by their `name` attribute.
+
+These methods provide a predictable, alphabetical traversal of major parts of the XSD. Example usage:
+
+[source,liquid]
+----
+{% for el in schema.elements_sorted_by_name %}
+  - {{ el.name }}
+{% endfor %}
+
+{% for ct in schema.complex_types_sorted_by_name %}
+  - {{ ct.name }}
+{% endfor %}
+
+{% for ag in schema.attribute_groups_sorted_by_name %}
+  - {{ ag.name }}
+{% endfor %}
+----
+
+=== Base Class Methods (`Lutaml::Xsd::Base`)
+
+The following methods are available on all XSD objects via the base class:
+
+Type checking methods:
+- `any?` — Returns `true` if the object is an `Any` instance.
+- `all?` — Returns `true` if the object is an `All` instance.
+- `choice?` — Returns `true` if the object is a `Choice` instance.
+- `element?` — Returns `true` if the object is an `Element` instance.
+- `sequence?` — Returns `true` if the object is a `Sequence` instance.
+- `attribute?` — Returns `true` if the object is an `Attribute` instance.
+- `annotation?` — Returns `true` if the object is an `Annotation` instance.
+- `simple_content?` — Returns `true` if the object is a `SimpleContent` instance.
+- `attribute_group?` — Returns `true` if the object is an `AttributeGroup` instance.
+
+Other methods:
+- `min_occurrences` — Returns the minimum occurrences as Integer (default 1). Only available on objects that respond to `min_occurs`.
+- `max_occurrences` — Returns `*` for unbounded, otherwise Integer (default 1). Only available on objects that respond to `max_occurs`.
+- `to_xml` — Returns the XML representation of the object.
+- `to_formatted_xml` — Returns a formatted XML representation of the object.
+- `resolved_element_order` — Returns all elements in the order they originally appeared in the XSD.
+
+[source,liquid]
+----
+{% for item in schema.element %}
+  {% if item.element? %}
+    Element: {{ item.name }}
+    {% if item.min_occurrences %}
+      Min: {{ item.min_occurrences }}, Max: {{ item.max_occurrences }}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+----
+
+NOTE: The `resolved_element_order` method is available on all objects via the base class (`Lutaml::Xsd::Base`) and returns all elements in the order they originally appeared in the XSD. This method is used internally by many of the liquid methods above.
 
 == Development
 

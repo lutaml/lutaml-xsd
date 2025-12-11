@@ -2,7 +2,7 @@
 
 require "liquid"
 require "lutaml/xsd"
-require "xml/c14n"
+require "canon"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -17,7 +17,7 @@ RSpec.configure do |config|
 end
 
 def schema_to_xml(xml, escape_content_tags: false)
-  xml = Xml::C14n.format(xml)
+  xml = Canon.format_xml(xml)
   xml.gsub!(/&lt;([^&]+)&gt;/, '<\1>') if escape_content_tags
   xml
 end

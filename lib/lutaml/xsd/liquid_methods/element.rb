@@ -9,17 +9,7 @@ module Lutaml
         end
 
         def attributes
-          referenced_complex_type.attribute_elements
-        end
-
-        def min_occurrences
-          @min_occurs&.to_i || 1
-        end
-
-        def max_occurrences
-          return "*" if @max_occurs == "unbounded"
-
-          @max_occurs&.to_i || 1
+          referenced_complex_type&.attribute_elements
         end
 
         def child_elements(array = [])

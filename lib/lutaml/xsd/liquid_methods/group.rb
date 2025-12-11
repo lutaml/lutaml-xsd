@@ -5,7 +5,7 @@ module Lutaml
     module LiquidMethods
       module Group
         def child_elements(array = [])
-          resolved_element_order.each do |child|
+          referenced_object.resolved_element_order.each do |child|
             if child.is_a?(Xsd::Element)
               array << child
             elsif child.respond_to?(:child_elements)
@@ -23,6 +23,12 @@ module Lutaml
               child.find_elements_used(element_name)
             end
           end
+        end
+
+        def referenced_object
+          return self if name
+
+          @__root.group.find { |group| group.name == ref }
         end
       end
     end
