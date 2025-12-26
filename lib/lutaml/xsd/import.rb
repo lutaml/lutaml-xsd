@@ -18,10 +18,6 @@ module Lutaml
         map_element :annotation, to: :annotation
       end
 
-      def fetch_schema
-        Glob.include_schema(schema_path) if schema_path && Glob.location?
-      end
-
       Lutaml::Xsd.register_model(self, :import)
     end
   end

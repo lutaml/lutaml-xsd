@@ -7,7 +7,8 @@ LOCATIONS = {
   "metaschema-prose-module": "spec/lutaml/fixtures",
   "metaschema-markup-line": "spec/lutaml/fixtures",
   metaschema: "spec/lutaml/fixtures",
-  "unitsml-v1.0-csd03": nil
+  "unitsml-v1.0-csd03": nil,
+  "gco": "spec/lutaml/fixtures/gco"
 }.freeze
 
 SCHEMA_ELEMENTS_REGEXES = {
@@ -22,7 +23,7 @@ SCHEMA_ELEMENTS_REGEXES = {
 RSpec.describe Lutaml::Xsd do
   subject(:parsed_schema) { described_class.parse(schema, location: location) }
 
-  Dir.glob(File.expand_path("fixtures/*.xsd", __dir__)).each do |input_file|
+  Dir.glob(File.expand_path("fixtures/**/*.xsd", __dir__)).each do |input_file|
     rel_path = Pathname.new(input_file).relative_path_from(Pathname.new(__dir__)).to_s
 
     context "when parsing #{rel_path}" do

@@ -66,13 +66,14 @@ module Lutaml
         map "attribute_groups_sorted_by_name", to: :attribute_groups_sorted_by_name
       end
 
-      def import_from_schema(model, value)
+      def import_from_schema(model, value, custom_arg = {})
         value.each do |schema|
           setup_import_and_include(
             "import",
             model,
             schema,
-            namespace: schema.attributes["namespace"].value
+            { namespace: schema.attributes["namespace"].value },
+            custom_arg
           )
         end
       end
@@ -86,12 +87,14 @@ module Lutaml
         end
       end
 
-      def include_from_schema(model, value)
+      def include_from_schema(model, value, custom_arg = {})
         value.each do |schema|
           setup_import_and_include(
             "include",
             model,
-            schema
+            schema,
+            {},
+            custom_arg
           )
         end
       end
@@ -107,7 +110,7 @@ module Lutaml
 
       private
 
-      def setup_import_and_include(klass, model, schema, args = {})
+      def setup_import_and_include(klass, model, schema, args = {}, custom_args = {})
         instance = init_instance_of(klass, schema.attributes || {}, args)
         annotation_object(instance, schema)
         model.send("#{klass}s") << instance
@@ -115,7 +118,7 @@ module Lutaml
         return if self.class.in_progress?(schema_path) || schema_path.nil?
 
         self.class.add_in_progress(schema_path)
-        model.send(klass) << insert_in_processed_schemas(instance)
+        model.send(klass) << insert_in_processed_schemas(instance, custom_args)
         self.class.remove_in_progress(schema_path)
       end
 
@@ -125,22 +128,23 @@ module Lutaml
         Lutaml::Xsd.register.get_class(klass.to_sym).new(**args)
       end
 
-      def insert_in_processed_schemas(instance)
-        parsed_schema = schema_by_location_or_instance(instance)
+      def insert_in_processed_schemas(instance, args)
+        parsed_schema = schema_by_location_or_instance(instance, args[:location])
         return unless parsed_schema
 
         self.class.schema_processed(instance.schema_path, parsed_schema)
         parsed_schema
       end
 
-      def schema_by_location_or_instance(instance)
+      def schema_by_location_or_instance(instance, location)
         schema_path = instance.schema_path
-        return unless schema_path && Glob.location?
+        return unless schema_path
 
+        location = SchemaPath.new(schema_path) if location.nil?
         self.class.processed_schemas[schema_path] ||
           Lutaml::Xsd.parse(
-            instance.fetch_schema,
-            location: Glob.location,
+            location.include_schema(schema_path),
+            location: validate_schema_path_location(location, schema_path),
             nested_schema: true,
             register: Lutaml::Xsd.register.id
           )
@@ -157,6 +161,12 @@ module Lutaml
           :xml,
           register: Lutaml::Xsd.register.id
         )
+      end
+
+      def validate_schema_path_location(location, path)
+        return location if location.relative_path?(path)
+
+        SchemaPath.new(path)
       end
 
       class << self

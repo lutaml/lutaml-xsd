@@ -22,12 +22,24 @@ module Lutaml
     end
 
     def parse(xsd, location: nil, nested_schema: false, register: nil)
-      register ||= self.register
       Schema.reset_processed_schemas unless nested_schema
 
-      Glob.path_or_url(location)
-      Schema.from_xml(xsd, register: register)
+      Schema.from_xml(
+        xsd,
+        **build_options(register, location)
+      )
     end
+
+    def build_options(register, location)
+      options = { register: register || self.register }
+      if location
+        schema_path = location.is_a?(SchemaPath) ? location : SchemaPath.new(location)
+        options[:metadata] = { location: schema_path }
+      end
+      options
+    end
+
+    private_class_method :build_options
   end
 end
 
@@ -49,7 +61,7 @@ require_relative "xsd/extension_complex_content"
 require_relative "xsd/extension_simple_content"
 require_relative "xsd/field"
 require_relative "xsd/fraction_digits"
-require_relative "xsd/glob"
+require_relative "xsd/schema_path"
 require_relative "xsd/group"
 require_relative "xsd/import"
 require_relative "xsd/include"
