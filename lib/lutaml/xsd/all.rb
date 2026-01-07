@@ -20,7 +20,7 @@ module Lutaml
         map_element :element, to: :element
       end
 
-      Lutaml::Xsd.register_model(self, :all)
+      Register.register_model(self, :all)
     end
   end
 end

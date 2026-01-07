@@ -34,7 +34,7 @@ module Lutaml
         map "attribute_elements", to: :attribute_elements
       end
 
-      Lutaml::Xsd.register_model(self, :attribute_group)
+      Register.register_model(self, :attribute_group)
     end
   end
 end

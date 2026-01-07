@@ -66,7 +66,7 @@ module Lutaml
         map "referenced_complex_type", to: :referenced_complex_type
       end
 
-      Lutaml::Xsd.register_model(self, :element)
+      Register.register_model(self, :element)
     end
   end
 end

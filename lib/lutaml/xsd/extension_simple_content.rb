@@ -30,7 +30,7 @@ module Lutaml
         map "attribute_elements", to: :attribute_elements
       end
 
-      Lutaml::Xsd.register_model(self, :extension_simple_content)
+      Register.register_model(self, :extension_simple_content)
     end
   end
 end

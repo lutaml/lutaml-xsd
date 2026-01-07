@@ -41,7 +41,7 @@ module Lutaml
         map "referenced_object", to: :referenced_object
       end
 
-      Lutaml::Xsd.register_model(self, :attribute)
+      Register.register_model(self, :attribute)
     end
   end
 end

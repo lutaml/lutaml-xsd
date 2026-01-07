@@ -20,7 +20,7 @@ module Lutaml
         map_element :restriction, to: :restriction
       end
 
-      Lutaml::Xsd.register_model(self, :complex_content)
+      Register.register_model(self, :complex_content)
     end
   end
 end

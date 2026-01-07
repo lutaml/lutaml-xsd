@@ -36,7 +36,7 @@ module Lutaml
         map "child_elements", to: :child_elements
       end
 
-      Lutaml::Xsd.register_model(self, :choice)
+      Register.register_model(self, :choice)
     end
   end
 end

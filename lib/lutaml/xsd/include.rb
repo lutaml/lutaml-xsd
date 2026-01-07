@@ -16,7 +16,7 @@ module Lutaml
         map_element :annotation, to: :annotation
       end
 
-      Lutaml::Xsd.register_model(self, :include)
+      Register.register_model(self, :include)
     end
   end
 end

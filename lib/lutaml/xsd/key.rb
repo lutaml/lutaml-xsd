@@ -21,7 +21,7 @@ module Lutaml
         map_element :field, to: :field
       end
 
-      Lutaml::Xsd.register_model(self, :key)
+      Register.register_model(self, :key)
     end
   end
 end

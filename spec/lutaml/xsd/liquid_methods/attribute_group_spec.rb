@@ -54,7 +54,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::AttributeGroup do
     end
 
     it "returns false when attribute group is not used" do
-      other_type = Lutaml::Xsd::ComplexType.new(__register: Lutaml::Xsd.register)
+      other_type = Lutaml::Xsd::ComplexType.new(__register: Lutaml::Xsd::Register.register)
       expect(attr_group.find_used_by(other_type)).to be nil
     end
   end
@@ -65,7 +65,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::AttributeGroup do
     end
 
     it "returns the referenced attribute group when using ref" do
-      ref_group = Lutaml::Xsd::AttributeGroup.new(__register: Lutaml::Xsd.register)
+      ref_group = Lutaml::Xsd::AttributeGroup.new(__register: Lutaml::Xsd::Register.register)
       ref_group.ref = "TestAttributeGroup"
       ref_group.instance_variable_set(:@__root, schema)
       expect(ref_group.referenced_object).to eq(attr_group)

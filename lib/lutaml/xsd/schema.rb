@@ -66,14 +66,14 @@ module Lutaml
         map "attribute_groups_sorted_by_name", to: :attribute_groups_sorted_by_name
       end
 
-      def import_from_schema(model, value, custom_arg = {})
+      def import_from_schema(model, value, custom_args = {})
         value.each do |schema|
           setup_import_and_include(
             "import",
             model,
             schema,
             { namespace: schema.attributes["namespace"].value },
-            custom_arg
+            custom_args
           )
         end
       end
@@ -82,19 +82,17 @@ module Lutaml
         return if model.imported
 
         model.imported = true
-        model.imports.each do |imported_schema|
-          parent.add_child(imported_schema.to_xml)
-        end
+        model.imports.each { |obj| parent.add_child(obj.to_xml) }
       end
 
-      def include_from_schema(model, value, custom_arg = {})
+      def include_from_schema(model, value, custom_args = {})
         value.each do |schema|
           setup_import_and_include(
             "include",
             model,
             schema,
             {},
-            custom_arg
+            custom_args
           )
         end
       end
@@ -103,50 +101,52 @@ module Lutaml
         return if model.included
 
         model.included = true
-        model.includes.each do |schema_hash|
-          parent.add_child(schema_hash.to_xml)
-        end
+        model.includes.each { |obj| parent.add_child(obj.to_xml) }
       end
 
       private
 
       def setup_import_and_include(klass, model, schema, args = {}, custom_args = {})
+        in_progress = custom_args[:__in_progress]
         instance = init_instance_of(klass, schema.attributes || {}, args)
         annotation_object(instance, schema)
         model.send("#{klass}s") << instance
         schema_path = instance.schema_path
-        return if self.class.in_progress?(schema_path) || schema_path.nil?
+        return if in_progress.key?(schema_path) || schema_path.nil?
 
-        self.class.add_in_progress(schema_path)
+        in_progress[schema_path] = true
         model.send(klass) << insert_in_processed_schemas(instance, custom_args)
-        self.class.remove_in_progress(schema_path)
+        in_progress.delete(schema_path)
       end
 
       def init_instance_of(klass, schema_hash, args = {})
         args[:id] = schema_hash["id"].value if schema_hash&.key?("id")
         args[:schema_path] = schema_hash["schemaLocation"].value if schema_hash&.key?("schemaLocation")
-        Lutaml::Xsd.register.get_class(klass.to_sym).new(**args)
+        Register.register.get_class(klass.to_sym).new(**args)
       end
 
       def insert_in_processed_schemas(instance, args)
-        parsed_schema = schema_by_location_or_instance(instance, args[:location])
+        parsed_schema = schema_by_location_or_instance(instance, args)
         return unless parsed_schema
 
-        self.class.schema_processed(instance.schema_path, parsed_schema)
+        args[:__schema_processed][instance.schema_path] = parsed_schema if instance.schema_path
         parsed_schema
       end
 
-      def schema_by_location_or_instance(instance, location)
+      def schema_by_location_or_instance(instance, args)
+        location = args&.dig(:location)
+        schema_processed = args&.dig(:__schema_processed) || {}
         schema_path = instance.schema_path
         return unless schema_path
 
         location = SchemaPath.new(schema_path) if location.nil?
-        self.class.processed_schemas[schema_path] ||
+        schema_processed[schema_path] ||
           Lutaml::Xsd.parse(
             location.include_schema(schema_path),
             location: validate_schema_path_location(location, schema_path),
-            nested_schema: true,
-            register: Lutaml::Xsd.register.id
+            register: Register.register.id,
+            __in_progress: args[:__in_progress],
+            __schema_processed: args[:__schema_processed]
           )
       end
 
@@ -155,11 +155,11 @@ module Lutaml
         annotation_key = elements.find { |element| element.unprefixed_name == "annotation" }
         return unless annotation_key
 
-        annotation = Lutaml::Xsd.register.get_class(:annotation)
+        annotation = Register.register.get_class(:annotation)
         instance.annotation = annotation.apply_mappings(
           annotation_key,
           :xml,
-          register: Lutaml::Xsd.register.id
+          register: Register.register.id
         )
       end
 
@@ -169,43 +169,7 @@ module Lutaml
         SchemaPath.new(path)
       end
 
-      class << self
-        def reset_processed_schemas
-          @processed_schemas = {}
-        end
-
-        def processed_schemas
-          @processed_schemas ||= {}
-        end
-
-        def schema_processed?(location)
-          processed_schemas[location]
-        end
-
-        def schema_processed(location, schema)
-          return if location.nil?
-
-          processed_schemas[location] = schema
-        end
-
-        def in_progress
-          @in_progress ||= []
-        end
-
-        def in_progress?(location)
-          in_progress.include?(location)
-        end
-
-        def add_in_progress(location)
-          in_progress << location
-        end
-
-        def remove_in_progress(location)
-          in_progress.delete(location)
-        end
-      end
-
-      Lutaml::Xsd.register_model(self, :schema)
+      Register.register_model(self, :schema)
     end
     # rubocop:enable Metrics/ClassLength
   end

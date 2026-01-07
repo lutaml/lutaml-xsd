@@ -14,7 +14,7 @@ module Lutaml
         map_attribute :xpath, to: :xpath
       end
 
-      Lutaml::Xsd.register_model(self, :field)
+      Register.register_model(self, :field)
     end
   end
 end

@@ -51,7 +51,7 @@ module Lutaml
         map "direct_child_elements", to: :direct_child_elements
       end
 
-      Lutaml::Xsd.register_model(self, :complex_type)
+      Register.register_model(self, :complex_type)
     end
   end
 end

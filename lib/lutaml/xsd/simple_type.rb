@@ -24,7 +24,7 @@ module Lutaml
         map_element :restriction, to: :restriction
       end
 
-      Lutaml::Xsd.register_model(self, :simple_type)
+      Register.register_model(self, :simple_type)
     end
   end
 end

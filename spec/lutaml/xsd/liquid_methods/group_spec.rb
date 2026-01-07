@@ -73,7 +73,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::Group do
     end
 
     it "returns the referenced group when using ref" do
-      ref_group = Lutaml::Xsd::Group.new(__register: Lutaml::Xsd.register)
+      ref_group = Lutaml::Xsd::Group.new(__register: Lutaml::Xsd::Register.register)
       ref_group.ref = "TestGroup"
       ref_group.instance_variable_set(:@__root, schema)
       expect(ref_group.referenced_object).to eq(test_group)

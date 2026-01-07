@@ -24,7 +24,7 @@ module Lutaml
         map_element :attributeGroup, to: :attributeGroup
       end
 
-      Lutaml::Xsd.register_model(self, :redefine)
+      Register.register_model(self, :redefine)
     end
   end
 end

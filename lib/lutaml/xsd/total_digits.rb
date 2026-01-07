@@ -18,7 +18,7 @@ module Lutaml
         map_element :annotation, to: :annotation
       end
 
-      Lutaml::Xsd.register_model(self, :total_digits)
+      Register.register_model(self, :total_digits)
     end
   end
 end

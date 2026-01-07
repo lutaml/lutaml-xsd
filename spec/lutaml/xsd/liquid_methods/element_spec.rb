@@ -77,7 +77,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::Element do
     end
 
     it "returns the name of referenced element when using ref" do
-      ref_element = Lutaml::Xsd::Element.new(__register: Lutaml::Xsd.register)
+      ref_element = Lutaml::Xsd::Element.new(__register: Lutaml::Xsd::Register.register)
       ref_element.ref = "ReferencedElement"
       ref_element.instance_variable_set(:@__root, schema)
       expect(ref_element.referenced_name).to eq("ReferencedElement")
@@ -90,7 +90,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::Element do
     end
 
     it "returns the type of referenced element when using ref" do
-      ref_element = Lutaml::Xsd::Element.new(__register: Lutaml::Xsd.register)
+      ref_element = Lutaml::Xsd::Element.new(__register: Lutaml::Xsd::Register.register)
       ref_element.ref = "ReferencedElement"
       ref_element.instance_variable_set(:@__root, schema)
       expect(ref_element.referenced_type).to eq("xs:string")
@@ -103,7 +103,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::Element do
     end
 
     it "returns the referenced element when using ref" do
-      ref_element = Lutaml::Xsd::Element.new(__register: Lutaml::Xsd.register)
+      ref_element = Lutaml::Xsd::Element.new(__register: Lutaml::Xsd::Register.register)
       ref_element.ref = "ReferencedElement"
       ref_element.instance_variable_set(:@__root, schema)
       expect(ref_element.referenced_object).to eq(referenced_element)

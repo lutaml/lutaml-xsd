@@ -42,7 +42,7 @@ module Lutaml
         map_element :fractionDigits, to: :fraction_digits
       end
 
-      Lutaml::Xsd.register_model(self, :restriction_simple_type)
+      Register.register_model(self, :restriction_simple_type)
     end
   end
 end

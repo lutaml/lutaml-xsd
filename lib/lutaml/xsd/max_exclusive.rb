@@ -14,7 +14,7 @@ module Lutaml
         map_attribute :fixed, to: :fixed
       end
 
-      Lutaml::Xsd.register_model(self, :max_exclusive)
+      Register.register_model(self, :max_exclusive)
     end
   end
 end

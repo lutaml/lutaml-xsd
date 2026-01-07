@@ -16,7 +16,7 @@ module Lutaml
         map_attribute :source, to: :source
       end
 
-      Lutaml::Xsd.register_model(self, :documentation)
+      Register.register_model(self, :documentation)
     end
   end
 end

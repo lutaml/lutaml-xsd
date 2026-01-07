@@ -11,38 +11,34 @@ module Lutaml
 
     module_function
 
-    def register
-      @register ||= Lutaml::Model::GlobalRegister.register(
-        Lutaml::Model::Register.new(:xsd)
-      )
-    end
-
-    def register_model(klass, id)
-      register.register_model(klass, id: id)
-    end
-
-    def parse(xsd, location: nil, nested_schema: false, register: nil)
-      Schema.reset_processed_schemas unless nested_schema
-
+    def parse(xsd, location: nil, register: nil, __schema_processed: {}, __in_progress: {})
       Schema.from_xml(
         xsd,
-        **build_options(register, location)
+        register: register || Register.register,
+        state: build_options(location, __schema_processed, __in_progress)
       )
     end
 
-    def build_options(register, location)
-      options = { register: register || self.register }
+    def build_options(location, schema_processed, in_progress)
+      state = {
+        __schema_processed: schema_processed || {},
+        __in_progress: in_progress || {}
+      }
       if location
-        schema_path = location.is_a?(SchemaPath) ? location : SchemaPath.new(location)
-        options[:metadata] = { location: schema_path }
+        state[:location] = if location.is_a?(SchemaPath)
+                             location
+                           else
+                             SchemaPath.new(location)
+                           end
       end
-      options
+      state
     end
 
     private_class_method :build_options
   end
 end
 
+require_relative "xsd/register"
 require_relative "xsd/base"
 require_relative "xsd/all"
 require_relative "xsd/annotation"

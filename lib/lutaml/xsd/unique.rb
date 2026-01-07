@@ -20,7 +20,7 @@ module Lutaml
         map_element :field, to: :field
       end
 
-      Lutaml::Xsd.register_model(self, :unique)
+      Register.register_model(self, :unique)
     end
   end
 end

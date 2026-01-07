@@ -70,7 +70,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::SimpleContent do
     end
 
     it "returns nil when no base is specified" do
-      sc = Lutaml::Xsd::SimpleContent.new(__register: Lutaml::Xsd.register)
+      sc = Lutaml::Xsd::SimpleContent.new(__register: Lutaml::Xsd::Register.register)
       expect(sc.base_type).to be_nil
     end
   end

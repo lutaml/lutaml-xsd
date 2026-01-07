@@ -18,7 +18,7 @@ module Lutaml
         map_element :simpleType, to: :simple_type
       end
 
-      Lutaml::Xsd.register_model(self, :union)
+      Register.register_model(self, :union)
     end
   end
 end

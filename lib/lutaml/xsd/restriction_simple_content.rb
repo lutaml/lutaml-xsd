@@ -48,7 +48,7 @@ module Lutaml
         map_element :length, to: :length
       end
 
-      Lutaml::Xsd.register_model(self, :restriction_simple_content)
+      Register.register_model(self, :restriction_simple_content)
     end
   end
 end

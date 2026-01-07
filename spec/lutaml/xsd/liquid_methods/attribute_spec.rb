@@ -48,7 +48,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::Attribute do
     end
 
     it "returns the type of the referenced attribute when using ref" do
-      ref_attr = Lutaml::Xsd::Attribute.new(__register: Lutaml::Xsd.register)
+      ref_attr = Lutaml::Xsd::Attribute.new(__register: Lutaml::Xsd::Register.register)
       ref_attr.ref = "TestAttribute"
       ref_attr.instance_variable_set(:@__root, schema)
       test_attr.type = "xs:int"
@@ -62,14 +62,14 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::Attribute do
     end
 
     it "returns the name of referenced attribute when using ref" do
-      ref_attr = Lutaml::Xsd::Attribute.new(__register: Lutaml::Xsd.register)
+      ref_attr = Lutaml::Xsd::Attribute.new(__register: Lutaml::Xsd::Register.register)
       ref_attr.ref = "TestAttribute"
       ref_attr.instance_variable_set(:@__root, schema)
       expect(ref_attr.referenced_name).to eq("TestAttribute")
     end
 
     it "returns ref when referenced object is not found" do
-      ref_attr = Lutaml::Xsd::Attribute.new(__register: Lutaml::Xsd.register)
+      ref_attr = Lutaml::Xsd::Attribute.new(__register: Lutaml::Xsd::Register.register)
       ref_attr.ref = "NonExistent"
       ref_attr.instance_variable_set(:@__root, schema)
       expect(ref_attr.referenced_name).to eq("NonExistent")
@@ -82,7 +82,7 @@ RSpec.describe Lutaml::Xsd::LiquidMethods::Attribute do
     end
 
     it "returns the referenced attribute when using ref" do
-      ref_attr = Lutaml::Xsd::Attribute.new(__register: Lutaml::Xsd.register)
+      ref_attr = Lutaml::Xsd::Attribute.new(__register: Lutaml::Xsd::Register.register)
       ref_attr.ref = "TestAttribute"
       ref_attr.instance_variable_set(:@__root, schema)
       expect(ref_attr.referenced_object).to eq(test_attr)

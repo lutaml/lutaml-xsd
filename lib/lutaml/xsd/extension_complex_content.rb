@@ -30,7 +30,7 @@ module Lutaml
         map_element :attributeGroup, to: :attribute_group
       end
 
-      Lutaml::Xsd.register_model(self, :extension_complex_content)
+      Register.register_model(self, :extension_complex_content)
     end
   end
 end
