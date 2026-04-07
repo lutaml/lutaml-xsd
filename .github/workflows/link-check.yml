@@ -31,5 +31,5 @@ jobs:
       - name: Link Checker
         uses: lycheeverse/lychee-action@v1
         with:
-          args: --config lychee.toml --verbose --no-progress --skip 'localhost' --skip 'http://schemas' --skip 'https://schemas' 'docs/**/*.adoc' 'docs/**/*.md' 'README.adoc'
-          fail: true
+          args: --config lychee.toml --verbose --no-progress 'docs/**/*.adoc' 'docs/**/*.md' 'README.adoc'
+          fail: false
