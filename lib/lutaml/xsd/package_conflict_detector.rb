@@ -24,7 +24,7 @@ module Lutaml
           namespace_conflicts: namespace_conflicts,
           type_conflicts: type_conflicts,
           schema_conflicts: schema_conflicts,
-          package_sources: @package_sources
+          package_sources: @package_sources,
         )
       end
 
@@ -33,23 +33,29 @@ module Lutaml
       def load_packages
         @package_configs.each do |config|
           unless File.exist?(config.package)
-            raise ConfigurationError, "Base package not found: #{config.package}"
+            raise ConfigurationError,
+                  "Base package not found: #{config.package}"
           end
 
           repo = SchemaRepository.from_package(config.package)
-          repo = apply_namespace_remapping(repo, config) if config.namespace_remapping&.any?
+          if config.namespace_remapping&.any?
+            repo = apply_namespace_remapping(repo,
+                                             config)
+          end
 
           @package_sources << PackageSource.new(
             package_path: config.package,
             config: config,
-            repository: repo
+            repository: repo,
           )
         end
       end
 
       def apply_namespace_remapping(repo, config)
         uri_mappings = {}
-        config.namespace_remapping.each { |remap| uri_mappings[remap.from_uri] = remap.to_uri }
+        config.namespace_remapping.each do |remap|
+          uri_mappings[remap.from_uri] = remap.to_uri
+        end
 
         new_ns_mappings = repo.namespace_mappings.map do |mapping|
           new_uri = uri_mappings[mapping.uri] || mapping.uri
@@ -59,9 +65,10 @@ module Lutaml
         SchemaRepository.new(
           files: repo.files,
           namespace_mappings: new_ns_mappings,
-          schema_location_mappings: repo.schema_location_mappings
+          schema_location_mappings: repo.schema_location_mappings,
         ).tap do |new_repo|
-          new_repo.instance_variable_set(:@parsed_schemas, repo.instance_variable_get(:@parsed_schemas))
+          new_repo.instance_variable_set(:@parsed_schemas,
+                                         repo.instance_variable_get(:@parsed_schemas))
         end
       end
 
@@ -69,11 +76,16 @@ module Lutaml
         namespace_sources = Hash.new { |h, k| h[k] = [] }
 
         @package_sources.each do |source|
-          source.namespaces.each { |ns_uri| namespace_sources[ns_uri] << source }
+          source.namespaces.each do |ns_uri|
+            namespace_sources[ns_uri] << source
+          end
         end
 
-        namespace_sources.select { |_, sources| sources.size > 1 }.map do |ns_uri, sources|
-          Conflicts::NamespaceConflict.from_sources(namespace_uri: ns_uri, sources: sources)
+        namespace_sources.select do |_, sources|
+          sources.size > 1
+        end.map do |ns_uri, sources|
+          Conflicts::NamespaceConflict.from_sources(namespace_uri: ns_uri,
+                                                    sources: sources)
         end
       end
 
@@ -89,12 +101,14 @@ module Lutaml
           end
         end
 
-        type_sources.select { |_, sources| sources.size > 1 }.map do |key, sources|
+        type_sources.select do |_, sources|
+          sources.size > 1
+        end.map do |key, sources|
           ns_uri, type_name = key.split("||", 2)
           Conflicts::TypeConflict.from_sources(
             namespace_uri: ns_uri,
             type_name: type_name,
-            sources: sources.uniq
+            sources: sources.uniq,
           )
         end
       end
@@ -108,15 +122,17 @@ module Lutaml
             schema_sources[basename] << Conflicts::SchemaFileSource.new(
               package_path: source.package_path,
               schema_file: schema_file,
-              priority: source.priority
+              priority: source.priority,
             )
           end
         end
 
-        schema_sources.select { |_, sources| sources.size > 1 }.map do |basename, file_sources|
+        schema_sources.select do |_, sources|
+          sources.size > 1
+        end.map do |basename, file_sources|
           Conflicts::SchemaConflict.new(
             schema_basename: basename,
-            source_files: file_sources
+            source_files: file_sources,
           )
         end
       end

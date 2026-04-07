@@ -13,7 +13,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
         info = described_class.new(
           package_path: package_path,
           priority: priority,
-          conflict_resolution: conflict_resolution
+          conflict_resolution: conflict_resolution,
         )
 
         expect(info.package_path).to eq(package_path)
@@ -28,7 +28,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           Lutaml::Xsd::PackageSource,
           package_path: package_path,
           priority: priority,
-          conflict_resolution: conflict_resolution
+          conflict_resolution: conflict_resolution,
         )
 
         info = described_class.from_source(mock_source)
@@ -44,7 +44,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
         described_class.new(
           package_path: package_path,
           priority: priority,
-          conflict_resolution: conflict_resolution
+          conflict_resolution: conflict_resolution,
         )
       end
 
@@ -82,7 +82,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
         Lutaml::Xsd::Conflicts::NamespaceConflict.new(
           namespace_uri: "http://example.com/ns1",
           package_paths: ["pkg1.lxr", "pkg2.lxr"],
-          priorities: [0, 10]
+          priorities: [0, 10],
         ),
       ]
     end
@@ -93,7 +93,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_uri: "http://example.com/ns1",
           type_name: "PersonType",
           package_paths: ["pkg1.lxr", "pkg2.lxr"],
-          priorities: [0, 10]
+          priorities: [0, 10],
         ),
       ]
     end
@@ -106,14 +106,14 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
             Lutaml::Xsd::Conflicts::SchemaFileSource.new(
               package_path: "pkg1.lxr",
               schema_file: "schemas/person.xsd",
-              priority: 0
+              priority: 0,
             ),
             Lutaml::Xsd::Conflicts::SchemaFileSource.new(
               package_path: "pkg2.lxr",
               schema_file: "xsd/person.xsd",
-              priority: 10
+              priority: 10,
             ),
-          ]
+          ],
         ),
       ]
     end
@@ -124,13 +124,13 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           Lutaml::Xsd::PackageSource,
           package_path: "pkg1.lxr",
           priority: 0,
-          conflict_resolution: "keep"
+          conflict_resolution: "keep",
         ),
         instance_double(
           Lutaml::Xsd::PackageSource,
           package_path: "pkg2.lxr",
           priority: 10,
-          conflict_resolution: "override"
+          conflict_resolution: "override",
         ),
       ]
     end
@@ -141,7 +141,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: namespace_conflicts,
           type_conflicts: type_conflicts,
           schema_conflicts: schema_conflicts,
-          package_sources: mock_sources
+          package_sources: mock_sources,
         )
 
         expect(report.namespace_conflicts).to eq(namespace_conflicts)
@@ -156,7 +156,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: [],
           type_conflicts: [],
           schema_conflicts: [],
-          package_sources: mock_sources
+          package_sources: mock_sources,
         )
 
         expect(report.package_info[0].package_path).to eq("pkg1.lxr")
@@ -171,7 +171,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: namespace_conflicts,
           type_conflicts: [],
           schema_conflicts: [],
-          package_info: []
+          package_info: [],
         )
 
         expect(report.has_conflicts?).to be true
@@ -182,7 +182,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: [],
           type_conflicts: [],
           schema_conflicts: [],
-          package_info: []
+          package_info: [],
         )
 
         expect(report.has_conflicts?).to be false
@@ -195,7 +195,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: namespace_conflicts,
           type_conflicts: type_conflicts,
           schema_conflicts: schema_conflicts,
-          package_info: []
+          package_info: [],
         )
 
         expect(report.total_conflicts).to eq(3)
@@ -206,7 +206,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: [],
           type_conflicts: [],
           schema_conflicts: [],
-          package_info: []
+          package_info: [],
         )
 
         expect(report.total_conflicts).to eq(0)
@@ -219,7 +219,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: namespace_conflicts,
           type_conflicts: type_conflicts,
           schema_conflicts: schema_conflicts,
-          package_info: []
+          package_info: [],
         )
 
         all = report.all_conflicts
@@ -236,7 +236,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: [],
           type_conflicts: [],
           schema_conflicts: [],
-          package_info: []
+          package_info: [],
         )
 
         expect(report.to_s).to eq("✓ No conflicts detected")
@@ -247,12 +247,12 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           Lutaml::Xsd::PackageInfo.new(
             package_path: "pkg1.lxr",
             priority: 0,
-            conflict_resolution: "keep"
+            conflict_resolution: "keep",
           ),
           Lutaml::Xsd::PackageInfo.new(
             package_path: "pkg2.lxr",
             priority: 10,
-            conflict_resolution: "override"
+            conflict_resolution: "override",
           ),
         ]
 
@@ -260,7 +260,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: namespace_conflicts,
           type_conflicts: type_conflicts,
           schema_conflicts: schema_conflicts,
-          package_info: info
+          package_info: info,
         )
 
         output = report.to_s
@@ -293,7 +293,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: namespace_conflicts,
           type_conflicts: [],
           schema_conflicts: [],
-          package_info: []
+          package_info: [],
         )
 
         output = report.to_s
@@ -308,7 +308,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: [],
           type_conflicts: type_conflicts,
           schema_conflicts: [],
-          package_info: []
+          package_info: [],
         )
 
         output = report.to_s
@@ -322,7 +322,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: [],
           type_conflicts: [],
           schema_conflicts: schema_conflicts,
-          package_info: []
+          package_info: [],
         )
 
         output = report.to_s
@@ -338,7 +338,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           Lutaml::Xsd::PackageInfo.new(
             package_path: "pkg1.lxr",
             priority: 0,
-            conflict_resolution: "keep"
+            conflict_resolution: "keep",
           ),
         ]
       end
@@ -348,7 +348,7 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
           namespace_conflicts: namespace_conflicts,
           type_conflicts: type_conflicts,
           schema_conflicts: schema_conflicts,
-          package_info: info
+          package_info: info,
         )
       end
 

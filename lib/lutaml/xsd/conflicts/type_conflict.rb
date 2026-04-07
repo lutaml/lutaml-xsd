@@ -25,7 +25,7 @@ module Lutaml
             namespace_uri: namespace_uri,
             type_name: type_name,
             package_paths: sources.map(&:package_path),
-            priorities: sources.map(&:priority)
+            priorities: sources.map(&:priority),
           )
           conflict.sources = sources
           conflict

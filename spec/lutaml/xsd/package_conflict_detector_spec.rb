@@ -7,7 +7,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
     Lutaml::Xsd::BasePackageConfig.new(
       package: "pkg1.lxr",
       priority: 0,
-      conflict_resolution: "keep"
+      conflict_resolution: "keep",
     )
   end
 
@@ -15,7 +15,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
     Lutaml::Xsd::BasePackageConfig.new(
       package: "pkg2.lxr",
       priority: 10,
-      conflict_resolution: "override"
+      conflict_resolution: "override",
     )
   end
 
@@ -23,7 +23,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
     instance_double(
       Lutaml::Xsd::SchemaRepository,
       files: ["schemas/person.xsd", "schemas/company.xsd"],
-      namespace_mappings: []
+      namespace_mappings: [],
     )
   end
 
@@ -31,7 +31,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
     instance_double(
       Lutaml::Xsd::SchemaRepository,
       files: ["xsd/person.xsd", "xsd/address.xsd"],
-      namespace_mappings: []
+      namespace_mappings: [],
     )
   end
 
@@ -57,7 +57,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
         instance_double(
           Lutaml::Xsd::SchemaRepository,
           files: ["schemas/person.xsd"],
-          namespace_mappings: []
+          namespace_mappings: [],
         )
       end
 
@@ -65,7 +65,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
         instance_double(
           Lutaml::Xsd::SchemaRepository,
           files: ["schemas/company.xsd"],
-          namespace_mappings: []
+          namespace_mappings: [],
         )
       end
 
@@ -74,7 +74,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
           .with("pkg1.lxr").and_return(mock_repo1_no_conflict)
         allow(Lutaml::Xsd::SchemaRepository).to receive(:from_package)
           .with("pkg2.lxr").and_return(mock_repo2_no_conflict)
-        
+
         allow(mock_repo1_no_conflict).to receive(:all_namespaces).and_return(["http://example.com/ns1"])
         allow(mock_repo2_no_conflict).to receive(:all_namespaces).and_return(["http://example.com/ns2"])
         allow(mock_repo1_no_conflict).to receive(:all_type_names).and_return(["Type1"])
@@ -116,7 +116,8 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
         expect(report.namespace_conflicts.size).to eq(1)
         conflict = report.namespace_conflicts.first
         expect(conflict.namespace_uri).to eq("http://example.com/shared")
-        expect(conflict.package_paths).to contain_exactly("pkg1.lxr", "pkg2.lxr")
+        expect(conflict.package_paths).to contain_exactly("pkg1.lxr",
+                                                          "pkg2.lxr")
       end
     end
 
@@ -139,7 +140,8 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
         conflict = report.type_conflicts.first
         expect(conflict.type_name).to eq("PersonType")
         expect(conflict.namespace_uri).to eq("http://example.com/ns1")
-        expect(conflict.package_paths).to contain_exactly("pkg1.lxr", "pkg2.lxr")
+        expect(conflict.package_paths).to contain_exactly("pkg1.lxr",
+                                                          "pkg2.lxr")
       end
     end
 
@@ -159,7 +161,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
         expect(conflict.source_files.size).to eq(2)
         expect(conflict.file_paths).to contain_exactly(
           "schemas/person.xsd",
-          "xsd/person.xsd"
+          "xsd/person.xsd",
         )
       end
     end
@@ -195,9 +197,9 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
           namespace_remapping: [
             Lutaml::Xsd::NamespaceUriRemapping.new(
               from_uri: "http://old.example.com/ns",
-              to_uri: "http://new.example.com/ns"
+              to_uri: "http://new.example.com/ns",
             ),
-          ]
+          ],
         )
       end
 
@@ -205,7 +207,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
         instance_double(
           Lutaml::Xsd::NamespaceMapping,
           prefix: "ex",
-          uri: "http://old.example.com/ns"
+          uri: "http://old.example.com/ns",
         )
       end
 
@@ -239,14 +241,14 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
       it "raises ConfigurationError" do
         bad_config = Lutaml::Xsd::BasePackageConfig.new(
           package: "missing.lxr",
-          priority: 0
+          priority: 0,
         )
 
         detector = described_class.new([bad_config])
 
         expect { detector.detect_conflicts }.to raise_error(
           Lutaml::Xsd::ConfigurationError,
-          /Base package not found: missing.lxr/
+          /Base package not found: missing.lxr/,
         )
       end
     end

@@ -667,8 +667,8 @@ module Lutaml
                    "files:\n" + entry_points.map { |f|
                                   "  - #{f}"
                                 }.join("\n") + "\n\n" \
-                                                                                 "schema_location_mappings:\n" + format_mappings_yaml(@resolved_mappings + @pattern_mappings) + "\n\n" \
-                                                                                                                                                                                "namespace_mappings:\n" + format_namespace_mappings_yaml(@namespace_mappings)
+                                               "schema_location_mappings:\n" + format_mappings_yaml(@resolved_mappings + @pattern_mappings) + "\n\n" \
+                                                                                                                                              "namespace_mappings:\n" + format_namespace_mappings_yaml(@namespace_mappings)
 
         File.write(output_path, yaml_str)
 

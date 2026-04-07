@@ -359,7 +359,7 @@ module Lutaml
             return nil if schema_attrs.empty?
 
             # Simple suggestion based on available attributes
-            attr_names = schema_attrs.map(&:name).compact
+            attr_names = schema_attrs.filter_map(&:name)
             return nil if attr_names.empty?
 
             "Did you mean one of: #{attr_names.join(', ')}?"

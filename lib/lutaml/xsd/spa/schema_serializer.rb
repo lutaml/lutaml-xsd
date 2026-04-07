@@ -55,14 +55,16 @@ module Lutaml
           # Convert SpaMetadata model to hash for JSON serialization
           # SpaMetadata.to_hash returns string keys, but we need symbol keys for compatibility
           metadata_hash = if metadata.respond_to?(:to_hash)
-                           hash = metadata.to_hash
-                           # Convert string keys to symbols for backward compatibility
-                           Hash[hash.map { |k, v| [k.is_a?(String) ? k.to_sym : k, v] }]
-                         elsif metadata.respond_to?(:to_h)
-                           metadata.to_h
-                         else
-                           metadata
-                         end
+                            hash = metadata.to_hash
+                            # Convert string keys to symbols for backward compatibility
+                            hash.to_h do |k, v|
+                              [k.is_a?(String) ? k.to_sym : k, v]
+                            end
+                          elsif metadata.respond_to?(:to_h)
+                            metadata.to_h
+                          else
+                            metadata
+                          end
           {
             metadata: metadata_hash,
             schemas: serialize_schemas,
@@ -102,8 +104,8 @@ module Lutaml
                      end
 
           title = pkg_hash[:title] || pkg_hash["title"] ||
-                  pkg_hash[:name] || pkg_hash["name"] ||
-                  config["title"] || default_title
+            pkg_hash[:name] || pkg_hash["name"] ||
+            config["title"] || default_title
 
           SpaMetadata.new(
             generated: current_timestamp,
@@ -115,7 +117,9 @@ module Lutaml
             homepage: pkg_hash[:homepage] || pkg_hash["homepage"],
             documentation: pkg_hash[:documentation] || pkg_hash["documentation"],
             license: pkg_hash[:license] || pkg_hash["license"],
-            license_url: (pkg_hash[:license_url] || pkg_hash["license_url"]).then { |v| v.is_a?(String) && !v.empty? ? v : nil },
+            license_url: (pkg_hash[:license_url] || pkg_hash["license_url"]).then do |v|
+              v.is_a?(String) && !v.empty? ? v : nil
+            end,
             authors: pkg_hash[:authors] || pkg_hash["authors"],
             repository: pkg_hash[:repository] || pkg_hash["repository"],
             tags: pkg_hash[:tags] || pkg_hash["tags"] || [],
@@ -134,7 +138,10 @@ module Lutaml
           @namespace_prefix_lookup = {}
           if repository.respond_to?(:namespace_mappings) && repository.namespace_mappings
             repository.namespace_mappings.each do |mapping|
-              @namespace_prefix_lookup[mapping.uri] = mapping.prefix if mapping.uri && mapping.prefix
+              if mapping.uri && mapping.prefix
+                @namespace_prefix_lookup[mapping.uri] =
+                  mapping.prefix
+              end
             end
           end
           @namespace_prefix_lookup
@@ -155,7 +162,8 @@ module Lutaml
               ns_map[ns][:schemas] << schema_id(nil, schema, file_path)
             else
               ns_map["__default__"] ||= { prefix: "tns", uri: "", schemas: [] }
-              ns_map["__default__"][:schemas] << schema_id(nil, schema, file_path)
+              ns_map["__default__"][:schemas] << schema_id(nil, schema,
+                                                           file_path)
             end
           end
           ns_map.values
@@ -207,7 +215,9 @@ module Lutaml
         def serialize_schema(schema, index, file_path = nil)
           return nil unless schema
 
-          prefix = namespace_prefix_lookup[schema.target_namespace] || derive_prefix(schema.target_namespace, schema)
+          prefix = namespace_prefix_lookup[schema.target_namespace] || derive_prefix(
+            schema.target_namespace, schema
+          )
           {
             id: schema_id(index, schema, file_path),
             name: schema_name(schema, file_path),
@@ -269,14 +279,29 @@ module Lutaml
           }
 
           # Enriched fields
-          element_data[:ref] = element.ref if element.respond_to?(:ref) && element.ref
-          element_data[:nillable] = element.nillable if element.respond_to?(:nillable) && element.nillable
-          element_data[:abstract] = element.abstract if element.respond_to?(:abstract) && element.abstract
+          if element.respond_to?(:ref) && element.ref
+            element_data[:ref] =
+              element.ref
+          end
+          if element.respond_to?(:nillable) && element.nillable
+            element_data[:nillable] =
+              element.nillable
+          end
+          if element.respond_to?(:abstract) && element.abstract
+            element_data[:abstract] =
+              element.abstract
+          end
           if element.respond_to?(:substitution_group) && element.substitution_group
             element_data[:substitution_group] = element.substitution_group
           end
-          element_data[:default] = element.default if element.respond_to?(:default) && element.default
-          element_data[:fixed] = element.fixed if element.respond_to?(:fixed) && element.fixed
+          if element.respond_to?(:default) && element.default
+            element_data[:default] =
+              element.default
+          end
+          if element.respond_to?(:fixed) && element.fixed
+            element_data[:fixed] =
+              element.fixed
+          end
 
           # Add SVG diagram
           element_data[:diagram_svg] = generate_diagram(element_data, :element)
@@ -578,7 +603,7 @@ module Lutaml
           if union.respond_to?(:member_types) && union.member_types
             union.member_types.is_a?(String) ? union.member_types.split : union.member_types
           elsif union.respond_to?(:simple_types) && union.simple_types
-            union.simple_types.map(&:name).compact
+            union.simple_types.filter_map(&:name)
           end
         end
 
@@ -621,23 +646,38 @@ module Lutaml
 
             # Elements that reference a type
             (schema_data[:elements] || []).each do |elem|
-              used_by[elem[:name]] << { name: elem[:name], kind: "element", schema: schema_label } if elem[:name]
+              if elem[:name]
+                used_by[elem[:name]] << { name: elem[:name], kind: "element",
+                                          schema: schema_label }
+              end
             end
 
             # Complex types: base type, element types, attribute types
             (schema_data[:complex_types] || []).each do |type|
-              used_by[type[:base]] << { name: type[:name], kind: "complexType", schema: schema_label } if type[:base]
+              if type[:base]
+                used_by[type[:base]] << { name: type[:name], kind: "complexType",
+                                          schema: schema_label }
+              end
               (type[:elements] || []).each do |elem|
-                used_by[elem[:name]] << { name: type[:name], kind: "complexType", schema: schema_label } if elem[:name]
+                if elem[:name]
+                  used_by[elem[:name]] << { name: type[:name],
+                                            kind: "complexType", schema: schema_label }
+                end
               end
               (type[:attributes] || []).each do |attr|
-                used_by[attr[:name]] << { name: type[:name], kind: "complexType", schema: schema_label } if attr[:name]
+                if attr[:name]
+                  used_by[attr[:name]] << { name: type[:name],
+                                            kind: "complexType", schema: schema_label }
+                end
               end
             end
 
             # Simple types: base type
             (schema_data[:simple_types] || []).each do |type|
-              used_by[type[:base]] << { name: type[:name], kind: "simpleType", schema: schema_label } if type[:base]
+              if type[:base]
+                used_by[type[:base]] << { name: type[:name], kind: "simpleType",
+                                          schema: schema_label }
+              end
             end
           end
 
@@ -969,13 +1009,13 @@ module Lutaml
           if package.respond_to?(:metadata)
             metadata = package.metadata
             # Handle both Hash (backward compat) and SchemaRepositoryMetadata object
-            if metadata.is_a?(Hash)
-              entrypoint_files = metadata[:files] || metadata["files"] || []
-            elsif metadata.respond_to?(:files)
-              entrypoint_files = metadata.files || []
-            else
-              entrypoint_files = []
-            end
+            entrypoint_files = if metadata.is_a?(Hash)
+                                 metadata[:files] || metadata["files"] || []
+                               elsif metadata.respond_to?(:files)
+                                 metadata.files || []
+                               else
+                                 []
+                               end
           elsif repository.respond_to?(:files) && !repository.respond_to?(:all_schemas)
             # Direct repository has files attribute
             entrypoint_files = repository.files || []

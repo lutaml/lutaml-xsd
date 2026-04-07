@@ -222,7 +222,8 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       end
 
       it "identifies Element" do
-        type = double("Element", class: Lutaml::Xml::Schema::Xsd::Element, is_a?: false)
+        type = double("Element", class: Lutaml::Xml::Schema::Xsd::Element,
+                                 is_a?: false)
         allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::ComplexType).and_return(false)
         allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::SimpleType).and_return(false)
         allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::Element).and_return(true)
@@ -241,7 +242,8 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       end
 
       it "identifies Group" do
-        type = double("Group", class: Lutaml::Xml::Schema::Xsd::Group, is_a?: false)
+        type = double("Group", class: Lutaml::Xml::Schema::Xsd::Group,
+                               is_a?: false)
         allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::ComplexType).and_return(false)
         allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::SimpleType).and_return(false)
         allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::Element).and_return(false)

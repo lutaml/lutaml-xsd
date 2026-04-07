@@ -181,14 +181,14 @@ module Lutaml
               end
             end
 
-            elements.values.map do |type_info|
+            elements.values.filter_map do |type_info|
               {
                 name: type_info[:definition]&.name,
                 namespace: type_info[:namespace],
                 type: extract_element_type(type_info[:definition]),
                 schema_file: File.basename(type_info[:schema_file]),
               }
-            end.compact
+            end
           end
 
           def extract_element_type(element)
@@ -340,22 +340,22 @@ module Lutaml
             # Direct attributes
             attrs.concat(Array(element.attribute)) if element.respond_to?(:attribute) && element.attribute
 
-            attrs.map do |attr|
+            attrs.filter_map do |attr|
               {
                 name: attr.respond_to?(:name) ? attr.name : nil,
                 type: attr.respond_to?(:type) ? attr.type : nil,
                 use: attr.respond_to?(:use) ? attr.use : nil,
               }
-            end.compact
+            end
           end
 
           def extract_documentation(annotation)
             docs = annotation.respond_to?(:documentation) ? annotation.documentation : nil
             return nil unless docs
 
-            Array(docs).map do |doc|
+            Array(docs).filter_map do |doc|
               doc.respond_to?(:content) ? doc.content : doc.to_s
-            end.compact.join("\n").strip
+            end.join("\n").strip
           end
 
           def display_text_info(info, element)

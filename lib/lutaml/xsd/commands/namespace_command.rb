@@ -294,13 +294,13 @@ module Lutaml
             }
 
             if options[:show_types]
-              info[:types] = types.map do |type_info|
+              info[:types] = types.filter_map do |type_info|
                 {
                   name: type_info[:definition]&.name,
                   category: type_info[:type],
                   schema_file: File.basename(type_info[:schema_file]),
                 }
-              end.compact
+              end
             end
 
             info

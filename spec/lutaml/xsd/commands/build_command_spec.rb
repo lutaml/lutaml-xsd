@@ -86,7 +86,8 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
           end.to output(/Package created/).to_stdout
 
           expect(File.exist?(override_output)).to be true
-          expect(File.exist?(File.join(tmpdir, "config_output.lxr"))).to be false
+          expect(File.exist?(File.join(tmpdir,
+                                       "config_output.lxr"))).to be false
         end
       end
 
@@ -253,7 +254,9 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
 
         command = described_class.new
         allow(command).to receive(:options).and_return({
-                                                         output: File.join(tmpdir, "repository.yml"),
+                                                         output: File.join(
+                                                           tmpdir, "repository.yml"
+                                                         ),
                                                          verbose: false,
                                                          local: false,
                                                          no_fetch: false,

@@ -25,7 +25,7 @@ module Lutaml
         # Now load repository to get schemas
         repository = package.load_repository
 
-        entrypoint_files.map do |file_path|
+        entrypoint_files.filter_map do |file_path|
           schema = find_schema_by_path(repository, file_path)
           next unless schema
 
@@ -36,7 +36,7 @@ module Lutaml
             schema: schema,
             role: "Root schema",
           }
-        end.compact
+        end
       end
 
       # Get all dependencies for entrypoints

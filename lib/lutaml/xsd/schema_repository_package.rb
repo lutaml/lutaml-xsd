@@ -4,7 +4,6 @@ require "yaml"
 require "zip"
 require "fileutils"
 require "tmpdir"
-require "set"
 
 module Lutaml
   module Xsd
@@ -545,7 +544,9 @@ module Lutaml
         # Deserialize each schema and add to global processed_schemas cache
         serialized_schemas.each do |serialized_schema|
           schema = serialized_schema.to_schema
-          Lutaml::Xml::Schema::Xsd::Schema.schema_processed(serialized_schema.file_path, schema)
+          Lutaml::Xml::Schema::Xsd::Schema.schema_processed(
+            serialized_schema.file_path, schema
+          )
         end
 
         # Don't mark as resolved yet - let the caller call resolve()
@@ -682,7 +683,8 @@ metadata)
 
           # Register schema in global cache using the actual schema file path
           # This makes the schema available for type resolution and queries
-          Lutaml::Xml::Schema::Xsd::Schema.schema_processed(actual_schema_path, schema)
+          Lutaml::Xml::Schema::Xsd::Schema.schema_processed(actual_schema_path,
+                                                            schema)
         end
       end
 

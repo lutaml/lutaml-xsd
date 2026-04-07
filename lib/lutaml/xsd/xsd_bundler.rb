@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module Lutaml
   module Xsd
     # Handles collection and bundling of XSD files for packages

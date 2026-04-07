@@ -93,8 +93,12 @@ module Lutaml
       # @param schema_path [String] Schema file path
       # @return [Boolean] True if schema should be included
       def include_schema?(schema_path)
-        return false if exclude_schemas&.any? && matches_patterns?(schema_path, exclude_schemas)
-        return matches_patterns?(schema_path, include_only_schemas) if include_only_schemas&.any?
+        return false if exclude_schemas&.any? && matches_patterns?(schema_path,
+                                                                   exclude_schemas)
+        if include_only_schemas&.any?
+          return matches_patterns?(schema_path,
+                                   include_only_schemas)
+        end
 
         true
       end

@@ -11,7 +11,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
     instance_double(
       Lutaml::Xsd::PackageSource,
       package_path: package_paths[0],
-      priority: priorities[0]
+      priority: priorities[0],
     )
   end
 
@@ -19,7 +19,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
     instance_double(
       Lutaml::Xsd::PackageSource,
       package_path: package_paths[1],
-      priority: priorities[1]
+      priority: priorities[1],
     )
   end
 
@@ -27,7 +27,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
     it "creates conflict from PackageSource objects" do
       conflict = described_class.from_sources(
         namespace_uri: namespace_uri,
-        sources: [mock_source1, mock_source2]
+        sources: [mock_source1, mock_source2],
       )
 
       expect(conflict.namespace_uri).to eq(namespace_uri)
@@ -39,7 +39,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
     it "extracts paths and priorities from sources" do
       conflict = described_class.from_sources(
         namespace_uri: namespace_uri,
-        sources: [mock_source1]
+        sources: [mock_source1],
       )
 
       expect(conflict.package_paths).to eq([package_paths[0]])
@@ -52,7 +52,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
       conflict = described_class.new(
         namespace_uri: namespace_uri,
         package_paths: package_paths,
-        priorities: priorities
+        priorities: priorities,
       )
 
       expect(conflict.conflict_count).to eq(2)
@@ -62,7 +62,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
       conflict = described_class.new(
         namespace_uri: namespace_uri,
         package_paths: [package_paths[0]],
-        priorities: [priorities[0]]
+        priorities: [priorities[0]],
       )
 
       expect(conflict.conflict_count).to eq(1)
@@ -73,7 +73,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
     it "returns source with lowest priority number" do
       conflict = described_class.from_sources(
         namespace_uri: namespace_uri,
-        sources: [mock_source1, mock_source2]
+        sources: [mock_source1, mock_source2],
       )
 
       expect(conflict.highest_priority_source).to eq(mock_source1)
@@ -83,7 +83,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
       conflict = described_class.new(
         namespace_uri: namespace_uri,
         package_paths: package_paths,
-        priorities: priorities
+        priorities: priorities,
       )
 
       expect(conflict.highest_priority_source).to be_nil
@@ -95,11 +95,11 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
       conflict = described_class.new(
         namespace_uri: namespace_uri,
         package_paths: package_paths,
-        priorities: priorities
+        priorities: priorities,
       )
 
       expect(conflict.to_s).to eq(
-        "Namespace '{http://example.com/schema}' defined in 2 packages"
+        "Namespace '{http://example.com/schema}' defined in 2 packages",
       )
     end
   end
@@ -109,7 +109,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
       conflict = described_class.new(
         namespace_uri: namespace_uri,
         package_paths: package_paths,
-        priorities: priorities
+        priorities: priorities,
       )
 
       description = conflict.detailed_description
@@ -124,7 +124,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
       conflict = described_class.new(
         namespace_uri: namespace_uri,
         package_paths: ["pkg1.lxr", "pkg2.lxr", "pkg3.lxr"],
-        priorities: [0, 5, 10]
+        priorities: [0, 5, 10],
       )
 
       description = conflict.detailed_description
@@ -139,7 +139,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
       described_class.new(
         namespace_uri: namespace_uri,
         package_paths: package_paths,
-        priorities: priorities
+        priorities: priorities,
       )
     end
 

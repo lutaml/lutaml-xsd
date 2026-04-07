@@ -2,59 +2,40 @@
 
 require_relative "configuration_loader"
 require_relative "schema_serializer"
-require_relative "template_renderer"
-require_relative "strategies/single_file_strategy"
-require_relative "strategies/multi_file_strategy"
-require_relative "strategies/api_strategy"
 require_relative "strategies/vue_inlined_strategy"
 require_relative "strategies/vue_cdn_strategy"
-require_relative "filters/schema_filters"
-require_relative "filters/url_filters"
 
 module Lutaml
   module Xsd
     module Spa
-      # Main SPA documentation generator (refactored with dependency injection)
+      # Main SPA documentation generator
       #
-      # Orchestrates the generation of interactive HTML Single Page Application
-      # documentation from XSD schemas using proper separation of concerns:
-      # - ConfigurationLoader: Loads YAML configurations
-      # - SchemaSerializer: Converts schemas to structured data
-      # - TemplateRenderer: Renders Liquid templates
-      # - OutputStrategy: Writes files based on mode
+      # Generates interactive HTML Single Page Application documentation
+      # from XSD schemas using Vue.js frontend.
       #
       # @example Generate single-file SPA
       #   generator = Generator.new(
       #     package,
       #     'output/docs.html',
-      #     mode: 'single_file'
-      #   )
-      #   generator.generate
-      #
-      # @example Generate multi-file SPA
-      #   generator = Generator.new(
-      #     package,
-      #     'output/docs',
-      #     mode: 'multi_file'
+      #     mode: 'vue_inlined'
       #   )
       #   generator.generate
       class Generator
-        attr_reader :package, :output_dir, :options
+        attr_reader :package, :output_path, :options
 
-        # Initialize SPA generator with dependency injection
+        # Initialize SPA generator
         #
         # @param package [SchemaRepositoryPackage] Schema repository package
-        # @param output_dir [String] Output directory or file path
+        # @param output_path [String] Output file path
         # @param options [Hash] Generation options
-        # @option options [String] :mode Output mode ('single_file' or 'multi_file')
+        # @option options [String] :mode Output mode ('vue_inlined' or 'vue_cdn')
         # @option options [Boolean] :verbose Enable verbose output
-        def initialize(package, output_dir, options = {})
+        def initialize(package, output_path, options = {})
           @package = package
-          @output_dir = output_dir
+          @output_path = output_path
           @options = options
           @config_loader = ConfigurationLoader.new
           @serializer = SchemaSerializer.new(package)
-          @renderer = setup_renderer
         end
 
         # Generate SPA documentation
@@ -65,7 +46,7 @@ module Lutaml
 
           # Create output strategy
           strategy = create_strategy
-          mode = options[:mode] || "single_file"
+          mode = options[:mode] || "vue_inlined"
           strategy_name = "#{mode.split('_').map(&:capitalize).join(' ')} Strategy"
           log "✓ Using #{strategy_name}"
 
@@ -74,23 +55,13 @@ module Lutaml
           log "✓ Serialized #{serialized_data[:schemas]&.size || 0} schema(s)"
 
           # Generate output using strategy
-          output_files = strategy.generate(serialized_data, @renderer)
+          output_files = strategy.generate(serialized_data, nil)
           log "✓ Generated #{output_files&.size || 0} file(s)"
 
           output_files
         end
 
         private
-
-        # Setup template renderer with custom filters
-        #
-        # @return [TemplateRenderer] Configured renderer
-        def setup_renderer
-          renderer = TemplateRenderer.new
-          renderer.register_filter(Filters::SchemaFilters)
-          renderer.register_filter(Filters::UrlFilters)
-          renderer
-        end
 
         # Create appropriate output strategy based on mode
         #
@@ -99,39 +70,21 @@ module Lutaml
           mode = options[:mode] || "vue_inlined"
 
           case mode
-          when "single_file"
-            Strategies::SingleFileStrategy.new(
-              output_dir,
-              @config_loader,
-              verbose: verbose?,
-            )
-          when "multi_file"
-            Strategies::MultiFileStrategy.new(
-              output_dir,
-              @config_loader,
-              verbose: verbose?,
-            )
-          when "api"
-            Strategies::ApiStrategy.new(
-              output_dir,
-              @config_loader,
-              verbose: verbose?,
-            )
           when "vue_inlined"
             Strategies::VueInlinedStrategy.new(
-              output_dir,
+              output_path,
               @config_loader,
               verbose: verbose?,
             )
           when "vue_cdn"
             Strategies::VueCdnStrategy.new(
-              output_dir,
+              output_path,
               @config_loader,
               verbose: verbose?,
             )
           else
             raise ArgumentError,
-                  "Unknown mode: #{mode}. Valid modes: single_file, multi_file, api, vue_inlined, vue_cdn"
+                  "Unknown mode: #{mode}. Valid modes: vue_inlined, vue_cdn"
           end
         end
 

@@ -25,7 +25,8 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
         resolved?: true,
         qname: qname1,
         namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType, class: Lutaml::Xml::Schema::Xsd::ComplexType),
+        definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
+                                    class: Lutaml::Xml::Schema::Xsd::ComplexType),
       )
     end
 
@@ -35,7 +36,8 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
         resolved?: true,
         qname: qname2,
         namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::SimpleType, class: Lutaml::Xml::Schema::Xsd::SimpleType),
+        definition: instance_double(Lutaml::Xml::Schema::Xsd::SimpleType,
+                                    class: Lutaml::Xml::Schema::Xsd::SimpleType),
       )
     end
 
@@ -103,7 +105,8 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
         resolved?: true,
         qname: qname1,
         namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType, class: Lutaml::Xml::Schema::Xsd::ComplexType),
+        definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
+                                    class: Lutaml::Xml::Schema::Xsd::ComplexType),
       )
     end
 
@@ -113,7 +116,8 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
         resolved?: true,
         qname: qname2,
         namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::SimpleType, class: Lutaml::Xml::Schema::Xsd::SimpleType),
+        definition: instance_double(Lutaml::Xml::Schema::Xsd::SimpleType,
+                                    class: Lutaml::Xml::Schema::Xsd::SimpleType),
       )
     end
 
@@ -160,7 +164,8 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
         resolved?: true,
         qname: qname1,
         namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType, class: Lutaml::Xml::Schema::Xsd::ComplexType),
+        definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
+                                    class: Lutaml::Xml::Schema::Xsd::ComplexType),
       )
     end
 
@@ -170,7 +175,8 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
         resolved?: true,
         qname: qname2,
         namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::SimpleType, class: Lutaml::Xml::Schema::Xsd::SimpleType),
+        definition: instance_double(Lutaml::Xml::Schema::Xsd::SimpleType,
+                                    class: Lutaml::Xml::Schema::Xsd::SimpleType),
       )
     end
 
@@ -203,7 +209,10 @@ end
 RSpec.describe Lutaml::Xsd::BatchQueryResult do
   let(:query) { "ns:Type1" }
   let(:resolved) { true }
-  let(:definition) { instance_double(Lutaml::Xml::Schema::Xsd::ComplexType, class: Lutaml::Xml::Schema::Xsd::ComplexType) }
+  let(:definition) do
+    instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
+                    class: Lutaml::Xml::Schema::Xsd::ComplexType)
+  end
   let(:result) do
     instance_double(
       Lutaml::Xsd::TypeResolutionResult,

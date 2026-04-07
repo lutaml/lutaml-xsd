@@ -15,13 +15,15 @@ module Lutaml
       # @return [Array<PackageSource>] Ordered sources for loading
       # @raise [PackageMergeError] If unresolvable conflicts
       def resolve
-        error_strategy_sources = @package_sources.select { |s| s.conflict_resolution == "error" }
+        error_strategy_sources = @package_sources.select do |s|
+          s.conflict_resolution == "error"
+        end
 
         if error_strategy_sources.any? && @conflict_report.has_conflicts?
           raise PackageMergeError.new(
             message: "Conflicts detected with 'error' resolution strategy",
             conflict_report: @conflict_report,
-            error_strategy_sources: error_strategy_sources
+            error_strategy_sources: error_strategy_sources,
           )
         end
 
@@ -34,9 +36,11 @@ module Lutaml
                   when Conflicts::NamespaceConflict, Conflicts::TypeConflict
                     conflict.sources
                   when Conflicts::SchemaConflict
-                    conflict.source_files.map do |fs|
-                      @package_sources.find { |ps| ps.package_path == fs.package_path }
-                    end.compact
+                    conflict.source_files.filter_map do |fs|
+                      @package_sources.find do |ps|
+                        ps.package_path == fs.package_path
+                      end
+                    end
                   end
 
         resolve_by_priority(sources)
@@ -55,7 +59,7 @@ module Lutaml
           raise PackageMergeError.new(
             message: "Conflict with 'error' strategy",
             conflict_report: @conflict_report,
-            error_strategy_sources: [winner]
+            error_strategy_sources: [winner],
           )
         end
       end

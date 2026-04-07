@@ -549,7 +549,7 @@ module Lutaml
           indent = "   " * level
           marker = level.zero? ? "📄" : "├──"
 
-          puts "#{indent}#{marker} #{node[:file]} #{level.zero? ? '⭐ ENTRYPOINT' : ''}"
+          puts "#{indent}#{marker} #{node[:file]} #{'⭐ ENTRYPOINT' if level.zero?}"
           puts "#{indent}    URI: #{node[:namespace]}" if node[:namespace]
           puts "#{indent}    (circular ↻)" if node[:circular]
 

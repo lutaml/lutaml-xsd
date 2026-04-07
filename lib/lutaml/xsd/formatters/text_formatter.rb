@@ -13,11 +13,9 @@ module Lutaml
         # @param results [Hash] Validation results
         # @return [String] Formatted text output
         def format(results)
-          output = []
-
           # Output each file result
-          results[:files].each do |file_result|
-            output << format_file_result(file_result)
+          output = results[:files].map do |file_result|
+            format_file_result(file_result)
           end
 
           # Add summary

@@ -81,7 +81,8 @@ module Lutaml
           def find_frontend_asset(filename)
             # Development: project_root/frontend/dist/ (5 levels up from strategies/)
             # Gem install: lib/frontend/dist/ (same relative path from strategies/)
-            path = File.join(__dir__, "..", "..", "..", "..", "..", "frontend", "dist", filename)
+            path = File.join(__dir__, "..", "..", "..", "..", "..", "frontend",
+                             "dist", filename)
             File.exist?(path) ? path : nil
           end
 

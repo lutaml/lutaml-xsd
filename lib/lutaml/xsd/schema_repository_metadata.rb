@@ -91,7 +91,7 @@ module Lutaml
       end
 
       # Override to_yaml to include any extra custom metadata fields
-      def to_yaml(*args)
+      def to_yaml(*)
         hash = to_hash
         # Add any instance variables that aren't part of the schema
         instance_variables.each do |ivar|
@@ -101,7 +101,7 @@ module Lutaml
           value = instance_variable_get(ivar)
           hash[var_name] = value unless value.nil?
         end
-        hash.to_yaml(*args)
+        hash.to_yaml(*)
       end
 
       # Override to_hash to include extra fields

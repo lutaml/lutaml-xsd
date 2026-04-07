@@ -13,7 +13,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
         source = described_class.new(
           package_path: package_path,
           schema_file: schema_file,
-          priority: priority
+          priority: priority,
         )
 
         expect(source.package_path).to eq(package_path)
@@ -27,7 +27,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
         described_class.new(
           package_path: package_path,
           schema_file: schema_file,
-          priority: priority
+          priority: priority,
         )
       end
 
@@ -88,12 +88,12 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
         Lutaml::Xsd::Conflicts::SchemaFileSource.new(
           package_path: "package1.lxr",
           schema_file: "schemas/person.xsd",
-          priority: 0
+          priority: 0,
         ),
         Lutaml::Xsd::Conflicts::SchemaFileSource.new(
           package_path: "package2.lxr",
           schema_file: "xsd/person.xsd",
-          priority: 10
+          priority: 10,
         ),
       ]
     end
@@ -102,7 +102,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
       it "creates conflict with basename and sources" do
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: source_files
+          source_files: source_files,
         )
 
         expect(conflict.schema_basename).to eq(schema_basename)
@@ -114,7 +114,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
       it "returns number of source files" do
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: source_files
+          source_files: source_files,
         )
 
         expect(conflict.conflict_count).to eq(2)
@@ -123,7 +123,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
       it "handles single source" do
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: [source_files[0]]
+          source_files: [source_files[0]],
         )
 
         expect(conflict.conflict_count).to eq(1)
@@ -134,7 +134,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
       it "extracts package paths from source files" do
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: source_files
+          source_files: source_files,
         )
 
         expect(conflict.package_paths).to eq(["package1.lxr", "package2.lxr"])
@@ -145,10 +145,11 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
       it "extracts file paths from source files" do
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: source_files
+          source_files: source_files,
         )
 
-        expect(conflict.file_paths).to eq(["schemas/person.xsd", "xsd/person.xsd"])
+        expect(conflict.file_paths).to eq(["schemas/person.xsd",
+                                           "xsd/person.xsd"])
       end
     end
 
@@ -156,7 +157,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
       it "returns source with lowest priority number" do
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: source_files
+          source_files: source_files,
         )
 
         highest = conflict.highest_priority_source
@@ -169,18 +170,18 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
           Lutaml::Xsd::Conflicts::SchemaFileSource.new(
             package_path: "package1.lxr",
             schema_file: "schemas/person.xsd",
-            priority: 10
+            priority: 10,
           ),
           Lutaml::Xsd::Conflicts::SchemaFileSource.new(
             package_path: "package2.lxr",
             schema_file: "xsd/person.xsd",
-            priority: 0
+            priority: 0,
           ),
         ]
 
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: reversed_sources
+          source_files: reversed_sources,
         )
 
         highest = conflict.highest_priority_source
@@ -193,7 +194,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
       it "returns human-readable summary" do
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: source_files
+          source_files: source_files,
         )
 
         expect(conflict.to_s).to eq("Schema 'person.xsd' found in 2 packages")
@@ -204,7 +205,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
       it "returns detailed conflict information" do
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: source_files
+          source_files: source_files,
         )
 
         description = conflict.detailed_description
@@ -222,23 +223,23 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
           Lutaml::Xsd::Conflicts::SchemaFileSource.new(
             package_path: "pkg1.lxr",
             schema_file: "a/person.xsd",
-            priority: 0
+            priority: 0,
           ),
           Lutaml::Xsd::Conflicts::SchemaFileSource.new(
             package_path: "pkg2.lxr",
             schema_file: "b/person.xsd",
-            priority: 5
+            priority: 5,
           ),
           Lutaml::Xsd::Conflicts::SchemaFileSource.new(
             package_path: "pkg3.lxr",
             schema_file: "c/person.xsd",
-            priority: 10
+            priority: 10,
           ),
         ]
 
         conflict = described_class.new(
           schema_basename: schema_basename,
-          source_files: multiple_sources
+          source_files: multiple_sources,
         )
 
         description = conflict.detailed_description
@@ -255,7 +256,7 @@ RSpec.describe Lutaml::Xsd::Conflicts::SchemaConflict do
       let(:conflict) do
         described_class.new(
           schema_basename: schema_basename,
-          source_files: source_files
+          source_files: source_files,
         )
       end
 

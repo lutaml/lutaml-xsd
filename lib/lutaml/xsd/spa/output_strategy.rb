@@ -89,7 +89,7 @@ module Lutaml
               raise IOError, "Failed to write file: #{file_path}"
             end
 
-            if File.size(file_path).zero?
+            if File.empty?(file_path)
               raise IOError, "File is empty: #{file_path}"
             end
           end

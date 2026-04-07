@@ -92,9 +92,9 @@ RSpec.describe Lutaml::Xsd::ValidationResult do
       result = described_class.failure([error1, error2])
 
       expect(result.error_messages).to eq([
-        "Package path is required",
-        "Must be non-negative",
-      ])
+                                            "Package path is required",
+                                            "Must be non-negative",
+                                          ])
     end
   end
 
