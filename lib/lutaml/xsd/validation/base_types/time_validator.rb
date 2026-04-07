@@ -47,7 +47,7 @@ module Lutaml
             minute = parts[1].to_i
             second = parts[2].to_i
 
-            hour >= 0 && hour <= 23 &&
+            hour.between?(0, 23) &&
               minute >= 0 && minute <= 59 &&
               second >= 0 && second <= 59
           rescue StandardError

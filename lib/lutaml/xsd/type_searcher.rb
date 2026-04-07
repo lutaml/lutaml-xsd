@@ -211,10 +211,10 @@ limit: 20)
         docs = definition.annotation.documentation
         docs = [docs] unless docs.is_a?(Array)
 
-        docs.map do |doc|
+        docs.filter_map do |doc|
           content = doc.respond_to?(:content) ? doc.content : doc.to_s
           content&.strip
-        end.compact.first || ""
+        end.first || ""
       end
     end
   end

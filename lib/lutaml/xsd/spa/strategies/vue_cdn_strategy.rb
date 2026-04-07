@@ -24,12 +24,12 @@ module Lutaml
         #   files = strategy.generate(data, renderer)
         class VueCdnStrategy < OutputStrategy
           # Vue 3 CDN URLs
-          VUE_CDN_URL = "https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js".freeze
-          VUE_ROUTER_CDN_URL = "https://unpkg.com/vue-router@4.3.0/dist/vue-router.global.prod.js".freeze
-          PINIA_CDN_URL = "https://unpkg.com/pinia@2.1.7/dist/pinia.iife.prod.js".freeze
+          VUE_CDN_URL = "https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"
+          VUE_ROUTER_CDN_URL = "https://unpkg.com/vue-router@4.3.0/dist/vue-router.global.prod.js"
+          PINIA_CDN_URL = "https://unpkg.com/pinia@2.1.7/dist/pinia.iife.prod.js"
 
           # Default CDN base URL for app assets
-          DEFAULT_CDN_BASE = "https://cdn.example.com/lutaml-xsd".freeze
+          DEFAULT_CDN_BASE = "https://cdn.example.com/lutaml-xsd"
 
           attr_reader :output_path, :config_loader, :options
 
@@ -97,8 +97,8 @@ module Lutaml
             metadata = data[:metadata] || {}
 
             # Determine asset URLs
-            app_js_url = cdn_base != DEFAULT_CDN_BASE ? "#{cdn_base}/app.iife.js" : "./app.iife.js"
-            app_css_url = cdn_base != DEFAULT_CDN_BASE ? "#{cdn_base}/style.css" : "./style.css"
+            app_js_url = cdn_base == DEFAULT_CDN_BASE ? "./app.iife.js" : "#{cdn_base}/app.iife.js"
+            app_css_url = cdn_base == DEFAULT_CDN_BASE ? "./style.css" : "#{cdn_base}/style.css"
 
             <<~HTML
               <!DOCTYPE html>
@@ -187,7 +187,8 @@ module Lutaml
           # @return [String, nil] Full path to asset or nil
           def find_frontend_asset(filename)
             search_paths = [
-              File.join(__dir__, "..", "..", "..", "frontend", "dist", filename),
+              File.join(__dir__, "..", "..", "..", "frontend", "dist",
+                        filename),
               File.join(Dir.pwd, "frontend", "dist", filename),
               File.join(__dir__, "..", "..", "..", "dist", filename),
             ]

@@ -96,7 +96,7 @@ module Lutaml
               local_name.downcase.include?(name.downcase)
           end
 
-          similar.map { |info| info[:definition]&.name }.compact.take(limit)
+          similar.filter_map { |info| info[:definition]&.name }.take(limit)
         end
 
         # Get all indexed types
@@ -165,7 +165,7 @@ module Lutaml
         # Count unique namespaces
         # @return [Integer]
         def namespace_count
-          @index.values.map { |info| info[:namespace] }.compact.uniq.size
+          @index.values.filter_map { |info| info[:namespace] }.uniq.size
         end
       end
     end

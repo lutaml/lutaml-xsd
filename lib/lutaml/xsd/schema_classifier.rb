@@ -31,7 +31,7 @@ module Lutaml
       def classify_entrypoint_schemas
         return [] unless repository.files
 
-        repository.files.map do |file_path|
+        repository.files.filter_map do |file_path|
           schema = get_schema_by_path(file_path)
           next unless schema
 
@@ -40,7 +40,7 @@ module Lutaml
             location: file_path,
             category: :entrypoint,
           )
-        end.compact
+        end
       end
 
       # Schemas discovered through imports/includes

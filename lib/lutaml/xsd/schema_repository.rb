@@ -659,13 +659,16 @@ module Lutaml
       def add_schema_location_mapping(mapping)
         @schema_location_mappings ||= []
         mapping_obj = if mapping.is_a?(SchemaLocationMapping)
-                       mapping
-                     elsif mapping.is_a?(Hash)
-                       SchemaLocationMapping.from_hash(mapping)
-                     else
-                       raise ArgumentError, "Expected SchemaLocationMapping or Hash, got #{mapping.class}"
-                     end
-        @schema_location_mappings << mapping_obj unless @schema_location_mappings.any? { |m| m.from == mapping_obj.from }
+                        mapping
+                      elsif mapping.is_a?(Hash)
+                        SchemaLocationMapping.from_hash(mapping)
+                      else
+                        raise ArgumentError,
+                              "Expected SchemaLocationMapping or Hash, got #{mapping.class}"
+                      end
+        @schema_location_mappings << mapping_obj unless @schema_location_mappings.any? do |m|
+          m.from == mapping_obj.from
+        end
       end
 
       # Configure schema location mappings for imports/includes
@@ -723,13 +726,11 @@ module Lutaml
             :@base_packages,
             repository.base_packages.map do |pkg|
               pkg_path = pkg.package
-              if File.absolute_path?(pkg_path)
-                pkg
-              else
+              unless File.absolute_path?(pkg_path)
                 expanded_path = File.expand_path(pkg_path, base_dir)
                 pkg.package = expanded_path
-                pkg
               end
+              pkg
             end,
           )
         end
@@ -877,7 +878,7 @@ module Lutaml
       # Load a single package with schema filtering
       # @param package_source [PackageSource] The package to load
       # @param glob_mappings [Array<Hash>] Schema location mappings
-      def load_package_with_filtering(package_source, glob_mappings)
+      def load_package_with_filtering(package_source, _glob_mappings)
         repo = package_source.repository
 
         # Get all schemas from the package
@@ -892,7 +893,7 @@ module Lutaml
         if package_source.namespace_remapping.any?
           filtered_schemas = apply_namespace_remapping_to_schemas(
             filtered_schemas,
-            package_source.namespace_remapping
+            package_source.namespace_remapping,
           )
         end
 
@@ -928,7 +929,7 @@ module Lutaml
         # If any element is a Hash or BasePackageConfig, use conflict detection
         base_packages.any? do |pkg|
           pkg.is_a?(Hash) || pkg.is_a?(BasePackageConfig) ||
-            (pkg.is_a?(String) && pkg.start_with?('{'))
+            (pkg.is_a?(String) && pkg.start_with?("{"))
         end
       end
 
@@ -1000,7 +1001,9 @@ module Lutaml
         # Merge schema location mappings from package
         package_repo.schema_location_mappings&.each do |mapping|
           @schema_location_mappings ||= []
-          @schema_location_mappings << mapping unless @schema_location_mappings.any? { |m| m.from == mapping.from }
+          @schema_location_mappings << mapping unless @schema_location_mappings.any? do |m|
+            m.from == mapping.from
+          end
         end
       end
 
@@ -1028,7 +1031,8 @@ module Lutaml
         @parsed_schemas[file_path] = parsed_schema
 
         # Register in global cache for cross-repository access
-        Lutaml::Xml::Schema::Xsd::Schema.schema_processed(file_path, parsed_schema)
+        Lutaml::Xml::Schema::Xsd::Schema.schema_processed(file_path,
+                                                          parsed_schema)
       rescue StandardError => e
         warn "Warning: Failed to parse schema #{file_path}: #{e.message}"
         # Parse errors are expected for schemas with unresolvable imports
@@ -1139,10 +1143,10 @@ module Lutaml
         docs = elem.annotation.documentation
         docs = [docs] unless docs.is_a?(Array)
 
-        docs.map do |doc|
+        docs.filter_map do |doc|
           content = doc.respond_to?(:content) ? doc.content : doc.to_s
           content&.strip
-        end.compact.first || ""
+        end.first || ""
       end
     end
   end

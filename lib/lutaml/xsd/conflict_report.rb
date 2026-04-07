@@ -18,7 +18,7 @@ module Lutaml
         new(
           package_path: package_source.package_path,
           priority: package_source.priority,
-          conflict_resolution: package_source.conflict_resolution
+          conflict_resolution: package_source.conflict_resolution,
         )
       end
     end
@@ -54,7 +54,9 @@ schema_conflicts:, package_sources:)
           namespace_conflicts: namespace_conflicts,
           type_conflicts: type_conflicts,
           schema_conflicts: schema_conflicts,
-          package_info: package_sources.map { |ps| PackageInfo.from_source(ps) }
+          package_info: package_sources.map do |ps|
+            PackageInfo.from_source(ps)
+          end,
         )
         report.package_sources = package_sources
         report
@@ -79,7 +81,7 @@ schema_conflicts:, package_sources:)
 
         lines = []
         lines << "❌ Package Merge Conflicts Detected"
-        lines << "=" * 80
+        lines << ("=" * 80)
         lines << ""
         lines << "Total conflicts: #{total_conflicts}"
         lines << "  - Namespace conflicts: #{namespace_conflicts.size}"
@@ -89,7 +91,7 @@ schema_conflicts:, package_sources:)
 
         if namespace_conflicts.any?
           lines << "Namespace URI Conflicts:"
-          lines << "-" * 80
+          lines << ("-" * 80)
           namespace_conflicts.each_with_index do |conflict, idx|
             lines << "#{idx + 1}. #{conflict.detailed_description}"
             lines << ""
@@ -98,7 +100,7 @@ schema_conflicts:, package_sources:)
 
         if type_conflicts.any?
           lines << "Type Name Conflicts:"
-          lines << "-" * 80
+          lines << ("-" * 80)
           type_conflicts.each_with_index do |conflict, idx|
             lines << "#{idx + 1}. #{conflict.detailed_description}"
             lines << ""
@@ -107,7 +109,7 @@ schema_conflicts:, package_sources:)
 
         if schema_conflicts.any?
           lines << "Schema File Conflicts:"
-          lines << "-" * 80
+          lines << ("-" * 80)
           schema_conflicts.each_with_index do |conflict, idx|
             lines << "#{idx + 1}. #{conflict.detailed_description}"
             lines << ""
@@ -126,7 +128,7 @@ schema_conflicts:, package_sources:)
       def format_resolution_strategies
         lines = []
         lines << "Resolution Strategies:"
-        lines << "-" * 80
+        lines << ("-" * 80)
         package_info.sort_by(&:priority).each do |info|
           lines << "Package: #{info.package_path}"
           lines << "  Priority: #{info.priority}"

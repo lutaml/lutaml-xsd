@@ -9,14 +9,9 @@ module Lutaml
       # CLI command for generating SPA documentation
       #
       # Generates interactive HTML Single Page Application documentation
-      # from XSD schemas with support for:
-      # - Single-file (embedded) output mode
-      # - Multi-file (distributed) output mode
-      # - Three-tier navigation system
-      # - Dynamic content loading
-      # - Responsive design
+      # from XSD schemas with Vue.js frontend.
       class GenerateSpaCommand < BaseCommand
-        attr_reader :package_path, :output_path, :output_dir
+        attr_reader :package_path, :output_path
 
         # Initialize generate-spa command
         #
@@ -26,7 +21,6 @@ module Lutaml
           super(options)
           @package_path = package_path
           @output_path = options[:output]
-          @output_dir = options[:output_dir]
         end
 
         # Run SPA generation command
@@ -62,29 +56,8 @@ module Lutaml
             exit 1
           end
 
-          validate_output_options
-        end
-
-        # Validate output options
-        #
-        # @return [void]
-        def validate_output_options
-          mode = options[:mode] || "vue_inlined"
-
-          case mode
-          when "vue_inlined", "vue_cdn", "single_file"
-            unless output_path
-              error "#{mode.tr('_', ' ').capitalize} mode requires --output option"
-              exit 1
-            end
-          when "multi_file", "api"
-            unless output_dir
-              mode_name = mode.tr("_", "-").capitalize
-              error "#{mode_name} mode requires --output-dir option"
-              exit 1
-            end
-          else
-            error "Invalid mode: #{mode}. Use 'vue_inlined', 'vue_cdn', 'single_file', 'multi_file', or 'api'"
+          unless output_path
+            error "No output file specified. Use --output option"
             exit 1
           end
         end
@@ -108,14 +81,11 @@ module Lutaml
         def create_generator(package)
           verbose_output "Initializing SPA generator..."
 
-          # Determine output path based on mode
           mode = options[:mode] || "vue_inlined"
-          single_file_modes = %w[vue_inlined vue_cdn single_file]
-          output_location = single_file_modes.include?(mode) ? output_path : output_dir
 
           generator = Spa::Generator.new(
             package,
-            output_location,
+            output_path,
             mode: mode,
             verbose: verbose?,
           )

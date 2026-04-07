@@ -453,9 +453,9 @@ module Lutaml
             build_config = full_config["build"] || {}
 
             verbose_output "Creating package: #{output_path}"
-            verbose_output "  XSD Mode: #{options[:xsd_mode] || build_config["xsd_mode"] || 'include_all'}"
-            verbose_output "  Resolution Mode: #{options[:resolution_mode] || build_config["resolution_mode"] || 'resolved'}"
-            verbose_output "  Serialization Format: #{options[:serialization_format] || build_config["serialization_format"] || 'marshal'}"
+            verbose_output "  XSD Mode: #{options[:xsd_mode] || build_config['xsd_mode'] || 'include_all'}"
+            verbose_output "  Resolution Mode: #{options[:resolution_mode] || build_config['resolution_mode'] || 'resolved'}"
+            verbose_output "  Serialization Format: #{options[:serialization_format] || build_config['serialization_format'] || 'marshal'}"
 
             xsd_mode = (options[:xsd_mode] || build_config["xsd_mode"] || "include_all").to_sym
             resolution_mode = (options[:resolution_mode] || build_config["resolution_mode"] || "resolved").to_sym
@@ -506,8 +506,12 @@ module Lutaml
             end
             metadata[:created_by] = "lutaml-xsd CLI"
             # Config file metadata
-            metadata[:title] = metadata_config["title"] || metadata_config["name"]
-            metadata[:description] = metadata_config["description"] unless options[:description]
+            metadata[:title] =
+              metadata_config["title"] || metadata_config["name"]
+            unless options[:description]
+              metadata[:description] =
+                metadata_config["description"]
+            end
             metadata[:homepage] = metadata_config["homepage"]
             metadata[:repository] = metadata_config["repository"]
             metadata[:documentation] = metadata_config["documentation"]
@@ -516,13 +520,16 @@ module Lutaml
             metadata[:authors] = metadata_config["authors"]
             metadata[:tags] = metadata_config["tags"]
             # Pass through appearance and links from config
-            metadata[:appearance] = full_config["appearance"] if full_config["appearance"]
+            if full_config["appearance"]
+              metadata[:appearance] =
+                full_config["appearance"]
+            end
             metadata[:links] = full_config["links"] if full_config["links"]
             metadata
           end
 
           def full_config
-            @full_config ||= (YAML.load_file(@config_file) || {})
+            @full_config ||= YAML.load_file(@config_file) || {}
           end
 
           def validate_package(package)

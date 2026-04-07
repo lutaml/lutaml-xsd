@@ -55,7 +55,7 @@ module Lutaml
             end
 
             def contains?(point)
-              point.x >= x && point.x <= (x + width) &&
+              point.x.between?(x, x + width) &&
                 point.y >= y && point.y <= (y + height)
             end
           end

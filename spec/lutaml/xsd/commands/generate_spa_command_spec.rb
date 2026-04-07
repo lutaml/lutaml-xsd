@@ -6,7 +6,6 @@ require "lutaml/xsd/commands/generate_spa_command"
 RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
   let(:package_path) { "/tmp/test.lxr" }
   let(:output_path) { "/tmp/docs.html" }
-  let(:output_dir) { "/tmp/docs" }
 
   let(:mock_package) do
     instance_double(
@@ -34,11 +33,6 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       command = described_class.new(package_path, output: output_path)
       expect(command.output_path).to eq(output_path)
     end
-
-    it "extracts output_dir option" do
-      command = described_class.new(package_path, output_dir: output_dir)
-      expect(command.output_dir).to eq(output_dir)
-    end
   end
 
   describe "#run" do
@@ -48,12 +42,12 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       allow(Lutaml::Xsd::Spa::Generator).to receive(:new).and_return(mock_generator)
     end
 
-    context "with single_file mode" do
+    context "with vue_inlined mode" do
       let(:command) do
         described_class.new(
           package_path,
           output: output_path,
-          mode: "single_file",
+          mode: "vue_inlined",
         )
       end
 
@@ -67,11 +61,11 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
         command.run
       end
 
-      it "creates generator with single_file mode" do
+      it "creates generator with vue_inlined mode" do
         expect(Lutaml::Xsd::Spa::Generator).to receive(:new).with(
           mock_package,
           output_path,
-          hash_including(mode: "single_file"),
+          hash_including(mode: "vue_inlined"),
         )
         command.run
       end
@@ -87,20 +81,20 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       end
     end
 
-    context "with multi_file mode" do
+    context "with vue_cdn mode" do
       let(:command) do
         described_class.new(
           package_path,
-          output_dir: output_dir,
-          mode: "multi_file",
+          output: output_path,
+          mode: "vue_cdn",
         )
       end
 
-      it "creates generator with multi_file mode" do
+      it "creates generator with vue_cdn mode" do
         expect(Lutaml::Xsd::Spa::Generator).to receive(:new).with(
           mock_package,
-          output_dir,
-          hash_including(mode: "multi_file"),
+          output_path,
+          hash_including(mode: "vue_cdn"),
         )
         command.run
       end
@@ -174,8 +168,8 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       end
     end
 
-    context "when single_file mode without output option" do
-      let(:command) { described_class.new(package_path, mode: "single_file") }
+    context "when no output option" do
+      let(:command) { described_class.new(package_path) }
 
       before do
         allow(File).to receive(:exist?).and_return(true)
@@ -192,53 +186,7 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
           command.send(:validate_inputs)
         rescue SystemExit
           # Expected
-        end.to output(/Single file mode requires --output option/).to_stderr
-      end
-    end
-
-    context "when multi_file mode without output_dir option" do
-      let(:command) { described_class.new(package_path, mode: "multi_file") }
-
-      before do
-        allow(File).to receive(:exist?).and_return(true)
-      end
-
-      it "exits with error" do
-        expect do
-          command.send(:validate_inputs)
-        end.to raise_error(SystemExit)
-      end
-
-      it "outputs error message" do
-        expect do
-          command.send(:validate_inputs)
-        rescue SystemExit
-          # Expected
-        end.to output(/Multi-file mode requires --output-dir/).to_stderr
-      end
-    end
-
-    context "with invalid mode" do
-      let(:command) do
-        described_class.new(package_path, output: output_path, mode: "invalid")
-      end
-
-      before do
-        allow(File).to receive(:exist?).and_return(true)
-      end
-
-      it "exits with error" do
-        expect do
-          command.send(:validate_inputs)
-        end.to raise_error(SystemExit)
-      end
-
-      it "outputs error message" do
-        expect do
-          command.send(:validate_inputs)
-        rescue SystemExit
-          # Expected
-        end.to output(/Invalid mode/).to_stderr
+        end.to output(/No output file specified/).to_stderr
       end
     end
   end
@@ -282,7 +230,7 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
   describe "#create_generator" do
     let(:command) do
       described_class.new(package_path, output: output_path,
-                                        mode: "single_file")
+                                        mode: "vue_inlined")
     end
 
     before do
@@ -293,7 +241,7 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       expect(Lutaml::Xsd::Spa::Generator).to receive(:new).with(
         mock_package,
         output_path,
-        hash_including(mode: "single_file"),
+        hash_including(mode: "vue_inlined"),
       )
       command.send(:create_generator, mock_package)
     end

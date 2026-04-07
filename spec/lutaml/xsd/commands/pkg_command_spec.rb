@@ -109,8 +109,12 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
         allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:new).and_return(mock_package)
         allow(mock_package).to receive(:metadata).and_return({
                                                                "base_packages" => [
-                                                                 { "package" => "base1.lxr", "priority" => 0 },
-                                                                 { "package" => "base2.lxr", "priority" => 10 },
+                                                                 {
+                                                                   "package" => "base1.lxr", "priority" => 0
+                                                                 },
+                                                                 {
+                                                                   "package" => "base2.lxr", "priority" => 10
+                                                                 },
                                                                ],
                                                              })
 

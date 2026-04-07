@@ -93,7 +93,7 @@ RSpec.describe Lutaml::Xsd::DependencyGrapher do
     parsed_schema = repo.instance_variable_get(:@parsed_schemas)[temp_file.path]
     if parsed_schema
       Lutaml::Xml::Schema::Xsd::Schema.schema_processed(temp_file.path,
-                                           parsed_schema)
+                                                        parsed_schema)
     end
 
     repo.resolve

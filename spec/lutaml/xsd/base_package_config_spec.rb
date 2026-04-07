@@ -70,7 +70,8 @@ RSpec.describe Lutaml::Xsd::BasePackageConfig do
           "Invalid conflict resolution strategy",
         )
         expect(result.errors.first.value).to eq("invalid_strategy")
-        expect(result.errors.first.constraint).to include("keep", "override", "error")
+        expect(result.errors.first.constraint).to include("keep", "override",
+                                                          "error")
       end
     end
 

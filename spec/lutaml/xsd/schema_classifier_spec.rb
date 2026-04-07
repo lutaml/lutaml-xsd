@@ -271,10 +271,11 @@ RSpec.describe Lutaml::Xsd::SchemaClassificationInfo do
       type3 = instance_double(Lutaml::Xml::Schema::Xsd::ComplexType)
       stype1 = instance_double(Lutaml::Xml::Schema::Xsd::SimpleType)
       import1 = instance_double(Lutaml::Xml::Schema::Xsd::Import, namespace: "ns1",
-                                                     schema_path: nil)
+                                                                  schema_path: nil)
       import2 = instance_double(Lutaml::Xml::Schema::Xsd::Import, namespace: "ns2",
-                                                     schema_path: nil)
-      include1 = instance_double(Lutaml::Xml::Schema::Xsd::Include, schema_path: nil)
+                                                                  schema_path: nil)
+      include1 = instance_double(Lutaml::Xml::Schema::Xsd::Include,
+                                 schema_path: nil)
 
       allow(schema).to receive(:element).and_return([elem1, elem2])
       allow(schema).to receive(:complex_type).and_return([type1, type2, type3])
