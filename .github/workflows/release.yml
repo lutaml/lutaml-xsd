@@ -19,6 +19,9 @@ on:
 
 jobs:
   release:
+    permissions:
+      contents: write
+      packages: write
     uses: metanorma/ci/.github/workflows/rubygems-release.yml@main
     with:
       next_version: ${{ github.event.inputs.next_version }}
