@@ -19,7 +19,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
   pull-requests: write
 
 jobs:
@@ -34,11 +33,13 @@ jobs:
         with:
           args: --config lychee.toml --verbose --no-progress 'docs/**/*.adoc' 'docs/**/*.md' 'README.adoc'
           fail: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          format: markdown
+          output: ./lychee/out.md
 
-      - name: Create Issue From File
+      - name: Update PR Body
         if: failure()
-        uses: peter-evans/create-issue-from-file@v5
+        uses: peter-evans/update-pr-from-file@v3
         with:
-          title: Link Checker Report
-          content-filepath: ./lychee/out.md
-          labels: documentation,link-check
+          pr-number: ${{ github.event.pull_request.number }}
+          body-file: ./lychee/out.md
