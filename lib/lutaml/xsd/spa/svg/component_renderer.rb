@@ -75,7 +75,7 @@ module Lutaml
             return "" unless name
 
             name.gsub(/([a-z])([A-Z])/, '\1-\2')
-              .gsub(/([A-Z]++)([A-Z][a-z])/, '\1-\2')
+              .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')
               .downcase
               .gsub(/[^a-z0-9]+/, "-")
               .gsub(/^-|-$/, "")
