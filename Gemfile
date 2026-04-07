@@ -8,7 +8,7 @@ gemspec
 gem "base64"
 gem "canon"
 gem "liquid"
-gem "lutaml-model", path: "../lutaml-model"
+gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
 gem "nokogiri"
 gem "rake"
 gem "rspec"
