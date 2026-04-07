@@ -198,7 +198,6 @@ module Lutaml
 
             unless missing.empty?
               raise(
-                RuntimeError,
                 "Frontend assets not found: #{missing.join(', ')}. " \
                 "Run 'cd frontend && npm install && npm run build' first, " \
                 "or use rake build_frontend to build automatically.",

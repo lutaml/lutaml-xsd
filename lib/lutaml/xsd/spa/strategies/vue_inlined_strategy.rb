@@ -70,7 +70,6 @@ module Lutaml
               File.read(asset_path)
             else
               raise(
-                RuntimeError,
                 "Frontend asset not found: #{filename}. " \
                 "Run 'cd frontend && npm install && npm run build' first, " \
                 "or use rake build_frontend to build automatically.",
