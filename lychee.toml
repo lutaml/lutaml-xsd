@@ -12,21 +12,15 @@ exclude = [
 user-agent = "lychee-link-checker/1.0"
 
 # Timeout in seconds
-timeout = 10
+timeout = "10"
 
 # Maximum number of concurrent requests
-max-concurrency = 8
+max-concurrency = "8"
 
 # Retry failed requests
-retry = true
-retry-attempts = 3
+retry = "true"
+retry-attempts = "3"
 
 # Cache results
-cache = true
-cache-ttl = 86400
-
-# Accept invalid SSL certificates
-insecure = false
-
-# Verbose output
-verbose = false
+cache = "true"
+cache-ttl = "86400"
