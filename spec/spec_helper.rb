@@ -15,3 +15,13 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 end
+
+# Helper to create a writable temp directory on Windows GitHub Actions
+# On Windows, Dir.mktmpdir creates directories with restricted permissions
+def with_writable_temp_dir
+  require "fileutils"
+  Dir.mktmpdir do |tmpdir|
+    FileUtils.chmod(0o755, tmpdir)
+    yield tmpdir
+  end
+end

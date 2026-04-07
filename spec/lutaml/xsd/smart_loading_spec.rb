@@ -9,7 +9,11 @@ RSpec.describe Lutaml::Xsd::SchemaRepository, "smart loading" do
     File.expand_path("../../fixtures/metaschema.xsd", __dir__)
   end
 
-  let(:temp_dir) { Dir.mktmpdir }
+  let(:temp_dir) do
+    dir = Dir.mktmpdir
+    FileUtils.chmod(0o755, dir)
+    dir
+  end
 
   after do
     FileUtils.rm_rf(temp_dir)

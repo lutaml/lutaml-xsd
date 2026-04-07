@@ -9,7 +9,11 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
   let(:entry_points) { [File.join(fixtures_path, "simple_schema.xsd")] }
   let(:options) { { verbose: false, output: output_file } }
   let(:output_file) { File.join(tmp_dir, "repository.yml") }
-  let(:tmp_dir) { Dir.mktmpdir }
+  let(:tmp_dir) do
+    dir = Dir.mktmpdir
+    FileUtils.chmod(0o755, dir)
+    dir
+  end
   let(:fixtures_path) do
     File.join(__dir__, "../../fixtures/interactive_builder")
   end

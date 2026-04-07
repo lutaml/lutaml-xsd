@@ -3,7 +3,11 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Xsd::SchemaRepository, "package merging" do
-  let(:temp_dir) { Dir.mktmpdir }
+  let(:temp_dir) do
+    dir = Dir.mktmpdir
+    FileUtils.chmod(0o755, dir)
+    dir
+  end
 
   after { FileUtils.remove_entry(temp_dir) }
 
