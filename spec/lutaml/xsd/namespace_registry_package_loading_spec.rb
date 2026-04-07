@@ -5,8 +5,8 @@ require "tempfile"
 
 RSpec.describe "Namespace registry when loading from package" do
   let(:temp_dir) do
-    dir = Dir.mktmpdir("lutaml_xsd_test")
-    FileUtils.chmod(0o755, dir)
+    dir = File.join(Dir.pwd, "tmp_test_#{SecureRandom.hex(8)}")
+    FileUtils.mkdir_p(dir)
     dir
   end
   let(:xsd_content) do
