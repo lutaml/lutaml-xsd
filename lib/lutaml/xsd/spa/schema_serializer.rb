@@ -903,7 +903,7 @@ module Lutaml
           return "unnamed" unless name
 
           name.to_s
-            .gsub(/([A-Z]++)([A-Z][a-z])/, '\1-\2') # Split acronyms: HTTPParser → HTTP-Parser
+            .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2') # Split acronyms: HTTPParser → HTTP-Parser
             .gsub(/([a-z\d])([A-Z])/, '\1-\2') # Split camelCase: fooBar → foo-Bar
             .downcase # Convert to lowercase
             .gsub(/[^a-z0-9]+/, "-") # Replace non-alphanumeric with dash
