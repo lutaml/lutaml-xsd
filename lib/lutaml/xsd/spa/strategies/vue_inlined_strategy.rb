@@ -99,6 +99,8 @@ module Lutaml
           def build_html_document(data, app_js, app_css)
             schema_data_json = build_schema_json(data)
             metadata = data[:metadata] || {}
+            appearance = metadata[:appearance] || {}
+            favicon_links = build_favicon_links(appearance)
 
             <<~HTML
               <!DOCTYPE html>
@@ -109,6 +111,9 @@ module Lutaml
                 <meta name="generator" content="lutaml-xsd #{Lutaml::Xsd::VERSION}">
                 <meta name="description" content="XSD Schema Documentation">
                 <title>#{metadata[:title] || metadata[:name] || 'XSD Schema Documentation'}</title>
+
+                <!-- Favicons -->
+                #{favicon_links}
 
                 <!-- Google Fonts -->
                 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -135,6 +140,25 @@ module Lutaml
               </body>
               </html>
             HTML
+          end
+
+          # Build favicon link tags from appearance config
+          #
+          # @param appearance [Hash] Appearance config from metadata
+          # @return [String] HTML fragment with favicon link tags
+          def build_favicon_links(appearance)
+            favicons = appearance[:favicon] || appearance["favicon"] || []
+            return "" if favicons.empty?
+
+            favicons.map do |favicon|
+              attrs = []
+              attrs << %(type="#{favicon[:type] || favicon['type']}") if favicon[:type] || favicon["type"]
+              attrs << %(sizes="#{favicon[:sizes] || favicon['sizes']}") if favicon[:sizes] || favicon["sizes"]
+              attrs << %(rel="#{favicon[:rel] || favicon['rel'] || 'icon'}")
+              attrs << %(href="#{favicon[:path] || favicon['path'] || favicon[:url] || favicon['url']}")
+
+              "<link #{attrs.join(' ')}>"
+            end.join("\n    ")
           end
 
           # Build JSON representation of schema data
