@@ -176,7 +176,17 @@ module Lutaml
         # @return [String] Derived prefix
         def derive_prefix(ns, _schema)
           return "tns" if ns.nil? || ns.empty?
-          return "xs" if ns.include?("w3.org") && ns.include?("XMLSchema")
+
+          # Detect standard XML Schema namespace using parsed URI components
+          begin
+            uri = URI(ns)
+            if uri&.host && %w[w3.org www.w3.org].include?(uri.host) && uri.path&.include?("XMLSchema")
+              return "xs"
+            end
+          rescue URI::InvalidURIError
+            # Fall back to other heuristics below if the namespace is not a valid URI
+          end
+
           return "gml" if ns.include?("/gml/")
 
           # Try to extract a meaningful prefix from the URI path
@@ -893,8 +903,8 @@ module Lutaml
           return "unnamed" unless name
 
           name.to_s
-            .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')  # Split acronyms: HTTPParser → HTTP-Parser
-            .gsub(/([a-z\d])([A-Z])/, '\1-\2')      # Split camelCase: fooBar → foo-Bar
+            .gsub(/([A-Z]++)([A-Z][a-z])/, '\1-\2') # Split acronyms: HTTPParser → HTTP-Parser
+            .gsub(/([a-z\d])([A-Z])/, '\1-\2') # Split camelCase: fooBar → foo-Bar
             .downcase # Convert to lowercase
             .gsub(/[^a-z0-9]+/, "-") # Replace non-alphanumeric with dash
             .gsub(/^-|-$/, "") # Remove leading/trailing dashes

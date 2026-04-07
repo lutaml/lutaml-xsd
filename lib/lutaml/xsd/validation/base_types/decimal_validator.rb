@@ -23,7 +23,7 @@ module Lutaml
         #
         class DecimalValidator < BaseTypeValidator
           # Pattern for valid decimal format
-          DECIMAL_PATTERN = /^[+-]?(\d+\.?\d*|\.\d+)$/
+          DECIMAL_PATTERN = /^[+-]?(\d++\.?\d*|\.\d+)$/
 
           # Validate value is a valid decimal
           #
