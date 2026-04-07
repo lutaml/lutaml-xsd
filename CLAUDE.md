@@ -62,12 +62,27 @@ Classes register themselves via `Lutaml::Xsd.register_model(self, :element_name)
 
 ### Directory Structure
 - `frontend/src/` - Vue.js TypeScript source code (committed to git)
-- `frontend/dist/` - Built SPA assets (NOT committed to git, built by CI during release)
+- `frontend/dist/` - Built SPA assets (NOT committed to git, built during gem release)
 
 ### CRITICAL RULE: lib/ is Ruby Source Only
 **`lib/` contains Ruby source code only. Do NOT commit compiled JS/CSS artifacts into `lib/`**.
 
 Built frontend assets (JavaScript, CSS) must NEVER be mixed into `lib/` source directories.
+
+### Gem vs Git: Asset Resolution
+
+**When installed as a gem (RubyGems.org):**
+- Frontend assets (`frontend/dist/`) are pre-built and bundled in the gem at the root level
+- SPA generation works out of the box, no build required
+- Assets are found via path resolution from `lib/lutaml/xsd/spa/strategies/` up to gem root
+
+**When using from git (development):**
+- `frontend/dist/` is gitignored and NOT included in the repo
+- You MUST build the frontend before running SPA generation:
+  ```bash
+  bundle exec rake build_frontend
+  ```
+- Without building, SPA generation raises a clear error explaining the issue
 
 ### Release Process
 ```bash
