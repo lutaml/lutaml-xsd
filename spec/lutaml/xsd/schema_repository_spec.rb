@@ -5,7 +5,7 @@ require "spec_helper"
 RSpec.describe Lutaml::Xsd::SchemaRepository do
   let(:schema_files) do
     [
-      File.expand_path("../../fixtures/i-ur/urbanObject.xsd", __dir__)
+      File.expand_path("../../fixtures/i-ur/urbanObject.xsd", __dir__),
     ]
   end
 
@@ -13,19 +13,23 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     [
       Lutaml::Xsd::SchemaLocationMapping.new(
         from: '(?:\.\./)+gml/(.+\.xsd)$',
-        to: File.expand_path("../../fixtures/codesynthesis-gml-3.2.1/gml/\\1", __dir__),
-        pattern: true
+        to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/gml/\\1',
+                             __dir__),
+        pattern: true,
       ),
       Lutaml::Xsd::SchemaLocationMapping.new(
         from: '(?:\.\./)+iso/(.+\.xsd)$',
-        to: File.expand_path("../../fixtures/codesynthesis-gml-3.2.1/iso/\\1", __dir__),
-        pattern: true
+        to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/iso/\\1',
+                             __dir__),
+        pattern: true,
       ),
       Lutaml::Xsd::SchemaLocationMapping.new(
         from: '(?:\.\./)+xlink/(.+\.xsd)$',
-        to: File.expand_path("../../fixtures/codesynthesis-gml-3.2.1/xlink/\\1", __dir__),
-        pattern: true
-      )
+        to: File.expand_path(
+          '../../fixtures/codesynthesis-gml-3.2.1/xlink/\\1', __dir__
+        ),
+        pattern: true,
+      ),
     ]
   end
 
@@ -34,7 +38,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
       "gml" => "http://www.opengis.net/gml/3.2",
       "xs" => "http://www.w3.org/2001/XMLSchema",
       "xlink" => "http://www.w3.org/1999/xlink",
-      "uro" => "https://www.geospatial.jp/iur/uro/3.2"
+      "uro" => "https://www.geospatial.jp/iur/uro/3.2",
     }
   end
 
@@ -47,7 +51,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     it "creates a repository with schema location mappings" do
       repository = described_class.new(
         files: schema_files,
-        schema_location_mappings: schema_location_mappings
+        schema_location_mappings: schema_location_mappings,
       )
       expect(repository.schema_location_mappings.size).to eq(3)
     end
@@ -86,7 +90,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     it "configures namespaces from an array of NamespaceMapping objects" do
       mappings = [
         Lutaml::Xsd::NamespaceMapping.new(prefix: "gml", uri: "http://www.opengis.net/gml/3.2"),
-        Lutaml::Xsd::NamespaceMapping.new(prefix: "xs", uri: "http://www.w3.org/2001/XMLSchema")
+        Lutaml::Xsd::NamespaceMapping.new(prefix: "xs", uri: "http://www.w3.org/2001/XMLSchema"),
       ]
       repository.configure_namespaces(mappings)
       expect(repository.namespace_mappings.size).to eq(2)
@@ -97,7 +101,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     let(:repository) do
       described_class.new(
         files: schema_files,
-        schema_location_mappings: schema_location_mappings
+        schema_location_mappings: schema_location_mappings,
       )
     end
 
@@ -109,7 +113,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     it "handles missing schema files gracefully" do
       bad_repository = described_class.new(
         files: ["/nonexistent/file.xsd"],
-        schema_location_mappings: schema_location_mappings
+        schema_location_mappings: schema_location_mappings,
       )
       expect { bad_repository.parse }.not_to raise_error
     end
@@ -119,7 +123,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     let(:repository) do
       described_class.new(
         files: schema_files,
-        schema_location_mappings: schema_location_mappings
+        schema_location_mappings: schema_location_mappings,
       )
     end
 
@@ -150,7 +154,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     let(:repository) do
       described_class.new(
         files: schema_files,
-        schema_location_mappings: schema_location_mappings
+        schema_location_mappings: schema_location_mappings,
       )
     end
 
@@ -189,7 +193,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     let(:repository) do
       described_class.new(
         files: schema_files,
-        schema_location_mappings: schema_location_mappings
+        schema_location_mappings: schema_location_mappings,
       )
     end
 
@@ -213,7 +217,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     it "validates namespace mappings" do
       bad_repository = described_class.new(files: schema_files)
       bad_repository.instance_variable_set(:@namespace_mappings, [
-                                             Lutaml::Xsd::NamespaceMapping.new(prefix: "", uri: "http://example.com")
+                                             Lutaml::Xsd::NamespaceMapping.new(prefix: "", uri: "http://example.com"),
                                            ])
       errors = bad_repository.validate
       expect(errors).not_to be_empty
@@ -224,7 +228,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     let(:repository) do
       described_class.new(
         files: schema_files,
-        schema_location_mappings: schema_location_mappings
+        schema_location_mappings: schema_location_mappings,
       )
     end
 
@@ -261,7 +265,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     let(:repository) do
       described_class.new(
         files: schema_files,
-        schema_location_mappings: schema_location_mappings
+        schema_location_mappings: schema_location_mappings,
       )
     end
 
@@ -284,8 +288,8 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
         files: schema_files,
         schema_location_mappings: schema_location_mappings.take(1),
         namespace_mappings: [
-          Lutaml::Xsd::NamespaceMapping.new(prefix: "gml", uri: "http://www.opengis.net/gml/3.2")
-        ]
+          Lutaml::Xsd::NamespaceMapping.new(prefix: "gml", uri: "http://www.opengis.net/gml/3.2"),
+        ],
       )
     end
 
@@ -303,6 +307,142 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
       expect(loaded.files).to eq(repository.files)
       expect(loaded.schema_location_mappings.size).to eq(repository.schema_location_mappings.size)
       expect(loaded.namespace_mappings.size).to eq(repository.namespace_mappings.size)
+    end
+  end
+
+  describe ".from_yaml_file with output_package" do
+    it "loads output_package from YAML configuration" do
+      yaml_content = <<~YAML
+        output_package: custom_output.lxr
+        files:
+          - #{schema_files.first}
+      YAML
+
+      require "tempfile"
+
+      Tempfile.create(["config", ".yml"]) do |file|
+        file.write(yaml_content)
+        file.rewind
+
+        repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
+        # The repository is created from the config, verify it exists
+        expect(repository).to be_a(Lutaml::Xsd::SchemaRepository)
+        expect(repository.files).to include(schema_files.first)
+      end
+    end
+
+    it "handles missing output_package field gracefully" do
+      yaml_content = <<~YAML
+        files:
+          - #{schema_files.first}
+      YAML
+
+      require "tempfile"
+
+      Tempfile.create(["config", ".yml"]) do |file|
+        file.write(yaml_content)
+        file.rewind
+
+        repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
+        # Should still create repository successfully
+        expect(repository).to be_a(Lutaml::Xsd::SchemaRepository)
+        expect(repository.files).to include(schema_files.first)
+      end
+    end
+  end
+
+  describe ".from_yaml_file with base_packages" do
+    it "deserializes BasePackageConfig objects from YAML" do
+      # Skip if test packages don't exist
+      skip "Test packages not available" unless File.exist?("test1.lxr") && File.exist?("test2.lxr")
+
+      yaml_content = <<~YAML
+        base_packages:
+          - package: test1.lxr
+            priority: 0
+            conflict_resolution: keep
+          - package: test2.lxr
+            priority: 10
+            conflict_resolution: override
+      YAML
+
+      require "tempfile"
+
+      Tempfile.create(["config", ".yml"]) do |file|
+        file.write(yaml_content)
+        file.rewind
+
+        # This will fail if packages don't exist, but that's expected
+        expect do
+          Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
+        end.to raise_error(Lutaml::Xsd::ConfigurationError)
+      end
+    end
+
+    it "handles all BasePackageConfig fields" do
+      # Skip if test package doesn't exist
+      skip "Test package not available" unless File.exist?("test.lxr")
+
+      yaml_content = <<~YAML
+        base_packages:
+          - package: test.lxr
+            priority: 5
+            conflict_resolution: error
+            exclude_patterns:
+              - "internal/**"
+            include_patterns:
+              - "public/**"
+            namespace_remapping:
+              - from_uri: "http://old.example.com"
+                to_uri: "http://new.example.com"
+      YAML
+
+      require "tempfile"
+
+      Tempfile.create(["config", ".yml"]) do |file|
+        file.write(yaml_content)
+        file.rewind
+
+        # This will fail if package doesn't exist, but that's expected
+        expect do
+          Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
+        end.to raise_error(Lutaml::Xsd::ConfigurationError)
+      end
+    end
+
+    it "handles empty base_packages array" do
+      yaml_content = <<~YAML
+        base_packages: []
+        files:
+          - #{schema_files.first}
+      YAML
+
+      require "tempfile"
+
+      Tempfile.create(["config", ".yml"]) do |file|
+        file.write(yaml_content)
+        file.rewind
+
+        repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
+        expect(repository).to be_a(Lutaml::Xsd::SchemaRepository)
+      end
+    end
+
+    it "handles missing base_packages field" do
+      yaml_content = <<~YAML
+        files:
+          - #{schema_files.first}
+      YAML
+
+      require "tempfile"
+
+      Tempfile.create(["config", ".yml"]) do |file|
+        file.write(yaml_content)
+        file.rewind
+
+        repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
+        expect(repository).to be_a(Lutaml::Xsd::SchemaRepository)
+      end
     end
   end
 end

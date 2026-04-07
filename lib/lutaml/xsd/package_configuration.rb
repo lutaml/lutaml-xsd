@@ -11,13 +11,13 @@ module Lutaml
       # XSD inclusion modes
       XSD_MODES = {
         include_all: :include_all, # Bundle all XSDs with rewritten paths
-        allow_external: :allow_external # Keep external references
+        allow_external: :allow_external, # Keep external references
       }.freeze
 
       # Resolution modes
       RESOLUTION_MODES = {
-        bare: :bare,           # Parse on load (smaller metadata)
-        resolved: :resolved    # Instant load (serialized schemas included)
+        bare: :bare, # Parse on load (smaller metadata)
+        resolved: :resolved, # Instant load (serialized schemas included)
       }.freeze
 
       # Serialization formats
@@ -25,7 +25,7 @@ module Lutaml
         marshal: :marshal,  # Ruby Marshal (fastest, binary)
         json: :json,        # JSON format (portable, human-readable)
         yaml: :yaml,        # YAML format (portable, human-readable)
-        parse: :parse       # Parse XSD files (no serialization)
+        parse: :parse, # Parse XSD files (no serialization)
       }.freeze
 
       attr_reader :xsd_mode, :resolution_mode, :serialization_format
@@ -33,10 +33,13 @@ module Lutaml
       # @param xsd_mode [Symbol] :include_all or :allow_external
       # @param resolution_mode [Symbol] :bare or :resolved
       # @param serialization_format [Symbol] :marshal, :json, :yaml, or :parse
-      def initialize(xsd_mode: :include_all, resolution_mode: :resolved, serialization_format: :marshal)
+      def initialize(xsd_mode: :include_all, resolution_mode: :resolved,
+serialization_format: :marshal)
         @xsd_mode = validate_mode(xsd_mode, XSD_MODES, "XSD mode")
-        @resolution_mode = validate_mode(resolution_mode, RESOLUTION_MODES, "Resolution mode")
-        @serialization_format = validate_mode(serialization_format, SERIALIZATION_FORMATS, "Serialization format")
+        @resolution_mode = validate_mode(resolution_mode, RESOLUTION_MODES,
+                                         "Resolution mode")
+        @serialization_format = validate_mode(serialization_format,
+                                              SERIALIZATION_FORMATS, "Serialization format")
       end
 
       # @return [Boolean] Whether to include all XSD files in package
@@ -84,7 +87,7 @@ module Lutaml
         {
           xsd_mode: @xsd_mode,
           resolution_mode: @resolution_mode,
-          serialization_format: @serialization_format
+          serialization_format: @serialization_format,
         }
       end
 
@@ -95,7 +98,7 @@ module Lutaml
         new(
           xsd_mode: data[:xsd_mode] || data["xsd_mode"],
           resolution_mode: data[:resolution_mode] || data["resolution_mode"],
-          serialization_format: data[:serialization_format] || data["serialization_format"] || :marshal
+          serialization_format: data[:serialization_format] || data["serialization_format"] || :marshal,
         )
       end
 
@@ -111,7 +114,7 @@ module Lutaml
         unless valid_modes.key?(mode_sym)
           raise ArgumentError,
                 "Invalid #{mode_name}: #{mode}. " \
-                "Valid options: #{valid_modes.keys.join(", ")}"
+                "Valid options: #{valid_modes.keys.join(', ')}"
         end
         mode_sym
       end

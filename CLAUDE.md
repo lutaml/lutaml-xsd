@@ -1,0 +1,83 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Overview
+
+Lutaml::Xsd is a Ruby gem for parsing and building XML Schema Definition (XSD) files. It parses XSD content into Ruby objects and can serialize those objects back to XML.
+
+## Commands
+
+```bash
+bundle install      # Install dependencies
+rake                # Run tests and linting (default task)
+rake spec           # Run tests only
+rake rubocop        # Run linter only
+bundle exec rspec spec/lutaml/xsd_spec.rb  # Run specific test file
+bundle exec rspec spec/lutaml/liquid_spec.rb  # Run liquid methods tests
+```
+
+## Architecture
+
+### Entry Point
+`lib/lutaml/xsd.rb` - Main module with `Lutaml::Xsd.parse(xsd, location:)` method for parsing XSD content.
+
+### Base Class
+`lib/lutaml/xsd/base.rb` - `Lutaml::Xsd::Base` extends `Lutaml::Model::Serializable`. All XSD element classes inherit from it. Provides:
+- `to_xml` - Serialize to XML
+- `to_formatted_xml` - Pretty-printed XML
+- `resolved_element_order` - Elements in original XSD order
+
+### Schema Class
+`lib/lutaml/xsd/schema.rb` - Root class representing an XSD schema. Contains collections of all top-level elements (element, complex_type, simple_type, group, attribute, etc.) and handles import/include resolution.
+
+### XSD Element Classes
+Each XSD element type has its own class in `lib/lutaml/xsd/`:
+- `element.rb`, `attribute.rb`, `complex_type.rb`, `simple_type.rb`
+- `group.rb`, `sequence.rb`, `choice.rb`, `all.rb`
+- `restriction_simple_type.rb`, `extension_simple_content.rb`, `extension_complex_content.rb`
+- `attribute_group.rb`, `import.rb`, `include.rb`, `redefine.rb`
+- And many more (36 classes total)
+
+### Liquid Methods
+`lib/lutaml/xsd/liquid_methods/` - Modules that add Liquid template helpers to element classes:
+- `element.rb` - `used_by`, `attributes`, `child_elements`, `referenced_type`, etc.
+- `complex_type.rb` - `used_by`, `child_elements`, `attribute_elements`, etc.
+- Other liquid methods for group, choice, sequence, attribute, attribute_group, etc.
+
+### Path/URL Resolution
+`lib/lutaml/xsd/glob.rb` - Handles `location` parameter passed to `parse()` for resolving relative paths in `import` and `include` schemaLocation attributes. Supports both local paths and HTTP URLs.
+
+### Model Registration
+Classes register themselves via `Lutaml::Xsd.register_model(self, :element_name)` to enable deserialization from XML.
+
+## Key Patterns
+
+1. **Parsing**: `Lutaml::Xsd.parse(xsd_content, location: 'path/')` returns a `Schema` object
+2. **Serialization**: All objects support `to_xml` method
+3. **Liquid templating**: Parsed objects respond to `to_liquid` for use in templates
+4. **Reference resolution**: Elements can reference other elements via `ref` attribute; use `referenced_object` to resolve
+
+## SPA / Frontend Assets
+
+### Directory Structure
+- `frontend/src/` - Vue.js TypeScript source code (committed to git)
+- `frontend/dist/` - Built SPA assets (NOT committed to git, built by CI during release)
+
+### CRITICAL RULE: lib/ is Ruby Source Only
+**`lib/` contains Ruby source code only. Do NOT commit compiled JS/CSS artifacts into `lib/`**.
+
+Built frontend assets (JavaScript, CSS) must NEVER be mixed into `lib/` source directories.
+
+### Release Process
+```bash
+bundle exec rake release
+# 1. Runs build_frontend task (builds frontend → frontend/dist/)
+# 2. Gemspec includes frontend/dist/* at gem build time
+# 3. Tags version and pushes to RubyGems
+```
+
+### Development
+```bash
+bundle exec rake build_frontend  # Build frontend/dist/ locally
+```

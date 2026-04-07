@@ -32,18 +32,28 @@ module Lutaml
             valid?: valid?,
             errors: errors,
             warnings: warnings,
-            metadata: metadata
+            metadata: metadata,
           }
         end
       end
 
-      attr_reader :zip_path, :metadata
+      attr_reader :zip_path, :metadata, :repository
 
       # Create a new package instance
       # @param zip_path [String] Path to the ZIP package file
       def initialize(zip_path)
         @zip_path = zip_path
         @metadata = nil
+        @repository = nil
+      end
+
+      # Load a package and its repository
+      # @param zip_path [String] Path to the ZIP package file
+      # @return [SchemaRepositoryPackage] Package instance with loaded repository
+      def self.load(zip_path)
+        package = new(zip_path)
+        package.load_repository
+        package
       end
 
       # Create a package from a schema repository
@@ -68,7 +78,7 @@ module Lutaml
         unless File.exist?(zip_path)
           return ValidationResult.new(
             valid: false,
-            errors: ["Package file not found: #{zip_path}"]
+            errors: ["Package file not found: #{zip_path}"],
           )
         end
 
@@ -85,7 +95,7 @@ module Lutaml
                 has_metadata = true
                 metadata = YAML.safe_load(
                   entry.get_input_stream.read,
-                  permitted_classes: [Time, Date, Symbol]
+                  permitted_classes: [Time, Date, Symbol],
                 )
               when %r{^schemas/.+\.xsd$}
                 schema_entries << entry.name
@@ -96,7 +106,10 @@ module Lutaml
           # Validate structure
           validate_structure(has_metadata, schema_entries, errors)
 
-          return ValidationResult.new(valid: false, errors: errors) unless metadata
+          unless metadata
+            return ValidationResult.new(valid: false,
+                                        errors: errors)
+          end
 
           # Validate metadata
           validate_metadata(metadata, schema_entries, errors, warnings)
@@ -115,7 +128,7 @@ module Lutaml
           valid: errors.empty?,
           errors: errors,
           warnings: warnings,
-          metadata: metadata
+          metadata: metadata,
         )
       end
 
@@ -123,9 +136,19 @@ module Lutaml
       # @return [SchemaRepository]
       def load_repository
         validation = validate
-        raise Error, "Invalid package: #{validation.errors.join(", ")}" unless validation.valid?
+        unless validation.valid?
+          raise Error,
+                "Invalid package: #{validation.errors.join(', ')}"
+        end
 
-        extract_and_build_repository
+        @metadata = validation.metadata
+        @repository = extract_and_build_repository
+      end
+
+      # Get schemas from the repository
+      # @return [Array<Schema>] Array of schemas
+      def schemas
+        repository&.schemas || []
       end
 
       # Write package from repository
@@ -139,11 +162,16 @@ module Lutaml
         package_data = builder.build(repository, additional_metadata)
 
         @metadata = package_data[:metadata]
+        @repository = repository
         xsd_files = package_data[:xsd_files]
         serialized_schemas = package_data[:serialized_schemas]
 
         # Remove existing file if it exists to avoid duplicates
-        File.delete(zip_path) if File.exist?(zip_path)
+        FileUtils.rm_f(zip_path)
+
+        # On Windows, give OS time to fully release file handles after deletion
+        # This prevents "Permission denied" errors during ZIP file creation
+        sleep 0.05 if Gem.win_platform?
 
         # Create ZIP file
         Zip::File.open(zip_path, create: true) do |zipfile|
@@ -172,7 +200,7 @@ module Lutaml
               serialized_schemas,
               xsd_files,
               config.serialization_format,
-              repository.namespace_mappings
+              repository.namespace_mappings,
             )
           end
         end
@@ -209,7 +237,8 @@ module Lutaml
       # @param metadata [Hash] Metadata hash
       # @param errors [Array<String>] Error collection
       def validate_metadata_structure(metadata, errors)
-        required_fields = %w[files namespace_mappings created_at lutaml_xsd_version]
+        required_fields = %w[files namespace_mappings created_at
+                             lutaml_xsd_version]
         required_fields.each do |field|
           errors << "Metadata missing required field: #{field}" unless metadata.key?(field)
         end
@@ -314,7 +343,13 @@ module Lutaml
       end
 
       # Extract package and build repository
-      # @return [SchemaRepository]
+      #
+      # Extracts ZIP package contents to a temporary directory and builds
+      # a SchemaRepository from the extracted files. The temporary directory
+      # is automatically cleaned up when the repository is garbage collected.
+      #
+      # @return [SchemaRepository] Repository loaded from package
+      # @raise [Error] If package validation fails
       def extract_and_build_repository
         metadata = nil
         schema_files = []
@@ -322,19 +357,27 @@ module Lutaml
 
         temp_dir = Dir.mktmpdir("lutaml_xsd_package")
 
-        # Extract package
+        # Extract package contents to temporary directory
         Zip::File.open(zip_path) do |zipfile|
           zipfile.each do |entry|
+            # Skip directory entries (they're created automatically by mkdir_p)
+            next if entry.directory?
+
             extract_path = File.join(temp_dir, entry.name)
             FileUtils.mkdir_p(File.dirname(extract_path))
-            entry.extract(extract_path)
 
+            # Extract file content directly using explicit file I/O
+            # This is more reliable than entry.extract() which can have
+            # path interpretation issues with absolute paths on some platforms
+            File.binwrite(extract_path, entry.get_input_stream.read)
+
+            # Categorize extracted files
             if entry.name == "metadata.yaml"
               metadata = YAML.load_file(extract_path)
             elsif entry.name.start_with?("schemas/")
               schema_files << extract_path
             elsif entry.name.start_with?("schemas_data/")
-              # Track serialized schema files
+              # Track serialized schema files for later deserialization
               serialized_data_files[entry.name] = extract_path
             end
           end
@@ -344,7 +387,10 @@ module Lutaml
         repository = build_repository_from_metadata(metadata, schema_files)
 
         # Load serialized schemas if present
-        load_serialized_schemas_from_files(repository, serialized_data_files, metadata) if serialized_data_files.any?
+        if serialized_data_files.any?
+          load_serialized_schemas_from_files(repository, serialized_data_files,
+                                             metadata)
+        end
 
         # Store temp directory path so it can be cleaned up later
         # The repository needs these files to exist during parse/resolve
@@ -366,7 +412,7 @@ module Lutaml
         repository = SchemaRepository.new(
           files: schema_files,
           schema_location_mappings: parse_schema_location_mappings(metadata["schema_location_mappings"]),
-          namespace_mappings: parse_namespace_mappings(metadata["namespace_mappings"])
+          namespace_mappings: parse_namespace_mappings(metadata["namespace_mappings"]),
         )
 
         # Get serialization format from metadata (default to parse for backward compatibility)
@@ -387,7 +433,7 @@ module Lutaml
           config = PackageConfiguration.new(
             xsd_mode: metadata["xsd_mode"] || :include_all,
             resolution_mode: metadata["resolution_mode"] || :resolved,
-            serialization_format: serialization_format
+            serialization_format: serialization_format,
           )
           builder = PackageBuilder.new(config)
           builder.load(repository, metadata)
@@ -451,7 +497,8 @@ module Lutaml
 
         all_schemas.each_key do |schema_location|
           # Resolve the schema location to actual file path using mappings
-          resolved_path = resolve_schema_location(schema_location, glob_mappings)
+          resolved_path = resolve_schema_location(schema_location,
+                                                  glob_mappings)
 
           next unless resolved_path && File.exist?(resolved_path)
 
@@ -498,7 +545,7 @@ module Lutaml
         # Deserialize each schema and add to global processed_schemas cache
         serialized_schemas.each do |serialized_schema|
           schema = serialized_schema.to_schema
-          Schema.schema_processed(serialized_schema.file_path, schema)
+          Lutaml::Xml::Schema::Xsd::Schema.schema_processed(serialized_schema.file_path, schema)
         end
 
         # Don't mark as resolved yet - let the caller call resolve()
@@ -511,7 +558,8 @@ module Lutaml
       # @param xsd_files [Hash] Map of source_path => package info (with renamed paths)
       # @param format [Symbol] Serialization format
       # @param namespace_mappings [Array<NamespaceMapping>] Namespace mappings
-      def write_serialized_schemas(zipfile, serialized_schemas, xsd_files, format, namespace_mappings)
+      def write_serialized_schemas(zipfile, serialized_schemas, xsd_files,
+format, namespace_mappings)
         extension = case format
                     when :marshal then "marshal"
                     when :json then "json"
@@ -524,11 +572,14 @@ module Lutaml
         source_to_basename = {}
         xsd_files.each do |source_abs_path, package_info|
           renamed_path = package_info.is_a?(Hash) ? package_info[:package_path] : package_info
-          source_to_basename[source_abs_path] = File.basename(renamed_path, ".*") if renamed_path
+          if renamed_path
+            source_to_basename[source_abs_path] =
+              File.basename(renamed_path, ".*")
+          end
         end
 
         # Get all schemas from global cache
-        all_schemas = Schema.processed_schemas
+        all_schemas = Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
 
         serialized_schemas.each do |schema_location, data|
           # Get schema object
@@ -551,7 +602,8 @@ module Lutaml
               # Relative path in cache - check if it refers to the same file
               # by comparing the actual file's basename and checking if source path ends with it
               schema_basename = File.basename(schema_location)
-              if source_abs_path.end_with?(schema_basename) || source_abs_path.end_with?("/#{schema_location}")
+              if source_abs_path.end_with?(schema_basename,
+                                           "/#{schema_location}")
                 matching_basename = source_to_basename[source_abs_path]
                 break
               end
@@ -562,7 +614,8 @@ module Lutaml
           basename = matching_basename || File.basename(schema_location, ".*")
 
           # Use basename directly (bundler has already made it unique)
-          unique_name = resolve_schema_name(basename, schema, namespace_mappings)
+          unique_name = resolve_schema_name(basename, schema,
+                                            namespace_mappings)
 
           zip_path = "schemas_data/#{unique_name}.#{extension}"
 
@@ -573,10 +626,17 @@ module Lutaml
       end
 
       # Load serialized schemas from extracted files
-      # @param repository [SchemaRepository] Repository to load into
+      #
+      # Deserializes pre-parsed schemas from the schemas_data/ directory in
+      # the package and registers them in the global schema cache. This is
+      # significantly faster than parsing XSD files from scratch.
+      #
+      # @param repository [SchemaRepository] Repository to load schemas into
       # @param serialized_files [Hash] Map of zip_path => extracted file path
-      # @param metadata [Hash] Package metadata
-      def load_serialized_schemas_from_files(repository, serialized_files, metadata)
+      # @param metadata [Hash] Package metadata containing serialization format
+      # @return [void]
+      def load_serialized_schemas_from_files(repository, serialized_files,
+metadata)
         serialization_format = (metadata["serialization_format"] || "parse").to_sym
         return if serialization_format == :parse
 
@@ -584,31 +644,36 @@ module Lutaml
           PackageConfiguration.new(
             xsd_mode: metadata["xsd_mode"] || :include_all,
             resolution_mode: metadata["resolution_mode"] || :resolved,
-            serialization_format: serialization_format
-          )
+            serialization_format: serialization_format,
+          ),
         )
 
         namespace_mappings = repository.namespace_mappings || []
 
         serialized_files.each_value do |file_path|
-          data = File.read(file_path)
+          # Use binary mode for reading to avoid line ending conversion on Windows
+          # which would corrupt Marshal data
+          data = File.binread(file_path)
           schema = builder.deserialize_schema(data, serialization_format)
 
           # Extract unique name from serialized file (includes prefix or hash)
+          # The name may include a namespace prefix for disambiguation
           serialized_basename = File.basename(file_path, ".*")
 
           # Find matching XSD file by generating unique name from schema's namespace
-          # Match by comparing the unique name we would generate from each XSD file
+          # This matches the naming strategy used during package creation
           actual_schema_path = repository.files.find do |schema_file|
             xsd_basename = File.basename(schema_file, ".*")
             # Generate unique name using namespace prefix approach
-            unique_name = resolve_schema_name(xsd_basename, schema, namespace_mappings)
+            unique_name = resolve_schema_name(xsd_basename, schema,
+                                              namespace_mappings)
             unique_name == serialized_basename
           end
 
           unless actual_schema_path
             # Fallback: try to match just by basename (without prefix/hash suffix)
-            # Handle both old hash format (_[a-f0-9]+) and new prefix format (_prefix)
+            # This handles both old hash format (_[a-f0-9]+) and new prefix format (_prefix)
+            # Provides backward compatibility with older package formats
             xsd_basename_only = serialized_basename.sub(/_[a-z0-9]+$/i, "")
             actual_schema_path = repository.files.find do |f|
               File.basename(f, ".*") == xsd_basename_only
@@ -616,7 +681,8 @@ module Lutaml
           end
 
           # Register schema in global cache using the actual schema file path
-          Schema.schema_processed(actual_schema_path, schema)
+          # This makes the schema available for type resolution and queries
+          Lutaml::Xml::Schema::Xsd::Schema.schema_processed(actual_schema_path, schema)
         end
       end
 
@@ -642,7 +708,7 @@ module Lutaml
 
           if from.is_a?(Regexp)
             # Pattern matching
-            if location =~ from
+            if location&.match?(from)
               # Use gsub to apply the pattern replacement
               return location.gsub(from, to)
             end

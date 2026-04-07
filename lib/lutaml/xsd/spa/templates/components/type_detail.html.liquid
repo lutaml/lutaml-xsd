@@ -1,0 +1,276 @@
+<div class="type-detail item-card" id="{{ schema.id }}-{{ type_kind }}-type-{{ type.id }}">
+  <div class="item-header">
+    {% if type_kind == 'complex' %}
+    <span class="badge badge-warning">complex type</span>
+    {% else %}
+    <span class="badge badge-success">simple type</span>
+    {% endif %}
+    <h4 class="item-name">{{ type.name }}</h4>
+  </div>
+
+  {% if type.base %}
+  <div class="item-meta">
+    <span class="meta-label">Base:</span>
+    <code>{{ type.base }}</code>
+  </div>
+  {% endif %}
+
+  {% if type.content_model %}
+  <div class="item-meta">
+    <span class="meta-label">Content Model:</span>
+    <span class="badge badge-sm">{{ type.content_model }}</span>
+  </div>
+  {% endif %}
+
+  {% if type.documentation %}
+  <div class="item-documentation">
+    {% if features.documentation.markdown_rendering %}
+    <div class="markdown-content">{{ type.documentation }}</div>
+    {% else %}
+    <p>{{ type.documentation }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if type.attributes.size > 0 %}
+  <details class="type-section" open>
+    <summary>Attributes ({{ type.attributes.size }})</summary>
+    <table class="type-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Use</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attr in type.attributes %}
+        <tr>
+          <td><code>{{ attr.name }}</code></td>
+          <td>{{ attr.type }}</td>
+          <td>
+            {% if attr.use %}
+            <span class="badge badge-sm badge-{{ attr.use }}">{{ attr.use }}</span>
+            {% else %}
+            <span class="text-muted">optional</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endif %}
+
+  {% if type.elements.size > 0 %}
+  <details class="type-section" open>
+    <summary>Elements ({{ type.elements.size }})</summary>
+    <table class="type-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Occurs</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for elem in type.elements %}
+        <tr>
+          <td><code>{{ elem.name }}</code></td>
+          <td>{{ elem.type }}</td>
+          <td>{{ elem.min_occurs | default: 1 }}..{{ elem.max_occurs | default: 1 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endif %}
+
+  {% if type.restriction %}
+  <details class="type-section" open>
+    <summary>Restrictions</summary>
+    <div class="restriction-details">
+      {% if type.restriction.base %}
+      <div class="restriction-item">
+        <span class="restriction-label">Base Type:</span>
+        <code>{{ type.restriction.base }}</code>
+      </div>
+      {% endif %}
+
+      {% if type.restriction.facets.size > 0 %}
+      <div class="facets-list">
+        {% for facet in type.restriction.facets %}
+        <div class="facet-item">
+          <span class="facet-type">{{ facet.type | replace: '_', ' ' | capitalize }}:</span>
+          {% if facet.values %}
+          <ul class="facet-values">
+            {% for value in facet.values %}
+            <li><code>{{ value }}</code></li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <code>{{ facet.value }}</code>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </details>
+  {% endif %}
+</div>
+
+<style>
+  .type-detail {
+    /* Inherits styles from .item-card in schema_card */
+  }
+
+  .type-section {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-light);
+  }
+
+  .type-section summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.5rem;
+    margin: -0.5rem;
+    border-radius: var(--radius-default);
+    transition: background var(--transition-duration);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .type-section summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .type-section summary::before {
+    content: '▶';
+    margin-right: 0.5rem;
+    transition: transform var(--transition-duration);
+    display: inline-block;
+  }
+
+  .type-section[open] summary::before {
+    transform: rotate(90deg);
+  }
+
+  .type-section summary:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .type-table {
+    width: 100%;
+    margin-top: var(--spacing-sm);
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .type-table th {
+    text-align: left;
+    padding: 0.5rem;
+    background: var(--bg-tertiary);
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-medium);
+  }
+
+  .type-table td {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .type-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .type-table code {
+    font-size: 0.875rem;
+  }
+
+  .badge-required {
+    background: var(--color-error);
+  }
+
+  .badge-optional {
+    background: var(--color-secondary);
+  }
+
+  .badge-prohibited {
+    background: var(--color-warning);
+  }
+
+  .restriction-details {
+    margin-top: var(--spacing-sm);
+  }
+
+  .restriction-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .restriction-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .facets-list {
+    margin-top: var(--spacing-sm);
+  }
+
+  .facet-item {
+    margin-bottom: var(--spacing-sm);
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-default);
+  }
+
+  .facet-type {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+  }
+
+  .facet-values {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+  }
+
+  .facet-values li {
+    display: inline-block;
+  }
+
+  .facet-values code {
+    background: var(--bg-primary);
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-light);
+  }
+
+  .markdown-content {
+    line-height: 1.6;
+  }
+
+  .markdown-content p {
+    margin-bottom: 0.75rem;
+  }
+
+  .markdown-content code {
+    background: var(--bg-tertiary);
+    padding: 0.125rem 0.375rem;
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+  }
+</style>

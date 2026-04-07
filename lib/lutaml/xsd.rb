@@ -1,39 +1,32 @@
 # frozen_string_literal: true
 
 require "lutaml/model"
+require "lutaml/xml/schema/xsd"
 
 adapter = RUBY_ENGINE == "opal" ? :oga : :nokogiri
 Lutaml::Model::Config.xml_adapter_type = adapter
 
 module Lutaml
   module Xsd
+    # Error class for lutaml-xsd specific errors
     class Error < StandardError; end
-
-    module_function
-
-    def register
-      @register ||= Lutaml::Model::GlobalRegister.register(
-        Lutaml::Model::Register.new(:xsd)
-      )
-    end
-
-    def register_model(klass, id)
-      register.register_model(klass, id: id)
-    end
-
-    def parse(xsd, location: nil, nested_schema: false, register: nil, schema_mappings: nil)
-      register ||= self.register
-      Schema.reset_processed_schemas unless nested_schema
-
-      Glob.schema_mappings = schema_mappings
-      Glob.path_or_url(location)
-      Schema.from_xml(xsd, register: register)
-    end
   end
 end
 
 require_relative "xsd/version"
-require_relative "xsd/base"
+require_relative "xsd/errors"
+require_relative "xsd/file_validation_result"
+require_relative "xsd/validation_error"
+require_relative "xsd/namespace_uri_remapping"
+require_relative "xsd/base_package_config"
+require_relative "xsd/package_source"
+require_relative "xsd/conflicts/namespace_conflict"
+require_relative "xsd/conflicts/type_conflict"
+require_relative "xsd/conflicts/schema_conflict"
+require_relative "xsd/package_conflict_detector"
+require_relative "xsd/package_conflict_resolver"
+require_relative "xsd/conflict_report"
+require_relative "xsd/validation_result"
 require_relative "xsd/schema_location_mapping"
 require_relative "xsd/namespace_mapping"
 require_relative "xsd/type_resolution_result"
@@ -47,49 +40,24 @@ require_relative "xsd/schema_name_resolver"
 require_relative "xsd/schema_repository_metadata"
 require_relative "xsd/schema_repository_package"
 require_relative "xsd/schema_repository"
-require_relative "xsd/all"
-require_relative "xsd/annotation"
-require_relative "xsd/any"
-require_relative "xsd/any_attribute"
-require_relative "xsd/appinfo"
-require_relative "xsd/attribute"
-require_relative "xsd/attribute_group"
-require_relative "xsd/choice"
-require_relative "xsd/complex_content"
-require_relative "xsd/complex_type"
-require_relative "xsd/documentation"
-require_relative "xsd/element"
-require_relative "xsd/enumeration"
-require_relative "xsd/extension_complex_content"
-require_relative "xsd/extension_simple_content"
-require_relative "xsd/field"
-require_relative "xsd/fraction_digits"
-require_relative "xsd/glob"
-require_relative "xsd/group"
-require_relative "xsd/import"
-require_relative "xsd/include"
-require_relative "xsd/key"
-require_relative "xsd/keyref"
-require_relative "xsd/length"
-require_relative "xsd/list"
-require_relative "xsd/max_exclusive"
-require_relative "xsd/max_inclusive"
-require_relative "xsd/max_length"
-require_relative "xsd/min_exclusive"
-require_relative "xsd/min_inclusive"
-require_relative "xsd/min_length"
-require_relative "xsd/notation"
-require_relative "xsd/pattern"
-require_relative "xsd/redefine"
-require_relative "xsd/restriction_complex_content"
-require_relative "xsd/restriction_simple_content"
-require_relative "xsd/restriction_simple_type"
+require_relative "xsd/compatibility"
 require_relative "xsd/schema"
-require_relative "xsd/selector"
-require_relative "xsd/sequence"
-require_relative "xsd/simple_content"
-require_relative "xsd/simple_type"
-require_relative "xsd/total_digits"
-require_relative "xsd/union"
-require_relative "xsd/unique"
-require_relative "xsd/white_space"
+require_relative "xsd/schema_classifier"
+require_relative "xsd/package_validator"
+require_relative "xsd/package_tree_formatter"
+require_relative "xsd/type_searcher"
+require_relative "xsd/batch_type_query"
+require_relative "xsd/validation/validator"
+require_relative "xsd/spa"
+require_relative "xsd/interactive_builder"
+require_relative "xsd/coverage_analyzer"
+require_relative "xsd/definition_extractor"
+require_relative "xsd/dependency_grapher"
+require_relative "xsd/entrypoint_identifier"
+require_relative "xsd/namespace_prefix_manager"
+require_relative "xsd/namespace_remapper"
+require_relative "xsd/schema_file_validation_results"
+require_relative "xsd/schema_dependency_analyzer"
+require_relative "xsd/type_hierarchy_analyzer"
+require_relative "xsd/xsd_spec_validator"
+require_relative "xsd/cli"

@@ -28,7 +28,7 @@ module Lutaml
           type_category: info[:type].to_s,
           namespace: info[:namespace],
           local_name: info[:definition]&.name,
-          schema_file: info[:schema_file]
+          schema_file: info[:schema_file],
         )
       end
     end
