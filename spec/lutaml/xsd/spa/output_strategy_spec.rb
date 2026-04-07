@@ -137,6 +137,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
       before do
         allow(File).to receive(:exist?).and_return(true)
         allow(File).to receive(:size).and_return(0)
+        allow(File).to receive(:empty?).and_return(true)
       end
 
       it "raises IOError" do
