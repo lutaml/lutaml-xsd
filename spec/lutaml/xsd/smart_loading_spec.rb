@@ -10,8 +10,8 @@ RSpec.describe Lutaml::Xsd::SchemaRepository, "smart loading" do
   end
 
   let(:temp_dir) do
-    dir = Dir.mktmpdir
-    FileUtils.chmod(0o755, dir)
+    dir = File.join(Dir.pwd, "tmp_test_#{SecureRandom.hex(8)}")
+    FileUtils.mkdir_p(dir)
     dir
   end
 

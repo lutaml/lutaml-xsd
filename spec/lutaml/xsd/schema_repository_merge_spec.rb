@@ -4,12 +4,12 @@ require "spec_helper"
 
 RSpec.describe Lutaml::Xsd::SchemaRepository, "package merging" do
   let(:temp_dir) do
-    dir = Dir.mktmpdir
-    FileUtils.chmod(0o755, dir)
+    dir = File.join(Dir.pwd, "tmp_test_#{SecureRandom.hex(8)}")
+    FileUtils.mkdir_p(dir)
     dir
   end
 
-  after { FileUtils.remove_entry(temp_dir) }
+  after { FileUtils.rm_rf(temp_dir) }
 
   # Helper to create minimal test package
   def create_test_package(path, namespace, schema_content)

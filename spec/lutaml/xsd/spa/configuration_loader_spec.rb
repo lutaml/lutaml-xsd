@@ -5,8 +5,8 @@ require "lutaml/xsd/spa/configuration_loader"
 
 RSpec.describe Lutaml::Xsd::Spa::ConfigurationLoader do
   let(:temp_config_dir) do
-    dir = Dir.mktmpdir
-    FileUtils.chmod(0o755, dir)
+    dir = File.join(Dir.pwd, "tmp_test_#{SecureRandom.hex(8)}")
+    FileUtils.mkdir_p(dir)
     dir
   end
   let(:valid_theme_yaml) do

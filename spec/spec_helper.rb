@@ -16,20 +16,16 @@ RSpec.configure do |config|
   end
 end
 
-# Helper to create a writable temp directory on Windows GitHub Actions
-# On Windows, Dir.mktmpdir creates directories with restricted permissions
-# that prevent RubyZip from writing files. This helper ensures the directory
-# is writable on Unix systems.
+# Helper to create a writable temp directory for tests that need to create zip archives.
+# On Windows, Dir.mktmpdir creates directories with restricted permissions that prevent
+# RubyZip from writing files. This helper creates the directory in the current working
+# directory instead, which avoids the permission issues.
 def with_writable_temp_dir
   require "fileutils"
 
-  Dir.mktmpdir do |tmpdir|
-    # Ensure directory is writable (helps on Unix, no-op on Windows ACL systems)
-    begin
-      FileUtils.chmod(0o755, tmpdir)
-    rescue StandardError
-      nil
-    end
-    yield tmpdir
-  end
+  test_dir = File.join(Dir.pwd, "tmp_test_#{SecureRandom.hex(8)}")
+  FileUtils.mkdir_p(test_dir)
+  yield test_dir
+ensure
+  FileUtils.rm_rf(test_dir) if test_dir && File.exist?(test_dir)
 end
