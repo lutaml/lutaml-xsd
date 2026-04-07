@@ -2,6 +2,7 @@
 
 require "json"
 require "yaml"
+require_relative "../errors"
 
 module Lutaml
   module Xsd
@@ -78,6 +79,12 @@ module Lutaml
           repository = SchemaRepository.from_package(package_path)
           verbose_output "✓ Repository loaded successfully"
           repository
+        rescue SchemaNotFoundError => e
+          handle_schema_not_found_error(e)
+        rescue PackageValidationError => e
+          error "Package validation failed: #{e.message}"
+          verbose_output e.backtrace.join("\n") if verbose?
+          exit 1
         rescue StandardError => e
           error "Failed to load repository: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
@@ -90,20 +97,49 @@ module Lutaml
         def ensure_resolved(repository)
           if repository.needs_parsing?
             verbose_output "Parsing schemas from XSD files..."
-            repository.parse
+            repository.parse(verbose: verbose?)
             verbose_output "✓ Schemas parsed"
           else
             verbose_output "✓ Schemas loaded from package (instant load)"
           end
 
           verbose_output "Resolving cross-references and building type index..."
-          repository.resolve
-          verbose_output "✓ Repository resolved"
+          repository.resolve(verbose: verbose?)
+
+          # Show statistics in verbose mode
+          if verbose?
+            stats = repository.statistics
+            verbose_output "✓ Repository resolved"
+            verbose_output "  Total schemas: #{stats[:total_schemas]}"
+            verbose_output "  Total types indexed: #{stats[:total_types]}"
+            verbose_output "  Total namespaces: #{stats[:total_namespaces]}"
+            verbose_output "  Namespace prefixes registered: #{stats[:namespace_prefixes]}"
+          else
+            verbose_output "✓ Repository resolved"
+          end
 
           repository
+        rescue SchemaNotFoundError => e
+          handle_schema_not_found_error(e)
+        rescue TypeNotFoundError => e
+          handle_type_not_found_error(e)
         rescue StandardError => e
           error "Failed to resolve repository: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
+          exit 1
+        end
+
+        # Handle SchemaNotFoundError with helpful output
+        # @param error [SchemaNotFoundError] The error to handle
+        def handle_schema_not_found_error(error)
+          warn "\n#{error.message}"
+          exit 1
+        end
+
+        # Handle TypeNotFoundError with helpful output
+        # @param error [TypeNotFoundError] The error to handle
+        def handle_type_not_found_error(error)
+          warn "\n#{error.message}"
           exit 1
         end
       end

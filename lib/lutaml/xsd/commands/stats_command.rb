@@ -8,6 +8,9 @@ module Lutaml
     module Commands
       # Thor subcommand for displaying repository statistics
       class StatsCommand < Thor
+        # Command aliases
+        map "s" => :show
+
         class_option :verbose,
                      type: :boolean,
                      default: false,
@@ -77,24 +80,35 @@ module Lutaml
           end
 
           def output_text(stats)
-            puts "Repository Statistics:"
-            puts "  Total schemas parsed: #{stats[:total_schemas]}"
-            puts "  Total types indexed: #{stats[:total_types]}"
-            puts "  Types by category:"
-            stats[:types_by_category].sort.each do |category, count|
-              puts "    #{category}: #{count}"
+            require "table_tennis"
+
+            output "Repository Statistics:"
+            output "=" * 80
+            output ""
+            output "Total schemas parsed: #{stats[:total_schemas]}"
+            output "Total types indexed: #{stats[:total_types]}"
+            output "Total namespaces: #{stats[:total_namespaces]}"
+            output ""
+            output "Types by category:"
+            output "-" * 80
+
+            # Build table data as array of hashes
+            category_data = stats[:types_by_category].sort.map do |category, count|
+              { "Category" => category.to_s, "Count" => count }
             end
-            puts "  Total namespaces: #{stats[:total_namespaces]}"
+
+            category_table = TableTennis.new(category_data)
+            output category_table
           end
 
           def output_json(stats)
             require "json"
-            puts JSON.pretty_generate(stats)
+            output JSON.pretty_generate(stats)
           end
 
           def output_yaml(stats)
             require "yaml"
-            puts stats.to_yaml
+            output stats.to_yaml
           end
         end
       end

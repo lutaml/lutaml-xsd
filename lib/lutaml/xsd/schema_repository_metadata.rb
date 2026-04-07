@@ -50,7 +50,7 @@ module Lutaml
           total_namespaces: stats[:total_namespaces],
           namespace_prefixes: stats[:namespace_prefixes],
           resolved: stats[:resolved],
-          validated: stats[:validated]
+          validated: stats[:validated],
         )
       end
     end
@@ -58,7 +58,8 @@ module Lutaml
     # Metadata for a schema repository package
     class SchemaRepositoryMetadata < Lutaml::Model::Serializable
       attribute :files, :string, collection: true
-      attribute :schema_location_mappings, SchemaLocationMapping, collection: true
+      attribute :schema_location_mappings, SchemaLocationMapping,
+                collection: true
       attribute :namespace_mappings, NamespaceMapping, collection: true
       attribute :statistics, SchemaRepositoryStatistics
       attribute :serialized_schemas, SerializedSchema, collection: true
@@ -133,7 +134,7 @@ module Lutaml
           name: additional[:name] || additional["name"],
           version: additional[:version] || additional["version"],
           description: additional[:description] || additional["description"],
-          created_by: additional[:created_by] || additional["created_by"]
+          created_by: additional[:created_by] || additional["created_by"],
         )
 
         # Store any custom metadata fields as instance variables

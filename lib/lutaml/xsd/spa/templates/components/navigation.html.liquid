@@ -1,0 +1,235 @@
+<nav class="navigation" aria-label="Schema navigation">
+  {% if features.navigation.breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="#home">Home</a>
+    <span class="separator">›</span>
+    <span class="current">Schemas</span>
+  </div>
+  {% endif %}
+
+  <div class="nav-tree">
+    {% for schema in schemas %}
+    <div class="nav-schema" id="nav-{{ schema.id }}">
+      <h3 class="nav-schema-title">
+        <button class="collapsible-toggle" aria-expanded="true">
+          <span class="toggle-icon">▼</span>
+        </button>
+        <a href="#{{ schema.id }}">{{ schema.name }}</a>
+        {% if schema.namespace %}
+        <span class="namespace-badge" title="{{ schema.namespace }}">
+          {{ schema.namespace | truncate: 20 }}
+        </span>
+        {% endif %}
+      </h3>
+
+      <div class="nav-schema-content">
+        {% if schema.elements.size > 0 %}
+        <details class="nav-section" {% if features.navigation.collapsible_sections %}open{% endif %}>
+          <summary>
+            Elements
+            {% if features.navigation.show_hierarchy %}
+            <span class="count-badge">{{ schema.elements.size }}</span>
+            {% endif %}
+          </summary>
+          <ul class="nav-list">
+            {% for element in schema.elements %}
+            <li>
+              <a href="#{{ schema.id }}-element-{{ element.id }}">
+                {{ element.name }}
+              </a>
+              {% if element.type %}
+              <span class="type-label">: {{ element.type }}</span>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </details>
+        {% endif %}
+
+        {% if schema.complex_types.size > 0 %}
+        <details class="nav-section" {% if features.navigation.collapsible_sections %}open{% endif %}>
+          <summary>
+            Complex Types
+            {% if features.navigation.show_hierarchy %}
+            <span class="count-badge">{{ schema.complex_types.size }}</span>
+            {% endif %}
+          </summary>
+          <ul class="nav-list">
+            {% for type in schema.complex_types %}
+            <li>
+              <a href="#{{ schema.id }}-complex-type-{{ type.id }}">
+                {{ type.name }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </details>
+        {% endif %}
+
+        {% if schema.simple_types.size > 0 %}
+        <details class="nav-section">
+          <summary>
+            Simple Types
+            {% if features.navigation.show_hierarchy %}
+            <span class="count-badge">{{ schema.simple_types.size }}</span>
+            {% endif %}
+          </summary>
+          <ul class="nav-list">
+            {% for type in schema.simple_types %}
+            <li>
+              <a href="#{{ schema.id }}-simple-type-{{ type.id }}">
+                {{ type.name }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </details>
+        {% endif %}
+
+        {% if schema.attributes.size > 0 %}
+        <details class="nav-section">
+          <summary>
+            Attributes
+            {% if features.navigation.show_hierarchy %}
+            <span class="count-badge">{{ schema.attributes.size }}</span>
+            {% endif %}
+          </summary>
+          <ul class="nav-list">
+            {% for attr in schema.attributes %}
+            <li>
+              <a href="#{{ schema.id }}-attribute-{{ attr.id }}">
+                {{ attr.name }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </details>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</nav>
+
+<style>
+  .navigation {
+    padding: var(--spacing-md);
+  }
+
+  .breadcrumbs {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.875rem;
+  }
+
+  .breadcrumbs .separator {
+    margin: 0 0.5rem;
+    color: var(--text-muted);
+  }
+
+  .breadcrumbs .current {
+    color: var(--text-muted);
+  }
+
+  .nav-schema {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .nav-schema-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .collapsible-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+  }
+
+  .toggle-icon {
+    transition: transform var(--transition-duration);
+  }
+
+  .nav-schema.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+  }
+
+  .nav-schema.collapsed .nav-schema-content {
+    display: none;
+  }
+
+  .namespace-badge {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-default);
+  }
+
+  .nav-section {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .nav-section summary {
+    cursor: pointer;
+    padding: 0.5rem;
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: var(--radius-default);
+    transition: background var(--transition-duration);
+  }
+
+  .nav-section summary:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .count-badge {
+    background: var(--color-secondary);
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .nav-list {
+    list-style: none;
+    padding-left: var(--spacing-lg);
+    margin-top: var(--spacing-sm);
+  }
+
+  .nav-list li {
+    margin-bottom: 0.25rem;
+  }
+
+  .nav-list a {
+    display: flex;
+    align-items: center;
+    padding: 0.375rem 0.5rem;
+    border-radius: var(--radius-default);
+    transition: background var(--transition-duration);
+    color: var(--text-primary);
+  }
+
+  .nav-list a:hover {
+    background: var(--bg-tertiary);
+    text-decoration: none;
+  }
+
+  .type-label {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+</style>

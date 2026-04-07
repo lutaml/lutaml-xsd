@@ -38,7 +38,7 @@ module Lutaml
           {
             prefix: nil,
             namespace: match[1],
-            local_name: match[2]
+            local_name: match[2],
           }
         end
 
@@ -57,7 +57,7 @@ module Lutaml
           {
             prefix: prefix,
             namespace: namespace,
-            local_name: local_name
+            local_name: local_name,
           }
         end
 
@@ -69,7 +69,7 @@ module Lutaml
           {
             prefix: nil,
             namespace: namespace_registry.default_namespace,
-            local_name: qname
+            local_name: qname,
           }
         end
 

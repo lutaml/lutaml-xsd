@@ -25,7 +25,8 @@ module Lutaml
       # @param from [String, Regexp] The source pattern
       # @param to [String] The target path
       # @param pattern [Boolean, nil] Explicit pattern flag (optional)
-      def initialize(attributes = nil, from: nil, to: nil, pattern: nil, **options)
+      def initialize(attributes = nil, from: nil, to: nil, pattern: nil,
+**options)
         # Handle hash argument from Lutaml::Model deserialization
         if attributes.is_a?(Hash)
           from = attributes[:from] || attributes["from"]
@@ -61,7 +62,7 @@ module Lutaml
       def to_glob_format
         {
           from: pattern ? Regexp.new(from) : from,
-          to: to
+          to: to,
         }
       end
     end

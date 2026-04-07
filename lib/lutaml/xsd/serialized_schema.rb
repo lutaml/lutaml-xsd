@@ -32,13 +32,13 @@ module Lutaml
           complex_types: serialize_types(schema.complex_type),
           elements: serialize_elements(schema.element),
           attribute_groups: serialize_attribute_groups(schema.attribute_group),
-          groups: serialize_groups(schema.group)
+          groups: serialize_groups(schema.group),
         }
 
         new(
           file_path: file_path,
           target_namespace: schema.target_namespace,
-          schema_data: JSON.generate(schema_hash)
+          schema_data: JSON.generate(schema_hash),
         )
       end
 
@@ -52,15 +52,22 @@ module Lutaml
           target_namespace: data["target_namespace"],
           element_form_default: data["element_form_default"],
           attribute_form_default: data["attribute_form_default"],
-          version: data["version"]
+          version: data["version"],
         )
 
         # Reconstruct collections
-        schema.instance_variable_set(:@simple_type, deserialize_types(data["simple_types"], :simple_type))
-        schema.instance_variable_set(:@complex_type, deserialize_types(data["complex_types"], :complex_type))
-        schema.instance_variable_set(:@element, deserialize_elements(data["elements"]))
-        schema.instance_variable_set(:@attribute_group, deserialize_attribute_groups(data["attribute_groups"]))
-        schema.instance_variable_set(:@group, deserialize_groups(data["groups"]))
+        schema.instance_variable_set(:@simple_type,
+                                     deserialize_types(data["simple_types"],
+                                                       :simple_type))
+        schema.instance_variable_set(:@complex_type,
+                                     deserialize_types(data["complex_types"],
+                                                       :complex_type))
+        schema.instance_variable_set(:@element,
+                                     deserialize_elements(data["elements"]))
+        schema.instance_variable_set(:@attribute_group,
+                                     deserialize_attribute_groups(data["attribute_groups"]))
+        schema.instance_variable_set(:@group,
+                                     deserialize_groups(data["groups"]))
 
         schema
       end
@@ -74,7 +81,7 @@ module Lutaml
         types.map do |type|
           {
             name: type.name,
-            class: type.class.name
+            class: type.class.name,
           }
         end
       end
@@ -101,7 +108,9 @@ module Lutaml
             end
             # Add common type methods that might be called
             obj.define_singleton_method(:to_s) { "#{class_name}(#{type_name})" }
-            obj.define_singleton_method(:inspect) { "#<#{class_name} name=#{type_name.inspect}>" }
+            obj.define_singleton_method(:inspect) do
+              "#<#{class_name} name=#{type_name.inspect}>"
+            end
           end
         end
       end
@@ -113,7 +122,7 @@ module Lutaml
         elements.map do |elem|
           {
             name: elem.name,
-            type: elem.type
+            type: elem.type,
           }
         end
       end

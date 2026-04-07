@@ -41,14 +41,14 @@ module Lutaml
           serialized = SerializedSchema.new(
             file_path: file_path,
             target_namespace: target_ns,
-            schema_data: data
+            schema_data: data,
           )
 
           # Deserialize to Schema object
           schema = serialized.to_schema
 
           # Add to global processed schemas cache
-          Schema.schema_processed(file_path, schema)
+          Lutaml::Xml::Schema::Xsd::Schema.schema_processed(file_path, schema)
         end
       end
     end

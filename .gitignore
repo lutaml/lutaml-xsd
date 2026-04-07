@@ -10,3 +10,18 @@
 # rspec failure tracking
 .rspec_status
 Gemfile*.lock
+
+# Jekyll build artifacts
+docs/_site/
+docs/.jekyll-cache/
+.kilocode
+.lycheecache
+
+node_modules
+
+# Frontend build output
+frontend/dist/
+
+# Frontend index with mock data (should not be committed)
+frontend/index.html
+
