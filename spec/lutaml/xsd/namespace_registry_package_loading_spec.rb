@@ -4,7 +4,11 @@ require "spec_helper"
 require "tempfile"
 
 RSpec.describe "Namespace registry when loading from package" do
-  let(:temp_dir) { Dir.mktmpdir("lutaml_xsd_test") }
+  let(:temp_dir) do
+    dir = Dir.mktmpdir("lutaml_xsd_test")
+    FileUtils.chmod(0o755, dir)
+    dir
+  end
   let(:xsd_content) do
     <<~XSD
       <?xml version="1.0" encoding="UTF-8"?>

@@ -47,7 +47,7 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
       it "shows basic package tree structure" do
         require "fileutils"
 
-        Dir.mktmpdir do |tmpdir|
+        with_writable_temp_dir do |tmpdir|
           schema_file = File.join(tmpdir, "test.xsd")
           File.write(schema_file, simple_schema)
 
@@ -127,7 +127,7 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
       it "supports JSON format" do
         require "fileutils"
 
-        Dir.mktmpdir do |tmpdir|
+        with_writable_temp_dir do |tmpdir|
           schema_file = File.join(tmpdir, "test.xsd")
           File.write(schema_file, simple_schema)
 
@@ -175,7 +175,7 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
       it "supports YAML format" do
         require "fileutils"
 
-        Dir.mktmpdir do |tmpdir|
+        with_writable_temp_dir do |tmpdir|
           schema_file = File.join(tmpdir, "test.xsd")
           File.write(schema_file, simple_schema)
 
@@ -342,7 +342,7 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
     it "displays package file tree structure" do
       require "fileutils"
 
-      Dir.mktmpdir do |tmpdir|
+      with_writable_temp_dir do |tmpdir|
         schema_file = File.join(tmpdir, "test.xsd")
         File.write(schema_file, simple_schema)
 

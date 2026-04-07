@@ -21,7 +21,7 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
       it "uses output_package from config when -o not specified" do
         require "fileutils"
 
-        Dir.mktmpdir do |tmpdir|
+        with_writable_temp_dir do |tmpdir|
           schema_file = File.join(tmpdir, "test.xsd")
           File.write(schema_file, simple_schema)
 
@@ -55,7 +55,7 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
       it "allows -o flag to override config output_package" do
         require "fileutils"
 
-        Dir.mktmpdir do |tmpdir|
+        with_writable_temp_dir do |tmpdir|
           schema_file = File.join(tmpdir, "test.xsd")
           File.write(schema_file, simple_schema)
 
@@ -94,7 +94,7 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
       it "uses default when neither config nor -o specified" do
         require "fileutils"
 
-        Dir.mktmpdir do |tmpdir|
+        with_writable_temp_dir do |tmpdir|
           schema_file = File.join(tmpdir, "test.xsd")
           File.write(schema_file, simple_schema)
 
@@ -138,7 +138,7 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
       it "validates package after building when --validate specified" do
         require "fileutils"
 
-        Dir.mktmpdir do |tmpdir|
+        with_writable_temp_dir do |tmpdir|
           schema_file = File.join(tmpdir, "test.xsd")
           File.write(schema_file, simple_schema)
 
@@ -174,7 +174,7 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
       it "respects serialization_format option" do
         require "fileutils"
 
-        Dir.mktmpdir do |tmpdir|
+        with_writable_temp_dir do |tmpdir|
           schema_file = File.join(tmpdir, "test.xsd")
           File.write(schema_file, simple_schema)
 
@@ -209,7 +209,7 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
       it "includes metadata from options" do
         require "fileutils"
 
-        Dir.mktmpdir do |tmpdir|
+        with_writable_temp_dir do |tmpdir|
           schema_file = File.join(tmpdir, "test.xsd")
           File.write(schema_file, simple_schema)
 
@@ -248,7 +248,7 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
     it "accepts entry point schemas" do
       require "fileutils"
 
-      Dir.mktmpdir do |tmpdir|
+      with_writable_temp_dir do |tmpdir|
         schema_file = File.join(tmpdir, "entry.xsd")
         File.write(schema_file, simple_schema)
 
@@ -274,7 +274,7 @@ RSpec.describe Lutaml::Xsd::Commands::BuildCommand do
     it "runs build + validate + stats workflow" do
       require "fileutils"
 
-      Dir.mktmpdir do |tmpdir|
+      with_writable_temp_dir do |tmpdir|
         schema_file = File.join(tmpdir, "test.xsd")
         File.write(schema_file, simple_schema)
 
