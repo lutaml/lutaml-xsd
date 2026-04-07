@@ -30,7 +30,6 @@ Gem::Specification.new do |spec|
     end + Dir.glob("frontend/dist/*")
   end
 
-  spec.add_dependency "activesupport"
   spec.add_dependency "liquid", "~> 5.0"
   spec.add_dependency "lutaml-model", "~> 0.8"
   spec.add_dependency "moxml"
