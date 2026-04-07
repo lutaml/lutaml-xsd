@@ -1,26 +1,8 @@
 # Lychee link checker configuration
+# See https://lychee.cli.rs/configuration/
 
 # Ignore these directories
-exclude = [
-  ".git",
-  "node_modules",
-  "vendor",
-  "frontend/node_modules"
-]
+exclude = [".git", "node_modules", "vendor", "frontend/node_modules"]
 
-# User agents to use
+# User agent
 user-agent = "lychee-link-checker/1.0"
-
-# Timeout in seconds
-timeout = "10"
-
-# Maximum number of concurrent requests
-max-concurrency = "8"
-
-# Retry failed requests
-retry = "true"
-retry-attempts = "3"
-
-# Cache results
-cache = "true"
-cache-ttl = "86400"
