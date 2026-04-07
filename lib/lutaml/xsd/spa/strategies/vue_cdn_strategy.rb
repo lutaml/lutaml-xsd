@@ -155,8 +155,10 @@ module Lutaml
           # Copy frontend assets to output directory
           #
           # @return [Array<String>] List of copied asset paths
+          # @raise [RuntimeError] if frontend assets are not built
           def copy_assets
             files = []
+            missing = []
 
             ["app.iife.js", "style.css"].each do |filename|
               source = find_frontend_asset(filename)
@@ -166,9 +168,17 @@ module Lutaml
                 log "✓ Copied: #{dest}"
                 files << dest
               else
-                log "⚠ Warning: Frontend asset not found: #{filename}"
-                log "  Run 'cd frontend && npm install && npm run build' first"
+                missing << filename
               end
+            end
+
+            unless missing.empty?
+              raise(
+                RuntimeError,
+                "Frontend assets not found: #{missing.join(', ')}. " \
+                "Run 'cd frontend && npm install && npm run build' first, " \
+                "or use rake build_frontend to build automatically.",
+              )
             end
 
             files

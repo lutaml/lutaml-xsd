@@ -100,6 +100,19 @@ elements, and relationships.
 
 A LXR package is required as input to generate the documentation.
 
+[NOTE]
+====
+**Frontend assets:**
+- When installing from RubyGems: Assets are pre-built and bundled in the gem
+- When developing from git: Run `bundle exec rake build_frontend` first to build the frontend
+
+If you see an error about missing frontend assets, run:
+[source,bash]
+----
+bundle exec rake build_frontend
+----
+====
+
 === Quick start
 
 Generate single-file documentation:

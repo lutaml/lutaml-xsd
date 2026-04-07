@@ -20,6 +20,10 @@ docs/.jekyll-cache/
 node_modules
 
 # Frontend build output
+# Note: frontend/dist is NOT committed to git. It is:
+#   1. Built automatically during `rake release` (bundled into gem for RubyGems.org)
+#   2. Built locally via `bundle exec rake build_frontend` (for development)
+# The gem bundles pre-built assets, so end users don't need to build.
 frontend/dist/
 
 # Frontend index with mock data (should not be committed)
