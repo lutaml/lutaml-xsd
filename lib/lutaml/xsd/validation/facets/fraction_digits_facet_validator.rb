@@ -59,8 +59,8 @@ module Lutaml
 
             # Count digits after decimal point (excluding trailing zeros)
             fraction_part = str[(decimal_index + 1)..]
-            # Remove trailing zeros
-            fraction_part = fraction_part.sub(/0+$/, "")
+            # Remove trailing zeros without regex to avoid polynomial backtracking
+            fraction_part = fraction_part.reverse.sub(/\A0+/, "").reverse
             fraction_part.length
           end
         end

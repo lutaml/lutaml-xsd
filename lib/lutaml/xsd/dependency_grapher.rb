@@ -380,7 +380,7 @@ visited)
 
       # Escape string for DOT
       def escape_dot(str)
-        str.gsub('"', '\\"')
+        str.gsub("\\", "\\\\").gsub('"', '\\"')
       end
 
       # Add dependencies to Mermaid diagram recursively
