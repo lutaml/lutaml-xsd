@@ -6,7 +6,7 @@ exclude = [".git", "node_modules", "vendor", "frontend/node_modules"]
 
 # Ignore these URL patterns (known broken links in docs)
 skip = [
-  "http://localhost:*",
+  "localhost",
   "http://schemas/",
   "https://schemas/",
   "https://www.geospatial.jp/iur/urf/3.2",
@@ -31,6 +31,10 @@ skip = [
   "http://partner.external.com/",
   "http://external.partner.com/",
   "http://another.new.com/",
+  "https://new.uri.com/",
+  "https://old.uri.com/",
+  "http://new.com/",
+  "http://external.com/",
 ]
 
 # User agent
