@@ -18,10 +18,6 @@ if fiddle_available
 end
 
 RSpec.describe Lutaml::Xsd::InteractiveBuilder do
-  # Skip all tests if fiddle is not available
-  before(:all) do
-    skip "fiddle is required for InteractiveBuilder on Windows Ruby 4.0+" unless fiddle_available
-  end
   let(:entry_points) { [File.join(fixtures_path, "simple_schema.xsd")] }
   let(:options) { { verbose: false, output: output_file } }
   let(:output_file) { File.join(tmp_dir, "repository.yml") }
