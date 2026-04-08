@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
 
   spec.bindir = "exe"
   spec.require_paths = ["lib"]
+  spec.executables = ["lutaml-xsd"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
@@ -31,7 +32,7 @@ Gem::Specification.new do |spec|
   end
 
   spec.add_dependency "liquid", "~> 5.0"
-  spec.add_dependency "lutaml-model", "~> 0.8"
+  spec.add_dependency "lutaml-model", "~> 0.8.0"
   spec.add_dependency "moxml"
   spec.add_dependency "paint", "~> 2.3"
   spec.add_dependency "rubyzip", "~> 2.3"
