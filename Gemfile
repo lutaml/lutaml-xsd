@@ -7,6 +7,7 @@ gemspec
 
 gem "base64"
 gem "canon"
+gem "fiddle"
 gem "liquid"
 gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
 gem "nokogiri"
