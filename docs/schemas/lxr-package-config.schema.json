@@ -67,6 +67,25 @@
           "type": "array",
           "description": "Tags for discoverability",
           "items": { "type": "string" }
+        },
+        "links": {
+          "type": "array",
+          "description": "Custom external documentation links with name and URL",
+          "items": {
+            "type": "object",
+            "required": ["name", "url"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Display label for the link"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL to the linked resource"
+              }
+            }
+          }
         }
       }
     },
@@ -333,25 +352,6 @@
             "default": { "type": "string" },
             "md": { "type": "string" },
             "lg": { "type": "string" }
-          }
-        }
-      }
-    },
-    "links": {
-      "type": "array",
-      "description": "Custom external documentation links with name and URL",
-      "items": {
-        "type": "object",
-        "required": ["name", "url"],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Display label for the link"
-          },
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "URL to the linked resource"
           }
         }
       }

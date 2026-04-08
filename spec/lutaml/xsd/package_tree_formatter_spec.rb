@@ -1,18 +1,14 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "tempfile"
 require "zip"
 
 RSpec.describe Lutaml::Xsd::PackageTreeFormatter do
-  let(:test_package_path) { create_test_package }
-
   # Create a minimal test package for testing
-  def create_test_package
-    temp_file = Tempfile.new(["test_package", ".lxr"])
-    temp_file.close
+  def create_test_package(temp_dir)
+    package_path = File.join(temp_dir, "test_package.lxr")
 
-    Zip::File.open(temp_file.path, create: true) do |zipfile|
+    Zip::File.open(package_path, create: true) do |zipfile|
       # Add metadata
       zipfile.get_output_stream("metadata.yaml") do |f|
         f.write({
@@ -62,157 +58,207 @@ RSpec.describe Lutaml::Xsd::PackageTreeFormatter do
       end
     end
 
-    temp_file.path
-  end
-
-  after do
-    FileUtils.rm_f(test_package_path)
+    package_path
   end
 
   describe "#initialize" do
     it "creates formatter with default options" do
-      formatter = described_class.new(test_package_path)
-      expect(formatter.package_path).to eq(test_package_path)
-      expect(formatter.options[:show_sizes]).to be false
-      expect(formatter.options[:no_color]).to be false
-      expect(formatter.options[:format]).to eq(:tree)
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path)
+        expect(formatter.package_path).to eq(test_package_path)
+        expect(formatter.options[:show_sizes]).to be false
+        expect(formatter.options[:no_color]).to be false
+        expect(formatter.options[:format]).to eq(:tree)
+      end
     end
 
     it "creates formatter with custom options" do
-      formatter = described_class.new(
-        test_package_path,
-        show_sizes: true,
-        no_color: true,
-        format: :flat,
-      )
-      expect(formatter.options[:show_sizes]).to be true
-      expect(formatter.options[:no_color]).to be true
-      expect(formatter.options[:format]).to eq(:flat)
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(
+          test_package_path,
+          show_sizes: true,
+          no_color: true,
+          format: :flat,
+        )
+        expect(formatter.options[:show_sizes]).to be true
+        expect(formatter.options[:no_color]).to be true
+        expect(formatter.options[:format]).to eq(:flat)
+      end
     end
   end
 
   describe "#format" do
     it "returns a formatted string" do
-      formatter = described_class.new(test_package_path)
-      output = formatter.format
-      expect(output).to be_a(String)
-      expect(output).not_to be_empty
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path)
+        output = formatter.format
+        expect(output).to be_a(String)
+        expect(output).not_to be_empty
+      end
     end
 
     it "includes package name in header" do
-      formatter = described_class.new(test_package_path)
-      output = formatter.format
-      expect(output).to include(File.basename(test_package_path))
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path)
+        output = formatter.format
+        expect(output).to include(File.basename(test_package_path))
+      end
     end
 
     it "includes summary section" do
-      formatter = described_class.new(test_package_path)
-      output = formatter.format
-      expect(output).to include("Summary:")
-      expect(output).to include("Total files:")
-      expect(output).to include("XSD files:")
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path)
+        output = formatter.format
+        expect(output).to include("Summary:")
+        expect(output).to include("Total files:")
+        expect(output).to include("XSD files:")
+      end
     end
 
     it "shows file sizes when requested" do
-      formatter = described_class.new(test_package_path, show_sizes: true)
-      output = formatter.format
-      # Should contain size indicators like "KB" or "B"
-      expect(output).to match(/\d+\.?\d*\s+(B|KB|MB)/)
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path, show_sizes: true)
+        output = formatter.format
+        # Should contain size indicators like "KB" or "B"
+        expect(output).to match(/\d+\.?\d*\s+(B|KB|MB)/)
+      end
     end
 
     it "hides file sizes by default" do
-      formatter = described_class.new(test_package_path)
-      output = formatter.format
-      # Header should still show total size
-      expect(output).to match(/#{File.basename(test_package_path)}.*\(.*\)/)
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path)
+        output = formatter.format
+        # Header should still show total size
+        expect(output).to match(/#{File.basename(test_package_path)}.*\(.*\)/)
+      end
     end
 
     context "with tree format" do
       it "displays tree structure" do
-        formatter = described_class.new(test_package_path, format: :tree)
-        output = formatter.format
-        # Tree should contain tree characters
-        expect(output).to match(/[├└│]/)
+        with_writable_temp_dir do |temp_dir|
+          test_package_path = create_test_package(temp_dir)
+          formatter = described_class.new(test_package_path, format: :tree)
+          output = formatter.format
+          # Tree should contain tree characters
+          expect(output).to match(/[├└│]/)
+        end
       end
 
       it "includes metadata files" do
-        formatter = described_class.new(test_package_path, format: :tree)
-        output = formatter.format
-        expect(output).to include("metadata.yaml")
+        with_writable_temp_dir do |temp_dir|
+          test_package_path = create_test_package(temp_dir)
+          formatter = described_class.new(test_package_path, format: :tree)
+          output = formatter.format
+          expect(output).to include("metadata.yaml")
+        end
       end
 
       it "includes XSD files section" do
-        formatter = described_class.new(test_package_path, format: :tree)
-        output = formatter.format
-        expect(output).to include("xsd_files/")
+        with_writable_temp_dir do |temp_dir|
+          test_package_path = create_test_package(temp_dir)
+          formatter = described_class.new(test_package_path, format: :tree)
+          output = formatter.format
+          expect(output).to include("xsd_files/")
+        end
       end
     end
 
     context "with flat format" do
       it "displays flat list" do
-        formatter = described_class.new(test_package_path, format: :flat)
-        output = formatter.format
-        # Flat format should not have tree characters in file listings
-        lines = output.lines
-        file_lines = lines.select do |l|
-          l.include?(".xsd") || l.include?(".yaml")
+        with_writable_temp_dir do |temp_dir|
+          test_package_path = create_test_package(temp_dir)
+          formatter = described_class.new(test_package_path, format: :flat)
+          output = formatter.format
+          # Flat format should not have tree characters in file listings
+          lines = output.lines
+          file_lines = lines.select do |l|
+            l.include?(".xsd") || l.include?(".yaml")
+          end
+          expect(file_lines).not_to be_empty
         end
-        expect(file_lines).not_to be_empty
       end
 
       it "includes full file paths" do
-        formatter = described_class.new(test_package_path, format: :flat)
-        output = formatter.format
-        expect(output).to include("schemas/")
+        with_writable_temp_dir do |temp_dir|
+          test_package_path = create_test_package(temp_dir)
+          formatter = described_class.new(test_package_path, format: :flat)
+          output = formatter.format
+          expect(output).to include("schemas/")
+        end
       end
     end
 
     context "with no_color option" do
       it "produces plain text output" do
-        formatter = described_class.new(test_package_path, no_color: true)
-        output = formatter.format
-        # Should not contain ANSI color codes
-        expect(output).not_to match(/\e\[\d+m/)
+        with_writable_temp_dir do |temp_dir|
+          test_package_path = create_test_package(temp_dir)
+          formatter = described_class.new(test_package_path, no_color: true)
+          output = formatter.format
+          # Should not contain ANSI color codes
+          expect(output).not_to match(/\e\[\d+m/)
+        end
       end
     end
 
     context "with colors enabled" do
       it "produces colorized output" do
-        formatter = described_class.new(test_package_path, no_color: false)
-        output = formatter.format
-        # May contain ANSI color codes (but not required if Paint is disabled)
-        expect(output).to be_a(String)
+        with_writable_temp_dir do |temp_dir|
+          test_package_path = create_test_package(temp_dir)
+          formatter = described_class.new(test_package_path, no_color: false)
+          output = formatter.format
+          # May contain ANSI color codes (but not required if Paint is disabled)
+          expect(output).to be_a(String)
+        end
       end
     end
   end
 
   describe "statistics calculation" do
     it "counts XSD files correctly" do
-      formatter = described_class.new(test_package_path, no_color: true)
-      output = formatter.format
-      # Should report 2 XSD files
-      expect(output).to match(/XSD files:\s+2/)
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path, no_color: true)
+        output = formatter.format
+        # Should report 2 XSD files
+        expect(output).to match(/XSD files:\s+2/)
+      end
     end
 
     it "counts serialized schemas correctly" do
-      formatter = described_class.new(test_package_path, no_color: true)
-      output = formatter.format
-      # Should report 1 serialized schema
-      expect(output).to match(/Serialized schemas:\s+1/)
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path, no_color: true)
+        output = formatter.format
+        # Should report 1 serialized schema
+        expect(output).to match(/Serialized schemas:\s+1/)
+      end
     end
 
     it "counts configuration files correctly" do
-      formatter = described_class.new(test_package_path, no_color: true)
-      output = formatter.format
-      # Should report metadata + mappings (3 total: metadata.yaml, namespace_mappings.yaml, schema_location_mappings.yaml)
-      expect(output).to match(/Configuration files:\s+3/)
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path, no_color: true)
+        output = formatter.format
+        # Should report metadata + mappings (3 total: metadata.yaml, namespace_mappings.yaml, schema_location_mappings.yaml)
+        expect(output).to match(/Configuration files:\s+3/)
+      end
     end
 
     it "counts indexes correctly" do
-      formatter = described_class.new(test_package_path, no_color: true)
-      output = formatter.format
-      # Should report 1 index
-      expect(output).to match(/Indexes:\s+1/)
+      with_writable_temp_dir do |temp_dir|
+        test_package_path = create_test_package(temp_dir)
+        formatter = described_class.new(test_package_path, no_color: true)
+        output = formatter.format
+        # Should report 1 index
+        expect(output).to match(/Indexes:\s+1/)
+      end
     end
   end
 
@@ -223,36 +269,37 @@ RSpec.describe Lutaml::Xsd::PackageTreeFormatter do
     end
 
     it "raises error for invalid ZIP file" do
-      invalid_file = Tempfile.new(["invalid", ".lxr"])
-      invalid_file.write("not a zip file")
-      invalid_file.close
+      with_writable_temp_dir do |temp_dir|
+        invalid_path = File.join(temp_dir, "invalid.lxr")
+        File.write(invalid_path, "not a zip file")
 
-      formatter = described_class.new(invalid_file.path)
-      expect { formatter.format }.to raise_error(Lutaml::Xsd::Error)
-
-      invalid_file.unlink
+        formatter = described_class.new(invalid_path)
+        expect { formatter.format }.to raise_error(Lutaml::Xsd::Error)
+      end
     end
   end
 
   describe "file size formatting" do
-    let(:formatter) { described_class.new(test_package_path) }
-
     it "formats bytes correctly" do
+      formatter = described_class.new("/some/path/package.lxr")
       size_str = formatter.send(:format_size, 500)
       expect(size_str).to eq("500.0 B")
     end
 
     it "formats kilobytes correctly" do
+      formatter = described_class.new("/some/path/package.lxr")
       size_str = formatter.send(:format_size, 1536)
       expect(size_str).to eq("1.5 KB")
     end
 
     it "formats megabytes correctly" do
+      formatter = described_class.new("/some/path/package.lxr")
       size_str = formatter.send(:format_size, 1_572_864)
       expect(size_str).to eq("1.5 MB")
     end
 
     it "handles zero bytes" do
+      formatter = described_class.new("/some/path/package.lxr")
       size_str = formatter.send(:format_size, 0)
       expect(size_str).to eq("0 B")
     end
