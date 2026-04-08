@@ -1,11 +1,27 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/xsd/interactive_builder"
 require "tmpdir"
 require "fileutils"
 
+# Check if fiddle is available (required by tty-prompt on Windows Ruby 4.0+)
+fiddle_available = begin
+  require "fiddle"
+  true
+rescue LoadError
+  false
+end
+
+# Only load interactive_builder if fiddle is available
+if fiddle_available
+  require "lutaml/xsd/interactive_builder"
+end
+
 RSpec.describe Lutaml::Xsd::InteractiveBuilder do
+  # Skip all tests if fiddle is not available
+  before(:all) do
+    skip "fiddle is required for InteractiveBuilder on Windows Ruby 4.0+" unless fiddle_available
+  end
   let(:entry_points) { [File.join(fixtures_path, "simple_schema.xsd")] }
   let(:options) { { verbose: false, output: output_file } }
   let(:output_file) { File.join(tmp_dir, "repository.yml") }
