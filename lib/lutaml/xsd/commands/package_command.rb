@@ -524,7 +524,7 @@ module Lutaml
               metadata[:appearance] =
                 full_config["appearance"]
             end
-            metadata[:links] = full_config["links"] if full_config["links"]
+            metadata[:links] = metadata_config["links"] if metadata_config["links"]
             metadata
           end
 
