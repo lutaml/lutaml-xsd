@@ -3,18 +3,17 @@
 name: rake
 
 permissions:
-  contents: read
+  contents: write
+  packages: write
 
 on:
   push:
-    branches: [master, main]
-    tags: [v*]
+    branches: [ master, main ]
+    tags: [ v* ]
   pull_request:
 
 jobs:
   rake:
-    permissions:
-      contents: read
     uses: metanorma/ci/.github/workflows/generic-rake.yml@main
     secrets:
-      pat_token: ${{ secrets.GITHUB_TOKEN }}
+      pat_token: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
