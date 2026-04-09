@@ -42,14 +42,16 @@ build:
 
 # === Schema Entry Points ===
 files:
-  - ../../spec/fixtures/i-ur/urbanFunction.xsd
-  - ../../spec/fixtures/i-ur/urbanObject.xsd
+  - schemas/urbanFunction.xsd
+  - schemas/urbanObject.xsd
+  - schemas/fgd/FGD_GMLSchema.xsd
+  - schemas/jmp/jmp20.xsd
 
 # === Schema Location Mappings ===
 schema_location_mappings:
   # Map urbanObject import to local file
   - from: "../../uro/3.2/urbanObject.xsd"
-    to: ../../spec/fixtures/i-ur/urbanObject.xsd
+    to: schemas/urbanObject.xsd
     pattern: false
 
   # Map relative ISO 19139 paths (gmd, gco, gss, gts, gmx, gsr)
@@ -95,7 +97,7 @@ schema_location_mappings:
   # Map GML 3.1.1 base/gml.xsd specifically (3.1.1 not available, map to 3.2.1 gml.xsd)
   - from: '^http://schemas\.opengis\.net/gml/3\.1\.1/base/gml\.xsd$'
     to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
-    pattern: false
+    pattern: true
 
   # Map other GML 3.1.1 paths to 3.2.1 (stripping /base/ if present)
   - from: '^http://schemas\.opengis\.net/gml/3\.1\.1/(?:base/)?(.+\.xsd)$'
@@ -105,7 +107,7 @@ schema_location_mappings:
   # Map xAL HTTP URLs to local files (used by CityGML)
   - from: '^http://docs\.oasis-open\.org/election/external/xAL\.xsd$'
     to: ../../spec/fixtures/citygml/xAL/xAL.xsd
-    pattern: false
+    pattern: true
 
 # === Namespace Mappings ===
 namespace_mappings:
@@ -115,10 +117,14 @@ namespace_mappings:
     uri: "https://www.geospatial.jp/iur/urf/3.2"
   - prefix: "uro"
     uri: "https://www.geospatial.jp/iur/uro/3.2"
+  - prefix: "fgd"
+    uri: "http://fgd.gsi.go.jp/spec/2008/FGD_GMLSchema"
   - prefix: "gml"
     uri: "http://www.opengis.net/gml/3.2"
   - prefix: "xlink"
     uri: "http://www.w3.org/1999/xlink"
+  - prefix: "jmp"
+    uri: "http://zgate.gsi.go.jp/ch/jmp/"
 
 # === Appearance (for SPA) ===
 appearance:
