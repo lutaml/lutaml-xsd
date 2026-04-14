@@ -262,14 +262,14 @@ module Lutaml
         # Serialize elements from schema
         #
         # @param schema [Schema] Schema object
-        # @return [Array<Hash>] Serialized elements
+        # @return [Array<Hash>] Serialized elements (sorted alphabetically by name)
         def serialize_elements(schema, prefix = nil)
           return [] unless schema.respond_to?(:elements) || schema.respond_to?(:element)
 
           elements = schema.respond_to?(:elements) ? schema.elements : schema.element
           elements.map.with_index do |element, index|
             serialize_element(element, index, prefix)
-          end
+          end.sort_by { |e| e[:name] || "" }
         end
 
         # Serialize single element
@@ -322,14 +322,14 @@ module Lutaml
         # Serialize complex types from schema
         #
         # @param schema [Schema] Schema object
-        # @return [Array<Hash>] Serialized complex types
+        # @return [Array<Hash>] Serialized complex types (sorted alphabetically by name)
         def serialize_complex_types(schema, prefix = nil)
           return [] unless schema.respond_to?(:complex_types) || schema.respond_to?(:complex_type)
 
           types = schema.respond_to?(:complex_types) ? schema.complex_types : schema.complex_type
           types.map.with_index do |type, index|
             serialize_complex_type(type, index, prefix)
-          end
+          end.sort_by { |t| t[:name] || "" }
         end
 
         # Serialize single complex type
@@ -362,14 +362,14 @@ module Lutaml
         # Serialize simple types from schema
         #
         # @param schema [Schema] Schema object
-        # @return [Array<Hash>] Serialized simple types
+        # @return [Array<Hash>] Serialized simple types (sorted alphabetically by name)
         def serialize_simple_types(schema, prefix = nil)
           return [] unless schema.respond_to?(:simple_types) || schema.respond_to?(:simple_type)
 
           types = schema.respond_to?(:simple_types) ? schema.simple_types : schema.simple_type
           types.map.with_index do |type, index|
             serialize_simple_type(type, index, prefix)
-          end
+          end.sort_by { |t| t[:name] || "" }
         end
 
         # Serialize single simple type
@@ -450,7 +450,7 @@ module Lutaml
         # Serialize attribute groups from schema
         #
         # @param schema [Schema] Schema object
-        # @return [Array<Hash>] Serialized attribute groups
+        # @return [Array<Hash>] Serialized attribute groups (sorted alphabetically by name)
         def serialize_attribute_groups(schema, prefix = nil)
           groups = if schema.respond_to?(:attribute_groups)
                      schema.attribute_groups
@@ -469,7 +469,7 @@ module Lutaml
               attributes: serialize_ag_attributes(ag),
               documentation: extract_documentation(ag),
             }
-          end
+          end.sort_by { |ag| ag[:name] || "" }
         end
 
         # Serialize attributes from an attribute group
