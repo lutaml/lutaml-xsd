@@ -65,6 +65,15 @@
           <div v-for="ag in complexData.attribute_groups" :key="ag.ref" class="def-item def-xml-comment">
             <span class="def-comment">@attrgroup</span>
             <span class="def-type-link" @click="navigateToType(ag.ref)">{{ ag.ref }}</span>
+            <!-- Inline attributes from the referenced attribute group -->
+            <div v-if="ag.attributes?.length" class="def-group-attributes">
+              <div v-for="attr in ag.attributes" :key="attr.name" class="def-item def-xml-comment def-indent">
+                <span class="def-comment">@attribute</span>
+                <span class="def-item-name">{{ attr.name }}</span>
+                <span class="def-type-link" @click="navigateToType(attr.type || 'xs:string')">{{ attr.type || 'xs:string' }}</span>
+                <span v-if="attr.use" class="def-item-use" :class="attr.use">{{ attr.use }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -300,5 +309,14 @@ code {
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
+}
+
+.def-group-attributes {
+  margin-left: var(--space-6);
+  margin-top: var(--space-1);
+}
+
+.def-indent {
+  padding-left: var(--space-4);
 }
 </style>

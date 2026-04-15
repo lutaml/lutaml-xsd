@@ -251,6 +251,7 @@ export interface GroupRef {
 
 export interface AttributeGroupRef {
   ref: string
+  attributes?: TypeAttribute[]
 }
 
 export interface UsedByRef {
