@@ -154,7 +154,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute, GroupRef, AttributeGroupRef, UsedByRef } from '@/types'
+import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute, GroupRef, AttributeGroupRef, UsedByRef, AttributeGroup } from '@/types'
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
 
@@ -215,8 +215,11 @@ const elements = computed<TypeElement[]>(() => {
 })
 
 const attributes = computed<TypeAttribute[]>(() => {
-  if (props.type.type === 'complex' || props.type.type === 'attribute_group') {
+  if (props.type.type === 'complex') {
     return (props.type.data as ComplexType).attributes || []
+  }
+  if (props.type.type === 'attribute_group') {
+    return (props.type.data as AttributeGroup).attributes || []
   }
   return []
 })

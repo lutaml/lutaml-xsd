@@ -477,9 +477,9 @@ module Lutaml
         # @param ag [AttributeGroup] Attribute group
         # @return [Array<Hash>] Serialized attributes
         def serialize_ag_attributes(ag)
-          return [] unless ag.respond_to?(:attributes) && ag.attributes
+          return [] unless ag.respond_to?(:attribute) && ag.attribute
 
-          ag.attributes.map do |attr|
+          ag.attribute.map do |attr|
             {
               name: attr.name,
               type: attr.type,
@@ -590,16 +590,39 @@ module Lutaml
         # Serialize attribute group references from a complex type
         #
         # @param type [ComplexType] Complex type
-        # @return [Array<Hash>] Serialized attribute group references
+        # @return [Array<Hash>] Serialized attribute group references with attributes
         def serialize_type_attr_groups(type)
           return [] unless type.respond_to?(:attribute_group) && type.attribute_group
 
           groups = type.attribute_group.is_a?(Array) ? type.attribute_group : [type.attribute_group]
           groups.filter_map do |ag|
+            ag_name = ag.respond_to?(:ref) ? ag.ref : ag.name
+            # Look up the actual attribute group definition to get its attributes
+            attrs = lookup_attribute_group_attributes(ag_name)
             {
-              ref: ag.respond_to?(:ref) ? ag.ref : ag.name,
+              ref: ag_name,
+              attributes: attrs,
             }
           end
+        end
+
+        # Look up attributes from an attribute group definition
+        #
+        # @param ag_name [String] Attribute group name
+        # @return [Array<Hash>] Serialized attributes
+        def lookup_attribute_group_attributes(ag_name)
+          clean_name = ag_name.split(":").last
+          get_schemas.each do |_file_path, schema|
+            next unless schema.respond_to?(:attribute_group) && schema.attribute_group
+
+            found_ag = schema.attribute_group.find do |group|
+              [clean_name, ag_name].include?(group.name)
+            end
+            if found_ag && found_ag.respond_to?(:attribute) && found_ag.attribute
+              return serialize_ag_attributes(found_ag)
+            end
+          end
+          []
         end
 
         # Extract union member types from simple type
