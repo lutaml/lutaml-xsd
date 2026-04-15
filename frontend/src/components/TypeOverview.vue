@@ -140,7 +140,7 @@
     <div v-if="usedByRefs.length > 0" class="overview-section">
       <h3 class="section-title">Used By</h3>
       <div class="tag-list">
-        <span v-for="ref in usedByRefs" :key="ref.name" class="tag">{{ ref.name }}</span>
+        <span v-for="ref in usedByRefs" :key="ref.name" class="tag type-link" @click="navigateToRef(ref.name)">{{ ref.name }}</span>
       </div>
     </div>
 
