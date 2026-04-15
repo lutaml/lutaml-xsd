@@ -641,6 +641,22 @@ module Lutaml
             (schema_data[:simple_types] || []).each do |type|
               type[:used_by] = used_by[type[:name]] || []
             end
+            (schema_data[:attribute_groups] || []).each do |ag|
+              ag[:used_by] = used_by[ag[:name]] || []
+            end
+            (schema_data[:elements] || []).each do |elem|
+              # Filter out self-references
+              elem_name = elem[:name]
+              elem[:used_by] = (used_by[elem_name] || []).reject do |ref|
+                ref[:name] == elem_name
+              end
+            end
+            (schema_data[:groups] || []).each do |group|
+              group[:used_by] = used_by[group[:name]] || []
+            end
+            (schema_data[:attributes] || []).each do |attr|
+              attr[:used_by] = used_by[attr[:name]] || []
+            end
           end
         end
 
@@ -669,8 +685,10 @@ module Lutaml
                                           schema: schema_label }
               end
               (type[:elements] || []).each do |elem|
-                if elem[:name]
-                  used_by[elem[:name]] << { name: type[:name],
+                # Check name for local elements, reference for element refs
+                element_name = elem[:name] || elem[:reference]
+                if element_name
+                  used_by[element_name] << { name: type[:name],
                                             kind: "complexType", schema: schema_label }
                 end
               end
@@ -687,6 +705,47 @@ module Lutaml
               if type[:base]
                 used_by[type[:base]] << { name: type[:name], kind: "simpleType",
                                           schema: schema_label }
+              end
+            end
+
+            # Complex types: attribute group references
+            (schema_data[:complex_types] || []).each do |type|
+              (type[:attribute_groups] || []).each do |ag_ref|
+                if ag_ref[:ref]
+                  used_by[ag_ref[:ref]] << { name: type[:name], kind: "complexType",
+                                             schema: schema_label }
+                end
+              end
+            end
+
+            # Complex types: group references
+            (schema_data[:complex_types] || []).each do |type|
+              (type[:groups] || []).each do |grp_ref|
+                if grp_ref[:ref]
+                  used_by[grp_ref[:ref]] << { name: type[:name], kind: "complexType",
+                                              schema: schema_label }
+                end
+              end
+            end
+
+            # Complex types: element references (type attribute)
+            (schema_data[:complex_types] || []).each do |type|
+              (type[:elements] || []).each do |elem|
+                if elem[:type]
+                  # Extract base type name (without namespace prefix)
+                  type_name = elem[:type].split(":").last || elem[:type]
+                  used_by[type_name] << { name: type[:name], kind: "complexType",
+                                          schema: schema_label }
+                end
+              end
+            end
+
+            # Schema elements: type attribute
+            (schema_data[:elements] || []).each do |elem|
+              if elem[:type]
+                type_name = elem[:type].split(":").last || elem[:type]
+                used_by[type_name] << { name: elem[:name], kind: "element",
+                                       schema: schema_label }
               end
             end
           end

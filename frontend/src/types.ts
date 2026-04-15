@@ -181,6 +181,7 @@ export interface SchemaElement {
   documentation?: string
   deprecated?: boolean
   diagram_svg?: string
+  used_by?: UsedByRef[]
 }
 
 export interface TypeElement {
@@ -213,6 +214,7 @@ export interface SchemaAttribute {
   use?: 'required' | 'optional'
   default?: string
   documentation?: string
+  used_by?: UsedByRef[]
 }
 
 export interface Group {
@@ -221,6 +223,7 @@ export interface Group {
   elements: TypeElement[]
   attributes: TypeAttribute[]
   documentation?: string
+  used_by?: UsedByRef[]
 }
 
 export interface AttributeGroup {
@@ -228,6 +231,7 @@ export interface AttributeGroup {
   name: string
   attributes: TypeAttribute[]
   documentation?: string
+  used_by?: UsedByRef[]
 }
 
 export interface ChoiceElement {
