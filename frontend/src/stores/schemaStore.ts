@@ -49,7 +49,8 @@ export const useSchemaStore = defineStore('schema', () => {
     types: schemas.value.reduce((acc, s) => acc + (s.complex_types?.length ?? 0) + (s.simple_types?.length ?? 0), 0),
     elements: schemas.value.reduce((acc, s) => acc + (s.elements?.length ?? 0), 0),
     groups: schemas.value.reduce((acc, s) => acc + (s.groups?.length ?? 0), 0),
-    attributes: schemas.value.reduce((acc, s) => acc + (s.attributes?.length ?? 0), 0)
+    attributes: schemas.value.reduce((acc, s) => acc + (s.attributes?.length ?? 0), 0),
+    attribute_groups: schemas.value.reduce((acc, s) => acc + (s.attribute_groups?.length ?? 0), 0)
   }))
 
   const allComplexTypes = computed(() =>

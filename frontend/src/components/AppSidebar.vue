@@ -141,6 +141,10 @@
             <span class="stat-value">{{ schemaStore.schemaCounts.attributes }}</span>
             <span class="stat-label">Attrs</span>
           </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ schemaStore.schemaCounts.attribute_groups }}</span>
+            <span class="stat-label">Attr Groups</span>
+          </div>
         </div>
       </div>
       <!-- Generator Footer -->

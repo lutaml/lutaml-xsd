@@ -41,6 +41,10 @@
           <span class="stat-number">{{ schema.groups?.length || 0 }}</span>
           <span class="stat-label">Groups</span>
         </div>
+        <div class="stat-card">
+          <span class="stat-number">{{ schema.attribute_groups?.length || 0 }}</span>
+          <span class="stat-label">Attribute Groups</span>
+        </div>
       </div>
     </div>
 
