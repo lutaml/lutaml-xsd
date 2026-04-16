@@ -631,7 +631,7 @@ end
             # Check for inline simpleType with enumeration
             enum_default, enum_type = extract_enumeration_default(attr)
             {
-              name: attr.name || attr.ref,
+              name: attr.name || "#{attr.ref} (ref)",
               type: enum_type || attr.type,
               use: attr.respond_to?(:use) ? attr.use : nil,
               default: enum_default || (attr.respond_to?(:default) ? attr.default : nil),
@@ -976,7 +976,7 @@ end
             # Check for inline simpleType with enumeration
             enum_default, enum_type = extract_enumeration_default(attr)
             {
-              name: attr.name || attr.ref,
+              name: attr.name || "#{attr.ref} (ref)",
               type: enum_type || attr.type,
               use: attr.use,
               default: enum_default || (attr.respond_to?(:default) ? attr.default : nil),
@@ -995,7 +995,7 @@ end
 
           type.elements.map do |elem|
             {
-              name: elem.name,
+              name: elem.name || "#{elem.ref} (ref)",
               type: elem.type,
               min_occurs: elem.min_occurs,
               max_occurs: elem.max_occurs,
