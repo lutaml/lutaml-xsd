@@ -124,12 +124,14 @@
           <span class="def-type-link" @click="navigateToType(elementData.type || 'xs:anyType')">{{ elementData.type || 'xs:anyType' }}</span>
         </div>
       </div>
+      <!--
       <div v-if="elementData.occurs" class="def-section">
         <div class="def-section-title">// Occurs</div>
         <div class="def-content">
           <span>{{ formatOccurs(elementData.occurs) }}</span>
         </div>
       </div>
+      -->
       <div v-if="elementData.substitution_group" class="def-section">
         <div class="def-section-title">// Substitution Group</div>
         <div class="def-content">
@@ -177,9 +179,9 @@ function navigateToType(typeRef: string) {
   }
 }
 
-function formatOccurs(occurs?: { min: number; max?: number }): string {
+function formatOccurs(occurs?: { min: number; max?: number | 'unbounded' }): string {
   if (!occurs) return '[1..1]'
-  if (occurs.max === undefined) {
+  if (occurs.max === undefined || occurs.max === 'unbounded') {
     return occurs.min === 0 ? '[0..*]' : `[${occurs.min}..*]`
   }
   if (occurs.min === occurs.max) return `[${occurs.min}..${occurs.max}]`

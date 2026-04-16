@@ -284,6 +284,10 @@ module Lutaml
             type: element.type,
             min_occurs: element.min_occurs,
             max_occurs: element.max_occurs,
+            occurs: {
+              min: element.min_occurs || 1,
+              max: element.max_occurs || 1,
+            },
             documentation: extract_documentation(element),
             instance_xml: generate_instance_xml(element),
           }
@@ -691,6 +695,10 @@ end
                 type: elem.type,
                 min_occurs: elem.min_occurs,
                 max_occurs: elem.max_occurs,
+                occurs: {
+                  min: elem.min_occurs || 1,
+                  max: elem.max_occurs || 1,
+                },
                 reference: elem.respond_to?(:ref) ? elem.ref : nil,
                 documentation: extract_documentation(elem),
               }
@@ -999,6 +1007,10 @@ end
               type: elem.type,
               min_occurs: elem.min_occurs,
               max_occurs: elem.max_occurs,
+              occurs: {
+                min: elem.min_occurs || 1,
+                max: elem.max_occurs || 1,
+              },
               reference: elem.respond_to?(:ref) ? elem.ref : nil,
               documentation: extract_documentation(elem),
             }
