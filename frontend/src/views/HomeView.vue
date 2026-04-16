@@ -239,9 +239,9 @@ function selectAttr(attr: SchemaAttribute) {
   uiStore.openDetailPanel()
 }
 
-function formatOccurs(occurs?: { min: number; max?: number }): string {
+function formatOccurs(occurs?: { min: number; max?: number | 'unbounded' }): string {
   if (!occurs) return '[1..1]'
-  if (occurs.max === undefined) {
+  if (occurs.max === undefined || occurs.max === 'unbounded') {
     return occurs.min === 0 ? '[0..*]' : `[${occurs.min}..*]`
   }
   if (occurs.min === occurs.max) return `[${occurs.min}..${occurs.max}]`
