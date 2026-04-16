@@ -592,11 +592,48 @@ module Lutaml
         # @param type [ComplexType] Complex type
         # @return [Array<Hash>] Serialized attribute group references with attributes
         def serialize_type_attr_groups(type)
-          return [] unless type.respond_to?(:attribute_group) && type.attribute_group
+          # Collect attribute group refs from all three possible locations:
+          # 1. Direct attribute groups on the type
+          # 2. Inside simpleContent.extension
+          # 3. Inside complexContent.extension
+          all_ag_refs = []
 
-          groups = type.attribute_group.is_a?(Array) ? type.attribute_group : [type.attribute_group]
-          groups.filter_map do |ag|
+          # 1. Direct attribute groups
+          if type.respond_to?(:attribute_group) && type.attribute_group
+            direct_groups = type.attribute_group.is_a?(Array) ? type.attribute_group : [type.attribute_group]
+            all_ag_refs.concat(direct_groups)
+          end
+
+          # 2. Attribute groups inside simpleContent.extension
+          if type.respond_to?(:simple_content) && type.simple_content
+            sc = type.simple_content
+            if sc.respond_to?(:extension) && sc.extension
+              extension = sc.extension
+              if extension.respond_to?(:attribute_group) && extension.attribute_group
+                ext_groups = extension.attribute_group.is_a?(Array) ? extension.attribute_group : [extension.attribute_group]
+                all_ag_refs.concat(ext_groups)
+              end
+            end
+          end
+
+          # 3. Attribute groups inside complexContent.extension
+          if type.respond_to?(:complex_content) && type.complex_content
+            cc = type.complex_content
+            if cc.respond_to?(:extension) && cc.extension
+              extension = cc.extension
+              if extension.respond_to?(:attribute_group) && extension.attribute_group
+                ext_groups = extension.attribute_group.is_a?(Array) ? extension.attribute_group : [extension.attribute_group]
+                all_ag_refs.concat(ext_groups)
+              end
+            end
+          end
+
+          return [] if all_ag_refs.empty?
+
+          all_ag_refs.filter_map do |ag|
             ag_name = ag.respond_to?(:ref) ? ag.ref : ag.name
+            next unless ag_name
+
             # Look up the actual attribute group definition to get its attributes
             attrs = lookup_attribute_group_attributes(ag_name)
             {
