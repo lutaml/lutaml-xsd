@@ -129,6 +129,7 @@ export interface ComplexType {
   id: string
   name: string
   base?: string
+  content_model?: 'sequence' | 'choice' | 'all' | 'complex_content' | 'simple_content' | 'empty'
   abstract?: boolean
   mixed?: boolean
   elements: TypeElement[]
@@ -137,6 +138,7 @@ export interface ComplexType {
   sequences?: SequenceElement[]
   groups?: GroupRef[]
   attribute_groups?: AttributeGroupRef[]
+  extension_attributes?: TypeAttribute[]
   documentation?: string
   deprecated?: boolean
   used_by?: UsedByRef[]
@@ -200,6 +202,7 @@ export interface Occurs {
 
 export interface TypeAttribute {
   name: string
+  ref?: string
   type?: string
   use?: 'required' | 'optional' | 'prohibited'
   default?: string
