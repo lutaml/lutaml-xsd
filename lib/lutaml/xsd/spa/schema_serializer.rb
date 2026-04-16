@@ -338,13 +338,14 @@ module Lutaml
         # @param index [Integer] Type index
         # @return [Hash] Serialized complex type
         def serialize_complex_type(type, index, prefix = nil)
+          content_model = extract_content_model(type)
           type_data = {
             id: complex_type_id(index, type, prefix),
             name: type.name,
             base: extract_base_type(type),
+            content_model: content_model,
             abstract: type.respond_to?(:abstract) ? type.abstract : false,
             mixed: type.respond_to?(:mixed) ? type.mixed : false,
-            content_model: extract_content_model(type),
             attributes: serialize_type_attributes(type),
             elements: serialize_type_elements(type),
             groups: serialize_type_group_refs(type),
@@ -353,10 +354,88 @@ module Lutaml
             instance_xml: generate_instance_xml(type),
           }
 
+          # Collect attributes from inside extension for simpleContent/complexContent
+          extension_attrs = collect_extension_attributes(type)
+          type_data[:extension_attributes] = extension_attrs unless extension_attrs.empty?
+
           # Add SVG diagram
           type_data[:diagram_svg] = generate_diagram(type_data, :type)
 
           type_data
+        end
+
+        # Collect attributes from inside extension element
+        #
+        # @param type [ComplexType] Complex type object
+        # @return [Array<Hash>] Serialized extension attributes
+        def collect_extension_attributes(type)
+          attrs = []
+
+          # Check simpleContent.extension
+          if type.respond_to?(:simple_content) && type.simple_content
+            sc = type.simple_content
+            if sc.respond_to?(:extension) && sc.extension
+              ext = sc.extension
+              attrs.concat(collect_from_extension(ext))
+            end
+          end
+
+          # Check complexContent.extension
+          if type.respond_to?(:complex_content) && type.complex_content
+            cc = type.complex_content
+            if cc.respond_to?(:extension) && cc.extension
+              ext = cc.extension
+              attrs.concat(collect_from_extension(ext))
+            end
+          end
+
+          attrs
+        end
+
+        # Collect attributes from an extension element
+        #
+        # @param extension [Object] Extension object
+        # @return [Array<Hash>] Serialized attributes
+        def collect_from_extension(extension)
+          attrs = []
+
+          # Direct attributes
+          if extension.respond_to?(:attribute) && extension.attribute
+            direct_attrs = extension.attribute.is_a?(Array) ? extension.attribute : [extension.attribute]
+            direct_attrs.each do |attr|
+              attrs << {
+                name: if attr.respond_to?(:name) && attr.name
+attr.name
+else
+(attr.respond_to?(:ref) ? attr.ref : nil)
+end,
+                ref: attr.respond_to?(:ref) ? attr.ref : nil,
+                type: attr.respond_to?(:type) ? attr.type : nil,
+                use: attr.respond_to?(:use) ? attr.use : nil,
+              }
+            end
+          end
+
+          # Attribute groups
+          if extension.respond_to?(:attribute_group) && extension.attribute_group
+            ext_groups = extension.attribute_group.is_a?(Array) ? extension.attribute_group : [extension.attribute_group]
+            ext_groups.each do |ag|
+              ag_name = if ag.respond_to?(:ref)
+ag.ref
+else
+(ag.respond_to?(:name) ? ag.name : nil)
+end
+              if ag_name
+                # Look up attributes from the attribute group definition
+                looked_up_attrs = lookup_attribute_group_attributes(ag_name)
+                looked_up_attrs.each do |looked_attr|
+                  attrs << looked_attr.merge({ attribute_group_ref: ag_name })
+                end
+              end
+            end
+          end
+
+          attrs
         end
 
         # Serialize simple types from schema

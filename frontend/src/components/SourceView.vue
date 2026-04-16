@@ -79,53 +79,94 @@ function generateComplexTypeXml(name: string, prefix: string, ct: ComplexType): 
   if (ct.abstract) xml += ` abstract="true"`
   if (ct.mixed) xml += ` mixed="true"`
   xml += `>\n`
-  if (ct.base) {
-    xml += `  <${prefix}:complexContent>\n`
+
+  // Determine content model and whether we have an extension
+  const hasExtension = !!ct.base
+  const contentModel = ct.content_model
+
+  if (hasExtension) {
+    // Use simpleContent or complexContent based on content_model
+    if (contentModel === 'simple_content') {
+      xml += `  <${prefix}:simpleContent>\n`
+    } else {
+      xml += `  <${prefix}:complexContent>\n`
+    }
     xml += `    <${prefix}:extension base="${ct.base}">\n`
-  } else {
-    xml += `  <${prefix}:sequence>\n`
-  }
 
-  // Attributes
-  for (const attr of ct.attributes || []) {
-    xml += `    <${prefix}:attribute name="${attr.name}"`
-    if (attr.type) xml += ` type="${attr.type}"`
-    if (attr.use) xml += ` use="${attr.use}"`
-    if (attr.default) xml += ` default="${attr.default}"`
-    if (attr.fixed) xml += ` fixed="${attr.fixed}"`
-    xml += `/>\n`
-  }
+    // Extension attributes (inside the extension element)
+    for (const attr of ct.extension_attributes || []) {
+      if (attr.ref) {
+        xml += `      <${prefix}:attribute ref="${attr.ref}"`
+      } else {
+        xml += `      <${prefix}:attribute name="${attr.name}"`
+        if (attr.type) xml += ` type="${attr.type}"`
+      }
+      if (attr.use) xml += ` use="${attr.use}"`
+      if (attr.default) xml += ` default="${attr.default}"`
+      if (attr.fixed) xml += ` fixed="${attr.fixed}"`
+      xml += `/>\n`
+    }
 
-  // Elements
-  for (const el of ct.elements || []) {
-    xml += `    <${prefix}:element name="${el.name}"`
-    if (el.type) xml += ` type="${el.type}"`
-    if (el.reference) xml += ` ref="${el.reference}"`
-    const min = el.occurs?.min
-    const max = el.occurs?.max
-    if (min !== undefined && min !== 1) xml += ` minOccurs="${min}"`
-    if (max !== undefined) xml += ` maxOccurs="${max}"`
-    xml += `/>\n`
-  }
+    // Also show direct attributes on the type if any
+    for (const attr of ct.attributes || []) {
+      xml += `      <${prefix}:attribute name="${attr.name}"`
+      if (attr.type) xml += ` type="${attr.type}"`
+      if (attr.use) xml += ` use="${attr.use}"`
+      if (attr.default) xml += ` default="${attr.default}"`
+      if (attr.fixed) xml += ` fixed="${attr.fixed}"`
+      xml += `/>\n`
+    }
 
-  // Groups
-  for (const g of ct.groups || []) {
-    xml += `    <${prefix}:group ref="${g.ref}"`
-    if (g.occurs?.min !== undefined) xml += ` minOccurs="${g.occurs.min}"`
-    if (g.occurs?.max !== undefined) xml += ` maxOccurs="${g.occurs.max}"`
-    xml += `/>\n`
-  }
-
-  // Attribute Groups
-  for (const ag of ct.attribute_groups || []) {
-    xml += `    <${prefix}:attributeGroup ref="${ag.ref}"/>\n`
-  }
-
-  if (ct.base) {
     xml += `    </${prefix}:extension>\n`
-    xml += `  </${prefix}:complexContent>\n`
+    xml += `  </${prefix}:${contentModel === 'simple_content' ? 'simpleContent' : 'complexContent'}>\n`
   } else {
-    xml += `  </${prefix}:sequence>\n`
+    // No extension - use sequence/choice/all
+    if (contentModel === 'choice') {
+      xml += `  <${prefix}:choice>\n`
+    } else if (contentModel === 'all') {
+      xml += `  <${prefix}:all>\n`
+    } else {
+      xml += `  <${prefix}:sequence>\n`
+    }
+
+    // Attributes (direct on type, not inside extension)
+    for (const attr of ct.attributes || []) {
+      xml += `    <${prefix}:attribute name="${attr.name}"`
+      if (attr.type) xml += ` type="${attr.type}"`
+      if (attr.use) xml += ` use="${attr.use}"`
+      if (attr.default) xml += ` default="${attr.default}"`
+      if (attr.fixed) xml += ` fixed="${attr.fixed}"`
+      xml += `/>\n`
+    }
+
+    // Elements
+    for (const el of ct.elements || []) {
+      xml += `    <${prefix}:element name="${el.name}"`
+      if (el.type) xml += ` type="${el.type}"`
+      if (el.reference) xml += ` ref="${el.reference}"`
+      const min = el.occurs?.min
+      const max = el.occurs?.max
+      if (min !== undefined && min !== 1) xml += ` minOccurs="${min}"`
+      if (max !== undefined) xml += ` maxOccurs="${max}"`
+      xml += `/>\n`
+    }
+
+    // Groups
+    for (const g of ct.groups || []) {
+      xml += `    <${prefix}:group ref="${g.ref}"`
+      if (g.occurs?.min !== undefined) xml += ` minOccurs="${g.occurs.min}"`
+      if (g.occurs?.max !== undefined) xml += ` maxOccurs="${g.occurs.max}"`
+      xml += `/>\n`
+    }
+
+    // Attribute Groups
+    for (const ag of ct.attribute_groups || []) {
+      xml += `    <${prefix}:attributeGroup ref="${ag.ref}"/>\n`
+    }
+
+    // Close sequence/choice/all
+    const closingTag = contentModel === 'choice' ? 'choice' : contentModel === 'all' ? 'all' : 'sequence'
+    xml += `  </${prefix}:${closingTag}>\n`
   }
 
   if (ct.documentation) {
