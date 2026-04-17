@@ -885,35 +885,50 @@ end
         def build_used_by_index(schemas_data)
           used_by = Hash.new { |h, k| h[k] = [] }
 
-          schemas_data.each do |schema_data|
+          schemas_data.each do |schema_data| # rubocop:disable Metrics/BlockLength
             schema_label = schema_data[:name] || "unknown"
 
             # Elements that reference a type
             (schema_data[:elements] || []).each do |elem|
               if elem[:name]
-                used_by[elem[:name]] << { name: elem[:name], kind: "element",
+                used_by[elem[:name]] << { name: elem[:name],
+                                          kind: "element",
                                           schema: schema_label }
+              end
+
+              # Elements used by (referenced by complex types)
+              (schema_data[:complex_types] || []).each do |type|
+                (type[:elements] || []).each do |type_el|
+                  if type_el[:name] == "#{elem[:name]} (ref)"
+                    used_by[elem[:name]] << { name: type[:name],
+                                              kind: "complexType",
+                                              schema: schema_label }
+                  end
+                end
               end
             end
 
             # Complex types: base type, element types, attribute types
             (schema_data[:complex_types] || []).each do |type|
               if type[:base]
-                used_by[type[:base]] << { name: type[:name], kind: "complexType",
+                used_by[type[:base]] << { name: type[:name],
+                                          kind: "complexType",
                                           schema: schema_label }
               end
               (type[:elements] || []).each do |elem|
                 # Check name for local elements, reference for element refs
-                element_name = elem[:name] || elem[:reference]
+                element_name = elem[:name] || elem[:ref]
                 if element_name
                   used_by[element_name] << { name: type[:name],
-                                            kind: "complexType", schema: schema_label }
+                                            kind: "complexType",
+                                            schema: schema_label }
                 end
               end
               (type[:attributes] || []).each do |attr|
                 if attr[:name]
                   used_by[attr[:name]] << { name: type[:name],
-                                            kind: "complexType", schema: schema_label }
+                                            kind: "complexType",
+                                            schema: schema_label }
                 end
               end
             end
@@ -921,38 +936,39 @@ end
             # Simple types: base type
             (schema_data[:simple_types] || []).each do |type|
               if type[:base]
-                used_by[type[:base]] << { name: type[:name], kind: "simpleType",
+                used_by[type[:base]] << { name: type[:name],
+                                          kind: "simpleType",
                                           schema: schema_label }
               end
             end
 
-            # Complex types: attribute group references
+            # Complex types:
+            # attribute group references
             (schema_data[:complex_types] || []).each do |type|
               (type[:attribute_groups] || []).each do |ag_ref|
                 if ag_ref[:ref]
-                  used_by[ag_ref[:ref]] << { name: type[:name], kind: "complexType",
+                  used_by[ag_ref[:ref]] << { name: type[:name],
+                                             kind: "complexType",
                                              schema: schema_label }
                 end
               end
-            end
 
-            # Complex types: group references
-            (schema_data[:complex_types] || []).each do |type|
+              # group references
               (type[:groups] || []).each do |grp_ref|
                 if grp_ref[:ref]
-                  used_by[grp_ref[:ref]] << { name: type[:name], kind: "complexType",
+                  used_by[grp_ref[:ref]] << { name: type[:name],
+                                              kind: "complexType",
                                               schema: schema_label }
                 end
               end
-            end
 
-            # Complex types: element references (type attribute)
-            (schema_data[:complex_types] || []).each do |type|
+              # element references (type attribute)
               (type[:elements] || []).each do |elem|
                 if elem[:type]
                   # Extract base type name (without namespace prefix)
                   type_name = elem[:type].split(":").last || elem[:type]
-                  used_by[type_name] << { name: type[:name], kind: "complexType",
+                  used_by[type_name] << { name: type[:name],
+                                          kind: "complexType",
                                           schema: schema_label }
                 end
               end
