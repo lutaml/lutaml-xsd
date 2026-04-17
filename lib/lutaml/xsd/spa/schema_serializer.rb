@@ -225,6 +225,14 @@ module Lutaml
         def serialize_schema(schema, index, file_path = nil)
           return nil unless schema
 
+          schema_source = if file_path
+            begin
+              File.read(file_path)
+            rescue StandardError
+              nil
+            end
+          end
+
           prefix = namespace_prefix_lookup[schema.target_namespace] || derive_prefix(
             schema.target_namespace, schema
           )
@@ -235,12 +243,14 @@ module Lutaml
             namespace: schema.target_namespace,
             file_path: clean_file_path(file_path),
             is_entrypoint: is_entrypoint?(file_path),
-            elements: serialize_elements(schema, prefix),
-            complex_types: serialize_complex_types(schema, prefix),
+            elements: serialize_elements(schema, prefix, schema_source),
+            complex_types: serialize_complex_types(
+              schema, prefix, schema_source),
             simple_types: serialize_simple_types(schema, prefix),
             attributes: serialize_attributes(schema, prefix),
             groups: serialize_groups(schema, prefix),
-            attribute_groups: serialize_attribute_groups(schema, prefix),
+            attribute_groups: serialize_attribute_groups(
+              schema, prefix, schema_source),
             imports: serialize_imports(schema),
             includes: serialize_includes(schema),
           }
@@ -262,13 +272,15 @@ module Lutaml
         # Serialize elements from schema
         #
         # @param schema [Schema] Schema object
+        # @param prefix [String, nil] Optional prefix for IDs
+        # @param schema_source [String, nil] Optional schema source for context
         # @return [Array<Hash>] Serialized elements (sorted alphabetically by name)
-        def serialize_elements(schema, prefix = nil)
+        def serialize_elements(schema, prefix = nil, schema_source = nil)
           return [] unless schema.respond_to?(:elements) || schema.respond_to?(:element)
 
           elements = schema.respond_to?(:elements) ? schema.elements : schema.element
           elements.map.with_index do |element, index|
-            serialize_element(element, index, prefix)
+            serialize_element(element, index, prefix, schema_source)
           end.sort_by { |e| e[:name] || "" }
         end
 
@@ -276,8 +288,10 @@ module Lutaml
         #
         # @param element [Element] Element object
         # @param index [Integer] Element index
+        # @param prefix [String, nil] Optional prefix for IDs
+        # @param schema_source [String, nil] Optional schema source for context
         # @return [Hash] Serialized element
-        def serialize_element(element, index, prefix = nil)
+        def serialize_element(element, index, prefix = nil, schema_source = nil)
           element_data = {
             id: element_id(index, element, prefix),
             name: element.name,
@@ -290,6 +304,8 @@ module Lutaml
             },
             documentation: extract_documentation(element),
             instance_xml: generate_instance_xml(element),
+            source: extract_source_by_type_key_value(
+              "element", "name", element.name, prefix, schema_source),
           }
 
           # Enriched fields
@@ -326,13 +342,15 @@ module Lutaml
         # Serialize complex types from schema
         #
         # @param schema [Schema] Schema object
+        # @param prefix [String, nil] Optional prefix for IDs
+        # @param schema_source [String, nil] Optional schema source for context
         # @return [Array<Hash>] Serialized complex types (sorted alphabetically by name)
-        def serialize_complex_types(schema, prefix = nil)
+        def serialize_complex_types(schema, prefix = nil, schema_source = nil)
           return [] unless schema.respond_to?(:complex_types) || schema.respond_to?(:complex_type)
 
           types = schema.respond_to?(:complex_types) ? schema.complex_types : schema.complex_type
           types.map.with_index do |type, index|
-            serialize_complex_type(type, index, prefix)
+            serialize_complex_type(type, index, prefix, schema_source)
           end.sort_by { |t| t[:name] || "" }
         end
 
@@ -341,7 +359,7 @@ module Lutaml
         # @param type [ComplexType] Complex type object
         # @param index [Integer] Type index
         # @return [Hash] Serialized complex type
-        def serialize_complex_type(type, index, prefix = nil)
+        def serialize_complex_type(type, index, prefix = nil, schema_source = nil)
           content_model = extract_content_model(type)
           type_data = {
             id: complex_type_id(index, type, prefix),
@@ -356,6 +374,8 @@ module Lutaml
             attribute_groups: serialize_type_attr_groups(type),
             documentation: extract_documentation(type),
             instance_xml: generate_instance_xml(type),
+            source: extract_source_by_type_key_value(
+                "complexType", "name", type.name, prefix, schema_source),
           }
 
           # Collect attributes from inside extension for simpleContent/complexContent
@@ -445,6 +465,7 @@ end
         # Serialize simple types from schema
         #
         # @param schema [Schema] Schema object
+        # @param prefix [String, nil] Optional prefix for IDs
         # @return [Array<Hash>] Serialized simple types (sorted alphabetically by name)
         def serialize_simple_types(schema, prefix = nil)
           return [] unless schema.respond_to?(:simple_types) || schema.respond_to?(:simple_type)
@@ -533,8 +554,10 @@ end
         # Serialize attribute groups from schema
         #
         # @param schema [Schema] Schema object
+        # @param prefix [String, nil] Optional prefix for IDs
+        # @param schema_source [String, nil] Optional schema source for context
         # @return [Array<Hash>] Serialized attribute groups (sorted alphabetically by name)
-        def serialize_attribute_groups(schema, prefix = nil)
+        def serialize_attribute_groups(schema, prefix = nil, schema_source = nil)
           groups = if schema.respond_to?(:attribute_groups)
                      schema.attribute_groups
                    elsif schema.respond_to?(:attribute_group)
@@ -551,8 +574,31 @@ end
               name: ag.name,
               attributes: serialize_ag_attributes(ag),
               documentation: extract_documentation(ag),
+              source: extract_source_by_type_key_value(
+                "attributeGroup", "name", ag.name, prefix, schema_source),
             }
           end.sort_by { |ag| ag[:name] || "" }
+        end
+
+        # Extract source information for an attribute group
+        # from the schema
+        def extract_source_by_type_key_value(type, key, value, prefix = nil, source = nil)
+          return nil unless source && value
+
+          # parse the schema source and find the attribute group by name
+          begin
+            doc = Nokogiri::XML(source, &:noblanks)
+            xpath = if prefix
+                      "//#{prefix}:#{type}[@#{key}='#{value}']"
+                    else
+                      "//#{type}[@#{key}='#{value}']"
+                    end
+            ag_node = doc.at_xpath(xpath)
+            ag_node&.to_xml(indent: 2)
+          rescue StandardError
+            # If parsing fails, return nil
+            nil
+          end
         end
 
         # Extract enumeration default value from an attribute with inline simpleType

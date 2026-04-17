@@ -143,6 +143,7 @@ export interface ComplexType {
   deprecated?: boolean
   used_by?: UsedByRef[]
   diagram_svg?: string
+  source?: string
 }
 
 export interface SimpleType {
@@ -155,6 +156,7 @@ export interface SimpleType {
   documentation?: string
   deprecated?: boolean
   diagram_svg?: string
+  source?: string
 }
 
 export interface Restriction {
@@ -184,6 +186,7 @@ export interface SchemaElement {
   deprecated?: boolean
   diagram_svg?: string
   used_by?: UsedByRef[]
+  source?: string
 }
 
 export interface TypeElement {
@@ -235,6 +238,7 @@ export interface AttributeGroup {
   attributes: TypeAttribute[]
   documentation?: string
   used_by?: UsedByRef[]
+  source?: string
 }
 
 export interface ChoiceElement {

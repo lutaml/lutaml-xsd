@@ -28,153 +28,17 @@ function generateXmlSource(): string {
   const name = props.type.data.name || ''
 
   if (props.type.type === 'element') {
-    return generateElementXml(name, prefix)
+    return props.type.data.source as any
   } else if (props.type.type === 'complex') {
-    return generateComplexTypeXml(name, prefix, props.type.data as ComplexType)
+    return props.type.data.source as any
   } else if (props.type.type === 'simple') {
     return generateSimpleTypeXml(name, prefix, props.type.data as SimpleType)
   } else if (props.type.type === 'group') {
     return generateGroupXml(name, prefix, props.type.data as any)
   } else if (props.type.type === 'attribute_group') {
-    return generateAttributeGroupXml(name, prefix, props.type.data as any)
+    return props.type.data.source as any
   }
   return ''
-}
-
-function generateElementXml(name: string, prefix: string): string {
-  const el = props.type.data as SchemaElement
-  let xml = `<${prefix}:${name}`
-  if (el.type) {
-    xml += ` type="${el.type}"`
-  }
-  if (el.nillable) {
-    xml += ` nillable="true"`
-  }
-  if (el.default) {
-    xml += ` default="${el.default}"`
-  }
-  if (el.fixed) {
-    xml += ` fixed="${el.fixed}"`
-  }
-  const min = el.occurs?.min ?? 1
-  const max = el.occurs?.max
-  if (min !== 1 || max !== undefined) {
-    xml += ` minOccurs="${min}"`
-    if (max !== undefined) {
-      xml += ` maxOccurs="${max}"`
-    } else {
-      xml += ` maxOccurs="unbounded"`
-    }
-  }
-  if (el.documentation) {
-    xml += `>\n  <!-- ${el.documentation} -->\n</${prefix}:${name}>`
-  } else {
-    xml += `/>`
-  }
-  return xml
-}
-
-function generateComplexTypeXml(name: string, prefix: string, ct: ComplexType): string {
-  let xml = `<${prefix}:complexType name="${name}"`
-  if (ct.abstract) xml += ` abstract="true"`
-  if (ct.mixed) xml += ` mixed="true"`
-  xml += `>\n`
-
-  // Determine content model and whether we have an extension
-  const hasExtension = !!ct.base
-  const contentModel = ct.content_model
-
-  if (hasExtension) {
-    // Use simpleContent or complexContent based on content_model
-    if (contentModel === 'simple_content') {
-      xml += `  <${prefix}:simpleContent>\n`
-    } else {
-      xml += `  <${prefix}:complexContent>\n`
-    }
-    xml += `    <${prefix}:extension base="${ct.base}">\n`
-
-    // Extension attributes (inside the extension element)
-    for (const attr of ct.extension_attributes || []) {
-      if (attr.ref) {
-        xml += `      <${prefix}:attribute ref="${attr.ref}"`
-      } else {
-        xml += `      <${prefix}:attribute name="${attr.name}"`
-        if (attr.type) xml += ` type="${attr.type}"`
-      }
-      if (attr.use) xml += ` use="${attr.use}"`
-      if (attr.default) xml += ` default="${attr.default}"`
-      if (attr.fixed) xml += ` fixed="${attr.fixed}"`
-      xml += `/>\n`
-    }
-
-    // Also show direct attributes on the type if any
-    for (const attr of ct.attributes || []) {
-      xml += `      <${prefix}:attribute name="${attr.name}"`
-      if (attr.type) xml += ` type="${attr.type}"`
-      if (attr.use) xml += ` use="${attr.use}"`
-      if (attr.default) xml += ` default="${attr.default}"`
-      if (attr.fixed) xml += ` fixed="${attr.fixed}"`
-      xml += `/>\n`
-    }
-
-    xml += `    </${prefix}:extension>\n`
-    xml += `  </${prefix}:${contentModel === 'simple_content' ? 'simpleContent' : 'complexContent'}>\n`
-  } else {
-    // No extension - use sequence/choice/all
-    if (contentModel === 'choice') {
-      xml += `  <${prefix}:choice>\n`
-    } else if (contentModel === 'all') {
-      xml += `  <${prefix}:all>\n`
-    } else {
-      xml += `  <${prefix}:sequence>\n`
-    }
-
-    // Attributes (direct on type, not inside extension)
-    for (const attr of ct.attributes || []) {
-      xml += `    <${prefix}:attribute name="${attr.name}"`
-      if (attr.type) xml += ` type="${attr.type}"`
-      if (attr.use) xml += ` use="${attr.use}"`
-      if (attr.default) xml += ` default="${attr.default}"`
-      if (attr.fixed) xml += ` fixed="${attr.fixed}"`
-      xml += `/>\n`
-    }
-
-    // Elements
-    for (const el of ct.elements || []) {
-      xml += `    <${prefix}:element name="${el.name}"`
-      if (el.type) xml += ` type="${el.type}"`
-      if (el.reference) xml += ` ref="${el.reference}"`
-      const min = el.occurs?.min
-      const max = el.occurs?.max
-      if (min !== undefined && min !== 1) xml += ` minOccurs="${min}"`
-      if (max !== undefined) xml += ` maxOccurs="${max}"`
-      xml += `/>\n`
-    }
-
-    // Groups
-    for (const g of ct.groups || []) {
-      xml += `    <${prefix}:group ref="${g.ref}"`
-      if (g.occurs?.min !== undefined) xml += ` minOccurs="${g.occurs.min}"`
-      if (g.occurs?.max !== undefined) xml += ` maxOccurs="${g.occurs.max}"`
-      xml += `/>\n`
-    }
-
-    // Attribute Groups
-    for (const ag of ct.attribute_groups || []) {
-      xml += `    <${prefix}:attributeGroup ref="${ag.ref}"/>\n`
-    }
-
-    // Close sequence/choice/all
-    const closingTag = contentModel === 'choice' ? 'choice' : contentModel === 'all' ? 'all' : 'sequence'
-    xml += `  </${prefix}:${closingTag}>\n`
-  }
-
-  if (ct.documentation) {
-    xml += `  <!-- ${ct.documentation} -->\n`
-  }
-
-  xml += `</${prefix}:complexType>`
-  return xml
 }
 
 function generateSimpleTypeXml(name: string, prefix: string, st: SimpleType): string {
@@ -235,20 +99,6 @@ function generateGroupXml(name: string, prefix: string, g: any): string {
   return xml
 }
 
-function generateAttributeGroupXml(name: string, prefix: string, ag: any): string {
-  let xml = `<${prefix}:attributeGroup name="${name}">\n`
-  for (const attr of ag.attributes || []) {
-    xml += `  <${prefix}:attribute name="${attr.name}"`
-    if (attr.type) xml += ` type="${attr.type}"`
-    if (attr.use) xml += ` use="${attr.use}"`
-    xml += `/>\n`
-  }
-  if (ag.documentation) {
-    xml += `  <!-- ${ag.documentation} -->\n`
-  }
-  xml += `</${prefix}:attributeGroup>`
-  return xml
-}
 
 // Tokenizer-based XML highlighter
 function highlightXml(xml: string): string {
