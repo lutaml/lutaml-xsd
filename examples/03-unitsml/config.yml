@@ -8,5 +8,5 @@ files:
 namespace_mappings:
   - prefix: "xs"
     uri: "http://www.w3.org/2001/XMLSchema"
-  - prefix: "units"
+  - prefix: "xsd"
     uri: "urn:oasis:names:tc:unitsml:schema:xsd:UnitsMLSchema-1.0"
