@@ -39,4 +39,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "table_tennis", "~> 0.0.7"
   spec.add_dependency "thor", "~> 1.0"
   spec.add_dependency "tty-prompt", "~> 0.23"
+  spec.add_dependency "xsdvi"
 end

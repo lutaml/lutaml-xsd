@@ -118,7 +118,7 @@ module Lutaml
 
           def build_error_svg(message)
             <<~SVG
-              <svg xmlns="http://www.w3.org/2000/svg" width="300" height="100" viewBox="0 0 300 100">
+              <svg xmlns="http://www.w3.org/2000/svg" width="800" height="900" viewBox="0 0 800 900">
                 <rect x="10" y="10" width="280" height="80" fill="#ffcccc" stroke="#cc0000" stroke-width="2" rx="5"/>
                 <text x="150" y="55" fill="#cc0000" font-size="12" text-anchor="middle">Error: #{Utils::SvgBuilder.escape_xml(message)}</text>
               </svg>
