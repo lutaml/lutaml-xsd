@@ -1,9 +1,9 @@
 <template>
-  <div class="diagram-view" v-html="sanitizedSvg" @click="handleClick"></div>
+  <div ref="containerRef" class="diagram-view" v-html="sanitizedSvg" @click="handleClick"></div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onUpdated, ref } from 'vue'
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
 
@@ -11,12 +11,35 @@ const props = defineProps<{
   svg: string
 }>()
 
+const containerRef = ref<HTMLElement>()
+
 const schemaStore = useSchemaStore()
 const uiStore = useUiStore()
 
 const sanitizedSvg = computed(() => {
   if (!props.svg) return ''
   return props.svg
+})
+
+// After the SVG is injected, compute a viewBox and explicit dimensions
+// from the actual content so the diagram renders at full size
+// instead of the default 300x150.
+onUpdated(() => {
+  const el = containerRef.value
+  if (!el) return
+  const svg = el.querySelector('svg')
+  if (!svg) return
+
+  const bbox = (svg as SVGSVGElement).getBBox()
+  if (bbox.width <= 0 || bbox.height <= 0) return
+
+  const pad = 10
+  const w = bbox.width + pad * 2
+  const h = bbox.height + pad * 2
+
+  svg.setAttribute('viewBox', `${bbox.x - pad} ${bbox.y - pad} ${w} ${h}`)
+  svg.setAttribute('width', String(w))
+  svg.setAttribute('height', String(h))
 })
 
 function handleClick(event: MouseEvent) {
@@ -84,22 +107,20 @@ function slugToTypeName(slug: string): string {
 <style scoped>
 .diagram-view {
   padding: var(--space-4);
+  height: 100%;
   overflow: auto;
-  max-height: 100%;
 }
 
 .diagram-view :deep(svg) {
-  max-width: 100%;
-  height: auto;
+  width: 100%;
   display: block;
-  margin: 0 auto;
+  min-width: 900px;
+  min-height: 1500px;
 }
 
 .diagram-view :deep(svg text) {
   fill: var(--text-primary);
   font-family: var(--font-sans);
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .diagram-view :deep(svg .edge path),

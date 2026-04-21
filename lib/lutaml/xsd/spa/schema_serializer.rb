@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 require "json"
+require "tmpdir"
+require "fileutils"
 require_relative "xml_instance_generator"
-require_relative "svg/diagram_generator"
 
 module Lutaml
   module Xsd
@@ -243,9 +244,10 @@ module Lutaml
             namespace: schema.target_namespace,
             file_path: clean_file_path(file_path),
             is_entrypoint: is_entrypoint?(file_path),
-            elements: serialize_elements(schema, prefix, schema_source),
+            elements: serialize_elements(
+              schema, prefix, schema_source, file_path),
             complex_types: serialize_complex_types(
-              schema, prefix, schema_source),
+              schema, prefix, schema_source, file_path),
             simple_types: serialize_simple_types(schema, prefix),
             attributes: serialize_attributes(schema, prefix),
             groups: serialize_groups(schema, prefix),
@@ -274,13 +276,15 @@ module Lutaml
         # @param schema [Schema] Schema object
         # @param prefix [String, nil] Optional prefix for IDs
         # @param schema_source [String, nil] Optional schema source for context
+        # @param file_path [String, nil] Optional schema file path
         # @return [Array<Hash>] Serialized elements (sorted alphabetically by name)
-        def serialize_elements(schema, prefix = nil, schema_source = nil)
+        def serialize_elements(schema,
+          prefix = nil, schema_source = nil, file_path = nil)
           return [] unless schema.respond_to?(:elements) || schema.respond_to?(:element)
 
           elements = schema.respond_to?(:elements) ? schema.elements : schema.element
           elements.map.with_index do |element, index|
-            serialize_element(element, index, prefix, schema_source)
+            serialize_element(element, index, prefix, schema_source, file_path)
           end.sort_by { |e| e[:name] || "" }
         end
 
@@ -290,8 +294,10 @@ module Lutaml
         # @param index [Integer] Element index
         # @param prefix [String, nil] Optional prefix for IDs
         # @param schema_source [String, nil] Optional schema source for context
+        # @param file_path [String, nil] Optional schema file path
         # @return [Hash] Serialized element
-        def serialize_element(element, index, prefix = nil, schema_source = nil)
+        def serialize_element(element, index,
+          prefix = nil, schema_source = nil, file_path = nil)
           element_data = {
             id: element_id(index, element, prefix),
             name: element.name,
@@ -334,9 +340,42 @@ module Lutaml
           end
 
           # Add SVG diagram
-          element_data[:diagram_svg] = generate_diagram(element_data, :element)
+          element_data[:diagram_svg] = generate_diagram(element_data, :element, file_path)
 
           element_data
+        end
+
+        def gen_element_diagram(name, file_path)
+          if !file_path || !File.exist?(file_path)
+            warn "xsdvi: XSD file '#{file_path}' not found" if config[:verbose]
+            return nil
+          end
+
+          output_folder = Dir.mktmpdir("xsdvi-")
+
+          # generate diagram using xsdvi command line tool
+          `bundle exec xsdvi generate #{file_path} -r #{name} -o -p #{output_folder}`
+
+          svg_file = File.join(output_folder, "#{name}.svg")
+          unless File.exist?(svg_file)
+            warn "xsdvi: SVG not generated for '#{name}'" if config[:verbose]
+            return nil
+          end
+
+          # read generated SVG content
+          svg_content = File.read(svg_file)
+
+          # Strip XML declaration and DOCTYPE for embedding in HTML
+          svg_content = svg_content
+            .gsub(/<\?xml[^?]*\?>\s*/i, "")
+            .gsub(/<!DOCTYPE[^>]*>\s*/i, "")
+            .gsub(/<title>.*?<\/title>/i, "") # Remove title element if present
+            .gsub(/<script[^>]*>.*?<\/script>/im, "") # Remove any script
+            .gsub(/<a[^>]*>(.*?)<\/a>/im, '\1') # Remove links but keep content
+
+          svg_content
+        ensure
+          FileUtils.rm_rf(output_folder) if output_folder
         end
 
         # Serialize complex types from schema
@@ -345,12 +384,13 @@ module Lutaml
         # @param prefix [String, nil] Optional prefix for IDs
         # @param schema_source [String, nil] Optional schema source for context
         # @return [Array<Hash>] Serialized complex types (sorted alphabetically by name)
-        def serialize_complex_types(schema, prefix = nil, schema_source = nil)
+        def serialize_complex_types(schema, prefix = nil, schema_source = nil, file_path = nil)
           return [] unless schema.respond_to?(:complex_types) || schema.respond_to?(:complex_type)
 
           types = schema.respond_to?(:complex_types) ? schema.complex_types : schema.complex_type
           types.map.with_index do |type, index|
-            serialize_complex_type(type, index, prefix, schema_source)
+            serialize_complex_type(
+              type, index, prefix, schema_source, file_path)
           end.sort_by { |t| t[:name] || "" }
         end
 
@@ -359,7 +399,7 @@ module Lutaml
         # @param type [ComplexType] Complex type object
         # @param index [Integer] Type index
         # @return [Hash] Serialized complex type
-        def serialize_complex_type(type, index, prefix = nil, schema_source = nil)
+        def serialize_complex_type(type, index, prefix = nil, schema_source = nil, file_path = nil)
           content_model = extract_content_model(type)
           type_data = {
             id: complex_type_id(index, type, prefix),
@@ -383,7 +423,7 @@ module Lutaml
           type_data[:extension_attributes] = extension_attrs unless extension_attrs.empty?
 
           # Add SVG diagram
-          type_data[:diagram_svg] = generate_diagram(type_data, :type)
+          type_data[:diagram_svg] = generate_diagram(type_data, :type, file_path)
 
           type_data
         end
@@ -427,12 +467,13 @@ module Lutaml
           if extension.respond_to?(:attribute) && extension.attribute
             direct_attrs = extension.attribute.is_a?(Array) ? extension.attribute : [extension.attribute]
             direct_attrs.each do |attr|
+              attr_name = if attr.respond_to?(:name) && attr.name
+                            attr.name
+                          else
+                            (attr.respond_to?(:ref) ? attr.ref : nil)
+                          end
               attrs << {
-                name: if attr.respond_to?(:name) && attr.name
-attr.name
-else
-(attr.respond_to?(:ref) ? attr.ref : nil)
-end,
+                name: attr_name,
                 ref: attr.respond_to?(:ref) ? attr.ref : nil,
                 type: attr.respond_to?(:type) ? attr.type : nil,
                 use: attr.respond_to?(:use) ? attr.use : nil,
@@ -445,10 +486,10 @@ end,
             ext_groups = extension.attribute_group.is_a?(Array) ? extension.attribute_group : [extension.attribute_group]
             ext_groups.each do |ag|
               ag_name = if ag.respond_to?(:ref)
-ag.ref
-else
-(ag.respond_to?(:name) ? ag.name : nil)
-end
+                          ag.ref
+                        else
+                          (ag.respond_to?(:name) ? ag.name : nil)
+                        end
               if ag_name
                 # Look up attributes from the attribute group definition
                 looked_up_attrs = lookup_attribute_group_attributes(ag_name)
@@ -1478,48 +1519,20 @@ end
           schema
         end
 
-        # Generate SVG diagram for a component
+        # Generate SVG diagram for a component using xsdvi CLI
         #
         # @param component_data [Hash] Serialized component data
         # @param component_type [Symbol] Component type (:element or :type)
+        # @param file_path [String, nil] XSD file path for xsdvi
         # @return [String, nil] SVG diagram markup
-        def generate_diagram(component_data, component_type)
-          # Convert symbol keys to strings for SVG module
-          stringified = component_data.transform_keys(&:to_s)
-          # Rename :base to "base_type" which SVG layout expects
-          stringified["base_type"] ||= stringified.delete("base") if stringified.key?("base")
+        def generate_diagram(component_data, _component_type, file_path = nil)
+          name = component_data[:name] || component_data["name"]
+          return nil unless name && file_path
 
-          # Ensure attributes are also string-keyed
-          if stringified["attributes"].is_a?(Array)
-            stringified["attributes"] = stringified["attributes"].map do |attr|
-              attr.is_a?(Hash) ? attr.transform_keys(&:to_s) : attr
-            end
-          end
-
-          generator = Svg::DiagramGenerator.new(get_current_schema_name)
-
-          case component_type
-          when :element
-            generator.generate_element_diagram(stringified)
-          when :type
-            generator.generate_type_diagram(stringified)
-          end
+          gen_element_diagram(name, file_path)
         rescue StandardError => e
-          # Graceful failure - diagram generation should not break serialization
           warn "Warning: Failed to generate SVG diagram: #{e.message}" if ENV["DEBUG"]
           nil
-        end
-
-        # Get current schema name for SVG generation
-        #
-        # @return [String] Schema name
-        def get_current_schema_name
-          # Try to get from current schema being serialized
-          return @current_schema_name if @current_schema_name
-
-          # Fallback to first schema name
-          file_path, schema = get_schemas.first
-          schema_name(schema, file_path)
         end
       end
     end

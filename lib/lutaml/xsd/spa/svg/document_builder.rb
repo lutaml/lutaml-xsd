@@ -19,8 +19,8 @@ module Lutaml
             <<~SVG
               <svg xmlns="http://www.w3.org/2000/svg"
                    xmlns:xlink="http://www.w3.org/1999/xlink"
-                   width="#{dimensions.width}" height="#{dimensions.height}"
-                   viewBox="0 0 #{dimensions.width} #{dimensions.height}">
+                   width="800px" height="900px"
+                   viewBox="0 0 800px 900px">
                 #{@defs_builder.build}
                 #{build_styles}
                 <g id="diagram-content">
