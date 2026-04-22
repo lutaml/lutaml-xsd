@@ -264,28 +264,9 @@ const usedByRefs = computed<UsedByRef[]>(() => {
 })
 
 const xmlExample = computed<string | null>(() => {
-  if (!props.type.schema.prefix) return null
-
-  const prefix = props.type.schema.prefix
-  const name = props.type.data.name
-
-  if (props.type.type === 'element') {
-    return `<${prefix}:${name}>\n  <!-- content -->\n</${prefix}:${name}>`
+  if (props.type.type === 'element' || props.type.type === 'simple' || props.type.type === 'complex' || props.type.type === 'attribute_group') {
+    return props.type.data.instance_xml as any
   }
-
-  let content = ''
-  elements.value.forEach(el => {
-    const elPrefix = el.type?.includes(':') ? el.type.split(':')[0] : prefix
-    const elName = el.type?.includes(':') ? el.type.split(':')[1] : (el.reference || 'value')
-    const occurs = el.occurs
-    if (occurs?.min === 0) {
-      content += `  <${elPrefix}:${elName}>?</${elPrefix}:${elName}>\n`
-    } else {
-      content += `  <${elPrefix}:${elName}>value</${elPrefix}:${elName}>\n`
-    }
-  })
-
-  return `<${prefix}:${name}${props.type.type === 'complex' ? ' gml:id="..."' : ''}>\n${content}</${prefix}:${name}>`
 })
 
 function formatOccurs(occurs?: { min: number; max?: number | 'unbounded' }): string {
