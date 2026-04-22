@@ -785,7 +785,7 @@ templates:
 
 [source,bash]
 ----
-lutaml-xsd generate-spa schemas.lxr \
+lutaml-xsd spa schemas.lxr \
   --config my-spa-config.yml \
   --output custom-docs.html
 ----

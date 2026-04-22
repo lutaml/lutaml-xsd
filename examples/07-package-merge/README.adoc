@@ -104,8 +104,7 @@ Expected stats: 1869 types from 10 namespaces
 [source,bash]
 ----
 # Generate interactive SPA documentation
-../../exe/lutaml-xsd doc spa iur-schemas.lxr \
-  --mode single_file \
+../../exe/lutaml-xsd spa iur-schemas.lxr \
   --output iur-docs.html
 
 # Open in browser to verify all namespaces shown
@@ -140,7 +139,7 @@ lutaml-klin xsd --lur plateau.lur --output schemas/
 lutaml-xsd pkg build compose_config.yaml
 
 # Generate documentation showing all schemas
-lutaml-xsd doc spa iur-schemas.lxr --mode single_file --output docs.html
+lutaml-xsd spa iur-schemas.lxr --output docs.html
 ----
 
 == Troubleshooting

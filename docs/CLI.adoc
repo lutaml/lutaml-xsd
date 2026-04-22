@@ -487,20 +487,11 @@ lutaml-xsd xml validate instance.xml \
 ====
 [source,bash]
 ----
-# Single file output
-lutaml-xsd doc spa my_composition.yml \
-  --mode single_file \
-  --output docs.html
+# Single file output (default)
+lutaml-xsd spa my_composition.yml --output docs.html
 
-# Multi-file output
-lutaml-xsd doc spa my_composition.yml \
-  --mode multi_file \
-  --output docs/
-
-# API mode output
-lutaml-xsd doc spa my_composition.yml \
-  --mode api \
-  --output api/
+# With separate asset files
+lutaml-xsd spa my_composition.yml --output docs.html --mode cdn
 ----
 ====
 
