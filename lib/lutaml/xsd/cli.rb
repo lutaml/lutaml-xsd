@@ -4,17 +4,12 @@ require "thor"
 require_relative "commands/pkg_command"
 require_relative "commands/xml_command"
 require_relative "commands/build_command"
-require_relative "commands/doc_command"
-require_relative "commands/type_command"
-require_relative "commands/search_command"
-require_relative "commands/namespace_command"
-require_relative "commands/element_command"
 require_relative "commands/generate_spa_command"
 
 module Lutaml
   module Xsd
     # Main CLI class for lutaml-xsd command-line interface
-    # Provides MECE command structure: pkg, xml, build, doc
+    # Provides MECE command structure: pkg, xml, build, spa
     class Cli < Thor
       class_option :verbose,
                    type: :boolean,
@@ -80,45 +75,33 @@ module Lutaml
       DESC
       subcommand "build", Commands::BuildCommand
 
-      desc "doc SUBCOMMAND", "Documentation generation commands"
+      desc "spa PACKAGE", "Generate interactive SPA documentation"
       long_desc <<~DESC
-        Generate documentation from schema packages.
-
-        Commands:
-          spa          - Generate interactive SPA documentation
+        Generate interactive HTML Single Page Application documentation from XSD schemas.
 
         Examples:
-          lutaml-xsd doc spa schemas.lxr --mode single_file --output docs.html
-          lutaml-xsd doc spa schemas.lxr --mode multi_file --output-dir ./docs
-      DESC
-      subcommand "doc", Commands::DocCommand
+          # Generate single-file documentation (works with file://)
+          lutaml-xsd spa schemas.lxr --output docs.html
 
-      desc "generate-spa SCHEMA_LXR_FILE",
-           "SPA documentation generation commands"
-      long_desc <<~DESC
-        Generate SPA documentation from schema LXR file.
-
-        Examples:
-          lutaml-xsd generate-spa schemas.lxr --mode single_file --output docs.html
-          lutaml-xsd generate-spa schemas.lxr --mode multi_file --output_dir ./docs
+          # Generate documentation with separate asset files (requires HTTP server)
+          lutaml-xsd spa schemas.lxr --output docs.html --mode cdn
       DESC
       option :mode,
              type: :string,
-             default: "single_file",
-             desc: "Use 'single_file', 'multi_file', or 'api' mode"
+             default: "inlined",
+             enum: %w[inlined cdn],
+             desc: "Output mode: inlined (single HTML file), cdn (separate assets alongside HTML)"
       option :output,
              type: :string,
-             desc: "Specify output file"
+             required: true,
+             desc: "Output file path"
       option :config,
              type: :string,
-             desc: "Specify config file"
+             desc: "Path to SPA configuration file"
       option :title,
              type: :string,
-             desc: "Specify title"
-      option :output_dir,
-             type: :string,
-             desc: "Specify output directory"
-      def generate_spa(package_path)
+             desc: "Documentation title"
+      def spa(package_path)
         Commands::GenerateSpaCommand.new(package_path, options).run
       end
 

@@ -17,7 +17,7 @@ module Lutaml
       #   generator = Generator.new(
       #     package,
       #     'output/docs.html',
-      #     mode: 'vue_inlined'
+      #     mode: 'inlined'
       #   )
       #   generator.generate
       class Generator
@@ -28,7 +28,7 @@ module Lutaml
         # @param package [SchemaRepositoryPackage] Schema repository package
         # @param output_path [String] Output file path
         # @param options [Hash] Generation options
-        # @option options [String] :mode Output mode ('vue_inlined' or 'vue_cdn')
+        # @option options [String] :mode Output mode ('inlined' or 'cdn')
         # @option options [Boolean] :verbose Enable verbose output
         def initialize(package, output_path, options = {})
           @package = package
@@ -46,7 +46,7 @@ module Lutaml
 
           # Create output strategy
           strategy = create_strategy
-          mode = options[:mode] || "vue_inlined"
+          mode = options[:mode] || "inlined"
           strategy_name = "#{mode.split('_').map(&:capitalize).join(' ')} Strategy"
           log "✓ Using #{strategy_name}"
 
@@ -67,16 +67,16 @@ module Lutaml
         #
         # @return [OutputStrategy] Strategy instance
         def create_strategy
-          mode = options[:mode] || "vue_inlined"
+          mode = options[:mode] || "inlined"
 
           case mode
-          when "vue_inlined"
+          when "inlined"
             Strategies::VueInlinedStrategy.new(
               output_path,
               @config_loader,
               verbose: verbose?,
             )
-          when "vue_cdn"
+          when "cdn"
             Strategies::VueCdnStrategy.new(
               output_path,
               @config_loader,
@@ -84,7 +84,7 @@ module Lutaml
             )
           else
             raise ArgumentError,
-                  "Unknown mode: #{mode}. Valid modes: vue_inlined, vue_cdn"
+                  "Unknown mode: #{mode}. Valid modes: inlined, cdn"
           end
         end
 

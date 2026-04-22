@@ -253,7 +253,7 @@ lutaml-xsd xml validate instance.xml --schema config.yaml
 
 [source,bash]
 ----
-lutaml-xsd doc spa config.yaml --mode single_file --output docs.html
+lutaml-xsd spa config.yaml --output docs.html
 ----
 
 == Ruby API Examples

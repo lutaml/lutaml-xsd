@@ -200,13 +200,8 @@ The SPA is a self-contained HTML file with embedded CSS and JavaScript that prov
 bundle exec exe/lutaml-xsd build from-config config.yml --output urban_function.lxr
 
 # Generate the SPA documentation
-bundle exec exe/lutaml-xsd doc spa urban_function.lxr --mode vue_inlined --output urban_function_docs.html
+bundle exec exe/lutaml-xsd spa urban_function.lxr --output urban_function_docs.html
 ----
-
-Options:
-
-* `--mode vue_inlined` - Embeds all assets in a single HTML file (default, recommended)
-* `--mode vue_cdn` - Loads Vue from CDN (requires internet)
 
 === Ruby API Generation
 
@@ -222,7 +217,7 @@ repository.parse.resolve
 generator = Lutaml::Xsd::Spa::Generator.new(
   repository.to_package,
   'urban_function_docs.html',
-  mode: 'vue_inlined'
+  mode: 'inlined'
 )
 generator.generate
 ----

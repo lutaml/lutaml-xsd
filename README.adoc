@@ -42,7 +42,7 @@ allowing you to shape and structure your data into useful forms.
 
 * <<spa-documentation,SPA documentation generation>> - Modern, responsive,
   interactive HTML documentation with schema navigation and search
-  - Single-file and API modes
+  - Single-file mode
   - Entrypoint prioritization in sidebar
   - Schema detail views with elements/types/attributes tables
   - Hash-based navigation with browser back/forward support
@@ -63,7 +63,7 @@ allowing you to shape and structure your data into useful forms.
   - `pkg` commands for package inspection
   - `xml` commands for XML validation
   - `build` commands for package creation
-  - `doc` commands for documentation generation
+  - `spa` command for documentation generation
 * <<lxr-packages,LXR (LutaML XSD Repository) packages>> for distributable,
   pre-indexed schema collections
 * <<parsing-xsd,XSD file parsing>> with full schema structure support
@@ -127,10 +127,10 @@ Generate single-file documentation:
 [source,bash]
 ----
 # Generate standalone HTML file with semantic URLs
-lutaml-xsd doc spa your_package.lxr --mode single_file --output docs.html
+lutaml-xsd spa your_package.lxr --output docs.html
 
 # Generate with custom title
-lutaml-xsd doc spa schemas.lxr --mode single_file --output docs.html \
+lutaml-xsd spa schemas.lxr --output docs.html \
   --title "My Schema Documentation"
 ----
 
@@ -140,21 +140,6 @@ lutaml-xsd doc spa schemas.lxr --mode single_file --output docs.html \
 * XML Instance Representation for each component
 * Clickable cross-references throughout
 * xs3p-quality documentation
-
-Generate API-mode documentation with server:
-
-[source,bash]
-----
-# Generate API-based SPA with Sinatra server
-lutaml-xsd doc spa your_package.lxr --mode api --output-dir docs/
-
-# Start the server
-cd docs/
-bundle install
-bundle exec rackup
-
-# Access at http://localhost:9292
-----
 
 === Navigation and Linking
 
@@ -213,21 +198,7 @@ Perfect for:
 
 [source,bash]
 ----
-lutaml-xsd generate-spa schemas.lxr --mode single_file --output schema-docs.html
-----
-
-==== Multi-file mode
-
-Generates a documentation site with separate resource files. Perfect for:
-
-* Web hosting (better caching)
-* Larger schema sets (faster loading)
-* Professional deployment
-* CDN optimization
-
-[source,bash]
-----
-lutaml-xsd generate-spa schemas.lxr --mode multi_file --output-dir ./docs
+lutaml-xsd spa schemas.lxr --output schema-docs.html
 ----
 
 === Configuration
@@ -244,8 +215,7 @@ The SPA generator is fully configurable via YAML files in `config/spa/`:
 [source,bash]
 ----
 # Generate with custom configuration
-lutaml-xsd generate-spa schemas.lxr \
-  --mode single_file \
+lutaml-xsd spa schemas.lxr \
   --output custom-docs.html \
   --config config/my-custom-spa-config.yml \
   --title "Custom Schema Docs"
@@ -559,7 +529,7 @@ Where `<CATEGORY>` is one of:
 `pkg`:: Package inspection commands (operate on `.lxr` files)
 `xml`:: XML validation commands (operate on `.xml` files)
 `build`:: Package creation commands (operate on `.yml` configs)
-`doc`:: Documentation generation commands (operate on `.lxr` files)
+`spa`:: Documentation generation (operate on `.lxr` files)
 
 This structure ensures:
 
@@ -923,72 +893,18 @@ Each warning shows:
 * Actionable hint for resolution
 ====
 
-=== DOC commands (documentation generation)
+=== SPA command (documentation generation)
 
 Generate documentation from LXR packages.
 
 [source,bash]
 ----
-# Generate SPA documentation (single-file)
-lutaml-xsd doc spa <package.lxr> --mode single_file --output docs.html
+# Generate single-file documentation
+lutaml-xsd spa <package.lxr> --output docs.html
 
-# Generate SPA with API mode (multi-file with server)
-lutaml-xsd doc spa <package.lxr> --mode api --output-dir docs/
-
-# Generate markdown documentation
-lutaml-xsd doc markdown <package.lxr> --output-dir docs/
+# Generate with custom title
+lutaml-xsd spa <package.lxr> --output docs.html --title "My Docs"
 ----
-
-==== API mode documentation
-
-The API mode generates a complete Sinatra-based server with separate frontend
-and JSON API.
-
-.Generating API-mode SPA
-[example]
-====
-[source,bash]
-----
-# Generate with API mode
-$ lutaml-xsd doc spa pkg/urban_function_repository.lxr \
-    --mode api \
-    --output-dir tmp/api_docs
-
-SPA Documentation Generated Successfully
-════════════════════════════════════════════════════════════════
-
-Output files (6 total):
-  tmp/api_docs/public/index.html
-  tmp/api_docs/data/schemas.json
-  tmp/api_docs/lib/app.rb
-  tmp/api_docs/config.ru
-  tmp/api_docs/Gemfile
-  tmp/api_docs/README.md
-
-✓ Generation complete
-
-# Install dependencies and start server
-$ cd tmp/api_docs
-$ bundle install
-$ bundle exec rackup
-
-# Access at http://localhost:9292
-----
-
-The API mode provides:
-
-* **Separate frontend and backend**: HTML/JS frontend fetches data via API
-* **RESTful endpoints**: `/api/schemas`, `/api/schemas/:id`, `/api/health`
-* **CORS enabled**: Can be used by external applications
-* **Production ready**: Sinatra server with proper error handling
-
-API endpoints:
-
-* `GET /` - Serves the frontend HTML
-* `GET /api/schemas` - Returns all schema data as JSON
-* `GET /api/schemas/:id` - Returns specific schema by ID
-* `GET /api/health` - Health check endpoint
-====
 
 === Table formatting
 

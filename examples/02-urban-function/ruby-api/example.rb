@@ -248,7 +248,7 @@ spa_output = File.join(EXAMPLE_DIR, "urban_function_docs.html")
 generator = Lutaml::Xsd::Spa::Generator.new(
   loaded_repo.to_package,
   spa_output,
-  mode: "vue_inlined",
+  mode: "inlined",
 )
 generator.generate
 

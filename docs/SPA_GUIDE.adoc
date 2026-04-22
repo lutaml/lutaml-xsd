@@ -16,9 +16,9 @@ The SPA (Single Page Application) Documentation Generator creates modern, intera
 * **Advanced search** - Real-time fuzzy matching across all schema components
 * **Type filtering** - Filter by element, complex type, simple type, attribute group, group
 * **Zero dependencies** - Self-contained HTML, CSS, and JavaScript
-* **Offline-capable** - Works without internet connection (single-file and multi-file modes)
+* **Offline-capable** - Works without internet connection (inlined mode)
 * **Accessibility** - WCAG 2.1 AA compliant
-* **Three output modes** - Single-file, multi-file, or API-based deployment
+* **Two output modes** - Single-file (inlined) or separate assets (cdn)
 
 === When to use SPA documentation
 
@@ -40,42 +40,25 @@ Use the SPA generator when you need to:
 
 === Quick start
 
-Generate single-file documentation:
-
 [source,bash]
 ----
-# From an LXR package
-lutaml-xsd generate-spa schemas.lxr --mode single_file --output docs.html
+# From an LXR package (generates single self-contained HTML)
+lutaml-xsd spa schemas.lxr --output docs.html
 
 # With custom title
-lutaml-xsd generate-spa schemas.lxr \
-  --mode single_file \
-  --output schema-docs.html \
-  --title "My Schema Documentation"
-----
+lutaml-xsd spa schemas.lxr --output schema-docs.html --title "My Schema Documentation"
 
-Generate multi-file documentation:
-
-[source,bash]
-----
-# Creates a directory with separate files
-lutaml-xsd generate-spa schemas.lxr \
-  --mode multi_file \
-  --output-dir ./docs
-
-# Generate API-based documentation with Sinatra server
-lutaml-xsd generate-spa schemas.lxr \
-  --mode api \
-  --output-dir ./docs-api
+# With separate asset files (requires HTTP server)
+lutaml-xsd spa schemas.lxr --output docs.html --mode cdn
 ----
 
 Open the generated HTML file in your browser to view the documentation.
 
 == Output modes
 
-=== Single-file mode
+=== Inlined mode (default)
 
-Single-file mode generates a standalone HTML file with all assets embedded.
+Inlined mode generates a standalone HTML file with all assets embedded.
 
 ==== Advantages
 
@@ -92,7 +75,7 @@ Single-file mode generates a standalone HTML file with all assets embedded.
 
 ==== When to use
 
-Use single-file mode for:
+Use inlined mode for:
 
 * Email attachments or file sharing
 * Offline documentation needs
@@ -105,8 +88,7 @@ Use single-file mode for:
 [source,bash]
 ----
 # Generate standalone documentation
-lutaml-xsd generate-spa person_schemas.lxr \
-  --mode single_file \
+lutaml-xsd spa person_schemas.lxr \
   --output person-documentation.html \
   --title "Person Schema Documentation"
 ----
@@ -116,154 +98,33 @@ Output:
 person-documentation.html  (125 KB)
 ----
 
-=== Multi-file mode
+=== CDN mode
 
-Multi-file mode generates a documentation site with separate resource files.
-
-==== Advantages
-
-* **Better caching** - Browser caches CSS/JS separately
-* **Faster loading** - Smaller HTML file loads faster
-* **Professional** - Standard web application structure
-* **CDN-friendly** - Can serve static assets from CDN
-
-==== Disadvantages
-
-* **Multiple files** - Must deploy entire directory
-* **Relative paths** - Files must maintain relative structure
-* **More complex** - Requires web server or proper file serving
+Generates an HTML file with separate JavaScript and CSS files alongside it. The HTML loads Vue.js from a CDN. Requires serving via HTTP (not file://).
 
 ==== When to use
 
-Use multi-file mode for:
+Use CDN mode for:
 
-* Web hosting (GitHub Pages, Netlify, etc.)
+* Web hosting with better caching
 * Larger schema sets
-* Professional deployment
-* Sites with regular updates
-* CDN optimization
+* Professional deployment behind a web server
 
 ==== Example
 
 [source,bash]
 ----
-# Generate multi-file documentation site
-lutaml-xsd generate-spa person_schemas.lxr \
-  --mode multi_file \
-  --output-dir ./docs \
-  --title "Person Schema Documentation"
+# Generate documentation with separate assets
+lutaml-xsd spa person_schemas.lxr --output docs.html --mode cdn
 ----
 
 Output:
 ----
 docs/
-├── index.html        (15 KB)
-├── css/
-│   └── styles.css    (25 KB)
-├── js/
-│   └── app.js        (18 KB)
-└── data/
-    └── schemas.json  (12 KB)
+├── docs.html       (HTML that loads assets externally)
+├── app.iife.js     (Application JavaScript)
+└── style.css       (Stylesheet)
 ----
-
-=== API mode (Sinatra server)
-
-API mode generates a complete Sinatra-based web application with a true REST API backend.
-
-==== Advantages
-
-* **True API backend** - Separate frontend and backend architecture
-* **Scalable** - Can handle multiple concurrent requests
-* **Development-friendly** - Hot-reload during development
-* **RESTful architecture** - Standard REST API endpoints
-* **CORS enabled** -Works with SPA frontends from different origins
-
-==== Disadvantages
-
-* **Requires Ruby** - Server must run Ruby application
-* **More complex** - Requires server setup and maintenance
-* **Not static** - Cannot deploy to static hosts
-* **Resource intensive** -Requires running Ruby process
-
-==== When to use
-
-Use API mode for:
-
-* Development and testing environments
-* When you need a true API backend
-* Integrating schema documentation into larger applications
-* Building custom frontends that consume schema data
-* Internal tools with API requirements
-
-==== Example
-
-[source,bash]
-----
-# Generate API-based documentation
-lutaml-xsd generate-spa person_schemas.lxr \
-  --mode api \
-  --output-dir ./docs-api \
-  --title "Person Schema API"
-----
-
-Output:
-----
-docs-api/
-├── public/
-│   └── index.html      (15 KB, SPA frontend)
-├── lib/
-│   └── app.rb          (Sinatra server)
-├── data/
-│   └── schemas.json    (12 KB)
-├── config.ru           (Rack configuration)
-├── Gemfile             (Dependencies)
-└── README.md           (Usage instructions)
-----
-
-==== Running the API server
-
-After generation, start the Sinatra server:
-
-[source,bash]
-----
-cd docs-api
-
-# Install dependencies
-bundle install
-
-# Start server (default port 9292)
-bundle exec rackup
-
-# Or specify custom port
-PORT=3000 bundle exec rackup
-----
-
-Then open http://localhost:9292 in your browser.
-
-==== API endpoints
-
-The generated server provides these REST API endpoints:
-
-* `GET /` - Serve frontend HTML
-* `GET /api/schemas` - Get all schemas (JSON)
-* `GET /api/schemas/:id` - Get specific schema by ID
-* `GET /api/health` - Health check endpoint
-
-.Testing API endpoints
-[example]
-====
-[source,bash]
-----
-# Get all schemas
-curl http://localhost:9292/api/schemas
-
-# Get specific schema
-curl http://localhost:9292/api/schemas/schema-0
-
-# Health check
-curl http://localhost:9292/api/health
-----
-====
 
 == Using the documentation
 
@@ -340,8 +201,7 @@ Specify a custom configuration file:
 
 [source,bash]
 ----
-lutaml-xsd generate-spa schemas.lxr \
-  --mode single_file \
+lutaml-xsd spa schemas.lxr \
   --output docs.html \
   --config my-spa-config.yml
 ----
@@ -438,7 +298,7 @@ Use your theme:
 
 [source,bash]
 ----
-lutaml-xsd generate-spa schemas.lxr \
+lutaml-xsd spa schemas.lxr \
   --config my-theme.yml \
   --output custom-docs.html
 ----
@@ -449,7 +309,7 @@ Set a custom documentation title:
 
 [source,bash]
 ----
-lutaml-xsd generate-spa schemas.lxr \
+lutaml-xsd spa schemas.lxr \
   --title "My Company Schema Reference" \
   --output docs.html
 ----
@@ -476,7 +336,7 @@ features:
 
 === Local file system
 
-For single-file mode, just open the HTML file:
+For inlined mode, just open the HTML file:
 
 [source,bash]
 ----
@@ -492,16 +352,14 @@ start docs.html
 
 === Static web hosting
 
-Deploy multi-file documentation to static hosts:
+Deploy CDN-mode documentation to static hosts:
 
 ==== GitHub Pages
 
 [source,bash]
 ----
 # Generate documentation
-lutaml-xsd generate-spa schemas.lxr \
-  --mode multi_file \
-  --output-dir ./docs
+lutaml-xsd spa schemas.lxr --output docs.html --mode cdn
 
 # Commit and push
 git add docs/
@@ -517,17 +375,15 @@ git push
 [source,bash]
 ----
 # Generate documentation
-lutaml-xsd generate-spa schemas.lxr \
-  --mode multi_file \
-  --output-dir ./public
+lutaml-xsd spa schemas.lxr --output docs.html --mode cdn
 
 # Deploy with Netlify CLI
-netlify deploy --prod --dir=public
+netlify deploy --prod --dir=docs
 ----
 
 ==== Other static hosts
 
-The multi-file output works with any static file host:
+The CDN output works with any static file host:
 
 * **Vercel** - Deploy `docs/` directory
 * **AWS S3** - Upload to bucket, enable static hosting
@@ -552,7 +408,7 @@ See link:SPA_DEPLOYMENT.adoc[Deployment Guide] for detailed instructions.
 ls -l schemas.lxr
 
 # Use absolute path if needed
-lutaml-xsd generate-spa /absolute/path/to/schemas.lxr --output docs.html
+lutaml-xsd spa /absolute/path/to/schemas.lxr --output docs.html
 ----
 
 ==== "Template not found"
@@ -580,9 +436,8 @@ gem update lutaml-xsd
 [source,bash]
 ----
 # Use correct mode values
-lutaml-xsd generate-spa schemas.lxr --mode single_file  # Not "single"
-lutaml-xsd generate-spa schemas.lxr --mode multi_file   # Not "multi"
-lutaml-xsd generate-spa schemas.lxr --mode api          # API mode
+lutaml-xsd spa schemas.lxr --mode inlined  # Default, single self-contained HTML
+lutaml-xsd spa schemas.lxr --mode cdn      # Separate asset files
 ----
 
 ==== Dark mode not working
@@ -631,7 +486,7 @@ If you encounter issues:
 
 === Performance
 
-* **Use multi-file for large schemas** - Better caching and loading
+* **Use CDN mode for large schemas** - Better caching and loading
 * **Enable CDN** - Serve static assets from CDN
 * **Compress assets** - Enable gzip on web server
 * **Lazy loading** - Load schema details on demand
@@ -659,7 +514,7 @@ echo "files:\n  - schema.xsd" > config.yaml
 lutaml-xsd pkg build config.yaml -o schemas.lxr
 
 # Generate documentation
-lutaml-xsd generate-spa schemas.lxr --output docs.html
+lutaml-xsd spa schemas.lxr --output docs.html
 ----
 
 === How do I update the documentation?
@@ -669,7 +524,7 @@ Regenerate it using the same command:
 [source,bash]
 ----
 # Regenerates with latest schema changes
-lutaml-xsd generate-spa updated-schemas.lxr --output docs.html
+lutaml-xsd spa updated-schemas.lxr --output docs.html
 ----
 
 === Can I customize the HTML structure?
@@ -682,11 +537,9 @@ The HTML structure is controlled by Liquid templates. To customize:
 
 === Does it work offline?
 
-Single-file and multi-file modes work offline:
+Inlined mode works offline:
 
-* **Single-file** - Completely self-contained
-* **Multi-file** - All files are local, no external requests
-* **API mode** - Requires running server, no external requests once running
+* **Inlined** - Completely self-contained, no external requests
 
 === What browsers are supported?
 
@@ -706,11 +559,11 @@ The generator handles schemas of any size, but browser performance varies:
 * **Small** (< 50 types) - Excellent performance
 * **Medium** (50-500 types) - Good performance
 * **Large** (500-2000 types) - Acceptable performance
-* **Very large** (> 2000 types) - May be slow, use multi-file mode
+* **Very large** (> 2000 types) - May be slow, use CDN mode
 
 For very large schemas, consider:
 
-* Using multi-file mode
+* Using CDN mode
 * Splitting into multiple packages
 * Enabling lazy loading features
 

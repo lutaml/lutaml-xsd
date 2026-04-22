@@ -24,11 +24,11 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
   describe "#initialize" do
     it "accepts package, output_path, and options" do
       generator = described_class.new(mock_package, output_path,
-                                      mode: "vue_inlined")
+                                      mode: "inlined")
 
       expect(generator.package).to eq(mock_package)
       expect(generator.output_path).to eq(output_path)
-      expect(generator.options[:mode]).to eq("vue_inlined")
+      expect(generator.options[:mode]).to eq("inlined")
     end
 
     it "creates configuration loader" do
@@ -69,10 +69,10 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
         .and_return(serialized_data)
     end
 
-    context "when vue_inlined mode" do
-      it "creates vue inlined strategy" do
+    context "when inlined mode" do
+      it "creates inlined strategy" do
         generator = described_class.new(mock_package, output_path,
-                                        mode: "vue_inlined", verbose: false)
+                                        mode: "inlined", verbose: false)
 
         expect(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
           .to receive(:new)
@@ -85,7 +85,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
 
       it "returns generated file paths" do
         generator = described_class.new(mock_package, output_path,
-                                        mode: "vue_inlined", verbose: false)
+                                        mode: "inlined", verbose: false)
 
         allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
           .to receive(:new)
@@ -96,10 +96,10 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
       end
     end
 
-    context "when vue_cdn mode" do
-      it "creates vue cdn strategy" do
+    context "when cdn mode" do
+      it "creates cdn strategy" do
         generator = described_class.new(mock_package, output_path,
-                                        mode: "vue_cdn", verbose: false)
+                                        mode: "cdn", verbose: false)
 
         mock_cdn_strategy = instance_double(
           Lutaml::Xsd::Spa::Strategies::VueCdnStrategy,
@@ -117,7 +117,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
     end
 
     context "when mode not specified" do
-      it "defaults to vue_inlined mode" do
+      it "defaults to inlined mode" do
         generator = described_class.new(mock_package, output_path,
                                         verbose: false)
 
@@ -143,7 +143,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
     context "when verbose mode enabled" do
       it "logs progress messages" do
         generator = described_class.new(mock_package, output_path,
-                                        mode: "vue_inlined", verbose: true)
+                                        mode: "inlined", verbose: true)
 
         allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
           .to receive(:new)
@@ -156,7 +156,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
 
       it "logs strategy selection" do
         generator = described_class.new(mock_package, output_path,
-                                        mode: "vue_inlined", verbose: true)
+                                        mode: "inlined", verbose: true)
 
         allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
           .to receive(:new)
@@ -164,12 +164,12 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
 
         expect do
           generator.generate
-        end.to output(/Using.*Vue Inlined Strategy/).to_stdout
+        end.to output(/Using.*Inlined Strategy/).to_stdout
       end
 
       it "logs schema count" do
         generator = described_class.new(mock_package, output_path,
-                                        mode: "vue_inlined", verbose: true)
+                                        mode: "inlined", verbose: true)
 
         allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
           .to receive(:new)
@@ -182,7 +182,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
 
       it "logs file count" do
         generator = described_class.new(mock_package, output_path,
-                                        mode: "vue_inlined", verbose: true)
+                                        mode: "inlined", verbose: true)
 
         allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
           .to receive(:new)
@@ -197,7 +197,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
     context "when verbose mode disabled" do
       it "does not log messages" do
         generator = described_class.new(mock_package, output_path,
-                                        mode: "vue_inlined", verbose: false)
+                                        mode: "inlined", verbose: false)
 
         allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
           .to receive(:new)
@@ -296,7 +296,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
           )
 
           generator = described_class.new(package, "/tmp/composed_docs.html",
-                                          mode: "vue_inlined", verbose: false)
+                                          mode: "inlined", verbose: false)
 
           mock_strategy = instance_double(
             Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy,

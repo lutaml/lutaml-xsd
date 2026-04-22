@@ -114,8 +114,7 @@ echo "Input:  $PACKAGE_PATH"
 echo "Output: $DOCS_PATH"
 echo
 
-bundle exec exe/lutaml-xsd doc spa "$PACKAGE_PATH" \
-  --mode vue_inlined \
+bundle exec exe/lutaml-xsd spa "$PACKAGE_PATH" \
   --output "$DOCS_PATH"
 
 echo

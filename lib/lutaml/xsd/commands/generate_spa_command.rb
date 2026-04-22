@@ -13,7 +13,7 @@ module Lutaml
       class GenerateSpaCommand < BaseCommand
         attr_reader :package_path, :output_path
 
-        # Initialize generate-spa command
+        # Initialize spa command
         #
         # @param package_path [String] Path to LXR package file
         # @param options [Hash] Command options
@@ -47,7 +47,7 @@ module Lutaml
         def validate_inputs
           unless package_path
             error "No package file specified"
-            error "Usage: lutaml-xsd generate-spa PACKAGE [options]"
+            error "Usage: lutaml-xsd spa PACKAGE --output FILE [options]"
             exit 1
           end
 
@@ -81,7 +81,7 @@ module Lutaml
         def create_generator(package)
           verbose_output "Initializing SPA generator..."
 
-          mode = options[:mode] || "vue_inlined"
+          mode = options[:mode] || "inlined"
 
           generator = Spa::Generator.new(
             package,

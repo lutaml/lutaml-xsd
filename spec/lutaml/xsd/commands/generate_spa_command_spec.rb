@@ -42,12 +42,12 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       allow(Lutaml::Xsd::Spa::Generator).to receive(:new).and_return(mock_generator)
     end
 
-    context "with vue_inlined mode" do
+    context "with inlined mode" do
       let(:command) do
         described_class.new(
           package_path,
           output: output_path,
-          mode: "vue_inlined",
+          mode: "inlined",
         )
       end
 
@@ -61,11 +61,11 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
         command.run
       end
 
-      it "creates generator with vue_inlined mode" do
+      it "creates generator with inlined mode" do
         expect(Lutaml::Xsd::Spa::Generator).to receive(:new).with(
           mock_package,
           output_path,
-          hash_including(mode: "vue_inlined"),
+          hash_including(mode: "inlined"),
         )
         command.run
       end
@@ -81,20 +81,20 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       end
     end
 
-    context "with vue_cdn mode" do
+    context "with cdn mode" do
       let(:command) do
         described_class.new(
           package_path,
           output: output_path,
-          mode: "vue_cdn",
+          mode: "cdn",
         )
       end
 
-      it "creates generator with vue_cdn mode" do
+      it "creates generator with cdn mode" do
         expect(Lutaml::Xsd::Spa::Generator).to receive(:new).with(
           mock_package,
           output_path,
-          hash_including(mode: "vue_cdn"),
+          hash_including(mode: "cdn"),
         )
         command.run
       end
@@ -230,7 +230,7 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
   describe "#create_generator" do
     let(:command) do
       described_class.new(package_path, output: output_path,
-                                        mode: "vue_inlined")
+                                        mode: "inlined")
     end
 
     before do
@@ -241,7 +241,7 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       expect(Lutaml::Xsd::Spa::Generator).to receive(:new).with(
         mock_package,
         output_path,
-        hash_including(mode: "vue_inlined"),
+        hash_including(mode: "inlined"),
       )
       command.send(:create_generator, mock_package)
     end
