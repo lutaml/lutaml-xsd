@@ -1,11 +1,15 @@
 # frozen_string_literal: true
 
+require_relative "utils/extract_enumeration"
+
 module Lutaml
   module Xsd
     module Spa
       # Generates XML instance representations showing how to use XSD components
       # Based on xs3p's SampleInstanceTable templates
       class XmlInstanceGenerator
+        include ::Lutaml::Xsd::Spa::Utils::ExtractEnumeration
+
         attr_reader :schema, :component, :repository
 
         def initialize(schema, component, repository = nil, all_schemas: nil)
@@ -25,6 +29,8 @@ module Lutaml
             generate_type_instance(@component)
           when SimpleType
             generate_simple_type_instance(@component)
+          when AttributeGroup
+            generate_ag_instance(@component)
           else
             "<!-- Unknown component type -->"
           end
@@ -33,191 +39,141 @@ module Lutaml
         private
 
         # Generate element instance with attributes and content
-        def generate_element_instance(element, indent: 0)
-          lines = []
-          indent_str = "  " * indent
-
-          # Build opening tag with all attributes on one line
-          tag_name = element.name
-          schema_id = get_schema_id_for_element(element)
-          link_marker = schema_id ? " data-element-link=\"#{schema_id}/elements/#{tag_name}\"" : ""
-
-          # Collect attributes
-          attr_parts = []
-          if element.type
-            type = find_type(element.type)
-            if type
-              attrs = collect_attributes(type)
-              attrs.each do |attr|
-                attr_name = resolve_attribute_name(attr)
-                next unless attr_name
-
-                occurs = attribute_occurs(attr)
-                default_val = attr.fixed || attr.default
-                attr_type = attr.type || "string"
-                type_link = get_type_link_marker(attr_type)
-
-                attr_parts << if default_val
-                                "#{attr_name}=\"#{default_val}\" #{occurs}"
-                              else
-                                "#{attr_name}=\"#{attr_type}#{type_link}\" #{occurs}"
-                              end
-              end
-            end
-          end
-
-          # Build complete opening tag
-          if attr_parts.any?
-            lines << "#{indent_str}<#{tag_name}#{link_marker}"
-            attr_parts.each do |attr_part|
-              lines << "#{indent_str} #{attr_part}"
-            end
-            lines << "#{indent_str}>"
-          else
-            lines << "#{indent_str}<#{tag_name}#{link_marker}>"
-          end
-
-          # Generate content from type
-          if element.type
-            type = find_type(element.type)
-            if type
-              content = generate_type_content(type, indent + 1)
-              lines.concat(content) if content.any?
-            end
-          elsif element.complex_type
-            # Inline complex type
-            content = generate_type_content(element.complex_type, indent + 1)
-            lines.concat(content) if content.any?
-          elsif element.simple_type
-            # Inline simple type
-            lines << "#{indent_str}  #{extract_simple_constraints(element.simple_type)}"
-          else
-            lines << "#{indent_str}  ..."
-          end
-
-          # End tag without link marker (only opening tag needs it)
-          occurs = element_occurs(element)
-          lines << "#{indent_str}</#{tag_name}> #{occurs}"
-
-          lines.join("\n")
+        def generate_element_instance(element, indent: 1)          
+          element_type = find_type(element.type)
+          generate_type_instance(
+            element_type, tag_name: element.name, indent: indent
+          )
         end
 
         # Generate type instance content
-        def generate_type_instance(type, indent: 0)
+        def generate_type_instance(type, tag_name: "...", indent: 1)
           lines = []
+          indent_str = "  " * indent
 
-          # Show type structure
-          content = generate_type_content(type, indent)
-          lines.concat(content) if content.any?
+          # Collect attributes
+          attr_parts = generate_attributes_instance(type.name)
+
+          # Collect element
+          element_parts = []
+
+          if type.respond_to?(:sequence) && type.sequence
+            # check whether the type is mixed
+            if type.respond_to?(:mixed) && type.mixed
+              element_parts << "#{indent_str}<!-- Mixed content -->"
+            end
+
+            # generate start sequence line with occurrence
+            # if maxOccurs is unbounded
+            if type.sequence&.max_occurs == "unbounded"
+              occurs = element_occurs(type.sequence)
+              element_parts << "#{indent_str}Start Sequence #{occurs}"
+            end
+
+            # Check whether the sequence allows any element
+            if type.sequence&.any && !type.sequence&.any&.empty?
+              occurs = element_occurs(type.sequence.any.first)
+              element_parts << "#{indent_str * 2}" \
+                               "Allow any elements from any namespace " \
+                               "(skip validation). " \
+                               "#{occurs}"
+            end
+
+            # generate element lines
+            if type.sequence&.element&.any?
+              elements = type.sequence.element
+              elements.each do |element|
+                element_parts << generate_element_parts(element, indent_str)
+              end
+            end
+
+            # generate end sequence line
+            if type.sequence&.max_occurs == "unbounded"
+              element_parts << "#{indent_str}End Sequence"
+            end
+          end
+
+          # Build opening tag
+          if attr_parts.any?
+            # with attributes
+            lines << "<#{tag_name}"
+            attr_parts.each do |attr_part|
+              lines << "#{indent_str}#{attr_part}"
+            end
+            lines << ">"
+          else
+            # without attributes
+            lines << "<#{tag_name}>"
+          end
+
+          # Build content
+          base_val = get_base_from_extension(type)
+          if base_val
+            lines << "#{indent_str}#{base_val}"
+          end
+
+          # Build element lines
+          element_parts.each do |element_line|
+            lines << element_line
+          end
+
+          # Build closing tag
+          lines << "</#{tag_name}>"
 
           lines.join("\n")
         end
 
-        # Generate content for a type
-        def generate_type_content(type, indent)
-          lines = []
-          indent_str = "  " * indent
+        # Generate attribute group instance
+        def generate_ag_instance(attr_group)
+          # Collect attributes
+          attrs = generate_attributes_from_attribute_group(attr_group)
+          attr_parts = generate_attributes_parts(attrs)
+          attr_parts.join("\n")
+        end
 
-          return lines if @visited_types.include?(type.object_id)
+        # Generate element instance for a type
+        def generate_element_parts(element, indent_str)
+          tag_name = element.name || element.ref
+          "#{indent_str * 2}" \
+            "<#{tag_name}> ... </#{tag_name}> #{element_occurs(element)}"
+        end
 
-          @visited_types << type.object_id
+        # Generate attributes xml instance for a type
+        def generate_attributes_instance(type_name)
+          type = find_type(type_name)
+          return [] unless type
 
-          # Handle sequence (only if not handling via complex_content)
-          if type.respond_to?(:sequence) && type.sequence && !has_complex_content?(type)
-            seq = type.sequence
-            occurs = model_group_occurs(seq)
-            lines << "#{indent_str}Start Sequence #{occurs}"
+          attrs = collect_attributes(type)
+          generate_attributes_parts(attrs)
+        end
 
-            seq.element.each do |elem|
-              elem_occurs = element_occurs(elem)
-              elem_name = resolve_element_name(elem)
-              next unless elem_name
+        # Generate attributes parts from attributes
+        def generate_attributes_parts(attrs)
+          attr_parts = []
+          attrs.each do |attr|
+            attr_name = resolve_attribute_name(attr)
+            next unless attr_name
 
-              # Resolve which schema this element belongs to and get display name with prefix
-              elem_info = resolve_element_schema(elem_name)
-              display_name = get_display_name_with_prefix(elem_info)
-              elem_link = get_element_link_marker(elem_name)
-              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
-            end
+            enum_default, enum_type = extract_enumeration_default(attr)
+            occurs = attribute_occurs(attr)
+            default_val = enum_default || attr.fixed || attr.default
+            attr_type = enum_type || attr.type || "string"
+            type_link = get_type_link_marker(attr_type)
 
-            lines << "#{indent_str}End Sequence"
+            attr_parts << if default_val
+                            "#{attr_name}=\"#{attr_type} (#{default_val})\" " \
+                              "#{occurs}"
+                          else
+                            "#{attr_name}=\"#{attr_type}#{type_link}\" " \
+                              "#{occurs}"
+                          end
           end
 
-          # Handle choice
-          if type.respond_to?(:choice) && type.choice
-            choice = type.choice
-            occurs = model_group_occurs(choice)
-            lines << "#{indent_str}Start Choice #{occurs}"
-
-            choice.element.each do |elem|
-              elem_occurs = element_occurs(elem)
-              elem_name = resolve_element_name(elem)
-              next unless elem_name
-
-              elem_info = resolve_element_schema(elem_name)
-              display_name = get_display_name_with_prefix(elem_info)
-              elem_link = get_element_link_marker(elem_name)
-              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
-            end
-
-            lines << "#{indent_str}End Choice"
-          end
-
-          # Handle all
-          if type.respond_to?(:all) && type.all
-            all_group = type.all
-            occurs = model_group_occurs(all_group)
-            lines << "#{indent_str}Start All #{occurs}"
-
-            all_group.element.each do |elem|
-              elem_occurs = element_occurs(elem)
-              elem_name = resolve_element_name(elem)
-              next unless elem_name
-
-              elem_info = resolve_element_schema(elem_name)
-              display_name = get_display_name_with_prefix(elem_info)
-              elem_link = get_element_link_marker(elem_name)
-              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
-            end
-
-            lines << "#{indent_str}End All"
-          end
-
-          # Handle complex content (extension/restriction)
-          if type.respond_to?(:complex_content) && type.complex_content
-            cc = type.complex_content
-            if cc.respond_to?(:extension) && cc.extension
-              # Process extension with its base - combine into single sequence
-              lines.concat(generate_extension_content(cc.extension, indent))
-            elsif cc.respond_to?(:restriction) && cc.restriction
-              # For restrictions, show the restricted content
-              if cc.restriction.sequence || cc.restriction.choice || cc.restriction.all
-                # Show restricted content model
-                lines.concat(generate_type_content(cc.restriction, indent))
-              else
-                # If no content model in restriction, show base type
-                base_type = find_type(cc.restriction.base) if cc.restriction.base
-                if base_type
-                  base_content = generate_type_content(base_type, indent)
-                  lines.concat(base_content) if base_content.any?
-                end
-              end
-            end
-          end
-
-          # Handle simple content
-          if type.respond_to?(:simple_content) && type.simple_content
-            sc = type.simple_content
-            constraints = extract_simple_constraints(sc)
-            lines << "#{indent_str}#{constraints}" if constraints
-          end
-
-          @visited_types.pop
-          lines
+          attr_parts
         end
 
         # Generate simple type instance
-        def generate_simple_type_instance(simple_type, _indent: 0)
+        def generate_simple_type_instance(simple_type, _indent: 1)
           extract_simple_constraints(simple_type)
         end
 
@@ -273,9 +229,7 @@ module Lutaml
         def model_group_occurs(group)
           return "[1]" unless group
 
-          min = group.min_occurs || "1"
-          max = group.max_occurs == "unbounded" ? "*" : (group.max_occurs || "1")
-          "[#{min}..#{max}]"
+          element_occurs(group)
         end
 
         # Check if type has complex_content
@@ -300,51 +254,126 @@ module Lutaml
           # Attribute uses ref - extract the local name from the ref
           return unless attr.ref
 
-          attr.ref.split(":").last
+          attr.ref
         end
 
         # Collect all attributes from a type (including inherited)
-        def collect_attributes(type, visited = [])
-          return [] if visited.include?(type.object_id)
-
-          visited << type.object_id
-
+        def collect_attributes(type)
           attrs = []
 
           # Direct attributes
-          attrs.concat(type.attribute) if type.respond_to?(:attribute) && type.attribute
-
-          # Attributes from complex content extension
-          if type.respond_to?(:complex_content) && type.complex_content
-            cc = type.complex_content
-            if cc.respond_to?(:extension) && cc.extension
-              # Add attributes from extension
-              attrs.concat(cc.extension.attribute) if cc.extension.respond_to?(:attribute) && cc.extension.attribute
-
-              # Recursively get base type attributes
-              if cc.extension.base
-                base_type = find_type(cc.extension.base)
-                if base_type
-                  attrs.concat(collect_attributes(base_type,
-                                                  visited))
-                end
-              end
-            elsif cc.respond_to?(:restriction) && cc.restriction
-              attrs.concat(cc.restriction.attribute) if cc.restriction.respond_to?(:attribute) && cc.restriction.attribute
-            end
+          if type.respond_to?(:attribute) && type.attribute
+            attrs.concat(type.attribute)
           end
 
-          # Attributes from simple content extension
-          if type.respond_to?(:simple_content) && type.simple_content
-            sc = type.simple_content
-            if sc.respond_to?(:extension) && sc.extension
-              attrs.concat(sc.extension.attribute) if sc.extension.respond_to?(:attribute) && sc.extension.attribute
-            elsif sc.respond_to?(:restriction) && sc.restriction
-              attrs.concat(sc.restriction.attribute) if sc.restriction.respond_to?(:attribute) && sc.restriction.attribute
-            end
-          end
+          # Get attributes from attribute group ref
+          attrs.concat(generate_attributes_from_group_ref(type))
+
+          # Attributes from content
+          attrs.concat(generate_attributes_from_content(type))
 
           attrs.uniq(&:name)
+        end
+
+        # Get base from extension
+        def get_base_from_extension(type)
+          base_val = nil
+          %i[simple_content complex_content].each do |content_type|
+            if type.respond_to?(content_type) && type.send(content_type)
+              sc = type.send(content_type)
+              if sc.respond_to?(:extension) && sc.extension
+                sc_ext = sc.extension
+                if sc_ext.respond_to?(:base) && sc_ext.base
+                  base_val = sc_ext.base
+                end
+              end
+            end
+          end
+
+          base_val
+        end
+
+        # Get attributes from simple or complex content
+        def generate_attributes_from_content(type)
+          attrs = []
+          %i[simple_content complex_content].each do |content_type|
+            if type.respond_to?(content_type) && type.send(content_type)
+              sc = type.send(content_type)
+              if sc.respond_to?(:extension) && sc.extension
+                sc_ext = sc.extension
+
+                # Get attributes from content extension
+                if sc_ext.respond_to?(:attribute) && sc_ext.attribute
+                  attrs.concat(sc_ext.attribute)
+                end
+
+                # Get attributes in attribute groups from content extension
+                attrs.concat(generate_attributes_from_group_ref(sc_ext))
+              elsif sc.respond_to?(:restriction) && sc.restriction
+                # Get attributes from content restriction
+                if sc.restriction.respond_to?(:attribute) &&
+                    sc.restriction.attribute
+                  attrs.concat(sc.restriction.attribute)
+                end
+
+                # Get attributes in attribute groups from restriction extension
+                attrs.concat(generate_attributes_from_group_ref(sc.restriction))
+              end
+            end
+          end
+          attrs
+        end
+
+        # Get attributes from attribute group ref
+        def generate_attributes_from_group_ref(model)
+          attrs = []
+          if model.respond_to?(:attribute_group) && model.attribute_group
+            attrs.concat(
+              generate_attributes_from_attribute_group_ref(
+                model.attribute_group,
+              ),
+            )
+          end
+          attrs
+        end
+
+        # Get attributes from attribute group ref
+        def generate_attributes_from_attribute_group_ref(attribute_group)
+          attrs = []
+
+          refs = attribute_group.filter_map(&:ref)
+          refs.each do |ref|
+            group = find_attribute_group(ref)
+            if group
+              attrs.concat(
+                generate_attributes_from_attribute_group(group),
+              )
+            end
+          end
+
+          attrs
+        end
+
+        # Get attributes from attribute group
+        def generate_attributes_from_attribute_group(attribute_group)
+          attrs = []
+          if attribute_group.respond_to?(:attribute) && attribute_group.attribute
+            attrs.concat(attribute_group.attribute)
+          end
+          attrs
+        end
+
+        # Find an attribute group by name in the schema
+        def find_attribute_group(ag_name)
+          return nil unless ag_name
+
+          # Search in current schema
+          if @schema.respond_to?(:attribute_group) && @schema.attribute_group
+            found = @schema.attribute_group.find { |t| t.name == ag_name }
+            return found if found
+          end
+
+          nil
         end
 
         # Find a type by name in the schema
@@ -413,7 +442,7 @@ module Lutaml
           # Display as a single combined sequence if we have elements
           if all_elements.any?
             occurs = "[1..1]" # Extension sequences are typically required
-            lines << "#{indent_str}Start Sequence #{occurs}"
+            lines << "#{indent_str}Start Sequence"
 
             all_elements.each do |elem|
               elem_occurs = element_occurs(elem)
@@ -422,8 +451,7 @@ module Lutaml
 
               elem_info = resolve_element_schema(elem_name)
               display_name = get_display_name_with_prefix(elem_info)
-              elem_link = get_element_link_marker(elem_name)
-              lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
+              lines << "#{indent_str}  <#{display_name}> ... </#{display_name}> #{elem_occurs}"
             end
 
             lines << "#{indent_str}End Sequence"
@@ -479,8 +507,7 @@ module Lutaml
 
             elem_info = resolve_element_schema(elem_name)
             display_name = get_display_name_with_prefix(elem_info)
-            elem_link = get_element_link_marker(elem_name)
-            lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
+            lines << "#{indent_str}  <#{display_name}> ... </#{display_name}> #{elem_occurs}"
           end
 
           lines << "#{indent_str}End Choice"
@@ -502,8 +529,7 @@ module Lutaml
 
             elem_info = resolve_element_schema(elem_name)
             display_name = get_display_name_with_prefix(elem_info)
-            elem_link = get_element_link_marker(elem_name)
-            lines << "#{indent_str}  <#{display_name}#{elem_link}> ... </#{display_name}#{elem_link}> #{elem_occurs}"
+            lines << "#{indent_str}  <#{display_name}> ... </#{display_name}> #{elem_occurs}"
           end
 
           lines << "#{indent_str}End All"
