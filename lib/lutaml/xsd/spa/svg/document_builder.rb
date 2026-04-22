@@ -16,11 +16,13 @@ module Lutaml
           end
 
           def build(components, dimensions)
+            width = dimensions&.width || 800
+            height = dimensions&.height || 600
             <<~SVG
               <svg xmlns="http://www.w3.org/2000/svg"
                    xmlns:xlink="http://www.w3.org/1999/xlink"
-                   width="800px" height="900px"
-                   viewBox="0 0 800px 900px">
+                   width="#{width}" height="#{height}"
+                   viewBox="0 0 #{width} #{height}">
                 #{@defs_builder.build}
                 #{build_styles}
                 <g id="diagram-content">

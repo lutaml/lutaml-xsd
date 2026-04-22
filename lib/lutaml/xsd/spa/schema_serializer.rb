@@ -829,13 +829,13 @@ module Lutaml
         # @return [Array<Hash>] Serialized attributes
         def lookup_attribute_group_attributes(ag_name)
           clean_name = ag_name.split(":").last
-          get_schemas.each do |_file_path, schema|
+          get_schemas.each_value do |schema|
             next unless schema.respond_to?(:attribute_group) && schema.attribute_group
 
             found_ag = schema.attribute_group.find do |group|
               [clean_name, ag_name].include?(group.name)
             end
-            if found_ag && found_ag.respond_to?(:attribute) && found_ag.attribute
+            if found_ag&.attribute
               return serialize_ag_attributes(found_ag)
             end
           end
@@ -930,7 +930,7 @@ module Lutaml
               end
             end
 
-            # Complex types: base type, element types, attribute types
+            # Complex types: base type, element types, attribute types, groups
             (schema_data[:complex_types] || []).each do |type|
               if type[:base]
                 used_by[type[:base]] << { name: type[:name],
@@ -938,12 +938,17 @@ module Lutaml
                                           schema: schema_label }
               end
               (type[:elements] || []).each do |elem|
-                # Check name for local elements, reference for element refs
                 element_name = elem[:name] || elem[:ref]
                 if element_name
                   used_by[element_name] << { name: type[:name],
                                             kind: "complexType",
                                             schema: schema_label }
+                end
+                if elem[:type]
+                  type_name = elem[:type].split(":").last || elem[:type]
+                  used_by[type_name] << { name: type[:name],
+                                          kind: "complexType",
+                                          schema: schema_label }
                 end
               end
               (type[:attributes] || []).each do |attr|
@@ -951,6 +956,20 @@ module Lutaml
                   used_by[attr[:name]] << { name: type[:name],
                                             kind: "complexType",
                                             schema: schema_label }
+                end
+              end
+              (type[:attribute_groups] || []).each do |ag_ref|
+                if ag_ref[:ref]
+                  used_by[ag_ref[:ref]] << { name: type[:name],
+                                             kind: "complexType",
+                                             schema: schema_label }
+                end
+              end
+              (type[:groups] || []).each do |grp_ref|
+                if grp_ref[:ref]
+                  used_by[grp_ref[:ref]] << { name: type[:name],
+                                              kind: "complexType",
+                                              schema: schema_label }
                 end
               end
             end
@@ -961,38 +980,6 @@ module Lutaml
                 used_by[type[:base]] << { name: type[:name],
                                           kind: "simpleType",
                                           schema: schema_label }
-              end
-            end
-
-            # Complex types:
-            # attribute group references
-            (schema_data[:complex_types] || []).each do |type|
-              (type[:attribute_groups] || []).each do |ag_ref|
-                if ag_ref[:ref]
-                  used_by[ag_ref[:ref]] << { name: type[:name],
-                                             kind: "complexType",
-                                             schema: schema_label }
-                end
-              end
-
-              # group references
-              (type[:groups] || []).each do |grp_ref|
-                if grp_ref[:ref]
-                  used_by[grp_ref[:ref]] << { name: type[:name],
-                                              kind: "complexType",
-                                              schema: schema_label }
-                end
-              end
-
-              # element references (type attribute)
-              (type[:elements] || []).each do |elem|
-                if elem[:type]
-                  # Extract base type name (without namespace prefix)
-                  type_name = elem[:type].split(":").last || elem[:type]
-                  used_by[type_name] << { name: type[:name],
-                                          kind: "complexType",
-                                          schema: schema_label }
-                end
               end
             end
 

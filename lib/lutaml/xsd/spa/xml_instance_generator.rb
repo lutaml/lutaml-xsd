@@ -441,7 +441,6 @@ module Lutaml
 
           # Display as a single combined sequence if we have elements
           if all_elements.any?
-            occurs = "[1..1]" # Extension sequences are typically required
             lines << "#{indent_str}Start Sequence"
 
             all_elements.each do |elem|
