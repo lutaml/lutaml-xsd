@@ -4,6 +4,7 @@ require_relative "configuration_loader"
 require_relative "schema_serializer"
 require_relative "strategies/vue_inlined_strategy"
 require_relative "strategies/vue_cdn_strategy"
+require_relative "strategies/rng_vue_inlined_strategy"
 
 module Lutaml
   module Xsd
@@ -35,7 +36,8 @@ module Lutaml
           @output_path = output_path
           @options = options
           @config_loader = ConfigurationLoader.new
-          @serializer = SchemaSerializer.new(package)
+          @pre_serialized_data = options.delete(:pre_serialized_data)
+          @serializer = package ? SchemaSerializer.new(package) : nil
         end
 
         # Generate SPA documentation
@@ -50,9 +52,14 @@ module Lutaml
           strategy_name = "#{mode.split('_').map(&:capitalize).join(' ')} Strategy"
           log "✓ Using #{strategy_name}"
 
-          # Serialize schema data
-          serialized_data = @serializer.serialize
-          log "✓ Serialized #{serialized_data[:schemas]&.size || 0} schema(s)"
+          # Use pre-serialized data if available (RNG mode), otherwise serialize via SchemaSerializer
+          serialized_data = if @pre_serialized_data
+                              @pre_serialized_data
+                            else
+                              @serializer.serialize
+                            end
+          count = serialized_data[:schemas]&.size || serialized_data[:grammars]&.size || 0
+          log "✓ Serialized #{count} schema(s)"
 
           # Generate output using strategy
           output_files = strategy.generate(serialized_data, nil)
@@ -68,6 +75,15 @@ module Lutaml
         # @return [OutputStrategy] Strategy instance
         def create_strategy
           mode = options[:mode] || "inlined"
+
+          # Use RNG-specific strategy for pre-serialized RNG data
+          if @pre_serialized_data && @pre_serialized_data[:grammars]
+            return Strategies::RngVueInlinedStrategy.new(
+              output_path,
+              @config_loader,
+              verbose: verbose?,
+            )
+          end
 
           case mode
           when "inlined"

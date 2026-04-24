@@ -1,0 +1,79 @@
+/* RNG Grammar SPA - Styles */
+
+:root {
+  /* Colors */
+  --color-primary: #5b9cd4;
+  --color-primary-light: #7db5e2;
+
+  /* Backgrounds */
+  --bg-primary: #FAFAF9;
+  --bg-elevated: #FFFFFF;
+  --bg-sidebar: #F5F5F4;
+  --bg-hover: rgba(28, 25, 23, 0.04);
+  --bg-active: rgba(91, 156, 212, 0.08);
+  --bg-badge: rgba(28, 25, 23, 0.06);
+
+  /* Text */
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-muted: #A8A29E;
+
+  /* Borders */
+  --border-color: #E7E5E4;
+  --border-light: #F0EFED;
+
+  /* Badge colors */
+  --badge-start: #26489e;
+  --badge-start-bg: rgba(38, 72, 158, 0.12);
+  --badge-ref: #5b9cd4;
+  --badge-ref-bg: rgba(91, 156, 212, 0.12);
+  --badge-element: #60c3a7;
+  --badge-element-bg: rgba(96, 195, 167, 0.15);
+  --badge-type: #dbab3e;
+  --badge-type-bg: rgba(219, 171, 62, 0.15);
+  --badge-include-bg: rgba(91, 156, 212, 0.12);
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}

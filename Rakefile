@@ -21,5 +21,15 @@ task :build_frontend do
   system("cd #{frontend_dir} && npm install && npm run build") || raise("Frontend build failed")
 end
 
-# Hook into bundler's release task to ensure frontend is built
-Rake::Task["release"].enhance(["build_frontend"])
+# Build the RNG frontend SPA (frontend-rng/dist/)
+desc "Build RNG frontend SPA assets"
+task :build_frontend_rng do
+  frontend_dir = File.join(__dir__, "frontend-rng")
+  File.join(frontend_dir, "dist")
+
+  puts "Building RNG frontend..."
+  system("cd #{frontend_dir} && npm install && npm run build") || raise("RNG frontend build failed")
+end
+
+# Hook into bundler's release task to ensure frontends are built
+Rake::Task["release"].enhance(["build_frontend", "build_frontend_rng"])

@@ -6,6 +6,8 @@ require_relative "spa/generator"
 require_relative "spa/html_document_builder"
 require_relative "spa/output_strategy"
 require_relative "spa/schema_serializer"
+require_relative "spa/rng_schema_serializer"
+require_relative "spa/strategies/rng_vue_inlined_strategy"
 require_relative "spa/spa_metadata"
 require_relative "spa/xml_instance_generator"
 

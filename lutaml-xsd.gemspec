@@ -35,6 +35,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "lutaml-model", "~> 0.8.0"
   spec.add_dependency "moxml"
   spec.add_dependency "paint", "~> 2.3"
+  spec.add_dependency "rng", "~> 0.3"
   spec.add_dependency "rubyzip", "~> 2.3"
   spec.add_dependency "table_tennis", "~> 0.0.7"
   spec.add_dependency "thor", "~> 1.0"

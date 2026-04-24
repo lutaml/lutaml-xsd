@@ -15,3 +15,5 @@ gem "rake"
 gem "rspec"
 gem "rubocop"
 gem "rubocop-performance"
+
+gem "rng", github: "lutaml/rng", branch: "fix-include-define"

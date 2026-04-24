@@ -5,6 +5,7 @@ require_relative "commands/pkg_command"
 require_relative "commands/xml_command"
 require_relative "commands/build_command"
 require_relative "commands/generate_spa_command"
+require_relative "commands/rng_spa_command"
 
 module Lutaml
   module Xsd
@@ -103,6 +104,36 @@ module Lutaml
              desc: "Documentation title"
       def spa(package_path)
         Commands::GenerateSpaCommand.new(package_path, options).run
+      end
+
+      desc "rng-spa CONFIG", "Generate interactive SPA documentation from RNG/RNC grammar files"
+      long_desc <<~DESC
+        Generate interactive HTML Single Page Application documentation from RNG/RNC grammar files.
+
+        Examples:
+          # Generate single-file documentation (works with file://)
+          lutaml-xsd rng-spa config.yml --output docs.html
+
+          # Generate documentation with separate asset files (requires HTTP server)
+          lutaml-xsd rng-spa config.yml --output docs.html --mode cdn
+      DESC
+      option :mode,
+             type: :string,
+             default: "inlined",
+             enum: %w[inlined cdn],
+             desc: "Output mode: inlined (single HTML file), cdn (separate assets alongside HTML)"
+      option :output,
+             type: :string,
+             required: true,
+             desc: "Output file path"
+      option :config,
+             type: :string,
+             desc: "Path to SPA configuration YAML file"
+      option :title,
+             type: :string,
+             desc: "Documentation title"
+      def rng_spa(config_path)
+        Commands::RngSpaCommand.new(config_path, options).run
       end
 
       desc "version", "Display lutaml-xsd version"
