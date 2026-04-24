@@ -47,6 +47,11 @@ allowing you to shape and structure your data into useful forms.
   - Schema detail views with elements/types/attributes tables
   - Hash-based navigation with browser back/forward support
   - Dark mode with automatic theme detection
+* <<rng-spa-documentation,RNG/RNC grammar documentation>> - Interactive HTML
+  documentation for RELAX NG schemas with model tree view
+  - Supports both `.rng` (XML) and `.rnc` (compact) syntax
+  - YAML configuration for listing grammar files
+  - Single-file mode for offline use
 * <<schema-validation,XSD schema validation>> with automatic version detection
   - Pre-parsing validation to ensure valid XSD schema documents
   - Automatic detection of XSD 1.0 vs 1.1 features
@@ -63,7 +68,8 @@ allowing you to shape and structure your data into useful forms.
   - `pkg` commands for package inspection
   - `xml` commands for XML validation
   - `build` commands for package creation
-  - `spa` command for documentation generation
+  - `spa` command for XSD documentation generation
+  - `rng-spa` command for RNG/RNC grammar documentation generation
 * <<lxr-packages,LXR (LutaML XSD Repository) packages>> for distributable,
   pre-indexed schema collections
 * <<parsing-xsd,XSD file parsing>> with full schema structure support
@@ -905,6 +911,54 @@ lutaml-xsd spa <package.lxr> --output docs.html
 # Generate with custom title
 lutaml-xsd spa <package.lxr> --output docs.html --title "My Docs"
 ----
+
+[[rng-spa-documentation]]
+=== RNG-SPA command (RNG/RNC grammar documentation)
+
+Generate interactive HTML documentation from RNG or RNC grammar files.
+
+[source,bash]
+----
+# Generate single-file documentation
+lutaml-xsd rng-spa config.yml --output docs.html
+
+# Generate with separate asset files (requires HTTP server)
+lutaml-xsd rng-spa config.yml --output docs.html --mode cdn
+
+# Generate with custom title
+lutaml-xsd rng-spa config.yml --output docs.html --title "My Grammar Docs"
+----
+
+==== Configuration file
+
+The RNG-SPA command takes a YAML configuration file listing the RNG/RNC files
+to document. File paths are resolved relative to the configuration file's
+location.
+
+[source,yaml]
+----
+# config.yml
+files:
+  - bsi.rng
+  - isostandard.rng
+  - jis.rnc
+----
+
+`files`:: Array of RNG or RNC file paths to include in the documentation
+(required). Both `.rng` (XML syntax) and `.rnc` (compact syntax) formats are
+supported.
+
+==== Frontend assets
+
+The RNG-SPA frontend (`frontend-rng/dist/`) is gitignored. When using from git
+(development), build the frontend before generating documentation:
+
+[source,bash]
+----
+bundle exec rake build_frontend_rng
+----
+
+When installed as a gem, assets are pre-built and bundled — no build required.
 
 === Table formatting
 
