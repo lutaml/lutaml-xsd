@@ -208,6 +208,7 @@ module Lutaml
       def clear_pending_plan_references(root, visited = Set.new)
         return unless root
         return if visited.include?(root.object_id)
+
         visited << root.object_id
 
         case root
@@ -223,8 +224,9 @@ module Lutaml
           root.instance_variables.each do |ivar|
             value = root.instance_variable_get(ivar)
             next if value.nil? || value.is_a?(Symbol) ||
-                    value.is_a?(Integer) || value.is_a?(Float) ||
-                    value.is_a?(TrueClass) || value.is_a?(FalseClass)
+              value.is_a?(Integer) || value.is_a?(Float) ||
+              value.is_a?(TrueClass) || value.is_a?(FalseClass)
+
             clear_pending_plan_references(value, visited)
           end
         end
