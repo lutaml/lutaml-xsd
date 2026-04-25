@@ -64,10 +64,12 @@ module Lutaml
       def serialize_schema(schema, format)
         case format
         when :marshal
-          # Clear lazy XML element reference that holds non-serializable
-          # adapter nodes introduced by lutaml-model's :lazy
-          # import_declaration_plan mode.
-          schema.pending_plan_root_element = nil if schema.respond_to?(:pending_plan_root_element=)
+          # Clear lazy XML element references that hold non-serializable
+          # adapter nodes throughout the object graph.
+          # lutaml-model's :lazy import_declaration_plan mode stores
+          # XmlElement references (containing Nokogiri nodes) on every
+          # model instance during deserialization.
+          clear_pending_plan_references(schema)
           Marshal.dump(schema)
         when :json
           schema.to_json
@@ -196,6 +198,37 @@ module Lutaml
       end
 
       private
+
+      # Recursively walk an object graph and clear pending_plan_root_element
+      # on every Lutaml::Model::Serializable instance. This removes Nokogiri
+      # adapter_node references that prevent Marshal.dump from succeeding.
+      #
+      # @param root [Object] Root of the object graph to walk
+      # @param visited [Set] Track visited object IDs to prevent infinite loops
+      def clear_pending_plan_references(root, visited = Set.new)
+        return unless root
+        return if visited.include?(root.object_id)
+        visited << root.object_id
+
+        case root
+        when Array
+          root.each { |item| clear_pending_plan_references(item, visited) }
+        when Hash
+          root.each_value { |v| clear_pending_plan_references(v, visited) }
+        else
+          if root.respond_to?(:pending_plan_root_element=)
+            root.pending_plan_root_element = nil
+          end
+
+          root.instance_variables.each do |ivar|
+            value = root.instance_variable_get(ivar)
+            next if value.nil? || value.is_a?(Symbol) ||
+                    value.is_a?(Integer) || value.is_a?(Float) ||
+                    value.is_a?(TrueClass) || value.is_a?(FalseClass)
+            clear_pending_plan_references(value, visited)
+          end
+        end
+      end
 
       # Build metadata with package configuration
       # @param repository [SchemaRepository] Repository to package
