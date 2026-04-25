@@ -29,11 +29,11 @@ module Lutaml
         # Initialize a new XmlNavigator
         #
         # @param xml_content [String] The XML content to parse
-        # @param adapter [Symbol] The Moxml adapter to use (:nokogiri, :ox, :oga)
+        # @param adapter [Symbol] The Moxml adapter to use (defaults to Moxml default)
         #
         # @raise [ArgumentError] if xml_content is nil or empty
         # @raise [Moxml::ParseError] if XML parsing fails
-        def initialize(xml_content, adapter: :nokogiri)
+        def initialize(xml_content, adapter: nil)
           raise ArgumentError, "XML content cannot be nil" if xml_content.nil?
 
           if xml_content.empty?
@@ -173,7 +173,7 @@ module Lutaml
         # @return [Moxml::Document]
         # @raise [Moxml::ParseError] if parsing fails
         def parse_xml(content, adapter)
-          context = Moxml::Context.new(adapter)
+          context = adapter ? Moxml::Context.new(adapter) : Moxml::Context.new
           builder = Moxml::DocumentBuilder.new(context)
           builder.build(content)
         rescue StandardError => e

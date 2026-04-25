@@ -11,7 +11,10 @@ module Lutaml
           # @param attr [Attribute] Attribute object
           # @return [String, nil] Formatted enumeration default string
           def extract_enumeration_default(attr)
-            return [nil, nil] unless attr.respond_to?(:simple_type) && attr.simple_type
+            unless attr.respond_to?(:simple_type) && attr.simple_type
+              return [nil,
+                      nil]
+            end
 
             st = attr.simple_type
             if st.respond_to?(:restriction) && st.restriction

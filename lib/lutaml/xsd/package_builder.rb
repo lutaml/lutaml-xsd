@@ -64,6 +64,10 @@ module Lutaml
       def serialize_schema(schema, format)
         case format
         when :marshal
+          # Clear lazy XML element reference that holds non-serializable
+          # adapter nodes introduced by lutaml-model's :lazy
+          # import_declaration_plan mode.
+          schema.pending_plan_root_element = nil if schema.respond_to?(:pending_plan_root_element=)
           Marshal.dump(schema)
         when :json
           schema.to_json

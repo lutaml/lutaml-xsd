@@ -1,11 +1,12 @@
 #!/usr/bin/env ruby
 
-require "nokogiri"
+require "moxml"
 require "yaml"
 
 # Parse both XSD files
-urban_function_doc = Nokogiri::XML(File.read("schemas/urbanFunction.xsd"))
-urban_object_doc = Nokogiri::XML(File.read("schemas/urbanObject.xsd"))
+ctx = Moxml::Context.new
+urban_function_doc = ctx.parse(File.read("schemas/urbanFunction.xsd"))
+urban_object_doc = ctx.parse(File.read("schemas/urbanObject.xsd"))
 
 # Define namespaces
 namespaces = {

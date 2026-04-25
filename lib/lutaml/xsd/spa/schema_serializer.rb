@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "moxml"
 require "tmpdir"
 require "fileutils"
 require_relative "xml_instance_generator"
@@ -184,7 +185,8 @@ module Lutaml
           # Detect standard XML Schema namespace using parsed URI components
           begin
             uri = URI(ns)
-            if uri&.host && %w[w3.org www.w3.org].include?(uri.host) && uri.path&.include?("XMLSchema")
+            if uri&.host && %w[w3.org
+                               www.w3.org].include?(uri.host) && uri.path&.include?("XMLSchema")
               return "xs"
             end
           rescue URI::InvalidURIError
@@ -230,12 +232,12 @@ module Lutaml
           return nil unless schema
 
           schema_source = if file_path
-            begin
-              File.read(file_path)
-            rescue StandardError
-              nil
-            end
-          end
+                            begin
+                              File.read(file_path)
+                            rescue StandardError
+                              nil
+                            end
+                          end
 
           prefix = namespace_prefix_lookup[schema.target_namespace] || derive_prefix(
             schema.target_namespace, schema
@@ -248,14 +250,17 @@ module Lutaml
             file_path: clean_file_path(file_path),
             is_entrypoint: is_entrypoint?(file_path),
             elements: serialize_elements(
-              schema, prefix, schema_source, file_path),
+              schema, prefix, schema_source, file_path
+            ),
             complex_types: serialize_complex_types(
-              schema, prefix, schema_source, file_path),
+              schema, prefix, schema_source, file_path
+            ),
             simple_types: serialize_simple_types(schema, prefix),
             attributes: serialize_attributes(schema, prefix),
             groups: serialize_groups(schema, prefix),
             attribute_groups: serialize_attribute_groups(
-              schema, prefix, schema_source),
+              schema, prefix, schema_source
+            ),
             imports: serialize_imports(schema),
             includes: serialize_includes(schema),
           }
@@ -314,7 +319,8 @@ module Lutaml
             documentation: extract_documentation(element),
             instance_xml: generate_instance_xml(element),
             source: extract_source_by_type_key_value(
-              "element", "name", element.name, prefix, schema_source),
+              "element", "name", element.name, prefix, schema_source
+            ),
           }
 
           # Enriched fields
@@ -343,7 +349,8 @@ module Lutaml
           end
 
           # Add SVG diagram
-          element_data[:diagram_svg] = generate_diagram(element_data, :element, file_path)
+          element_data[:diagram_svg] =
+            generate_diagram(element_data, :element, file_path)
 
           element_data
         end
@@ -387,13 +394,15 @@ module Lutaml
         # @param prefix [String, nil] Optional prefix for IDs
         # @param schema_source [String, nil] Optional schema source for context
         # @return [Array<Hash>] Serialized complex types (sorted alphabetically by name)
-        def serialize_complex_types(schema, prefix = nil, schema_source = nil, file_path = nil)
+        def serialize_complex_types(schema, prefix = nil, schema_source = nil,
+file_path = nil)
           return [] unless schema.respond_to?(:complex_types) || schema.respond_to?(:complex_type)
 
           types = schema.respond_to?(:complex_types) ? schema.complex_types : schema.complex_type
           types.map.with_index do |type, index|
             serialize_complex_type(
-              type, index, prefix, schema_source, file_path)
+              type, index, prefix, schema_source, file_path
+            )
           end.sort_by { |t| t[:name] || "" }
         end
 
@@ -402,7 +411,8 @@ module Lutaml
         # @param type [ComplexType] Complex type object
         # @param index [Integer] Type index
         # @return [Hash] Serialized complex type
-        def serialize_complex_type(type, index, prefix = nil, schema_source = nil, file_path = nil)
+        def serialize_complex_type(type, index, prefix = nil,
+schema_source = nil, file_path = nil)
           content_model = extract_content_model(type)
           type_data = {
             id: complex_type_id(index, type, prefix),
@@ -418,15 +428,20 @@ module Lutaml
             documentation: extract_documentation(type),
             instance_xml: generate_instance_xml(type),
             source: extract_source_by_type_key_value(
-                "complexType", "name", type.name, prefix, schema_source),
+              "complexType", "name", type.name, prefix, schema_source
+            ),
           }
 
           # Collect attributes from inside extension for simpleContent/complexContent
           extension_attrs = collect_extension_attributes(type)
-          type_data[:extension_attributes] = extension_attrs unless extension_attrs.empty?
+          unless extension_attrs.empty?
+            type_data[:extension_attributes] =
+              extension_attrs
+          end
 
           # Add SVG diagram
-          type_data[:diagram_svg] = generate_diagram(type_data, :type, file_path)
+          type_data[:diagram_svg] =
+            generate_diagram(type_data, :type, file_path)
 
           type_data
         end
@@ -601,7 +616,8 @@ module Lutaml
         # @param prefix [String, nil] Optional prefix for IDs
         # @param schema_source [String, nil] Optional schema source for context
         # @return [Array<Hash>] Serialized attribute groups (sorted alphabetically by name)
-        def serialize_attribute_groups(schema, prefix = nil, schema_source = nil)
+        def serialize_attribute_groups(schema, prefix = nil,
+schema_source = nil)
           groups = if schema.respond_to?(:attribute_groups)
                      schema.attribute_groups
                    elsif schema.respond_to?(:attribute_group)
@@ -619,7 +635,8 @@ module Lutaml
               attributes: serialize_ag_attributes(ag),
               documentation: extract_documentation(ag),
               source: extract_source_by_type_key_value(
-                "attributeGroup", "name", ag.name, prefix, schema_source),
+                "attributeGroup", "name", ag.name, prefix, schema_source
+              ),
               instance_xml: generate_instance_xml(ag),
             }
           end.sort_by { |ag| ag[:name] || "" }
@@ -627,12 +644,13 @@ module Lutaml
 
         # Extract source information for an attribute group
         # from the schema
-        def extract_source_by_type_key_value(type, key, value, prefix = nil, source = nil)
+        def extract_source_by_type_key_value(type, key, value, prefix = nil,
+source = nil)
           return nil unless source && value
 
           # parse the schema source and find the attribute group by name
           begin
-            doc = Nokogiri::XML(source, &:noblanks)
+            doc = Moxml::Context.new.parse(source)
             xpath = if prefix
                       "//#{prefix}:#{type}[@#{key}='#{value}']"
                     else
@@ -941,8 +959,8 @@ module Lutaml
                 element_name = elem[:name] || elem[:ref]
                 if element_name
                   used_by[element_name] << { name: type[:name],
-                                            kind: "complexType",
-                                            schema: schema_label }
+                                             kind: "complexType",
+                                             schema: schema_label }
                 end
                 if elem[:type]
                   type_name = elem[:type].split(":").last || elem[:type]
@@ -988,7 +1006,7 @@ module Lutaml
               if elem[:type]
                 type_name = elem[:type].split(":").last || elem[:type]
                 used_by[type_name] << { name: elem[:name], kind: "element",
-                                       schema: schema_label }
+                                        schema: schema_label }
               end
             end
           end

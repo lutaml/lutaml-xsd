@@ -702,18 +702,19 @@ end
 [source,ruby]
 ----
 require 'lutaml/xsd'
-require 'nokogiri'
+require 'moxml'
 require 'yaml'
 
 def extract_imports_and_includes(xsd_file)
-  doc = Nokogiri::XML(File.read(xsd_file))
+  ctx = Moxml::Context.new
+  doc = ctx.parse(File.read(xsd_file))
 
   imports = doc.xpath('//xs:import/@schemaLocation',
                       'xs' => 'http://www.w3.org/2001/XMLSchema')
   includes = doc.xpath('//xs:include/@schemaLocation',
                        'xs' => 'http://www.w3.org/2001/XMLSchema')
 
-  (imports + includes).map(&:value).uniq
+  (imports + includes).map { |attr| attr.is_a?(Moxml::Attribute) ? attr.value : attr.text }.uniq
 end
 
 def suggest_mapping(schema_location)

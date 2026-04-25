@@ -457,7 +457,7 @@ Note: `marshal` format packages may not be compatible across different Ruby majo
 
 Yes! Lutaml::XSD is complementary to other XML tools:
 
-* **Nokogiri**: Use for XML parsing/validation
+* **Moxml**: Unified XML adapter layer
 * **REXML**: Use for lightweight XML processing
 * **Ox**: Use for fast XML parsing
 

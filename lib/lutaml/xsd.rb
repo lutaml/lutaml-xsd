@@ -3,9 +3,6 @@
 require "lutaml/model"
 require "lutaml/xml/schema/xsd"
 
-adapter = RUBY_ENGINE == "opal" ? :oga : :nokogiri
-Lutaml::Model::Config.xml_adapter_type = adapter
-
 module Lutaml
   module Xsd
     # Error class for lutaml-xsd specific errors
