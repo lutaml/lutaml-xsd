@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "nokogiri"
+require "moxml"
 
 module Lutaml
   module Xsd
@@ -183,7 +183,7 @@ module Lutaml
         return nil unless File.exist?(schema_file)
 
         content = File.read(schema_file)
-        doc = Nokogiri::XML(content)
+        doc = Moxml::Context.new.parse(content)
 
         # Find the definition node
         definition_node = find_definition_node(doc, name, type)
@@ -204,10 +204,10 @@ module Lutaml
       end
 
       # Find definition node in XML document
-      # @param node [Nokogiri::XML::Node] XML node to search
+      # @param node [Moxml::Document] XML document to search
       # @param name [String] Name to find
       # @param type [String] Type of definition
-      # @return [Nokogiri::XML::Element, nil] Found node or nil
+      # @return [Moxml::Element, nil] Found node or nil
       def find_definition_node(node, name, type)
         # Use XPath to find the definition
         xpath = case type.downcase
@@ -227,11 +227,10 @@ module Lutaml
       end
 
       # Extract XML from node as string
-      # @param node [Nokogiri::XML::Element] XML node
+      # @param node [Moxml::Element] XML node
       # @return [String] XML string
       def extract_node_xml(node)
-        # Use Nokogiri to serialize the node
-        node.to_xml(indent: 2)
+        node.to_xml
       rescue StandardError
         "<Could not extract XSD source>"
       end

@@ -603,12 +603,11 @@ Validate schema content after fetching:
 ====
 [source,ruby]
 ----
-require 'nokogiri'
+require 'moxml'
 
 def validate_schema_content(content)
-  doc = Nokogiri::XML(content) do |config|
-    config.strict.nonet # Disable network access during XML parsing
-  end
+  ctx = Moxml::Context.new
+  doc = ctx.parse(content)
 
   # Validate it's actually an XSD schema
   unless doc.root&.name == 'schema' &&
@@ -617,12 +616,12 @@ def validate_schema_content(content)
   end
 
   # Check for suspicious patterns
-  if doc.to_s.match?(/<!ENTITY|<!DOCTYPE/)
+  if doc.to_xml.match?(/<!ENTITY|<!DOCTYPE/)
     raise SecurityError, "Schema contains potentially dangerous XML entities"
   end
 
   content
-rescue Nokogiri::XML::SyntaxError => e
+rescue StandardError => e
   raise SecurityError, "Schema failed XML validation: #{e.message}"
 end
 ----

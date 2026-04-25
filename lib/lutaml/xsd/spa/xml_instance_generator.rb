@@ -39,7 +39,7 @@ module Lutaml
         private
 
         # Generate element instance with attributes and content
-        def generate_element_instance(element, indent: 1)          
+        def generate_element_instance(element, indent: 1)
           element_type = find_type(element.type)
           generate_type_instance(
             element_type, tag_name: element.name, indent: indent
