@@ -4,6 +4,9 @@ require "json"
 require "moxml"
 require "tmpdir"
 require "fileutils"
+require "tempfile"
+require "nokogiri"
+require "xsdvi"
 require_relative "xml_instance_generator"
 require_relative "utils/extract_enumeration"
 
@@ -355,22 +358,47 @@ module Lutaml
           element_data
         end
 
-        def gen_element_diagram(name, file_path)
+        def gen_element_diagram(name, file_path, component_type = :element)
           if !file_path || !File.exist?(file_path)
             warn "xsdvi: XSD file '#{file_path}' not found" if config[:verbose]
             return nil
           end
 
+          actual_file_path = file_path
+          wrapper_name = name
+
+          if component_type == :type
+            # For types, create a temporary XSD with a synthetic wrapper element
+            # so xsdvi can treat the type as a root element
+            actual_file_path = create_type_wrapper_xsd(name, file_path)
+            wrapper_name = "_diagram_root_#{name}"
+          end
+
           output_folder = Dir.mktmpdir("xsdvi-")
-
-          # generate diagram using xsdvi command line tool
-          `bundle exec xsdvi generate #{file_path} -r #{name} -o -p #{output_folder}`
-
           svg_file = File.join(output_folder, "#{name}.svg")
-          unless File.exist?(svg_file)
+
+          # Use xsdvi Ruby API directly instead of CLI
+          builder = Xsdvi::Tree::Builder.new
+          xsd_handler = Xsdvi::XsdHandler.new(builder)
+          writer_helper = Xsdvi::Utils::Writer.new
+          svg_generator = Xsdvi::SVG::Generator.new(writer_helper)
+
+          svg_generator.hide_menu_buttons = true
+          svg_generator.embody_style = true
+
+          xsd_handler.root_node_name = wrapper_name
+          xsd_handler.one_node_only = true
+          xsd_handler.process_file(actual_file_path)
+
+          unless builder.root
             warn "xsdvi: SVG not generated for '#{name}'" if config[:verbose]
             return nil
           end
+
+          writer_helper.new_writer(svg_file)
+          svg_generator.draw(builder.root)
+
+          return nil unless File.exist?(svg_file)
 
           # read generated SVG content
           svg_content = File.read(svg_file)
@@ -384,8 +412,84 @@ module Lutaml
             .gsub(/<a[^>]*>(.*?)<\/a>/im, '\1') # Remove links but keep content
 
           svg_content
+        rescue StandardError => e
+          warn "xsdvi: Failed to generate diagram for '#{name}': #{e.message}" if config[:verbose]
+          nil
         ensure
           FileUtils.rm_rf(output_folder) if output_folder
+          if component_type == :type && actual_file_path && actual_file_path != file_path
+            FileUtils.rm_f(actual_file_path)
+          end
+        end
+
+        # Create a temporary XSD file that wraps a complexType/simpleType
+        # in a synthetic root element, so xsdvi can generate a diagram for it.
+        #
+        # @param type_name [String] The type name
+        # @param original_file_path [String] Path to the original XSD file
+        # @return [String] Path to the temporary XSD file
+        def create_type_wrapper_xsd(type_name, original_file_path)
+          doc = Nokogiri::XML(File.read(original_file_path))
+          ns = { "xs" => "http://www.w3.org/2001/XMLSchema" }
+          schema = doc.at_xpath("//xs:schema", ns)
+
+          unless schema
+            warn "xsdvi: No xs:schema found in '#{original_file_path}'" if config[:verbose]
+            return original_file_path
+          end
+
+          wrapper_name = "_diagram_root_#{type_name}"
+
+          # Check if this type might need a namespace prefix
+          # Look for how the type is referenced in the original schema
+          type_ref = resolve_type_prefix(type_name, doc, ns)
+
+          # Create element with proper XSD namespace from the schema
+          xsd_ns = "http://www.w3.org/2001/XMLSchema"
+          xsd_ns_decl = schema.namespace_definitions.find do |nd|
+            nd.href == xsd_ns
+          end
+
+          element_node = doc.create_element("element")
+          element_node.namespace = xsd_ns_decl
+          element_node["name"] = wrapper_name
+          element_node["type"] = type_ref
+
+          schema.add_child(element_node)
+
+          tmp = Tempfile.new(["xsdvi-wrapper-", ".xsd"])
+          tmp.write(doc.to_xml)
+          tmp.close
+          tmp.path
+        end
+
+        # Determine the correct type reference prefix for a type in the schema.
+        # If the type is defined in the targetNamespace, use the same prefix
+        # that the schema uses internally for its targetNamespace.
+        #
+        # @param type_name [String] The type name
+        # @param doc [Nokogiri::Document] The parsed XSD document
+        # @param ns [Hash] Namespace mapping
+        # @return [String] The type reference string (possibly prefixed)
+        def resolve_type_prefix(type_name, doc, ns)
+          schema = doc.at_xpath("//xs:schema", ns)
+          target_ns = schema["targetNamespace"]
+
+          # Check if the type is defined in this schema's targetNamespace
+          type_in_schema = doc.xpath("//xs:complexType[@name='#{type_name}']",
+                                     ns).any? ||
+            doc.xpath("//xs:simpleType[@name='#{type_name}']",
+                      ns).any?
+
+          return type_name unless type_in_schema && target_ns
+
+          # Find what prefix maps to the targetNamespace
+          ns_decls = schema.namespace_definitions
+          tns_prefix = ns_decls.find do |nd|
+            nd.href == target_ns && nd.prefix
+          end
+
+          tns_prefix ? "#{tns_prefix.prefix}:#{type_name}" : type_name
         end
 
         # Serialize complex types from schema
@@ -1459,17 +1563,17 @@ source = nil)
           schema
         end
 
-        # Generate SVG diagram for a component using xsdvi CLI
+        # Generate SVG diagram for a component using xsdvi Ruby API
         #
         # @param component_data [Hash] Serialized component data
         # @param component_type [Symbol] Component type (:element or :type)
         # @param file_path [String, nil] XSD file path for xsdvi
         # @return [String, nil] SVG diagram markup
-        def generate_diagram(component_data, _component_type, file_path = nil)
+        def generate_diagram(component_data, component_type, file_path = nil)
           name = component_data[:name] || component_data["name"]
           return nil unless name && file_path
 
-          gen_element_diagram(name, file_path)
+          gen_element_diagram(name, file_path, component_type)
         rescue StandardError => e
           warn "Warning: Failed to generate SVG diagram: #{e.message}" if ENV["DEBUG"]
           nil
