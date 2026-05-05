@@ -1,0 +1,97 @@
+<schema xmlns="http://www.w3.org/2001/XMLSchema">
+  <group name="bdate">
+    <sequence>
+      <element name="date">
+        <complexType mixed="false">
+          <sequence>
+            <choice>
+              <sequence>
+                <element name="from">
+                  <complexType mixed="false">
+                    <sequence>
+                      <group ref="ISO8601Date"/>
+                    </sequence>
+                  </complexType>
+                </element>
+                <element name="to" minOccurs="0" maxOccurs="1">
+                  <complexType mixed="false">
+                    <sequence>
+                      <group ref="ISO8601Date"/>
+                    </sequence>
+                  </complexType>
+                </element>
+              </sequence>
+              <element name="on">
+                <complexType mixed="false">
+                  <sequence>
+                    <group ref="ISO8601Date"/>
+                  </sequence>
+                </complexType>
+              </element>
+            </choice>
+          </sequence>
+          <attribute use="optional" name="type"/>
+        </complexType>
+      </element>
+    </sequence>
+  </group>
+  <group name="structuredidentifier">
+    <sequence>
+      <element name="structuredidentifier">
+        <complexType mixed="false">
+          <sequence>
+            <sequence>
+              <group ref="documentnumber"/>
+              <group ref="tc-documentnumber"/>
+            </sequence>
+          </sequence>
+        </complexType>
+      </element>
+    </sequence>
+  </group>
+  <group name="Clause-Section">
+    <sequence>
+      <sequence>
+        <choice>
+          <sequence>
+            <choice>
+              <sequence>
+                <group ref="BasicBlock"/>
+              </sequence>
+              <group ref="amend"/>
+            </choice>
+          </sequence>
+          <sequence minOccurs="1" maxOccurs="unbounded">
+            <choice>
+              <group ref="clause-subsection"/>
+              <group ref="floating-title"/>
+            </choice>
+          </sequence>
+        </choice>
+      </sequence>
+      <group ref="Section-Attributes"/>
+      <group ref="section-title"/>
+    </sequence>
+  </group>
+  <group name="floating-section-title">
+    <sequence>
+      <element name="section-title">
+        <complexType mixed="false">
+          <sequence>
+            <group ref="TextElement"/>
+          </sequence>
+          <attribute use="optional" name="id"/>
+          <attribute use="optional" name="depth"/>
+        </complexType>
+      </element>
+    </sequence>
+  </group>
+  <group name="AdmonitionAttributes">
+    <sequence/>
+  </group>
+  <simpleType name="AdmonitionType">
+    <restriction base="xs:string">
+      <enumeration value="commentary"/>
+    </restriction>
+  </simpleType>
+</schema>

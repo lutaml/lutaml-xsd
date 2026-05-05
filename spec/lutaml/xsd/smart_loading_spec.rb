@@ -134,7 +134,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository, "smart loading" do
           described_class.from_file(unsupported_file)
         end.to raise_error(
           Lutaml::Xsd::ConfigurationError,
-          /Unsupported file type.*Expected \.xsd, \.lxr, \.yml, or \.yaml/,
+          /Unsupported file type.*Expected \.xsd, \.rng, \.rnc, \.lxr, \.yml, or \.yaml/,
         )
       end
     end

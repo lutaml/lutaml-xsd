@@ -1,0 +1,72 @@
+<schema xmlns="http://www.w3.org/2001/XMLSchema">
+  <group name="bdate">
+    <sequence>
+      <element name="date">
+        <complexType mixed="false">
+          <sequence>
+            <choice>
+              <sequence>
+                <element name="from">
+                  <complexType mixed="false">
+                    <sequence>
+                      <group ref="ISO8601Date"/>
+                    </sequence>
+                  </complexType>
+                </element>
+                <element name="to" minOccurs="0" maxOccurs="1">
+                  <complexType mixed="false">
+                    <sequence>
+                      <group ref="ISO8601Date"/>
+                    </sequence>
+                  </complexType>
+                </element>
+              </sequence>
+              <element name="on">
+                <complexType mixed="false">
+                  <sequence>
+                    <group ref="ISO8601Date"/>
+                  </sequence>
+                </complexType>
+              </element>
+            </choice>
+          </sequence>
+          <attribute use="optional" name="type"/>
+        </complexType>
+      </element>
+    </sequence>
+  </group>
+  <group name="structuredidentifier">
+    <sequence>
+      <element name="structuredidentifier">
+        <complexType mixed="false">
+          <sequence>
+            <sequence>
+              <group ref="documentnumber"/>
+              <group ref="tc-documentnumber"/>
+            </sequence>
+          </sequence>
+        </complexType>
+      </element>
+    </sequence>
+  </group>
+  <group name="term">
+    <sequence>
+      <element name="term">
+        <complexType mixed="false">
+          <sequence>
+            <group ref="TermAttributes"/>
+            <group ref="preferred"/>
+            <group ref="admitted"/>
+            <group ref="deprecates"/>
+            <group ref="termdomain"/>
+            <group ref="termdefinition"/>
+            <group ref="termnote"/>
+            <group ref="termexample"/>
+            <group ref="termsource"/>
+            <group ref="term"/>
+          </sequence>
+        </complexType>
+      </element>
+    </sequence>
+  </group>
+</schema>

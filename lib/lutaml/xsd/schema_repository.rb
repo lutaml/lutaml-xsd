@@ -773,6 +773,11 @@ module Lutaml
           repo.instance_variable_set(:@files, [File.expand_path(path)])
           repo.parse.resolve
           repo
+        when ".rng", ".rnc"
+          repo = new
+          repo.instance_variable_set(:@files, [File.expand_path(path)])
+          repo.parse.resolve
+          repo
         when ".yml", ".yaml"
           repo = from_yaml_file(path)
           # Parse and resolve if needed
@@ -780,7 +785,7 @@ module Lutaml
           repo
         else
           raise ConfigurationError,
-                "Unsupported file type: #{path}. Expected .xsd, .lxr, .yml, or .yaml"
+                "Unsupported file type: #{path}. Expected .xsd, .rng, .rnc, .lxr, .yml, or .yaml"
         end
       end
 
@@ -1021,12 +1026,12 @@ module Lutaml
         return if @parsed_schemas.key?(file_path)
         return unless File.exist?(file_path)
 
-        xsd_content = File.read(file_path)
-        parsed_schema = Lutaml::Xml::Schema::Xsd.parse(
-          xsd_content,
-          location: File.dirname(file_path),
-          schema_mappings: glob_mappings,
-        )
+        ext = File.extname(file_path).downcase
+        parsed_schema = if %w[.rng .rnc].include?(ext)
+                          parse_rng_schema(file_path)
+                        else
+                          parse_xsd_schema(file_path, glob_mappings)
+                        end
 
         @parsed_schemas[file_path] = parsed_schema
 
@@ -1038,6 +1043,81 @@ module Lutaml
         # Parse errors are expected for schemas with unresolvable imports
         # The schema still gets added to Schema.processed_schemas by Lutaml::Xml::Schema::Xsd.parse
         # even if import resolution fails, so local types may still be indexed
+      end
+
+      # Parse an XSD schema file
+      # @param file_path [String] Path to XSD file
+      # @param glob_mappings [Array<Hash>] Schema location mappings
+      # @return [Lutaml::Xml::Schema::Xsd::Schema]
+      def parse_xsd_schema(file_path, glob_mappings)
+        xsd_content = File.read(file_path)
+        Lutaml::Xml::Schema::Xsd.parse(
+          xsd_content,
+          location: File.dirname(file_path),
+          schema_mappings: glob_mappings,
+        )
+      end
+
+      # Parse an RNG or RNC schema file and convert to XSD.
+      # Generates a temporary .xsd file from the converted schema so that
+      # the bundler can package it in the expected XSD format.
+      # @param file_path [String] Path to .rng or .rnc file
+      # @return [Lutaml::Xml::Schema::Xsd::Schema]
+      def parse_rng_schema(file_path)
+        require "rng"
+
+        grammar = if file_path.downcase.end_with?(".rnc")
+                    Rng.parse_file(file_path)
+                  else
+                    rng_content = File.read(file_path)
+                    Rng.parse(rng_content,
+                              location: File.dirname(file_path),
+                              resolve_external: true)
+                  end
+
+        schema = RngToXsdConverter.new(grammar, file_path: file_path).convert
+
+        # Generate a temporary .xsd file from the converted schema
+        xsd_content = schema.to_formatted_xml
+        xsd_path = file_path.sub(/\.(rng|rnc)$/i, ".xsd")
+
+        # Write to a temp file if the .xsd path would overwrite an existing file,
+        # or if we can't write to the original directory
+        begin
+          File.write(xsd_path, xsd_content)
+        rescue StandardError
+          # Fall back to a temp directory
+          require "tmpdir"
+          xsd_path = File.join(Dir.tmpdir, "lutaml_xsd_#{File.basename(file_path, '.*')}.xsd")
+          File.write(xsd_path, xsd_content)
+        end
+
+        # Update file references to point to the generated .xsd
+        update_rng_file_references(file_path, xsd_path)
+
+        schema
+      end
+
+      # Update internal references from an RNG/RNC path to the generated XSD path
+      # @param old_path [String] Original .rng/.rnc file path
+      # @param new_path [String] Generated .xsd file path
+      def update_rng_file_references(old_path, new_path)
+        # Update @files array
+        if @files
+          idx = @files.index(old_path)
+          @files[idx] = new_path if idx
+        end
+
+        # Update @parsed_schemas hash
+        if @parsed_schemas.key?(old_path)
+          @parsed_schemas[new_path] = @parsed_schemas.delete(old_path)
+        end
+
+        # Update global cache
+        cached = Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
+        if cached.key?(old_path)
+          cached[new_path] = cached.delete(old_path)
+        end
       end
 
       # Check for circular imports (simplified check)
