@@ -572,11 +572,62 @@ module Lutaml
         # @return [Array<Hash>] Serialized complex types (sorted alphabetically by name)
         def serialize_complex_types(schema, prefix = nil, schema_source = nil,
 file_path = nil)
-          schema.complex_types.map.with_index do |type, index|
+          return [] unless schema.respond_to?(:complex_types) || schema.respond_to?(:complex_type)
+
+          types = schema.respond_to?(:complex_types) ? schema.complex_types : schema.complex_type
+          serialized = types.map.with_index do |type, index|
             serialize_complex_type(
               type, index, prefix, schema_source, file_path
             )
-          end.sort_by { |t| t[:name] || "" }
+          end
+
+          # Also serialize inline/anonymous complex types from elements
+          serialized.concat(serialize_inline_complex_types(schema, prefix, schema_source, file_path))
+
+          serialized.sort_by { |t| t[:name] || "" }
+        end
+
+        # Serialize inline/anonymous complex types defined within elements
+        #
+        # @param schema [Schema] Schema object
+        # @param prefix [String, nil] Optional prefix for IDs
+        # @param schema_source [String, nil] Optional schema source for context
+        # @param file_path [String, nil] Optional file path for diagram generation
+        # @return [Array<Hash>] Serialized inline complex types
+        def serialize_inline_complex_types(schema, prefix = nil, schema_source = nil, file_path = nil)
+          return [] unless schema.respond_to?(:element) && schema.element
+
+          elements = schema.element.is_a?(Array) ? schema.element : [schema.element]
+          inline_types = []
+
+          elements.compact.each do |element|
+            next unless element.respond_to?(:complex_type) && element.complex_type
+            next if element.complex_type.name # Skip if already named (top-level)
+
+            # Generate a synthetic name for the inline type
+            inline_name = "#{element.name}_type"
+
+            inline_types << {
+              id: "type-#{prefix}-#{slugify(inline_name)}",
+              name: inline_name,
+              base: nil,
+              content_model: extract_content_model(element.complex_type),
+              abstract: element.complex_type.respond_to?(:abstract) ? element.complex_type.abstract : false,
+              mixed: element.complex_type.respond_to?(:mixed) ? element.complex_type.mixed : false,
+              attributes: serialize_type_attributes(element.complex_type),
+              elements: serialize_type_elements(element.complex_type),
+              groups: serialize_type_group_refs(element.complex_type),
+              attribute_groups: serialize_type_attr_groups(element.complex_type),
+              documentation: extract_documentation(element.complex_type),
+              instance_xml: nil,
+              source: nil,
+              diagram_svg: nil,
+              inline_of_element: element.name,
+              used_by: [],
+            }
+          end
+
+          inline_types
         end
 
         # Serialize single complex type

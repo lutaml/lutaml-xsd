@@ -48,9 +48,41 @@ module Lutaml
           # Index top-level attributes
           index_collection(schema.attribute, namespace, file_path, :attribute)
 
+          # Index inline/anonymous complex types from elements
+          index_inline_complex_types(schema, namespace, file_path)
+
           # NOTE: imported and included schemas are already parsed and available
           # in the processed_schemas cache. We'll index them when build_from_schemas
           # iterates over all schemas in the cache.
+        end
+
+        # Index inline/anonymous complex types defined within elements
+        # @param schema [Schema] The schema to index
+        # @param namespace [String] The namespace URI
+        # @param file_path [String] Path to the schema file
+        def index_inline_complex_types(schema, namespace, file_path)
+          return unless schema.respond_to?(:element) && schema.element
+
+          elements = schema.element.is_a?(Array) ? schema.element : [schema.element]
+          elements.compact.each do |element|
+            next unless element.respond_to?(:complex_type) && element.complex_type
+
+            inline_ct = element.complex_type
+            # Only index if it doesn't already have a name (truly anonymous)
+            next if inline_ct.name
+
+            # Generate a synthetic name based on the element name
+            inline_name = "#{element.name}_type"
+            clark_key = build_clark_key(namespace, inline_name)
+            @index[clark_key] = {
+              type: :complex_type,
+              definition: inline_ct,
+              namespace: namespace,
+              schema_file: file_path,
+              inline_of_element: element.name,
+            }
+            @schema_files[file_path] ||= true
+          end
         end
 
         # Find a type by Clark notation key
