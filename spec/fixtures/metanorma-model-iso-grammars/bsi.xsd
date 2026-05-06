@@ -1,20 +1,20 @@
-<schema xmlns="http://www.w3.org/2001/XMLSchema">
+<schema xmlns="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
   <group name="bdate">
     <sequence>
       <element name="date">
-        <complexType mixed="false">
+        <complexType name="noname" mixed="false">
           <sequence>
             <choice>
               <sequence>
                 <element name="from">
-                  <complexType mixed="false">
+                  <complexType name="noname" mixed="false">
                     <sequence>
                       <group ref="ISO8601Date"/>
                     </sequence>
                   </complexType>
                 </element>
                 <element name="to" minOccurs="0" maxOccurs="1">
-                  <complexType mixed="false">
+                  <complexType name="noname" mixed="false">
                     <sequence>
                       <group ref="ISO8601Date"/>
                     </sequence>
@@ -22,7 +22,7 @@
                 </element>
               </sequence>
               <element name="on">
-                <complexType mixed="false">
+                <complexType name="noname" mixed="false">
                   <sequence>
                     <group ref="ISO8601Date"/>
                   </sequence>
@@ -30,21 +30,7 @@
               </element>
             </choice>
           </sequence>
-          <attribute use="optional" name="type"/>
-        </complexType>
-      </element>
-    </sequence>
-  </group>
-  <group name="structuredidentifier">
-    <sequence>
-      <element name="structuredidentifier">
-        <complexType mixed="false">
-          <sequence>
-            <sequence>
-              <group ref="documentnumber"/>
-              <group ref="tc-documentnumber"/>
-            </sequence>
-          </sequence>
+          <attribute use="optional" name="type" type="xs:string"/>
         </complexType>
       </element>
     </sequence>
@@ -73,25 +59,287 @@
       <group ref="section-title"/>
     </sequence>
   </group>
-  <group name="floating-section-title">
-    <sequence>
-      <element name="section-title">
-        <complexType mixed="false">
-          <sequence>
-            <group ref="TextElement"/>
-          </sequence>
-          <attribute use="optional" name="id"/>
-          <attribute use="optional" name="depth"/>
-        </complexType>
-      </element>
-    </sequence>
-  </group>
   <group name="AdmonitionAttributes">
     <sequence/>
   </group>
+  <element name="structuredidentifier">
+    <complexType name="noname" mixed="false">
+      <sequence>
+        <sequence>
+          <group ref="documentnumber"/>
+          <group ref="tc-documentnumber"/>
+        </sequence>
+      </sequence>
+    </complexType>
+  </element>
+  <element name="sections">
+    <complexType name="noname" mixed="false">
+      <sequence>
+        <sequence minOccurs="0" maxOccurs="1">
+          <choice>
+            <group ref="floating-title"/>
+            <group ref="floating-section-title"/>
+          </choice>
+        </sequence>
+        <sequence minOccurs="0" maxOccurs="1">
+          <choice>
+            <group ref="floating-title"/>
+            <group ref="floating-section-title"/>
+          </choice>
+        </sequence>
+        <sequence minOccurs="0" maxOccurs="1">
+          <choice>
+            <group ref="term-clause"/>
+            <group ref="terms"/>
+          </choice>
+        </sequence>
+        <sequence minOccurs="0" maxOccurs="1">
+          <choice>
+            <group ref="floating-title"/>
+            <group ref="floating-section-title"/>
+          </choice>
+        </sequence>
+        <sequence minOccurs="0" maxOccurs="1">
+          <choice>
+            <group ref="floating-title"/>
+            <group ref="floating-section-title"/>
+          </choice>
+        </sequence>
+        <sequence minOccurs="0" maxOccurs="unbounded">
+          <choice>
+            <group ref="note"/>
+            <group ref="admonition"/>
+          </choice>
+        </sequence>
+        <sequence minOccurs="1" maxOccurs="unbounded">
+          <choice>
+            <group ref="clause"/>
+            <group ref="term-clause"/>
+            <group ref="terms"/>
+            <group ref="floating-title"/>
+            <group ref="floating-section-title"/>
+          </choice>
+        </sequence>
+        <group ref="clause"/>
+        <group ref="definitions"/>
+      </sequence>
+    </complexType>
+  </element>
+  <element name="term">
+    <complexType name="noname" mixed="false">
+      <sequence>
+        <group ref="TermAttributes"/>
+        <group ref="preferred"/>
+        <group ref="admitted"/>
+        <group ref="deprecates"/>
+        <group ref="termdomain"/>
+        <group ref="termdefinition"/>
+        <group ref="termnote"/>
+        <group ref="termexample"/>
+        <group ref="termsource"/>
+        <group ref="term"/>
+      </sequence>
+    </complexType>
+  </element>
+  <element name="annex">
+    <complexType name="noname" mixed="false">
+      <sequence>
+        <sequence minOccurs="0" maxOccurs="unbounded">
+          <choice>
+            <group ref="clause-hanging-paragraph-with-footnote"/>
+            <group ref="floating-title"/>
+          </choice>
+        </sequence>
+        <group ref="Annex-Section-Attributes"/>
+        <group ref="section-title"/>
+        <group ref="BasicBlock"/>
+        <group ref="annex-appendix"/>
+      </sequence>
+    </complexType>
+  </element>
+  <element name="preface">
+    <complexType name="noname" mixed="false">
+      <sequence>
+        <element ref="foreword"/>
+        <element ref="introduction"/>
+        <group ref="abstract"/>
+      </sequence>
+    </complexType>
+  </element>
   <simpleType name="AdmonitionType">
     <restriction base="xs:string">
       <enumeration value="commentary"/>
     </restriction>
   </simpleType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <group ref="ISO8601Date"/>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <group ref="ISO8601Date"/>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <group ref="ISO8601Date"/>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <choice>
+        <sequence>
+          <element name="from">
+            <complexType name="noname" mixed="false">
+              <sequence>
+                <group ref="ISO8601Date"/>
+              </sequence>
+            </complexType>
+          </element>
+          <element name="to" minOccurs="0" maxOccurs="1">
+            <complexType name="noname" mixed="false">
+              <sequence>
+                <group ref="ISO8601Date"/>
+              </sequence>
+            </complexType>
+          </element>
+        </sequence>
+        <element name="on">
+          <complexType name="noname" mixed="false">
+            <sequence>
+              <group ref="ISO8601Date"/>
+            </sequence>
+          </complexType>
+        </element>
+      </choice>
+    </sequence>
+    <attribute use="optional" name="type" type="xs:string"/>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <sequence>
+        <group ref="documentnumber"/>
+        <group ref="tc-documentnumber"/>
+      </sequence>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <group ref="TextElement"/>
+    </sequence>
+    <attribute use="optional" name="id" type="xs:ID"/>
+    <attribute use="optional" name="depth" type="xs:int"/>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <sequence minOccurs="0" maxOccurs="1">
+        <choice>
+          <group ref="floating-title"/>
+          <group ref="floating-section-title"/>
+        </choice>
+      </sequence>
+      <sequence minOccurs="0" maxOccurs="1">
+        <choice>
+          <group ref="floating-title"/>
+          <group ref="floating-section-title"/>
+        </choice>
+      </sequence>
+      <sequence minOccurs="0" maxOccurs="1">
+        <choice>
+          <group ref="term-clause"/>
+          <group ref="terms"/>
+        </choice>
+      </sequence>
+      <sequence minOccurs="0" maxOccurs="1">
+        <choice>
+          <group ref="floating-title"/>
+          <group ref="floating-section-title"/>
+        </choice>
+      </sequence>
+      <sequence minOccurs="0" maxOccurs="1">
+        <choice>
+          <group ref="floating-title"/>
+          <group ref="floating-section-title"/>
+        </choice>
+      </sequence>
+      <sequence minOccurs="0" maxOccurs="unbounded">
+        <choice>
+          <group ref="note"/>
+          <group ref="admonition"/>
+        </choice>
+      </sequence>
+      <sequence minOccurs="1" maxOccurs="unbounded">
+        <choice>
+          <group ref="clause"/>
+          <group ref="term-clause"/>
+          <group ref="terms"/>
+          <group ref="floating-title"/>
+          <group ref="floating-section-title"/>
+        </choice>
+      </sequence>
+      <group ref="clause"/>
+      <group ref="definitions"/>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <group ref="TermAttributes"/>
+      <group ref="preferred"/>
+      <group ref="admitted"/>
+      <group ref="deprecates"/>
+      <group ref="termdomain"/>
+      <group ref="termdefinition"/>
+      <group ref="termnote"/>
+      <group ref="termexample"/>
+      <group ref="termsource"/>
+      <group ref="term"/>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <sequence minOccurs="0" maxOccurs="unbounded">
+        <choice>
+          <group ref="clause-hanging-paragraph-with-footnote"/>
+          <group ref="floating-title"/>
+        </choice>
+      </sequence>
+      <group ref="Section-Attributes"/>
+      <group ref="section-title"/>
+      <group ref="BasicBlock"/>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <sequence minOccurs="0" maxOccurs="unbounded">
+        <choice>
+          <group ref="clause-hanging-paragraph-with-footnote"/>
+          <group ref="floating-title"/>
+        </choice>
+      </sequence>
+      <group ref="Annex-Section-Attributes"/>
+      <group ref="section-title"/>
+      <group ref="BasicBlock"/>
+      <group ref="annex-appendix"/>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <group ref="Basic-Section"/>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <group ref="Content-Section"/>
+    </sequence>
+  </complexType>
+  <complexType name="noname" mixed="false">
+    <sequence>
+      <element ref="foreword"/>
+      <element ref="introduction"/>
+      <group ref="abstract"/>
+    </sequence>
+  </complexType>
+  <include xmlns=""/>
+  <include xmlns=""/>
 </schema>
