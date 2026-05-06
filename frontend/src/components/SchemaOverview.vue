@@ -59,6 +59,16 @@
       </ul>
     </div>
 
+    <!-- Includes -->
+    <div v-if="schema.includes?.length" class="overview-section">
+      <h3 class="section-title">Includes</h3>
+      <ul class="import-list">
+        <li v-for="inc in schema.includes" :key="inc.schema_location" class="import-item">
+          <code>{{ inc.schema_location }}</code>
+        </li>
+      </ul>
+    </div>
+
     <!-- Quick Access -->
     <div class="overview-section">
       <h3 class="section-title">Quick Access</h3>
