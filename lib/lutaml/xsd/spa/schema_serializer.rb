@@ -35,6 +35,12 @@ module Lutaml
       class SchemaSerializer
         include ::Lutaml::Xsd::Spa::Utils::ExtractEnumeration
 
+        # Fields to merge when combining schemas with the same targetNamespace
+        MERGEABLE_CONTENT_FIELDS = %i[
+          elements complex_types simple_types
+          attributes groups attribute_groups
+        ].freeze
+
         attr_reader :repository, :config, :package
 
         # Initialize schema serializer
@@ -217,10 +223,102 @@ module Lutaml
             serialize_schema(schema, index, file_path)
           end.compact
 
+          # Merge schemas that share the same target namespace (from <include>)
+          # XSD <include> merges included schemas into the same namespace.
+          # Group by namespace, keep entry point as primary, merge content from others.
+          schemas_data = merge_included_schemas(schemas_data)
+
           # Post-process: add used_by reverse references
           attach_used_by_references(schemas_data)
 
           schemas_data
+        end
+
+        # Merge schemas sharing the same targetNamespace (from <include> directives)
+        #
+        # In XSD, <include> means the included schema targets the same namespace.
+        # These should appear as a single merged schema in the SPA, not as
+        # separate empty + populated entries.
+        #
+        # Schemas with nil namespace (chameleon schemas) are NOT merged since
+        # they adopt the namespace of their including schema at parse time.
+        #
+        # @param schemas_data [Array<Hash>] Serialized schema data
+        # @return [Array<Hash>] Merged schema data
+        def merge_included_schemas(schemas_data)
+          return schemas_data if schemas_data.length <= 1
+
+          ns_groups = {}
+          schemas_data.each do |schema|
+            ns = schema[:namespace]
+            # Skip nil-namespace schemas — chameleon schemas should not be merged
+            next unless ns
+
+            ns_groups[ns] ||= []
+            ns_groups[ns] << schema
+          end
+
+          # Collect schemas that were NOT grouped (nil namespace)
+          merged_schemas = schemas_data.reject { |s| s[:namespace] }
+
+          ns_groups.each_value do |group|
+            if group.length == 1
+              merged_schemas << group.first
+              next
+            end
+
+            primary = group.find { |s| s[:is_entrypoint] }
+            primary ||= group.max_by { |s| content_weight(s) }
+            secondaries = group.reject { |s| s[:id] == primary[:id] }
+
+            merge_content_into!(primary, secondaries)
+            merged_schemas << primary
+          end
+
+          merged_schemas
+        end
+
+        # Measure content richness of a serialized schema for primary selection
+        #
+        # @param schema [Hash] Serialized schema data
+        # @return [Integer] Total item count across content fields
+        def content_weight(schema)
+          MERGEABLE_CONTENT_FIELDS.sum { |f| (schema[f] || []).length }
+        end
+
+        # Merge content arrays from secondary schemas into the primary schema
+        #
+        # Uses Set for O(1) deduplication by hash identity.
+        #
+        # @param primary [Hash] Primary schema to merge into (mutated)
+        # @param secondaries [Array<Hash>] Secondary schemas to absorb
+        # @return [void]
+        def merge_content_into!(primary, secondaries)
+          MERGEABLE_CONTENT_FIELDS.each do |field|
+            primary[field] ||= []
+            seen = primary[field].to_set
+            secondaries.each do |sec|
+              (sec[field] || []).each do |item|
+                primary[field] << item unless seen.include?(item)
+              end
+            end
+          end
+
+          # Merge includes and imports (deduplicated by hash equality)
+          %i[includes imports].each do |field|
+            primary[field] ||= []
+            seen = primary[field].to_set
+            secondaries.each do |sec|
+              (sec[field] || []).each do |item|
+                primary[field] << item unless seen.include?(item)
+              end
+            end
+          end
+
+          # Collect all file paths
+          all_paths = [primary[:file_path]]
+          secondaries.each { |s| all_paths << s[:file_path] if s[:file_path] }
+          primary[:file_paths] = all_paths.compact
         end
 
         # Serialize single schema (template method hook)
@@ -746,24 +844,29 @@ schema_source = nil)
           end.sort_by { |ag| ag[:name] || "" }
         end
 
-        # Extract source information for an attribute group
-        # from the schema
+        # Extract source XML for a schema component identified by type, key, value
+        #
+        # @param type [String] XSD element type name (e.g., "attributeGroup")
+        # @param key [String] Attribute name to match on (e.g., "name")
+        # @param value [String] Attribute value to match
+        # @param prefix [String, nil] Optional namespace prefix
+        # @param source [String, nil] Raw XSD source XML
+        # @return [String, nil] Extracted source XML or nil
         def extract_source_by_type_key_value(type, key, value, prefix = nil,
 source = nil)
           return nil unless source && value
 
-          # parse the schema source and find the attribute group by name
           begin
             doc = Moxml::Context.new.parse(source)
+            escaped_value = value.gsub("'", "''")
             xpath = if prefix
-                      "//#{prefix}:#{type}[@#{key}='#{value}']"
+                      "//#{prefix}:#{type}[@#{key}='#{escaped_value}']"
                     else
-                      "//#{type}[@#{key}='#{value}']"
+                      "//#{type}[@#{key}='#{escaped_value}']"
                     end
-            ag_node = doc.at_xpath(xpath)
-            ag_node&.to_xml(indent: 2)
+            node = doc.at_xpath(xpath)
+            node&.to_xml(indent: 2)
           rescue StandardError
-            # If parsing fails, return nil
             nil
           end
         end
@@ -889,45 +992,52 @@ source = nil)
           end
         end
 
+        # Collect attribute group references from a model (handles extension nesting)
+        #
+        # Used for both direct attribute groups and those inside content model extensions.
+        #
+        # @param model [Object] Any object that may have attribute_group or extension
+        # @return [Array<Object>] Collected attribute group reference objects
+        def collect_attribute_group_refs(model)
+          refs = []
+
+          if model.respond_to?(:attribute_group) && model.attribute_group
+            groups = model.attribute_group.is_a?(Array) ? model.attribute_group : [model.attribute_group]
+            refs.concat(groups)
+          end
+
+          if model.respond_to?(:extension) && model.extension
+            refs.concat(collect_attribute_group_refs(model.extension))
+          end
+
+          refs
+        end
+
         # Serialize attribute group references from a complex type
+        #
+        # Collects attribute group refs from three possible locations:
+        # 1. Direct attribute groups on the type
+        # 2. Inside simpleContent.extension
+        # 3. Inside complexContent.extension
         #
         # @param type [ComplexType] Complex type
         # @return [Array<Hash>] Serialized attribute group references with attributes
         def serialize_type_attr_groups(type)
-          # Collect attribute group refs from all three possible locations:
-          # 1. Direct attribute groups on the type
-          # 2. Inside simpleContent.extension
-          # 3. Inside complexContent.extension
+          return [] unless type
+
           all_ag_refs = []
 
-          # 1. Direct attribute groups
           if type.respond_to?(:attribute_group) && type.attribute_group
             direct_groups = type.attribute_group.is_a?(Array) ? type.attribute_group : [type.attribute_group]
             all_ag_refs.concat(direct_groups)
           end
 
-          # 2. Attribute groups inside simpleContent.extension
           if type.respond_to?(:simple_content) && type.simple_content
-            sc = type.simple_content
-            if sc.respond_to?(:extension) && sc.extension
-              extension = sc.extension
-              if extension.respond_to?(:attribute_group) && extension.attribute_group
-                ext_groups = extension.attribute_group.is_a?(Array) ? extension.attribute_group : [extension.attribute_group]
-                all_ag_refs.concat(ext_groups)
-              end
-            end
+            all_ag_refs.concat(collect_attribute_group_refs(type.simple_content))
           end
 
-          # 3. Attribute groups inside complexContent.extension
           if type.respond_to?(:complex_content) && type.complex_content
-            cc = type.complex_content
-            if cc.respond_to?(:extension) && cc.extension
-              extension = cc.extension
-              if extension.respond_to?(:attribute_group) && extension.attribute_group
-                ext_groups = extension.attribute_group.is_a?(Array) ? extension.attribute_group : [extension.attribute_group]
-                all_ag_refs.concat(ext_groups)
-              end
-            end
+            all_ag_refs.concat(collect_attribute_group_refs(type.complex_content))
           end
 
           return [] if all_ag_refs.empty?
@@ -936,12 +1046,8 @@ source = nil)
             ag_name = ag.respond_to?(:ref) ? ag.ref : ag.name
             next unless ag_name
 
-            # Look up the actual attribute group definition to get its attributes
             attrs = lookup_attribute_group_attributes(ag_name)
-            {
-              ref: ag_name,
-              attributes: attrs,
-            }
+            { ref: ag_name, attributes: attrs }
           end
         end
 
@@ -1180,74 +1286,43 @@ source = nil)
           }
         end
 
+        # Facet serializers: maps facet name to how to extract and format it
+        #
+        # Each entry: [method_name, facet_type_label]
+        #   method_name  — what restriction.respond_to?(:method_name) && restriction.method_name to call
+        #   facet_type   — the type string emitted in serialized facet
+        FACET_METHODS = [
+          [:enumerations, "enumeration"],
+          [:pattern, "pattern"],
+          [:min_length, "min_length"],
+          [:max_length, "max_length"],
+          [:length, "length"],
+          [:min_inclusive, "min_inclusive"],
+          [:max_inclusive, "max_inclusive"],
+          [:min_exclusive, "min_exclusive"],
+          [:max_exclusive, "max_exclusive"],
+          [:total_digits, "total_digits"],
+          [:fraction_digits, "fraction_digits"],
+          [:white_space, "white_space"],
+        ].freeze
+
         # Serialize facets
         #
         # @param restriction [Restriction] Restriction object
         # @return [Array<Hash>] Serialized facets
         def serialize_facets(restriction)
-          facets = []
+          return [] unless restriction
 
-          if restriction.respond_to?(:enumerations) && restriction.enumerations
-            facets << { type: "enumeration",
-                        values: restriction.enumerations }
+          FACET_METHODS.filter_map do |method_name, facet_type|
+            value = restriction.respond_to?(method_name) && restriction.send(method_name)
+            next unless value
+
+            if method_name == :enumerations
+              { type: facet_type, values: value }
+            else
+              { type: facet_type, value: value }
+            end
           end
-
-          if restriction.respond_to?(:pattern) && restriction.pattern
-            facets << { type: "pattern",
-                        value: restriction.pattern }
-          end
-
-          if restriction.respond_to?(:min_length) && restriction.min_length
-            facets << { type: "min_length",
-                        value: restriction.min_length }
-          end
-
-          if restriction.respond_to?(:max_length) && restriction.max_length
-            facets << { type: "max_length",
-                        value: restriction.max_length }
-          end
-
-          if restriction.respond_to?(:length) && restriction.length
-            facets << { type: "length",
-                        value: restriction.length }
-          end
-
-          if restriction.respond_to?(:min_inclusive) && restriction.min_inclusive
-            facets << { type: "min_inclusive",
-                        value: restriction.min_inclusive }
-          end
-
-          if restriction.respond_to?(:max_inclusive) && restriction.max_inclusive
-            facets << { type: "max_inclusive",
-                        value: restriction.max_inclusive }
-          end
-
-          if restriction.respond_to?(:min_exclusive) && restriction.min_exclusive
-            facets << { type: "min_exclusive",
-                        value: restriction.min_exclusive }
-          end
-
-          if restriction.respond_to?(:max_exclusive) && restriction.max_exclusive
-            facets << { type: "max_exclusive",
-                        value: restriction.max_exclusive }
-          end
-
-          if restriction.respond_to?(:total_digits) && restriction.total_digits
-            facets << { type: "total_digits",
-                        value: restriction.total_digits }
-          end
-
-          if restriction.respond_to?(:fraction_digits) && restriction.fraction_digits
-            facets << { type: "fraction_digits",
-                        value: restriction.fraction_digits }
-          end
-
-          if restriction.respond_to?(:white_space) && restriction.white_space
-            facets << { type: "white_space",
-                        value: restriction.white_space }
-          end
-
-          facets
         end
 
         # Extract documentation from object
@@ -1279,29 +1354,34 @@ source = nil)
           "empty"
         end
 
+        # Extract base type from a content model's extension or restriction
+        #
+        # @param content_model [Object] simpleContent or complexContent
+        # @return [String, nil] Base type name
+        def base_from_content_model(content_model)
+          if content_model.respond_to?(:extension) && content_model.extension
+            ext = content_model.extension
+            return ext.base if ext.respond_to?(:base)
+          elsif content_model.respond_to?(:restriction) && content_model.restriction
+            rst = content_model.restriction
+            return rst.base if rst.respond_to?(:base)
+          end
+          nil
+        end
+
         # Extract base type from complex type
         #
         # @param type [ComplexType] Complex type
         # @return [String, nil] Base type name
         def extract_base_type(type)
-          # Check complex_content for extension or restriction
           if type.respond_to?(:complex_content) && type.complex_content
-            cc = type.complex_content
-            if cc.respond_to?(:extension) && cc.extension
-              return cc.extension.base if cc.extension.respond_to?(:base)
-            elsif cc.respond_to?(:restriction) && cc.restriction
-              return cc.restriction.base if cc.restriction.respond_to?(:base)
-            end
+            base = base_from_content_model(type.complex_content)
+            return base if base
           end
 
-          # Check simple_content for extension or restriction
           if type.respond_to?(:simple_content) && type.simple_content
-            sc = type.simple_content
-            if sc.respond_to?(:extension) && sc.extension
-              return sc.extension.base if sc.extension.respond_to?(:base)
-            elsif sc.respond_to?(:restriction) && sc.restriction
-              return sc.restriction.base if sc.restriction.respond_to?(:base)
-            end
+            base = base_from_content_model(type.simple_content)
+            return base if base
           end
 
           nil
