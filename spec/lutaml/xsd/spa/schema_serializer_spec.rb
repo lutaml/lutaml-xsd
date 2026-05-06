@@ -447,4 +447,246 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       end
     end
   end
+
+  describe "#merge_included_schemas" do
+    let(:ns_a) { "http://example.com/namespace-a" }
+    let(:ns_b) { "http://example.com/namespace-b" }
+
+    def make_schema_data(id:, namespace:, entrypoint: false, elements: [], complex_types: [],
+                         simple_types: [], includes: [], imports: [], file_path: nil)
+      {
+        id: id,
+        name: id,
+        namespace: namespace,
+        is_entrypoint: entrypoint,
+        elements: elements,
+        complex_types: complex_types,
+        simple_types: simple_types,
+        includes: includes,
+        imports: imports,
+        file_path: file_path,
+      }
+    end
+
+    it "returns schemas unchanged when only one schema per namespace" do
+      schemas = [
+        make_schema_data(id: "a", namespace: ns_a, entrypoint: true),
+        make_schema_data(id: "b", namespace: ns_b),
+      ]
+
+      result = serializer.send(:merge_included_schemas, schemas)
+      expect(result.length).to eq(2)
+      expect(result.map { |s| s[:id] }).to contain_exactly("a", "b")
+    end
+
+    it "merges schemas sharing the same targetNamespace" do
+      schemas = [
+        make_schema_data(id: "main", namespace: ns_a, entrypoint: true, complex_types: [{ name: "TypeA" }]),
+        make_schema_data(id: "included", namespace: ns_a, elements: [{ name: "ElemB" }]),
+      ]
+
+      result = serializer.send(:merge_included_schemas, schemas)
+      expect(result.length).to eq(1)
+      merged = result.first
+      expect(merged[:id]).to eq("main")
+      expect(merged[:is_entrypoint]).to be true
+      expect(merged[:complex_types].length).to eq(1)
+      expect(merged[:elements].length).to eq(1)
+    end
+
+    it "prefers entrypoint as primary schema" do
+      schemas = [
+        make_schema_data(id: "big", namespace: ns_a, elements: [1, 2, 3], complex_types: [4, 5]),
+        make_schema_data(id: "entry", namespace: ns_a, entrypoint: true, elements: [1]),
+      ]
+
+      result = serializer.send(:merge_included_schemas, schemas)
+      expect(result.first[:id]).to eq("entry")
+    end
+
+    it "falls back to schema with most content when no entrypoint" do
+      schemas = [
+        make_schema_data(id: "small", namespace: ns_a, elements: [1]),
+        make_schema_data(id: "big", namespace: ns_a, elements: [1, 2, 3, 4]),
+        make_schema_data(id: "medium", namespace: ns_a, elements: [1, 2]),
+      ]
+
+      result = serializer.send(:merge_included_schemas, schemas)
+      expect(result.first[:id]).to eq("big")
+    end
+
+    it "does not merge schemas with nil namespace (chameleon schemas)" do
+      schemas = [
+        make_schema_data(id: "chameleon1", namespace: nil),
+        make_schema_data(id: "chameleon2", namespace: nil),
+        make_schema_data(id: "named", namespace: ns_a, entrypoint: true),
+      ]
+
+      result = serializer.send(:merge_included_schemas, schemas)
+      expect(result.length).to eq(3)
+      expect(result.map { |s| s[:id] }).to contain_exactly("chameleon1", "chameleon2", "named")
+    end
+
+    it "deduplicates merged content arrays" do
+      shared_element = { name: "Shared" }
+      schemas = [
+        make_schema_data(id: "a", namespace: ns_a, elements: [shared_element]),
+        make_schema_data(id: "b", namespace: ns_a, elements: [shared_element]),
+      ]
+
+      result = serializer.send(:merge_included_schemas, schemas)
+      merged_elements = result.first[:elements]
+      expect(merged_elements.length).to eq(1)
+    end
+
+    it "merges includes and imports" do
+      schemas = [
+        make_schema_data(id: "a", namespace: ns_a, includes: [{ loc: "a1.xsd" }], imports: [{ ns: ns_b }]),
+        make_schema_data(id: "b", namespace: ns_a, includes: [{ loc: "b1.xsd" }], imports: [{ ns: ns_b }]),
+      ]
+
+      result = serializer.send(:merge_included_schemas, schemas)
+      merged = result.first
+      expect(merged[:includes].length).to eq(2)
+      expect(merged[:imports].length).to eq(1)
+    end
+
+    it "collects file_paths from all merged schemas" do
+      schemas = [
+        make_schema_data(id: "a", namespace: ns_a, file_path: "a.xsd"),
+        make_schema_data(id: "b", namespace: ns_a, file_path: "b.xsd"),
+      ]
+
+      result = serializer.send(:merge_included_schemas, schemas)
+      expect(result.first[:file_paths]).to contain_exactly("a.xsd", "b.xsd")
+    end
+
+    it "returns empty array unchanged" do
+      expect(serializer.send(:merge_included_schemas, [])).to eq([])
+    end
+
+    it "returns single-element array unchanged" do
+      schemas = [make_schema_data(id: "solo", namespace: ns_a)]
+      expect(serializer.send(:merge_included_schemas, schemas)).to eq(schemas)
+    end
+  end
+
+  describe "#content_weight" do
+    it "counts items across all content fields" do
+      schema_data = {
+        elements: [1, 2],
+        complex_types: [3],
+        simple_types: [],
+        attributes: [4, 5, 6],
+        groups: [],
+        attribute_groups: [7],
+      }
+      expect(serializer.send(:content_weight, schema_data)).to eq(7)
+    end
+
+    it "returns 0 for empty schema" do
+      expect(serializer.send(:content_weight, {})).to eq(0)
+    end
+  end
+
+  describe "#serialize_facets" do
+    it "serializes enumeration facet with values key" do
+      restriction = double("restriction", enumerations: ["a", "b"])
+      allow(restriction).to receive(:respond_to?) do |method|
+        method == :enumerations
+      end
+
+      facets = serializer.send(:serialize_facets, restriction)
+      expect(facets).to include({ type: "enumeration", values: ["a", "b"] })
+    end
+
+    it "serializes scalar facets with value key" do
+      restriction = double("restriction", pattern: "\\d+", min_length: "1")
+      allow(restriction).to receive(:respond_to?) do |method|
+        %i[pattern min_length].include?(method)
+      end
+
+      facets = serializer.send(:serialize_facets, restriction)
+      expect(facets).to include({ type: "pattern", value: "\\d+" })
+      expect(facets).to include({ type: "min_length", value: "1" })
+    end
+
+    it "returns empty array for nil restriction" do
+      expect(serializer.send(:serialize_facets, nil)).to eq([])
+    end
+
+    it "skips facets with nil values" do
+      restriction = double("restriction")
+      allow(restriction).to receive(:respond_to?).with(anything).and_return(false)
+      expect(serializer.send(:serialize_facets, restriction)).to eq([])
+    end
+  end
+
+  describe "#extract_source_by_type_key_value" do
+    it "escapes single quotes in value to prevent XPath injection" do
+      source = '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <xs:element name="test&apos;s" type="xs:string"/>
+      </xs:schema>'
+
+      result = serializer.send(:extract_source_by_type_key_value,
+                               "element", "name", "test's", nil, source)
+      expect(result).to be_nil
+    end
+
+    it "returns nil when source is nil" do
+      expect(serializer.send(:extract_source_by_type_key_value,
+                             "element", "name", "test", nil, nil)).to be_nil
+    end
+
+    it "returns nil when value is nil" do
+      expect(serializer.send(:extract_source_by_type_key_value,
+                             "element", "name", nil, nil, "<xml/>")).to be_nil
+    end
+
+    it "extracts matching source XML when no namespace prefix needed" do
+      source = '<root><attributeGroup name="MyGroup"><attribute name="a"/></attributeGroup></root>'
+
+      result = serializer.send(:extract_source_by_type_key_value,
+                               "attributeGroup", "name", "MyGroup", nil, source)
+      expect(result).to include("MyGroup")
+    end
+  end
+
+  describe "#extract_base_type" do
+    it "extracts base from complexContent extension" do
+      type_xml = <<~XML
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:complexType name="Derived">
+            <xs:complexContent>
+              <xs:extension base="Base"/>
+            </xs:complexContent>
+          </xs:complexType>
+        </xs:schema>
+      XML
+      schema = Lutaml::Xml::Schema::Xsd.parse(type_xml)
+      type = schema.complex_type.first
+
+      expect(serializer.send(:extract_base_type, type)).to eq("Base")
+    end
+
+    it "extracts base from simpleContent extension" do
+      type_xml = <<~XML
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:complexType name="Extended">
+            <xs:simpleContent>
+              <xs:extension base="xs:string"/>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:schema>
+      XML
+      schema = Lutaml::Xml::Schema::Xsd.parse(type_xml)
+      type = schema.complex_type.first
+
+      expect(serializer.send(:extract_base_type, type)).to eq("xs:string")
+    end
+
+    it "returns nil for type without base" do
+      expect(serializer.send(:extract_base_type, real_complex_type)).to be_nil
+    end
+  end
 end
