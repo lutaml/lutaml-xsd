@@ -616,6 +616,8 @@ file_path = nil)
               mixed: element.complex_type.respond_to?(:mixed) ? element.complex_type.mixed : false,
               attributes: serialize_type_attributes(element.complex_type),
               elements: serialize_type_elements(element.complex_type),
+              choice: serialize_choice(element.complex_type.choice),
+              sequence: serialize_sequence(element.complex_type.sequence),
               groups: serialize_type_group_refs(element.complex_type),
               attribute_groups: serialize_type_attr_groups(element.complex_type),
               documentation: extract_documentation(element.complex_type),
@@ -647,6 +649,8 @@ schema_source = nil, file_path = nil)
             mixed: type.mixed || false,
             attributes: serialize_type_attributes(type),
             elements: serialize_type_elements(type),
+            choice: serialize_choice(type.choice),
+            sequence: serialize_sequence(type.sequence),
             groups: serialize_type_group_refs(type),
             attribute_groups: serialize_type_attr_groups(type),
             documentation: extract_documentation(type),
@@ -668,6 +672,78 @@ schema_source = nil, file_path = nil)
             generate_diagram(type_data, :type, file_path)
 
           type_data
+        end
+
+        # Serialize a single choice model
+        #
+        # @param choice [Object] Choice object from the schema
+        # @return [Hash] Serialized choice
+        def serialize_choice(choice)
+          return nil unless choice
+
+          result = {
+            id: choice.id,
+            occurs: {
+              min: choice.min_occurs || 1,
+              max: choice.max_occurs || 1,
+            },
+            documentation: extract_documentation(choice),
+            groups: serialize_type_group_refs(choice),
+            elements: serialize_type_elements(choice),
+            sequence: [],
+          }
+
+          if choice.respond_to?(:choice) && choice.choice
+            nested_choices = choice.choice.is_a?(Array) ? choice.choice : [choice.choice]
+            result[:choices] = nested_choices.compact.map do |nc|
+              serialize_choice(nc)
+            end
+          end
+
+          if choice.respond_to?(:sequence) && choice.sequence
+            nested_seqs = choice.sequence.is_a?(Array) ? choice.sequence : [choice.sequence]
+            result[:sequences] = nested_seqs.compact.map do |seq|
+              serialize_sequence(seq)
+            end
+          end
+
+          result
+        end
+
+        # Serialize a single sequence model
+        #
+        # @param sequence [Object] Sequence object from the schema
+        # @return [Hash] Serialized sequence
+        def serialize_sequence(sequence)
+          return nil unless sequence
+
+          result = {
+            id: sequence.id,
+            occurs: {
+              min: sequence.min_occurs || 1,
+              max: sequence.max_occurs || 1,
+            },
+            documentation: extract_documentation(sequence),
+            sequences: [], # Nested sequences
+            elements: serialize_type_elements(sequence),
+            choices: [],
+            groups: serialize_type_group_refs(sequence),
+          }
+
+          if sequence.respond_to?(:choice) && sequence.choice
+            result[:choices] = sequence.choice.compact.map do |nc|
+              serialize_choice(nc)
+            end
+          end
+
+          if sequence.respond_to?(:sequence) && sequence.sequence
+            nested_seq = sequence.sequence.is_a?(Array) ? sequence.sequence : [sequence.sequence]
+            result[:sequences] = nested_seq.compact.map do |seq|
+              serialize_sequence(seq)
+            end
+          end
+
+          result
         end
 
         # Collect attributes from inside extension element
