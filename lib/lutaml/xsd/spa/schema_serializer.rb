@@ -681,7 +681,7 @@ schema_source = nil, file_path = nil)
         def serialize_choice(choice)
           return nil unless choice
 
-          result = {
+          {
             id: choice.id,
             occurs: {
               min: choice.min_occurs || 1,
@@ -690,24 +690,26 @@ schema_source = nil, file_path = nil)
             documentation: extract_documentation(choice),
             groups: serialize_type_group_refs(choice),
             elements: serialize_type_elements(choice),
-            sequence: [],
+            sequences: serialize_sequences(choice),
+            choices: serialize_choices(choice),
           }
+        end
 
-          if choice.respond_to?(:choice) && choice.choice
-            nested_choices = choice.choice.is_a?(Array) ? choice.choice : [choice.choice]
-            result[:choices] = nested_choices.compact.map do |nc|
-              serialize_choice(nc)
-            end
+        # Serialize choice models
+        #
+        # @param model [Object] Model that may contain choice
+        # @return [Array<Hash>] Serialized choices
+        def serialize_choices(model)
+          return [] if !model.respond_to?(:choice) || !model.choice
+
+          nested_choices = if model.choice.is_a?(Array)
+                            model.choice
+                           else
+                             [model.choice]
+                           end
+          nested_choices.compact.map do |nc|
+            serialize_choice(nc)
           end
-
-          if choice.respond_to?(:sequence) && choice.sequence
-            nested_seqs = choice.sequence.is_a?(Array) ? choice.sequence : [choice.sequence]
-            result[:sequences] = nested_seqs.compact.map do |seq|
-              serialize_sequence(seq)
-            end
-          end
-
-          result
         end
 
         # Serialize a single sequence model
@@ -717,33 +719,35 @@ schema_source = nil, file_path = nil)
         def serialize_sequence(sequence)
           return nil unless sequence
 
-          result = {
+          {
             id: sequence.id,
             occurs: {
               min: sequence.min_occurs || 1,
               max: sequence.max_occurs || 1,
             },
             documentation: extract_documentation(sequence),
-            sequences: [], # Nested sequences
+            sequences: serialize_sequences(sequence),
             elements: serialize_type_elements(sequence),
-            choices: [],
+            choices: serialize_choices(sequence),
             groups: serialize_type_group_refs(sequence),
           }
+        end
 
-          if sequence.respond_to?(:choice) && sequence.choice
-            result[:choices] = sequence.choice.compact.map do |nc|
-              serialize_choice(nc)
-            end
+        # Serialize sequence models
+        #
+        # @param model [Object] Model that may contain sequence
+        # @return [Array<Hash>] Serialized sequences
+        def serialize_sequences(model)
+          return [] if !model.respond_to?(:sequence) || !model.sequence
+
+          nested_sequences = if model.sequence.is_a?(Array)
+                               model.sequence
+                             else
+                               [model.sequence]
+                             end
+          nested_sequences.compact.map do |nc|
+            serialize_sequence(nc)
           end
-
-          if sequence.respond_to?(:sequence) && sequence.sequence
-            nested_seq = sequence.sequence.is_a?(Array) ? sequence.sequence : [sequence.sequence]
-            result[:sequences] = nested_seq.compact.map do |seq|
-              serialize_sequence(seq)
-            end
-          end
-
-          result
         end
 
         # Collect attributes from inside extension element
