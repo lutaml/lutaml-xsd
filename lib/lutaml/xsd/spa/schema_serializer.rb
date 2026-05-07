@@ -888,6 +888,8 @@ schema_source = nil, file_path = nil)
             elements: serialize_group_elements(group),
             attributes: serialize_group_attributes(group),
             documentation: extract_documentation(group),
+            choice: serialize_choice(group),
+            sequence: serialize_sequence(group),
           }
         end
 
