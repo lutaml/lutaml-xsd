@@ -231,6 +231,7 @@ export interface Group {
   name: string
   elements: TypeElement[]
   attributes: TypeAttribute[]
+  choice?: ChoiceElement
   documentation?: string
   used_by?: UsedByRef[]
 }
