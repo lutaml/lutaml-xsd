@@ -639,6 +639,8 @@ file_path = nil)
         # @return [Hash] Serialized complex type
         def serialize_complex_type(type, index, prefix = nil,
 schema_source = nil, file_path = nil)
+          return nil unless type
+
           content_model = extract_content_model(type)
           type_data = {
             id: complex_type_id(index, type, prefix),
@@ -1374,12 +1376,13 @@ source = nil)
         # @param type [ComplexType] Complex type
         # @return [Array<Hash>] Serialized elements
         def serialize_type_elements(type)
-          return [] unless type.elements
+          return [] unless type.respond_to?(:element)
 
-          type.elements.map do |elem|
+          type.element.map do |elem|
             {
               name: elem.name || "#{elem.ref} (ref)",
               type: elem.type,
+              complex_type: serialize_complex_type(elem.complex_type, 0),
               min_occurs: elem.min_occurs,
               max_occurs: elem.max_occurs,
               occurs: {
