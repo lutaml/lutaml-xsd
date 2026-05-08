@@ -64,6 +64,18 @@
       <p class="font-mono">{{ listType }}</p>
     </div>
 
+    <!-- Sequence Choices view
+    <div v-if="type.data.sequence" class="overview-section">
+      <h3 class="section-title">Sequence</h3>
+      <div v-if="type.data.sequence.choices.length > 0" class="overview-section">
+        <h4 class="section-title">Choices</h4>
+        <div v-for="el in type.data.sequence.choices">
+          <span>Choice {{ formatOccurs(el.occurs) }}</span>
+        </div>
+      </div
+    </div>
+    -->
+
     <!-- Elements Table -->
     <div v-if="elements.length > 0" class="overview-section">
       <h3 class="section-title">Elements</h3>
@@ -123,8 +135,12 @@
     <!-- Group References -->
     <div v-if="groupRefs.length > 0" class="overview-section">
       <h3 class="section-title">Groups</h3>
-      <div class="tag-list">
-        <span v-for="g in groupRefs" :key="g.ref" class="tag type-link" @click="navigateToRef(g.ref)">{{ g.ref }}</span>
+      <div class="group-tree">
+        <GroupTreeItem 
+          v-for="(g, index) in groupRefs" 
+          :key="`group-${index}`" 
+          :group="g"
+        />
       </div>
     </div>
 
@@ -154,9 +170,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute, GroupRef, AttributeGroupRef, UsedByRef, AttributeGroup, ChoiceElement, SequenceElement } from '@/types'
+import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute, GroupRef, AttributeGroupRef, UsedByRef, AttributeGroup } from '@/types'
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
+import GroupTreeItem from './GroupTreeItem.vue'
 
 type TypeData = {
   type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'
@@ -250,9 +267,45 @@ const listType = computed(() => {
 })
 
 const groupRefs = computed<GroupRef[]>(() => {
-  if (props.type.type !== 'complex') return []
-  return (props.type.data as ComplexType).groups || []
+  // if (props.type.type !== 'complex') return []
+  const complexType = props.type.data as ComplexType
+  const allGroups: GroupRef[] = []
+
+  // If it is a group
+  if (props.type.type == 'group') return [props.type.data as GroupRef]
+
+  // It is a complex type, collect groups from its own definition and nested sequences
+  if (props.type.type == 'complex') {
+    // Collect direct groups on the complex type
+    if (complexType.group) {
+      allGroups.push(complexType.group)
+    }
+
+    // Recursively collect groups from sequence
+    if (complexType.sequence) {
+      collectGroupsFromSequence(complexType.sequence, allGroups)
+    }
+  }
+
+  return allGroups
 })
+
+/**
+ * Recursively collect groups from a sequence object
+ */
+function collectGroupsFromSequence(sequence: any, collector: GroupRef[]) {
+  if (!sequence) return
+
+  // Direct groups on this sequence (could be 'group' or 'groups')
+  if (Array.isArray(sequence.groups)) {
+    collector.push(...sequence.groups)
+  }
+
+  // Groups from nested sequences
+  if (Array.isArray(sequence.sequences)) {
+    sequence.sequences.forEach((seq: any) => collectGroupsFromSequence(seq, collector))
+  }
+}
 
 const attributeGroupRefs = computed<AttributeGroupRef[]>(() => {
   if (props.type.type !== 'complex') return []
