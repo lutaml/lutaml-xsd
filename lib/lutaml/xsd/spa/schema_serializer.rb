@@ -1066,7 +1066,7 @@ source = nil)
         # @param model [ComplexType|Choice|Sequence]
         # @return [Array<Hash>] Serialized group
         def serialize_type_group(model)
-          return nil unless model.respond_to?(:group) && model.group
+          return nil if model.nil?
 
           {
             id: model.respond_to?(:id) ? model.id : nil,

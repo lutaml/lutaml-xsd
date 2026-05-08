@@ -46,18 +46,6 @@
         </div>
       </div>
 
-      <!-- Group References section -->
-      <div v-if="complexData.groups?.length" class="def-section">
-        <div class="def-section-title">// Groups</div>
-        <div class="def-content">
-          <div v-for="g in complexData.groups" :key="g.ref" class="def-item def-xml-comment">
-            <span class="def-comment">@group</span>
-            <span class="def-type-link" @click="navigateToType(g.ref)">{{ g.ref }}</span>
-            <span v-if="g.occurs" class="def-item-occurs">{{ formatOccurs(g.occurs) }}</span>
-          </div>
-        </div>
-      </div>
-
       <!-- Attribute Group References section -->
       <div v-if="complexData.attribute_groups?.length" class="def-section">
         <div class="def-section-title">// Attribute Groups</div>
