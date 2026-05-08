@@ -154,7 +154,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute, GroupRef, AttributeGroupRef, UsedByRef, AttributeGroup } from '@/types'
+import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute, GroupRef, AttributeGroupRef, UsedByRef, AttributeGroup, ChoiceElement, SequenceElement } from '@/types'
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
 

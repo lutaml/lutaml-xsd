@@ -134,9 +134,9 @@ export interface ComplexType {
   mixed?: boolean
   elements: TypeElement[]
   attributes: TypeAttribute[]
-  choices?: ChoiceElement[]
-  sequences?: SequenceElement[]
-  groups?: GroupRef[]
+  choice?: ChoiceElement
+  sequence?: SequenceElement
+  group?: GroupRef
   attribute_groups?: AttributeGroupRef[]
   extension_attributes?: TypeAttribute[]
   documentation?: string
@@ -246,18 +246,33 @@ export interface AttributeGroup {
 }
 
 export interface ChoiceElement {
+  id?: string
   elements: TypeElement[]
   occurs?: Occurs
+  groups?: GroupRef[]
+  sequences?: SequenceElement[]
+  choices?: ChoiceElement[]
+  documentation?: string
 }
 
 export interface SequenceElement {
+  id?: string
   elements: TypeElement[]
   occurs?: Occurs
+  groups?: GroupRef[]
+  sequences?: SequenceElement[]
+  choices?: ChoiceElement[]
+  documentation?: string
 }
 
 export interface GroupRef {
+  id?: string
   ref: string
+  name?: string
   occurs?: Occurs
+  choice?: ChoiceElement
+  sequence?: SequenceElement
+  documentation?: string
 }
 
 export interface AttributeGroupRef {
