@@ -618,7 +618,7 @@ file_path = nil)
               elements: serialize_type_elements(element.complex_type),
               choice: serialize_choice(element.complex_type.choice),
               sequence: serialize_sequence(element.complex_type.sequence),
-              groups: serialize_type_group_refs(element.complex_type),
+              group: serialize_type_group(element.complex_type.group),
               attribute_groups: serialize_type_attr_groups(element.complex_type),
               documentation: extract_documentation(element.complex_type),
               instance_xml: nil,
@@ -651,7 +651,7 @@ schema_source = nil, file_path = nil)
             elements: serialize_type_elements(type),
             choice: serialize_choice(type.choice),
             sequence: serialize_sequence(type.sequence),
-            groups: serialize_type_group_refs(type),
+            group: serialize_type_group(type.group),
             attribute_groups: serialize_type_attr_groups(type),
             documentation: extract_documentation(type),
             instance_xml: generate_instance_xml(type),
@@ -688,7 +688,7 @@ schema_source = nil, file_path = nil)
               max: choice.max_occurs || 1,
             },
             documentation: extract_documentation(choice),
-            groups: serialize_type_group_refs(choice),
+            groups: serialize_type_groups(choice),
             elements: serialize_type_elements(choice),
             sequences: serialize_sequences(choice),
             choices: serialize_choices(choice),
@@ -702,12 +702,12 @@ schema_source = nil, file_path = nil)
         def serialize_choices(model)
           return [] if !model.respond_to?(:choice) || !model.choice
 
-          nested_choices = if model.choice.is_a?(Array)
+          model_choices = if model.choice.is_a?(Array)
                             model.choice
-                           else
-                             [model.choice]
-                           end
-          nested_choices.compact.map do |nc|
+                          else
+                            [model.choice]
+                          end
+          model_choices.compact.map do |nc|
             serialize_choice(nc)
           end
         end
@@ -729,7 +729,7 @@ schema_source = nil, file_path = nil)
             sequences: serialize_sequences(sequence),
             elements: serialize_type_elements(sequence),
             choices: serialize_choices(sequence),
-            groups: serialize_type_group_refs(sequence),
+            groups: serialize_type_groups(sequence),
           }
         end
 
@@ -740,12 +740,12 @@ schema_source = nil, file_path = nil)
         def serialize_sequences(model)
           return [] if !model.respond_to?(:sequence) || !model.sequence
 
-          nested_sequences = if model.sequence.is_a?(Array)
-                               model.sequence
-                             else
-                               [model.sequence]
-                             end
-          nested_sequences.compact.map do |nc|
+          model_sequences = if model.sequence.is_a?(Array)
+                              model.sequence
+                            else
+                              [model.sequence]
+                            end
+          model_sequences.compact.map do |nc|
             serialize_sequence(nc)
           end
         end
@@ -1046,7 +1046,7 @@ source = nil)
           attrs
         end
 
-        # Serialize group references from a complex type
+        # Serialize single group from model (complex type, choice, or sequence)
         #
         # @param type [ComplexType] Complex type
         # @return [Array<Hash>] Serialized group references
@@ -1060,6 +1060,42 @@ source = nil)
               min_occurs: g.min_occurs,
               max_occurs: g.max_occurs,
             }
+          end
+        end
+
+        # @param model [ComplexType|Choice|Sequence]
+        # @return [Array<Hash>] Serialized group
+        def serialize_type_group(model)
+          return nil unless model.respond_to?(:group) && model.group
+
+          {
+            id: model.respond_to?(:id) ? model.id : nil,
+            ref: model.respond_to?(:ref) ? model.ref : nil,
+            name: model.respond_to?(:name) ? model.name : nil,
+            occurs: {
+              min: model.min_occurs || 1,
+              max: model.max_occurs || 1,
+            },
+            choice: serialize_choice(model.choice),
+            sequence: serialize_sequence(model.sequence),
+            documentation: extract_documentation(model),
+          }
+        end
+
+        # Serialize group models
+        #
+        # @param model [Object] Model that may contain group
+        # @return [Array<Hash>] Serialized groups
+        def serialize_type_groups(model)
+          return [] if !model.respond_to?(:group) || !model.group
+
+          model_groups = if model.group.is_a?(Array)
+                           model.group
+                         else
+                           [model.group]
+                         end
+          model_groups.compact.map do |item|
+            serialize_type_group(item)
           end
         end
 
