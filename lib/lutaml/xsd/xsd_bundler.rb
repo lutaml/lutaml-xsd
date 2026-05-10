@@ -39,7 +39,7 @@ module Lutaml
         end
 
         # Add all processed schemas (includes imports/includes)
-        all_schemas = repository.send(:get_all_processed_schemas)
+        all_schemas = repository.all_schemas
         glob_mappings = (repository.schema_location_mappings || []).map(&:to_glob_format)
 
         all_schemas.each_key do |schema_location|
@@ -126,7 +126,7 @@ module Lutaml
         # Build mapping from HTTP URLs to package basenames
         # by checking processed_schemas
         url_to_basename = {}
-        all_schemas = repository.send(:get_all_processed_schemas)
+        all_schemas = repository.all_schemas
         glob_mappings = (repository.schema_location_mappings || []).map(&:to_glob_format)
 
         all_schemas.each_key do |schema_location|

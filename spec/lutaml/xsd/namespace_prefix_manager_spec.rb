@@ -60,7 +60,7 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixManager do
     it "finds schema for namespace" do
       # Create a mock schema with target namespace
       schema = double("Schema", target_namespace: "http://www.opengis.net/gml/3.2")
-      allow(repository).to receive(:send).with(:get_all_processed_schemas)
+      allow(repository).to receive(:all_schemas)
         .and_return({ "test.xsd" => schema })
 
       result = manager.find_schema_for_namespace("http://www.opengis.net/gml/3.2")
@@ -76,7 +76,7 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixManager do
 
     it "returns file path for namespace" do
       schema = double("Schema", target_namespace: "http://www.opengis.net/gml/3.2")
-      allow(repository).to receive(:send).with(:get_all_processed_schemas)
+      allow(repository).to receive(:all_schemas)
         .and_return({ "/path/to/gml.xsd" => schema })
 
       location = manager.get_package_location("http://www.opengis.net/gml/3.2")
@@ -99,20 +99,17 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixInfo do
     )
     repo.instance_variable_set(:@resolved, true)
 
-    # Stub get_all_processed_schemas for package location lookup
-    allow(repo).to receive(:send).with(:get_all_processed_schemas)
-      .and_return({})
-
-    # Stub types_in_namespace for type counting
-    allow(repo).to receive(:send).with(:types_in_namespace, anything)
-      .and_return([
-                    { type: :complex_type,
-                      definition: double(name: "TypeA") },
-                    { type: :simple_type,
-                      definition: double(name: "TypeB") },
-                    { type: :complex_type,
-                      definition: double(name: "TypeC") },
-                  ])
+    allow(repo).to receive(:all_schemas).and_return({})
+    allow(repo).to receive(:types_in_namespace).and_return(
+      [
+        { type: :complex_type,
+          definition: double(name: "TypeA") },
+        { type: :simple_type,
+          definition: double(name: "TypeB") },
+        { type: :complex_type,
+          definition: double(name: "TypeC") },
+      ],
+    )
     repo
   end
 

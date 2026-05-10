@@ -100,23 +100,19 @@ module Lutaml
             candidates = []
 
             # Collect simple types
-            if repository.respond_to?(:simple_types)
-              repository.simple_types.each do |type|
-                candidates << type.name if type.respond_to?(:name)
-              end
+            repository.simple_types&.each do |type|
+              candidates << type.name
             end
 
             # Collect complex types
-            if repository.respond_to?(:complex_types)
-              repository.complex_types.each do |type|
-                candidates << type.name if type.respond_to?(:name)
-              end
+            repository.complex_types&.each do |type|
+              candidates << type.name
             end
 
             # Fallback: try to get all types
-            if candidates.empty? && repository.respond_to?(:types)
+            if candidates.empty? && repository.types
               repository.types.each do |type|
-                candidates << type.name if type.respond_to?(:name)
+                candidates << type.name
               end
             end
 

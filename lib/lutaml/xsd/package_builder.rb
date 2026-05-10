@@ -103,7 +103,7 @@ module Lutaml
       # @param repository [SchemaRepository] Repository with parsed schemas
       # @return [Hash] Map of file_path => serialized data
       def serialize_all_schemas(repository)
-        all_schemas = repository.send(:get_all_processed_schemas)
+        all_schemas = repository.all_schemas
         glob_mappings = (repository.schema_location_mappings || []).map(&:to_glob_format)
         serialized = {}
 
@@ -217,7 +217,7 @@ module Lutaml
         when Hash
           root.each_value { |v| clear_pending_plan_references(v, visited) }
         else
-          if root.respond_to?(:pending_plan_root_element=)
+          if root.is_a?(Lutaml::Model::Serializable)
             root.pending_plan_root_element = nil
           end
 

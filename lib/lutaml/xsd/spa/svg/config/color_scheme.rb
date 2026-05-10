@@ -68,6 +68,14 @@ module Lutaml
               @optional = colors_hash["optional"]
               @abstract = colors_hash["abstract"]
             end
+
+            def color_for(type)
+              case type.to_sym
+              when :required then @required
+              when :optional then @optional
+              when :abstract then @abstract
+              end
+            end
           end
         end
       end

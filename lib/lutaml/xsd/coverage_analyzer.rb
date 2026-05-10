@@ -83,8 +83,7 @@ module Lutaml
         used_types.add(clark_key)
 
         # Get all type references from this definition
-        refs = @dependency_grapher.send(:extract_type_references,
-                                        result.definition)
+        refs = @dependency_grapher.extract_type_references(result.definition)
 
         # Recursively trace each reference
         refs.each do |ref|

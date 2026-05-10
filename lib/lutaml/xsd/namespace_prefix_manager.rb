@@ -23,7 +23,7 @@ module Lutaml
       # @param namespace_uri [String] The namespace URI
       # @return [Schema, nil] The schema defining this namespace
       def find_schema_for_namespace(namespace_uri)
-        all_schemas = repository.send(:get_all_processed_schemas)
+        all_schemas = repository.all_schemas
 
         all_schemas.each_value do |schema|
           return schema if schema.target_namespace == namespace_uri
@@ -36,7 +36,7 @@ module Lutaml
       # @param namespace_uri [String] The namespace URI
       # @return [String, nil] The file path or nil if not found
       def get_package_location(namespace_uri)
-        all_schemas = repository.send(:get_all_processed_schemas)
+        all_schemas = repository.all_schemas
 
         all_schemas.each do |file_path, schema|
           return file_path if schema.target_namespace == namespace_uri
@@ -61,7 +61,7 @@ module Lutaml
         @original_schema_location = extract_original_location(repository)
 
         # Get type statistics
-        types = repository.send(:types_in_namespace, @uri)
+        types = repository.types_in_namespace(@uri)
         @type_count = types.size
         @types_by_category = count_types_by_category(types)
       end

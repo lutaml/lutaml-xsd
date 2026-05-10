@@ -9,7 +9,7 @@ module Lutaml
       # @param repository [SchemaRepository] Repository with parsed schemas
       # @return [Array<SerializedSchema>] Array of serialized schema objects
       def resolve_schemas(repository)
-        all_schemas = repository.send(:get_all_processed_schemas)
+        all_schemas = repository.all_schemas
 
         all_schemas.map do |file_path, schema|
           serialize_schema(file_path, schema)

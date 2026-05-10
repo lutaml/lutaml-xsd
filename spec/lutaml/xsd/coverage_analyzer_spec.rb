@@ -106,9 +106,9 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
 
     before do
       allow(Lutaml::Xsd::DependencyGrapher).to receive(:new).with(repository).and_return(dependency_grapher)
-      allow(dependency_grapher).to receive(:send).with(
-        :extract_type_references, anything
-      ).and_return([])
+      allow(dependency_grapher).to receive(:extract_type_references)
+        .with(anything)
+        .and_return([])
     end
 
     context "with no entry types" do
@@ -150,9 +150,8 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
     context "with dependencies" do
       before do
         # TypeA depends on TypeB
-        allow(dependency_grapher).to receive(:send).with(
-          :extract_type_references, anything
-        ) do |_, definition|
+        allow(dependency_grapher).to receive(:extract_type_references)
+          .with(anything) do |definition|
           if definition.name == "TypeA"
             ["ns:TypeB"]
           else

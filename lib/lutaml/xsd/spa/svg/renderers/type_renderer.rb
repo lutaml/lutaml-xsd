@@ -65,7 +65,7 @@ module Lutaml
                 box.y + indicator.offset_y,
                 indicator.text,
                 {
-                  fill: config.colors.indicators.send(type.to_sym),
+                  fill: config.colors.indicators.color_for(type),
                   "font-size" => config.dimensions.text_small_font_size,
                   "font-style" => indicator.style,
                   "text-anchor" => "end",

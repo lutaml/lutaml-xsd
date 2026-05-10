@@ -215,7 +215,7 @@ module Lutaml
 
       # Check element references in group content (sequence/choice/all)
       def check_element_refs_in_group_content(content, schema)
-        return unless content.respond_to?(:element)
+        return unless content.element
 
         content.element.each do |elem|
           next unless elem.ref
@@ -228,13 +228,9 @@ module Lutaml
         end
 
         # Recursively check nested groups
-        if content.respond_to?(:choice)
-          [content.choice].flatten.compact.each do |nested|
-            check_element_refs_in_group_content(nested, schema)
-          end
+        [content.choice].flatten.compact.each do |nested|
+          check_element_refs_in_group_content(nested, schema)
         end
-
-        return unless content.respond_to?(:sequence)
 
         [content.sequence].flatten.compact.each do |nested|
           check_element_refs_in_group_content(nested, schema)
@@ -266,7 +262,7 @@ module Lutaml
 
       # Check group references in content
       def check_group_refs_in_content(content, schema)
-        return unless content.respond_to?(:group)
+        return unless content.group
 
         [content.group].flatten.compact.each do |grp|
           next unless grp.ref
@@ -396,11 +392,11 @@ module Lutaml
       def validate_imports_and_includes
         all_schemas.each do |schema|
           # Check imports - import is an array of Import objects
-          imports = schema.respond_to?(:import) ? schema.import : []
+          imports = schema.import
           imports = [imports] unless imports.is_a?(Array)
 
           imports.compact.each do |imp|
-            next unless imp.respond_to?(:namespace) && imp.namespace
+            next unless imp.namespace
 
             # Verify that the imported namespace has schemas in the repository
             found = all_schemas.any? { |s| s.target_namespace == imp.namespace }
@@ -411,11 +407,11 @@ module Lutaml
           end
 
           # Check includes - include is an array of Include objects
-          includes = schema.respond_to?(:include) ? schema.include : []
+          includes = schema.include
           includes = [includes] unless includes.is_a?(Array)
 
           includes.compact.each do |inc|
-            next unless inc.respond_to?(:schema_path) && inc.schema_path
+            next unless inc.schema_path
 
             # Verify the included schema is in the repository
             found = repository.files&.any? do |f|
@@ -465,19 +461,15 @@ module Lutaml
 
       # Count elements in content
       def count_elements_in_content(content)
-        return 0 unless content.respond_to?(:element)
+        return 0 unless content.element
 
         count = content.element.count(&:ref)
         # Recursively count nested groups
-        if content.respond_to?(:choice)
-          [content.choice].flatten.compact.each do |nested|
-            count += count_elements_in_content(nested)
-          end
+        [content.choice].flatten.compact.each do |nested|
+          count += count_elements_in_content(nested)
         end
-        if content.respond_to?(:sequence)
-          [content.sequence].flatten.compact.each do |nested|
-            count += count_elements_in_content(nested)
-          end
+        [content.sequence].flatten.compact.each do |nested|
+          count += count_elements_in_content(nested)
         end
         count
       end
@@ -499,7 +491,7 @@ module Lutaml
         all_schemas.each do |schema|
           schema.complex_type.each do |ct|
             [ct.sequence, ct.choice].flatten.compact.each do |content|
-              count += [content.group].flatten.compact.count(&:ref) if content.respond_to?(:group)
+              count += [content.group].flatten.compact.count(&:ref) if content.group
             end
           end
         end
@@ -520,7 +512,7 @@ module Lutaml
       # Get all schemas from the repository
       def all_schemas
         # Use the repository's method to get all processed schemas
-        repository.send(:get_all_processed_schemas).values
+        repository.all_schemas.values
       rescue StandardError
         # Fallback to parsed_schemas if the method doesn't work
         repository.instance_variable_get(:@parsed_schemas)&.values || []
@@ -542,7 +534,7 @@ module Lutaml
         return type_ref if type_ref.include?(":") || schema_namespace.nil?
 
         # Get prefix for this namespace
-        prefix = repository.send(:namespace_to_prefix, schema_namespace)
+        prefix = repository.namespace_to_prefix(schema_namespace)
 
         # If we have a prefix, qualify the type
         prefix ? "#{prefix}:#{type_ref}" : type_ref
@@ -557,7 +549,7 @@ module Lutaml
         return ref if ref.include?(":") || schema_namespace.nil?
 
         # Get prefix for this namespace
-        prefix = repository.send(:namespace_to_prefix, schema_namespace)
+        prefix = repository.namespace_to_prefix(schema_namespace)
 
         # If we have a prefix, qualify the reference
         prefix ? "#{prefix}:#{ref}" : ref
