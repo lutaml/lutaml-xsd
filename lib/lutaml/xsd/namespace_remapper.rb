@@ -102,7 +102,7 @@ module Lutaml
         return unless repository.instance_variable_get(:@resolved)
 
         type_index = new_repo.instance_variable_get(:@type_index)
-        all_schemas = new_repo.send(:get_all_processed_schemas)
+        all_schemas = new_repo.all_schemas
         type_index.build_from_schemas(all_schemas)
       end
     end

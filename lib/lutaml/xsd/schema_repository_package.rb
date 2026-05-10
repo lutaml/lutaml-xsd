@@ -489,7 +489,7 @@ module Lutaml
         end
 
         # Then, add all imported/included schema dependencies
-        all_schemas = repository.send(:get_all_processed_schemas)
+        all_schemas = repository.all_schemas
 
         # Convert schema location mappings to Glob format for resolution
         glob_mappings = (repository.schema_location_mappings || []).map(&:to_glob_format)
@@ -519,7 +519,7 @@ module Lutaml
       # @param repository [SchemaRepository] Repository with parsed schemas
       # @return [Array<SerializedSchema>] Array of serialized schemas
       def serialize_schemas(repository)
-        all_schemas = repository.send(:get_all_processed_schemas)
+        all_schemas = repository.all_schemas
 
         all_schemas.map do |file_path, schema|
           SerializedSchema.from_schema(file_path, schema)

@@ -122,7 +122,7 @@ module Lutaml
         @verbose = verbose
 
         # Get all processed schemas including imports/includes
-        all_schemas = get_all_processed_schemas
+        all_schemas = self.all_schemas
 
         if @verbose
           total_imports = count_total_imports(all_schemas)
@@ -131,10 +131,10 @@ module Lutaml
 
             processed = 0
             all_schemas.each_value do |schema|
-              imports = schema.respond_to?(:import) ? schema.import : []
+              imports = schema.import
               (imports || []).each do |import|
                 processed += 1
-                namespace_info = import.respond_to?(:namespace) ? (import.namespace || "no namespace") : "unknown"
+                namespace_info = import.namespace || "no namespace"
                 print "\r[#{processed}/#{total_imports}] #{namespace_info}"
                 $stdout.flush
               end
@@ -339,7 +339,7 @@ module Lutaml
         local_name = parsed[:local_name]
 
         # Get all processed schemas (including those from loaded packages)
-        all_schemas = get_all_processed_schemas
+        all_schemas = self.all_schemas
 
         # Search all schemas
         all_schemas.each_value do |schema|
@@ -369,7 +369,7 @@ module Lutaml
         local_name = parsed[:local_name]
 
         # Get all processed schemas (including those from loaded packages)
-        all_schemas = get_all_processed_schemas
+        all_schemas = self.all_schemas
 
         all_schemas.each_value do |schema|
           next unless schema.target_namespace == namespace_uri
@@ -393,7 +393,7 @@ module Lutaml
         local_name = parsed[:local_name]
 
         # Get all processed schemas (including those from loaded packages)
-        all_schemas = get_all_processed_schemas
+        all_schemas = self.all_schemas
 
         all_schemas.each_value do |schema|
           next unless schema.target_namespace == namespace_uri
@@ -561,16 +561,23 @@ module Lutaml
         validator.validate
       end
 
-      # Get all processed schemas (public accessor for validators/analyzers)
+      # Get all processed schemas including imported/included schemas
       # @return [Hash] All schemas from the global processed_schemas cache
       def all_schemas
-        get_all_processed_schemas
+        Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
       end
 
       # Get all schemas (alias for compatibility)
       # @return [Hash] All schemas from the global processed_schemas cache
       def schemas
-        get_all_processed_schemas
+        all_schemas
+      end
+
+      # Get all types in a namespace
+      # @param namespace_uri [String] The namespace URI
+      # @return [Array<Hash>] List of type information
+      def types_in_namespace(namespace_uri)
+        @type_index.find_all_in_namespace(namespace_uri)
       end
 
       # Get all elements organized by namespace
@@ -580,7 +587,7 @@ module Lutaml
       def elements_by_namespace(namespace_uri: nil)
         results = {}
 
-        get_all_processed_schemas.each_value do |schema|
+        all_schemas.each_value do |schema|
           ns = schema.target_namespace
           next if namespace_uri && ns != namespace_uri
 
@@ -635,7 +642,7 @@ module Lutaml
       def needs_parsing?
         # Check if schemas are already in the global cache
         # (either from package loading or previous parse)
-        get_all_processed_schemas.empty?
+        all_schemas.empty?
       end
 
       # Add a schema file to the repository
@@ -1007,13 +1014,6 @@ module Lutaml
         end
       end
 
-      # Get all processed schemas including imported/included schemas
-      # @return [Hash] All schemas from the global processed_schemas cache
-      def get_all_processed_schemas
-        # Access the global processed_schemas cache from Schema class
-        Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
-      end
-
       # Parse a single schema file
       # @param file_path [String] Path to schema file
       # @param glob_mappings [Array<Hash>] Schema location mappings
@@ -1048,12 +1048,9 @@ module Lutaml
         dependencies = {}
 
         @parsed_schemas.each do |file_path, schema|
-          deps = []
-          (schema.imports || []).each do |import|
-            deps << import.schema_path if import.respond_to?(:schema_path)
-          end
+          deps = (schema.imports || []).map(&:schema_path)
           (schema.includes || []).each do |include|
-            deps << include.schema_path if include.respond_to?(:schema_path)
+            deps << include.schema_path
           end
           dependencies[file_path] = deps.compact
         end
@@ -1095,13 +1092,6 @@ module Lutaml
         false
       end
 
-      # Get all types in a namespace
-      # @param namespace_uri [String] The namespace URI
-      # @return [Array<Hash>] List of type information
-      def types_in_namespace(namespace_uri)
-        @type_index.find_all_in_namespace(namespace_uri)
-      end
-
       # Format statistics as human-readable text
       # @param stats [Hash] Statistics hash
       # @return [String] Formatted text
@@ -1129,7 +1119,7 @@ module Lutaml
       # @return [Integer] Total import count
       def count_total_imports(schemas)
         schemas.values.sum do |schema|
-          imports = schema.respond_to?(:import) ? schema.import : []
+          imports = schema.import
           (imports || []).size
         end
       end
@@ -1144,7 +1134,7 @@ module Lutaml
         docs = [docs] unless docs.is_a?(Array)
 
         docs.filter_map do |doc|
-          content = doc.respond_to?(:content) ? doc.content : doc.to_s
+          content = doc.content || doc.to_s
           content&.strip
         end.first || ""
       end

@@ -184,11 +184,11 @@ module Lutaml
             namespaces.map do |uri|
               data = {
                 uri: uri,
-                prefix: repository.send(:namespace_to_prefix, uri),
+                prefix: repository.namespace_to_prefix(uri),
               }
 
               if options[:show_counts]
-                types = repository.send(:types_in_namespace, uri)
+                types = repository.types_in_namespace(uri)
                 data[:type_count] = types.size
                 data[:types_by_category] = count_types_by_category(types)
               end
@@ -282,13 +282,13 @@ module Lutaml
           end
 
           def build_namespace_info(repository)
-            types = repository.send(:types_in_namespace, @namespace_uri)
+            types = repository.types_in_namespace(@namespace_uri)
             types_by_category = Hash.new(0)
             types.each { |type_info| types_by_category[type_info[:type]] += 1 }
 
             info = {
               uri: @namespace_uri,
-              prefix: repository.send(:namespace_to_prefix, @namespace_uri),
+              prefix: repository.namespace_to_prefix(@namespace_uri),
               total_types: types.size,
               types_by_category: types_by_category,
             }
@@ -402,10 +402,10 @@ module Lutaml
 
           def build_tree_data(repository, namespaces)
             tree_data = namespaces.map do |uri|
-              types = repository.send(:types_in_namespace, uri)
+              types = repository.types_in_namespace(uri)
               {
                 uri: uri,
-                prefix: repository.send(:namespace_to_prefix, uri),
+                prefix: repository.namespace_to_prefix(uri),
                 type_count: types.size,
                 types_by_category: count_types_by_category(types),
               }
