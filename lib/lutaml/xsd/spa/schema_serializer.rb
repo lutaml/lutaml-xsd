@@ -68,17 +68,10 @@ module Lutaml
           metadata = build_metadata
           # Convert SpaMetadata model to hash for JSON serialization
           # SpaMetadata.to_hash returns string keys, but we need symbol keys for compatibility
-          metadata_hash = if metadata.respond_to?(:to_hash)
-                            hash = metadata.to_hash
-                            # Convert string keys to symbols for backward compatibility
-                            hash.to_h do |k, v|
-                              [k.is_a?(String) ? k.to_sym : k, v]
-                            end
-                          elsif metadata.respond_to?(:to_h)
-                            metadata.to_h
-                          else
-                            metadata
-                          end
+          hash = metadata.to_hash
+          metadata_hash = hash.to_h do |k, v|
+            [k.is_a?(String) ? k.to_sym : k, v]
+          end
           {
             metadata: metadata_hash,
             schemas: serialize_schemas,
@@ -107,12 +100,10 @@ module Lutaml
           pkg_meta = @package&.metadata
 
           # Extract metadata from package (supports both Hash-like and Lutaml::Model objects)
-          pkg_hash = if pkg_meta.respond_to?(:to_h)
-                       pkg_meta.to_h
-                     elsif pkg_meta.respond_to?(:to_hash)
-                       pkg_meta.to_hash
-                     elsif pkg_meta.is_a?(Hash)
+          pkg_hash = if pkg_meta.is_a?(Hash)
                        pkg_meta
+                     elsif pkg_meta
+                       pkg_meta.to_h
                      else
                        {}
                      end
@@ -150,7 +141,7 @@ module Lutaml
           return @namespace_prefix_lookup if defined?(@namespace_prefix_lookup) && @namespace_prefix_lookup
 
           @namespace_prefix_lookup = {}
-          if repository.respond_to?(:namespace_mappings) && repository.namespace_mappings
+          if repository.namespace_mappings && !repository.namespace_mappings.empty?
             repository.namespace_mappings.each do |mapping|
               if mapping.uri && mapping.prefix
                 @namespace_prefix_lookup[mapping.uri] =
@@ -389,10 +380,7 @@ module Lutaml
         # @return [Array<Hash>] Serialized elements (sorted alphabetically by name)
         def serialize_elements(schema,
           prefix = nil, schema_source = nil, file_path = nil)
-          return [] unless schema.respond_to?(:elements) || schema.respond_to?(:element)
-
-          elements = schema.respond_to?(:elements) ? schema.elements : schema.element
-          elements.map.with_index do |element, index|
+          schema.elements.map.with_index do |element, index|
             serialize_element(element, index, prefix, schema_source, file_path)
           end.sort_by { |e| e[:name] || "" }
         end
@@ -425,29 +413,15 @@ module Lutaml
           }
 
           # Enriched fields
-          if element.respond_to?(:ref) && element.ref
-            element_data[:ref] =
-              element.ref
+          element_data[:ref] = element.ref if element.ref
+          element_data[:nillable] = element.nillable if element.nillable
+          element_data[:abstract] = element.abstract if element.abstract
+          if element.substitution_group
+            element_data[:substitution_group] =
+              element.substitution_group
           end
-          if element.respond_to?(:nillable) && element.nillable
-            element_data[:nillable] =
-              element.nillable
-          end
-          if element.respond_to?(:abstract) && element.abstract
-            element_data[:abstract] =
-              element.abstract
-          end
-          if element.respond_to?(:substitution_group) && element.substitution_group
-            element_data[:substitution_group] = element.substitution_group
-          end
-          if element.respond_to?(:default) && element.default
-            element_data[:default] =
-              element.default
-          end
-          if element.respond_to?(:fixed) && element.fixed
-            element_data[:fixed] =
-              element.fixed
-          end
+          element_data[:default] = element.default if element.default
+          element_data[:fixed] = element.fixed if element.fixed
 
           # Add SVG diagram
           element_data[:diagram_svg] =
@@ -598,10 +572,7 @@ module Lutaml
         # @return [Array<Hash>] Serialized complex types (sorted alphabetically by name)
         def serialize_complex_types(schema, prefix = nil, schema_source = nil,
 file_path = nil)
-          return [] unless schema.respond_to?(:complex_types) || schema.respond_to?(:complex_type)
-
-          types = schema.respond_to?(:complex_types) ? schema.complex_types : schema.complex_type
-          types.map.with_index do |type, index|
+          schema.complex_types.map.with_index do |type, index|
             serialize_complex_type(
               type, index, prefix, schema_source, file_path
             )
@@ -621,8 +592,8 @@ schema_source = nil, file_path = nil)
             name: type.name,
             base: extract_base_type(type),
             content_model: content_model,
-            abstract: type.respond_to?(:abstract) ? type.abstract : false,
-            mixed: type.respond_to?(:mixed) ? type.mixed : false,
+            abstract: type.abstract || false,
+            mixed: type.mixed || false,
             attributes: serialize_type_attributes(type),
             elements: serialize_type_elements(type),
             groups: serialize_type_group_refs(type),
@@ -656,18 +627,18 @@ schema_source = nil, file_path = nil)
           attrs = []
 
           # Check simpleContent.extension
-          if type.respond_to?(:simple_content) && type.simple_content
+          if type.simple_content
             sc = type.simple_content
-            if sc.respond_to?(:extension) && sc.extension
+            if sc.extension
               ext = sc.extension
               attrs.concat(collect_from_extension(ext))
             end
           end
 
           # Check complexContent.extension
-          if type.respond_to?(:complex_content) && type.complex_content
+          if type.complex_content
             cc = type.complex_content
-            if cc.respond_to?(:extension) && cc.extension
+            if cc.extension
               ext = cc.extension
               attrs.concat(collect_from_extension(ext))
             end
@@ -684,32 +655,22 @@ schema_source = nil, file_path = nil)
           attrs = []
 
           # Direct attributes
-          if extension.respond_to?(:attribute) && extension.attribute
-            direct_attrs = extension.attribute.is_a?(Array) ? extension.attribute : [extension.attribute]
-            direct_attrs.each do |attr|
-              attr_name = if attr.respond_to?(:name) && attr.name
-                            attr.name
-                          else
-                            (attr.respond_to?(:ref) ? attr.ref : nil)
-                          end
+          if extension.attribute && !extension.attribute.empty?
+            extension.attribute.each do |attr|
+              attr_name = attr.name || attr.ref
               attrs << {
                 name: attr_name,
-                ref: attr.respond_to?(:ref) ? attr.ref : nil,
-                type: attr.respond_to?(:type) ? attr.type : nil,
-                use: attr.respond_to?(:use) ? attr.use : nil,
+                ref: attr.ref,
+                type: attr.type,
+                use: attr.use,
               }
             end
           end
 
           # Attribute groups
-          if extension.respond_to?(:attribute_group) && extension.attribute_group
-            ext_groups = extension.attribute_group.is_a?(Array) ? extension.attribute_group : [extension.attribute_group]
-            ext_groups.each do |ag|
-              ag_name = if ag.respond_to?(:ref)
-                          ag.ref
-                        else
-                          (ag.respond_to?(:name) ? ag.name : nil)
-                        end
+          if extension.attribute_group && !extension.attribute_group.empty?
+            extension.attribute_group.each do |ag|
+              ag_name = ag.ref || ag.name
               if ag_name
                 # Look up attributes from the attribute group definition
                 looked_up_attrs = lookup_attribute_group_attributes(ag_name)
@@ -729,10 +690,7 @@ schema_source = nil, file_path = nil)
         # @param prefix [String, nil] Optional prefix for IDs
         # @return [Array<Hash>] Serialized simple types (sorted alphabetically by name)
         def serialize_simple_types(schema, prefix = nil)
-          return [] unless schema.respond_to?(:simple_types) || schema.respond_to?(:simple_type)
-
-          types = schema.respond_to?(:simple_types) ? schema.simple_types : schema.simple_type
-          types.map.with_index do |type, index|
+          schema.simple_types.map.with_index do |type, index|
             serialize_simple_type(type, index, prefix)
           end.sort_by { |t| t[:name] || "" }
         end
@@ -760,10 +718,7 @@ schema_source = nil, file_path = nil)
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized attributes
         def serialize_attributes(schema, prefix = nil)
-          return [] unless schema.respond_to?(:attributes) || schema.respond_to?(:attribute)
-
-          attrs = schema.respond_to?(:attributes) ? schema.attributes : schema.attribute
-          attrs.map.with_index do |attr, index|
+          schema.attributes.map.with_index do |attr, index|
             serialize_attribute(attr, index, prefix)
           end
         end
@@ -789,10 +744,7 @@ schema_source = nil, file_path = nil)
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized groups
         def serialize_groups(schema, prefix = nil)
-          return [] unless schema.respond_to?(:groups) || schema.respond_to?(:group)
-
-          grps = schema.respond_to?(:groups) ? schema.groups : schema.group
-          grps.map.with_index do |group, index|
+          schema.groups.map.with_index do |group, index|
             serialize_group(group, index, prefix)
           end
         end
@@ -820,13 +772,7 @@ schema_source = nil, file_path = nil)
         # @return [Array<Hash>] Serialized attribute groups (sorted alphabetically by name)
         def serialize_attribute_groups(schema, prefix = nil,
 schema_source = nil)
-          groups = if schema.respond_to?(:attribute_groups)
-                     schema.attribute_groups
-                   elsif schema.respond_to?(:attribute_group)
-                     schema.attribute_group
-                   else
-                     []
-                   end
+          groups = schema.attribute_group
           return [] if groups.nil? || groups.empty?
 
           groups.map do |ag|
@@ -876,7 +822,7 @@ source = nil)
         # @param ag [AttributeGroup] Attribute group
         # @return [Array<Hash>] Serialized attributes
         def serialize_ag_attributes(ag)
-          return [] unless ag.respond_to?(:attribute) && ag.attribute
+          return [] unless ag.attribute && !ag.attribute.empty?
 
           ag.attribute.map do |attr|
             # Check for inline simpleType with enumeration
@@ -884,9 +830,9 @@ source = nil)
             {
               name: attr.name || "#{attr.ref} (ref)",
               type: enum_type || attr.type,
-              use: attr.respond_to?(:use) ? attr.use : nil,
-              default: enum_default || (attr.respond_to?(:default) ? attr.default : nil),
-              fixed: attr.respond_to?(:fixed) ? attr.fixed : nil,
+              use: attr.use,
+              default: enum_default || attr.default,
+              fixed: attr.fixed,
               documentation: extract_documentation(attr),
             }
           end
@@ -897,16 +843,12 @@ source = nil)
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized imports
         def serialize_imports(schema)
-          return [] unless schema.respond_to?(:imports) && schema.imports
+          return [] unless schema.imports && !schema.imports.empty?
 
           schema.imports.filter_map do |imp|
             {
-              namespace: imp.respond_to?(:namespace) ? imp.namespace : nil,
-              schema_location: if imp.respond_to?(:schema_path)
-                                 imp.schema_path
-                               elsif imp.respond_to?(:schema_location)
-                                 imp.schema_location
-                               end,
+              namespace: imp.namespace,
+              schema_location: imp.schema_path,
             }
           end
         end
@@ -916,15 +858,11 @@ source = nil)
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized includes
         def serialize_includes(schema)
-          return [] unless schema.respond_to?(:includes) && schema.includes
+          return [] unless schema.includes && !schema.includes.empty?
 
           schema.includes.filter_map do |inc|
             {
-              schema_location: if inc.respond_to?(:schema_path)
-                                 inc.schema_path
-                               elsif inc.respond_to?(:schema_location)
-                                 inc.schema_location
-                               end,
+              schema_location: inc.schema_path,
             }
           end
         end
@@ -935,7 +873,7 @@ source = nil)
         # @return [Array<Hash>] Serialized elements
         def serialize_group_elements(group)
           elements = []
-          if group.respond_to?(:elements) && group.elements
+          if group.elements && !group.elements.empty?
             elements = group.elements.map do |elem|
               {
                 name: elem.name,
@@ -946,7 +884,7 @@ source = nil)
                   min: elem.min_occurs || 1,
                   max: elem.max_occurs || 1,
                 },
-                reference: elem.respond_to?(:ref) ? elem.ref : nil,
+                reference: elem.ref,
                 documentation: extract_documentation(elem),
               }
             end
@@ -960,14 +898,14 @@ source = nil)
         # @return [Array<Hash>] Serialized attributes
         def serialize_group_attributes(group)
           attrs = []
-          if group.respond_to?(:attributes) && group.attributes
+          if group.attributes && !group.attributes.empty?
             attrs = group.attributes.map do |attr|
               {
                 name: attr.name,
                 type: attr.type,
-                use: attr.respond_to?(:use) ? attr.use : nil,
-                default: attr.respond_to?(:default) ? attr.default : nil,
-                fixed: attr.respond_to?(:fixed) ? attr.fixed : nil,
+                use: attr.use,
+                default: attr.default,
+                fixed: attr.fixed,
                 documentation: extract_documentation(attr),
               }
             end
@@ -980,14 +918,14 @@ source = nil)
         # @param type [ComplexType] Complex type
         # @return [Array<Hash>] Serialized group references
         def serialize_type_group_refs(type)
-          return [] unless type.respond_to?(:group) && type.group
+          return [] unless type.group
 
           groups = type.group.is_a?(Array) ? type.group : [type.group]
           groups.filter_map do |g|
             {
-              ref: g.respond_to?(:ref) ? g.ref : g.name,
-              min_occurs: g.respond_to?(:min_occurs) ? g.min_occurs : nil,
-              max_occurs: g.respond_to?(:max_occurs) ? g.max_occurs : nil,
+              ref: g.ref || g.name,
+              min_occurs: g.min_occurs,
+              max_occurs: g.max_occurs,
             }
           end
         end
@@ -1001,15 +939,31 @@ source = nil)
         def collect_attribute_group_refs(model)
           refs = []
 
-          if model.respond_to?(:attribute_group) && model.attribute_group
+          if model.attribute_group && !model.attribute_group.empty?
             groups = model.attribute_group.is_a?(Array) ? model.attribute_group : [model.attribute_group]
             refs.concat(groups)
           end
 
-          if model.respond_to?(:extension) && model.extension
-            refs.concat(collect_attribute_group_refs(model.extension))
+          if model.extension
+            refs.concat(collect_extension_attribute_group_refs(model.extension))
           end
 
+          refs
+        end
+
+        # Collect attribute group refs from an extension object
+        #
+        # Extension objects (ExtensionSimpleContent, ExtensionComplexContent) have
+        # attribute_group but not extension, so recursion stops here.
+        #
+        # @param extension [ExtensionSimpleContent, ExtensionComplexContent] Extension object
+        # @return [Array<Object>] Collected attribute group reference objects
+        def collect_extension_attribute_group_refs(extension)
+          refs = []
+          if extension.attribute_group && !extension.attribute_group.empty?
+            groups = extension.attribute_group.is_a?(Array) ? extension.attribute_group : [extension.attribute_group]
+            refs.concat(groups)
+          end
           refs
         end
 
@@ -1027,23 +981,22 @@ source = nil)
 
           all_ag_refs = []
 
-          if type.respond_to?(:attribute_group) && type.attribute_group
-            direct_groups = type.attribute_group.is_a?(Array) ? type.attribute_group : [type.attribute_group]
-            all_ag_refs.concat(direct_groups)
+          if type.attribute_group && !type.attribute_group.empty?
+            all_ag_refs.concat(type.attribute_group)
           end
 
-          if type.respond_to?(:simple_content) && type.simple_content
+          if type.simple_content
             all_ag_refs.concat(collect_attribute_group_refs(type.simple_content))
           end
 
-          if type.respond_to?(:complex_content) && type.complex_content
+          if type.complex_content
             all_ag_refs.concat(collect_attribute_group_refs(type.complex_content))
           end
 
           return [] if all_ag_refs.empty?
 
           all_ag_refs.filter_map do |ag|
-            ag_name = ag.respond_to?(:ref) ? ag.ref : ag.name
+            ag_name = ag.ref || ag.name
             next unless ag_name
 
             attrs = lookup_attribute_group_attributes(ag_name)
@@ -1058,7 +1011,7 @@ source = nil)
         def lookup_attribute_group_attributes(ag_name)
           clean_name = ag_name.split(":").last
           get_schemas.each_value do |schema|
-            next unless schema.respond_to?(:attribute_group) && schema.attribute_group
+            next unless schema.attribute_group && !schema.attribute_group.empty?
 
             found_ag = schema.attribute_group.find do |group|
               [clean_name, ag_name].include?(group.name)
@@ -1075,13 +1028,13 @@ source = nil)
         # @param type [SimpleType] Simple type
         # @return [Array<String>, nil] Union member type names
         def extract_union_members(type)
-          return nil unless type.respond_to?(:union) && type.union
+          return nil unless type.union
 
           union = type.union
-          if union.respond_to?(:member_types) && union.member_types
+          if union.member_types && !union.member_types.empty?
             union.member_types.is_a?(String) ? union.member_types.split : union.member_types
-          elsif union.respond_to?(:simple_types) && union.simple_types
-            union.simple_types.filter_map(&:name)
+          elsif union.simple_type && !union.simple_type.empty?
+            union.simple_type.filter_map(&:name)
           end
         end
 
@@ -1090,10 +1043,10 @@ source = nil)
         # @param type [SimpleType] Simple type
         # @return [String, nil] List item type name
         def extract_list_type(type)
-          return nil unless type.respond_to?(:list) && type.list
+          return nil unless type.list
 
           list = type.list
-          list.item_type if list.respond_to?(:item_type)
+          list.item_type
         end
 
         # Build used_by reverse references across all schemas
@@ -1231,7 +1184,7 @@ source = nil)
         # @param type [ComplexType] Complex type
         # @return [Array<Hash>] Serialized attributes
         def serialize_type_attributes(type)
-          return [] unless type.respond_to?(:attributes)
+          return [] unless type.attributes
 
           type.attributes.map do |attr|
             # Check for inline simpleType with enumeration
@@ -1240,8 +1193,8 @@ source = nil)
               name: attr.name || "#{attr.ref} (ref)",
               type: enum_type || attr.type,
               use: attr.use,
-              default: enum_default || (attr.respond_to?(:default) ? attr.default : nil),
-              fixed: attr.respond_to?(:fixed) ? attr.fixed : nil,
+              default: enum_default || attr.default,
+              fixed: attr.fixed,
               documentation: extract_documentation(attr),
             }
           end
@@ -1252,7 +1205,7 @@ source = nil)
         # @param type [ComplexType] Complex type
         # @return [Array<Hash>] Serialized elements
         def serialize_type_elements(type)
-          return [] unless type.respond_to?(:elements)
+          return [] unless type.elements
 
           type.elements.map do |elem|
             {
@@ -1264,7 +1217,7 @@ source = nil)
                 min: elem.min_occurs || 1,
                 max: elem.max_occurs || 1,
               },
-              reference: elem.respond_to?(:ref) ? elem.ref : nil,
+              reference: elem.ref,
               documentation: extract_documentation(elem),
             }
           end
@@ -1275,7 +1228,7 @@ source = nil)
         # @param type [SimpleType] Simple type
         # @return [Hash, nil] Restriction data
         def serialize_restriction(type)
-          return nil unless type.respond_to?(:restriction)
+          return nil unless type.restriction
 
           restriction = type.restriction
           return nil unless restriction
@@ -1289,10 +1242,10 @@ source = nil)
         # Facet serializers: maps facet name to how to extract and format it
         #
         # Each entry: [method_name, facet_type_label]
-        #   method_name  — what restriction.respond_to?(:method_name) && restriction.method_name to call
+        #   method_name  — the attribute method on RestrictionSimpleType
         #   facet_type   — the type string emitted in serialized facet
         FACET_METHODS = [
-          [:enumerations, "enumeration"],
+          [:enumeration, "enumeration"],
           [:pattern, "pattern"],
           [:min_length, "min_length"],
           [:max_length, "max_length"],
@@ -1314,10 +1267,10 @@ source = nil)
           return [] unless restriction
 
           FACET_METHODS.filter_map do |method_name, facet_type|
-            value = restriction.respond_to?(method_name) && restriction.send(method_name)
-            next unless value
+            value = restriction.public_send(method_name)
+            next if value.nil? || value.empty?
 
-            if method_name == :enumerations
+            if method_name == :enumeration
               { type: facet_type, values: value }
             else
               { type: facet_type, value: value }
@@ -1330,9 +1283,8 @@ source = nil)
         # @param obj [Object] Schema object
         # @return [String, nil] Documentation text
         def extract_documentation(obj)
-          return nil unless obj.respond_to?(:annotation)
           return nil unless obj.annotation
-          return nil unless obj.annotation.respond_to?(:documentations)
+          return nil unless obj.annotation.documentations
 
           docs = obj.annotation.documentations
           return nil if docs.empty?
@@ -1345,11 +1297,11 @@ source = nil)
         # @param type [ComplexType] Complex type
         # @return [String] Content model type
         def extract_content_model(type)
-          return "sequence" if type.respond_to?(:sequence) && type.sequence
-          return "choice" if type.respond_to?(:choice) && type.choice
-          return "all" if type.respond_to?(:all) && type.all
-          return "complex_content" if type.respond_to?(:complex_content) && type.complex_content
-          return "simple_content" if type.respond_to?(:simple_content) && type.simple_content
+          return "sequence" if type.sequence
+          return "choice" if type.choice
+          return "all" if type.all
+          return "complex_content" if type.complex_content
+          return "simple_content" if type.simple_content
 
           "empty"
         end
@@ -1359,12 +1311,12 @@ source = nil)
         # @param content_model [Object] simpleContent or complexContent
         # @return [String, nil] Base type name
         def base_from_content_model(content_model)
-          if content_model.respond_to?(:extension) && content_model.extension
+          if content_model.extension
             ext = content_model.extension
-            return ext.base if ext.respond_to?(:base)
-          elsif content_model.respond_to?(:restriction) && content_model.restriction
+            return ext.base if ext.base
+          elsif content_model.restriction
             rst = content_model.restriction
-            return rst.base if rst.respond_to?(:base)
+            return rst.base if rst.base
           end
           nil
         end
@@ -1374,12 +1326,12 @@ source = nil)
         # @param type [ComplexType] Complex type
         # @return [String, nil] Base type name
         def extract_base_type(type)
-          if type.respond_to?(:complex_content) && type.complex_content
+          if type.complex_content
             base = base_from_content_model(type.complex_content)
             return base if base
           end
 
-          if type.respond_to?(:simple_content) && type.simple_content
+          if type.simple_content
             base = base_from_content_model(type.simple_content)
             return base if base
           end
@@ -1392,11 +1344,11 @@ source = nil)
         # @param type [SimpleType] Simple type
         # @return [String, nil] Base type name
         def extract_simple_base(type)
-          return type.restriction.base if type.respond_to?(:restriction) && type.restriction.respond_to?(:base)
+          return type.restriction.base if type.restriction&.base
 
-          return type.list.item_type if type.respond_to?(:list) && type.list.respond_to?(:item_type)
+          return type.list.item_type if type.list&.item_type
 
-          if type.respond_to?(:union) && type.union
+          if type.union
             return "union" # Union types have multiple bases
           end
 
@@ -1495,7 +1447,7 @@ source = nil)
           end
 
           # Fallback to target namespace extraction
-          if schema.respond_to?(:target_namespace) && schema.target_namespace
+          if schema.target_namespace
             # Extract last meaningful part of namespace URI
             uri = schema.target_namespace
             # For URNs like "urn:oasis:names:tc:unitsml:schema:xsd:UnitsML-Schema-1.0"
@@ -1526,19 +1478,16 @@ source = nil)
           # not the resolved dependencies
           entrypoint_files = []
 
-          if package.respond_to?(:metadata)
+          if package
             metadata = package.metadata
             # Handle both Hash (backward compat) and SchemaRepositoryMetadata object
             entrypoint_files = if metadata.is_a?(Hash)
                                  metadata[:files] || metadata["files"] || []
-                               elsif metadata.respond_to?(:files)
+                               elsif metadata
                                  metadata.files || []
                                else
                                  []
                                end
-          elsif repository.respond_to?(:files) && !repository.respond_to?(:all_schemas)
-            # Direct repository has files attribute
-            entrypoint_files = repository.files || []
           end
 
           return false if entrypoint_files.empty?
@@ -1573,14 +1522,7 @@ source = nil)
         #
         # @return [Hash] Hash of file_path => schema
         def get_schemas
-          if repository.respond_to?(:all_schemas)
-            repository.all_schemas
-          elsif repository.respond_to?(:schemas)
-            # Fallback for other repository types
-            repository.schemas
-          else
-            {}
-          end
+          repository.all_schemas
         end
 
         # Index building methods (can be overridden)
@@ -1629,13 +1571,13 @@ source = nil)
           # Search through all schemas to find the one containing this component
           get_schemas.each_value do |schema|
             # Check if component is in this schema's elements
-            return schema if schema.respond_to?(:element) && schema.element&.include?(component)
+            return schema if schema.element&.include?(component)
 
             # Check if component is in this schema's complex types
-            return schema if schema.respond_to?(:complex_type) && schema.complex_type&.include?(component)
+            return schema if schema.complex_type&.include?(component)
 
             # Check if component is in this schema's simple types
-            return schema if schema.respond_to?(:simple_type) && schema.simple_type&.include?(component)
+            return schema if schema.simple_type&.include?(component)
           end
 
           # If not found, return first schema as fallback

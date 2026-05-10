@@ -204,7 +204,7 @@ module Lutaml
         # @param result [Hash] Validation result
         # @return [void]
         def output_file_result(file, result)
-          if result.respond_to?(:valid?) ? result.valid? : result[:valid]
+          if result.is_a?(Hash) ? result[:valid] : result.valid?
             output "✓ #{file}"
           else
             output "✗ #{file}"
@@ -218,15 +218,15 @@ module Lutaml
         # @param result [Hash] Validation result
         # @return [void]
         def output_errors(result)
-          errors = result.respond_to?(:errors) ? result.errors : result[:errors]
+          errors = result.is_a?(Hash) ? result[:errors] : result.errors
           return unless errors
 
           errors.take(options[:max_errors] || 10).each do |error|
-            if error.respond_to?(:to_detailed_message)
-              output "  #{error.to_detailed_message.gsub("\n", "\n  ")}"
-            else
+            if error.is_a?(Hash)
               location = error[:location] ? " at #{error[:location]}" : ""
               output "  • #{error[:message]}#{location}"
+            else
+              output "  #{error.to_detailed_message.gsub("\n", "\n  ")}"
             end
           end
 
@@ -242,7 +242,7 @@ module Lutaml
         def output_summary(results)
           total = results.size
           valid = results.count do |r|
-            r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid]
+            r[:result].is_a?(Hash) ? r[:result][:valid] : r[:result].valid?
           end
           invalid = total - valid
 
@@ -262,16 +262,16 @@ module Lutaml
             summary: {
               total: results.size,
               valid: results.count do |r|
-                r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid]
+                r[:result].is_a?(Hash) ? r[:result][:valid] : r[:result].valid?
               end,
               invalid: results.count do |r|
-                !(r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid])
+                !(r[:result].is_a?(Hash) ? r[:result][:valid] : r[:result].valid?)
               end,
             },
             files: results.map do |item|
               {
                 file: item[:file],
-                valid: item[:result].respond_to?(:valid?) ? item[:result].valid? : item[:result][:valid],
+                valid: item[:result].is_a?(Hash) ? item[:result][:valid] : item[:result].valid?,
                 errors: format_errors_for_json(item[:result]),
               }
             end,
@@ -283,14 +283,14 @@ module Lutaml
         # @param result [Hash] Validation result
         # @return [Array<Hash>] Formatted errors
         def format_errors_for_json(result)
-          errors = result.respond_to?(:errors) ? result.errors : result[:errors]
+          errors = result.is_a?(Hash) ? result[:errors] : result.errors
           return [] unless errors
 
           errors.map do |error|
-            if error.respond_to?(:to_h)
-              error.to_h
-            else
+            if error.is_a?(Hash)
               error
+            else
+              error.to_h
             end
           end
         end
@@ -301,7 +301,7 @@ module Lutaml
         # @return [void]
         def exit_with_status(results)
           invalid_count = results.count do |r|
-            !(r[:result].respond_to?(:valid?) ? r[:result].valid? : r[:result][:valid])
+            !(r[:result].is_a?(Hash) ? r[:result][:valid] : r[:result].valid?)
           end
           exit invalid_count.positive? ? 1 : 0
         end

@@ -33,14 +33,13 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
     context "when type is found" do
       let(:complex_type) do
         double("ComplexType", name: "TestType",
+                              complex_content: nil,
+                              simple_content: nil,
+                              restriction: nil,
                               class: Lutaml::Xml::Schema::Xsd::ComplexType).tap do |obj|
-          # Set up is_a? to return true for ComplexType, false for everything else
           allow(obj).to receive(:is_a?) do |klass|
             klass == Lutaml::Xml::Schema::Xsd::ComplexType
           end
-          allow(obj).to receive(:respond_to?).with(:complex_content).and_return(false)
-          allow(obj).to receive(:respond_to?).with(:simple_content).and_return(false)
-          allow(obj).to receive(:respond_to?).with(:restriction).and_return(false)
         end
       end
 
@@ -98,10 +97,6 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
         end
 
         it "extracts base type from complex content extension" do
-          allow(complex_type).to receive(:respond_to?).with(:complex_content).and_return(true)
-          allow(complex_content).to receive(:respond_to?).with(:extension).and_return(true)
-          allow(complex_content).to receive(:respond_to?).with(:restriction).and_return(false)
-
           base = analyzer.send(:extract_base_type, complex_type)
           expect(base).to eq("test:BaseType")
         end
@@ -118,10 +113,6 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
         end
 
         it "extracts base type from complex content restriction" do
-          allow(complex_type).to receive(:respond_to?).with(:complex_content).and_return(true)
-          allow(complex_content).to receive(:respond_to?).with(:extension).and_return(false)
-          allow(complex_content).to receive(:respond_to?).with(:restriction).and_return(true)
-
           base = analyzer.send(:extract_base_type, complex_type)
           expect(base).to eq("test:BaseType")
         end
@@ -138,11 +129,6 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
         end
 
         it "extracts base type from simple content extension" do
-          allow(complex_type).to receive(:respond_to?).with(:complex_content).and_return(false)
-          allow(complex_type).to receive(:respond_to?).with(:simple_content).and_return(true)
-          allow(simple_content).to receive(:respond_to?).with(:extension).and_return(true)
-          allow(simple_content).to receive(:respond_to?).with(:restriction).and_return(false)
-
           base = analyzer.send(:extract_base_type, complex_type)
           expect(base).to eq("xs:string")
         end
@@ -159,11 +145,6 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
         end
 
         it "extracts base type from simple content restriction" do
-          allow(complex_type).to receive(:respond_to?).with(:complex_content).and_return(false)
-          allow(complex_type).to receive(:respond_to?).with(:simple_content).and_return(true)
-          allow(simple_content).to receive(:respond_to?).with(:extension).and_return(false)
-          allow(simple_content).to receive(:respond_to?).with(:restriction).and_return(true)
-
           base = analyzer.send(:extract_base_type, complex_type)
           expect(base).to eq("xs:integer")
         end
@@ -177,10 +158,6 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
         end
 
         it "extracts base type from simple type restriction" do
-          allow(simple_type).to receive(:respond_to?).with(:complex_content).and_return(false)
-          allow(simple_type).to receive(:respond_to?).with(:simple_content).and_return(false)
-          allow(simple_type).to receive(:respond_to?).with(:restriction).and_return(true)
-
           base = analyzer.send(:extract_base_type, simple_type)
           expect(base).to eq("xs:string")
         end
@@ -193,10 +170,6 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
         end
 
         it "returns nil" do
-          allow(complex_type).to receive(:respond_to?).with(:complex_content).and_return(false)
-          allow(complex_type).to receive(:respond_to?).with(:simple_content).and_return(false)
-          allow(complex_type).to receive(:respond_to?).with(:restriction).and_return(false)
-
           base = analyzer.send(:extract_base_type, complex_type)
           expect(base).to be_nil
         end

@@ -60,7 +60,7 @@ module Lutaml
           #
           # @return [Object] The facet constraint value
           def facet_value
-            facet.value if facet.respond_to?(:value)
+            facet.value
           end
 
           protected

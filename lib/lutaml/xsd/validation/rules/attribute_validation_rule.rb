@@ -83,26 +83,24 @@ module Lutaml
             end
 
             # For complex types, collect attributes
-            attributes.concat(Array(schema_def.attribute)) if schema_def.respond_to?(:attribute)
+            attributes.concat(Array(schema_def.attribute)) if schema_def.attribute
 
             # Handle attribute groups
-            if schema_def.respond_to?(:attribute_group)
+            if schema_def.attribute_group
               Array(schema_def.attribute_group).each do |group|
                 attributes.concat(expand_attribute_group(group))
               end
             end
 
             # Handle complex content
-            if schema_def.respond_to?(:complex_content) &&
-                schema_def.complex_content
+            if schema_def.complex_content
               attributes.concat(
                 collect_from_complex_content(schema_def.complex_content),
               )
             end
 
             # Handle simple content
-            if schema_def.respond_to?(:simple_content) &&
-                schema_def.simple_content
+            if schema_def.simple_content
               attributes.concat(
                 collect_from_simple_content(schema_def.simple_content),
               )
@@ -116,8 +114,7 @@ module Lutaml
           # @param element [Lutaml::Xsd::Element] Schema element
           # @return [Lutaml::Xsd::ComplexType, nil]
           def resolve_type(element)
-            return element.complex_type if element.respond_to?(:complex_type) &&
-              element.complex_type
+            return element.complex_type if element.complex_type
 
             # TODO: Resolve type reference from repository
             nil
@@ -128,7 +125,7 @@ module Lutaml
           # @param group [Lutaml::Xsd::AttributeGroup] Attribute group
           # @return [Array<Lutaml::Xsd::Attribute>]
           def expand_attribute_group(group)
-            return [] unless group.respond_to?(:attribute)
+            return [] unless group.attribute
 
             Array(group.attribute)
           end
@@ -140,18 +137,16 @@ module Lutaml
           def collect_from_complex_content(complex_content)
             attributes = []
 
-            if complex_content.respond_to?(:extension) &&
-                complex_content.extension
+            if complex_content.extension
               ext = complex_content.extension
               attributes.concat(Array(ext.attribute)) if
-                ext.respond_to?(:attribute)
+                ext.attribute
             end
 
-            if complex_content.respond_to?(:restriction) &&
-                complex_content.restriction
+            if complex_content.restriction
               restr = complex_content.restriction
               attributes.concat(Array(restr.attribute)) if
-                restr.respond_to?(:attribute)
+                restr.attribute
             end
 
             attributes
@@ -164,18 +159,16 @@ module Lutaml
           def collect_from_simple_content(simple_content)
             attributes = []
 
-            if simple_content.respond_to?(:extension) &&
-                simple_content.extension
+            if simple_content.extension
               ext = simple_content.extension
               attributes.concat(Array(ext.attribute)) if
-                ext.respond_to?(:attribute)
+                ext.attribute
             end
 
-            if simple_content.respond_to?(:restriction) &&
-                simple_content.restriction
+            if simple_content.restriction
               restr = simple_content.restriction
               attributes.concat(Array(restr.attribute)) if
-                restr.respond_to?(:attribute)
+                restr.attribute
             end
 
             attributes
@@ -217,7 +210,7 @@ module Lutaml
           # @param schema_attr [Lutaml::Xsd::Attribute] Schema attribute
           # @return [Boolean]
           def attribute_required?(schema_attr)
-            return false unless schema_attr.respond_to?(:use)
+            return false unless schema_attr.use
 
             schema_attr.use == "required"
           end
@@ -265,7 +258,7 @@ module Lutaml
             value = xml_attr.value
 
             # Check fixed value constraint
-            if schema_attr.respond_to?(:fixed) && schema_attr.fixed
+            if schema_attr.fixed
               unless value == schema_attr.fixed
                 report_error(
                   collector,

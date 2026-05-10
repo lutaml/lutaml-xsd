@@ -80,16 +80,12 @@ module Lutaml
             end
 
             # For complex types, check content model
-            return schema_def.sequence if schema_def.respond_to?(:sequence) &&
-              schema_def.sequence
-            return schema_def.choice if schema_def.respond_to?(:choice) &&
-              schema_def.choice
-            return schema_def.all if schema_def.respond_to?(:all) &&
-              schema_def.all
+            return schema_def.sequence if schema_def.sequence
+            return schema_def.choice if schema_def.choice
+            return schema_def.all if schema_def.all
 
             # Check complex content
-            if schema_def.respond_to?(:complex_content) &&
-                schema_def.complex_content
+            if schema_def.complex_content
               return resolve_from_complex_content(schema_def.complex_content)
             end
 
@@ -101,8 +97,7 @@ module Lutaml
           # @param element [Lutaml::Xsd::Element] Schema element
           # @return [Lutaml::Xsd::ComplexType, nil]
           def resolve_type(element)
-            return element.complex_type if element.respond_to?(:complex_type) &&
-              element.complex_type
+            return element.complex_type if element.complex_type
 
             # TODO: Resolve type reference from repository
             nil
@@ -114,21 +109,18 @@ module Lutaml
           # @return [Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice,
           #   Lutaml::Xsd::All, nil]
           def resolve_from_complex_content(complex_content)
-            if complex_content.respond_to?(:extension) &&
-                complex_content.extension
+            if complex_content.extension
               ext = complex_content.extension
-              return ext.sequence if ext.respond_to?(:sequence) && ext.sequence
-              return ext.choice if ext.respond_to?(:choice) && ext.choice
-              return ext.all if ext.respond_to?(:all) && ext.all
+              return ext.sequence if ext.sequence
+              return ext.choice if ext.choice
+              return ext.all if ext.all
             end
 
-            if complex_content.respond_to?(:restriction) &&
-                complex_content.restriction
+            if complex_content.restriction
               restr = complex_content.restriction
-              return restr.sequence if restr.respond_to?(:sequence) &&
-                restr.sequence
-              return restr.choice if restr.respond_to?(:choice) && restr.choice
-              return restr.all if restr.respond_to?(:all) && restr.all
+              return restr.sequence if restr.sequence
+              return restr.choice if restr.choice
+              return restr.all if restr.all
             end
 
             nil
@@ -331,16 +323,16 @@ module Lutaml
             particles = []
 
             # Collect elements
-            particles.concat(Array(content_model.element)) if content_model.respond_to?(:element)
+            particles.concat(Array(content_model.element)) if content_model.element.any?
 
             # Collect nested sequences
-            particles.concat(Array(content_model.sequence)) if content_model.respond_to?(:sequence)
+            particles.concat(Array(content_model.sequence)) if content_model.sequence
 
             # Collect nested choices
-            particles.concat(Array(content_model.choice)) if content_model.respond_to?(:choice)
+            particles.concat(Array(content_model.choice)) if content_model.choice
 
             # Collect groups
-            particles.concat(Array(content_model.group)) if content_model.respond_to?(:group)
+            particles.concat(Array(content_model.group)) if content_model.group
 
             particles
           end
@@ -389,11 +381,7 @@ module Lutaml
           # @param particle [Object] The particle
           # @return [String]
           def particle_name(particle)
-            if particle.respond_to?(:name)
-              particle.name
-            else
-              particle.class.name.split("::").last
-            end
+            particle.name || particle.class.name.split("::").last
           end
 
           # Parse occurrence value
@@ -424,16 +412,7 @@ module Lutaml
           # @param schema_element [Lutaml::Xsd::Element] Schema element
           # @return [String, nil]
           def resolve_target_namespace(schema_element)
-            return schema_element.target_namespace if
-              schema_element.respond_to?(:target_namespace)
-
-            # Try to get from parent schema
-            if schema_element.respond_to?(:schema) &&
-                schema_element.schema.respond_to?(:target_namespace)
-              return schema_element.schema.target_namespace
-            end
-
-            nil
+            schema_element.target_namespace
           end
 
           # Check if namespaces match

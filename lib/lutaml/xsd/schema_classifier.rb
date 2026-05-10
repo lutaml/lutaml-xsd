@@ -210,22 +210,22 @@ module Lutaml
 
         # Check imports - handle both Import objects and Schema objects
         schema.import.each do |import|
-          next unless import.respond_to?(:namespace) || import.respond_to?(:target_namespace)
+          next unless import.namespace || import.target_namespace
 
           refs << {
             type: :import,
-            namespace: import.respond_to?(:namespace) ? import.namespace : import.target_namespace,
-            schema_location: import.respond_to?(:schema_path) ? import.schema_path : nil,
+            namespace: import.namespace || import.target_namespace,
+            schema_location: import.schema_path,
           }
         end
 
         # Check includes - handle both Include objects and Schema objects
         schema.include.each do |include|
-          next unless include.respond_to?(:schema_path) || include.is_a?(Schema)
+          next unless include.schema_path || include.is_a?(Schema)
 
           refs << {
             type: :include,
-            schema_location: include.respond_to?(:schema_path) ? include.schema_path : nil,
+            schema_location: include.schema_path,
           }
         end
 

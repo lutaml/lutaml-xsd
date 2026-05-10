@@ -248,19 +248,19 @@ module Lutaml
       # @return [String, nil] The base type qualified name
       def extract_base_type(definition)
         # ComplexType with complexContent/extension
-        if definition.respond_to?(:complex_content) && definition.complex_content
-          return definition.complex_content.extension.base if definition.complex_content.respond_to?(:extension) && definition.complex_content.extension
-          return definition.complex_content.restriction.base if definition.complex_content.respond_to?(:restriction) && definition.complex_content.restriction
+        if definition.complex_content
+          return definition.complex_content.extension.base if definition.complex_content.extension
+          return definition.complex_content.restriction.base if definition.complex_content.restriction
         end
 
         # ComplexType with simpleContent/extension
-        if definition.respond_to?(:simple_content) && definition.simple_content
-          return definition.simple_content.extension.base if definition.simple_content.respond_to?(:extension) && definition.simple_content.extension
-          return definition.simple_content.restriction.base if definition.simple_content.respond_to?(:restriction) && definition.simple_content.restriction
+        if definition.simple_content
+          return definition.simple_content.extension.base if definition.simple_content.extension
+          return definition.simple_content.restriction.base if definition.simple_content.restriction
         end
 
         # SimpleType with restriction
-        return definition.restriction.base if definition.respond_to?(:restriction) && definition.restriction
+        return definition.restriction.base if definition.restriction
 
         nil
       end

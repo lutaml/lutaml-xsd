@@ -72,15 +72,13 @@ module Lutaml
           def resolve_element_type(schema_element)
             # Check for inline type definition
             return schema_element.simple_type if
-              schema_element.respond_to?(:simple_type) &&
-                schema_element.simple_type
+              schema_element.simple_type
 
             return schema_element.complex_type if
-              schema_element.respond_to?(:complex_type) &&
-                schema_element.complex_type
+              schema_element.complex_type
 
             # Check for type reference
-            if schema_element.respond_to?(:type) && schema_element.type
+            if schema_element.type
               # TODO: Resolve type from repository
               # For now, return the type reference as-is
               return schema_element.type
@@ -100,13 +98,12 @@ module Lutaml
             value = xml_element.text_content
 
             # Validate base type if present
-            if simple_type.respond_to?(:restriction) &&
-                simple_type.restriction
+            if simple_type.restriction
               validate_restriction(value, simple_type.restriction,
                                    xml_element, collector)
-            elsif simple_type.respond_to?(:list) && simple_type.list
+            elsif simple_type.list
               validate_list(value, simple_type.list, xml_element, collector)
-            elsif simple_type.respond_to?(:union) && simple_type.union
+            elsif simple_type.union
               validate_union(value, simple_type.union, xml_element, collector)
             end
           end
@@ -125,8 +122,7 @@ module Lutaml
             # This rule focuses on type-level constraints
 
             # Check for simple content
-            if complex_type.respond_to?(:simple_content) &&
-                complex_type.simple_content
+            if complex_type.simple_content
               validate_simple_content(xml_element, complex_type.simple_content,
                                       collector)
             end
@@ -141,7 +137,7 @@ module Lutaml
           # @return [void]
           def validate_restriction(value, restriction, xml_element, collector)
             # Validate base type first
-            if restriction.respond_to?(:base) && restriction.base
+            if restriction.base
               validate_base_type(value, restriction.base, xml_element,
                                  collector)
             end
@@ -188,17 +184,13 @@ module Lutaml
           # @return [void]
           def validate_pattern_facets(value, restriction, xml_element,
                                       collector)
-            return unless restriction.respond_to?(:pattern)
+            return unless restriction.pattern
 
             patterns = Array(restriction.pattern)
             return if patterns.empty?
 
             patterns.each do |pattern|
-              pattern_value = if pattern.respond_to?(:value)
-                                pattern.value
-                              else
-                                pattern.to_s
-                              end
+              pattern_value = pattern.value || pattern.to_s
 
               begin
                 regex = Regexp.new(pattern_value)
@@ -238,7 +230,7 @@ module Lutaml
             value_length = value.length
 
             # Check exact length
-            if restriction.respond_to?(:length) && restriction.length
+            if restriction.length
               expected_length = restriction.length.value.to_i
               if value_length != expected_length
                 report_error(
@@ -257,7 +249,7 @@ module Lutaml
             end
 
             # Check minimum length
-            if restriction.respond_to?(:min_length) && restriction.min_length
+            if restriction.min_length
               min_length = restriction.min_length.value.to_i
               if value_length < min_length
                 report_error(
@@ -276,7 +268,7 @@ module Lutaml
             end
 
             # Check maximum length
-            return unless restriction.respond_to?(:max_length) && restriction.max_length
+            return unless restriction.max_length
 
             max_length = restriction.max_length.value.to_i
             return unless value_length > max_length
@@ -316,13 +308,13 @@ module Lutaml
           # @return [void]
           def validate_enumeration_facets(value, restriction, xml_element,
                                           collector)
-            return unless restriction.respond_to?(:enumeration)
+            return unless restriction.enumeration
 
             enumerations = Array(restriction.enumeration)
             return if enumerations.empty?
 
             allowed_values = enumerations.map do |enum|
-              enum.respond_to?(:value) ? enum.value : enum.to_s
+              enum.value || enum.to_s
             end
 
             return if allowed_values.include?(value)
@@ -373,12 +365,10 @@ module Lutaml
           def validate_simple_content(xml_element, simple_content, collector)
             # Simple content means element has text content and attributes
             # Validate the text content as a simple type
-            if simple_content.respond_to?(:extension) &&
-                simple_content.extension
+            if simple_content.extension
               # Extension adds attributes to a simple type
               # Text content validation handled by base type
-            elsif simple_content.respond_to?(:restriction) &&
-                simple_content.restriction
+            elsif simple_content.restriction
               # Restriction constrains a simple type
               value = xml_element.text_content
               validate_restriction(value, simple_content.restriction,

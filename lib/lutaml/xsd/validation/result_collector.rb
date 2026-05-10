@@ -220,7 +220,6 @@ module Lutaml
         # @param error [ValidationError] The error
         # @return [Boolean]
         def should_skip_error?(_error)
-          return false unless @config.respond_to?(:max_errors)
           return false unless @config.max_errors
 
           total_count >= @config.max_errors
@@ -230,8 +229,7 @@ module Lutaml
         #
         # @return [Boolean]
         def stop_on_first_error?
-          @config.respond_to?(:stop_on_first_error?) &&
-            @config.stop_on_first_error?
+          @config.stop_on_first_error?
         end
 
         # Exception raised to stop validation early

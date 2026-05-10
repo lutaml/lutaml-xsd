@@ -159,11 +159,10 @@ module Lutaml
           def resolve_expected_namespace(schema_element)
             # Check if element has explicit targetNamespace
             return schema_element.target_namespace if
-              schema_element.respond_to?(:target_namespace)
+              schema_element.target_namespace
 
             # Check parent schema's targetNamespace
-            if schema_element.respond_to?(:schema) &&
-                schema_element.schema.respond_to?(:target_namespace)
+            if schema_element.schema&.target_namespace
               return schema_element.schema.target_namespace
             end
 

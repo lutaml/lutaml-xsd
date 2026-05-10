@@ -79,10 +79,16 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
       end
 
       it "does not report error when required attribute is present" do
-        allow(complex_type).to receive(:respond_to?).with(:attribute).and_return(true)
-        allow(complex_type).to receive(:respond_to?).with(:attribute_group).and_return(false)
-        allow(complex_type).to receive(:respond_to?).with(:complex_content).and_return(false)
-        allow(complex_type).to receive(:respond_to?).with(:simple_content).and_return(false)
+        allow(complex_type).to receive(:attribute).and_return([required_attr])
+        allow(complex_type).to receive(:attribute_group).and_return([])
+        allow(complex_type).to receive(:complex_content).and_return(nil)
+        allow(complex_type).to receive(:simple_content).and_return(nil)
+        allow(schema_element).to receive(:is_a?).and_return(false)
+        allow(schema_element).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::Element).and_return(true)
+        allow(complex_type).to receive(:is_a?).and_return(false)
+        allow(complex_type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::ComplexType).and_return(true)
+        allow(required_attr).to receive(:fixed).and_return(nil)
+        allow(required_attr).to receive(:default).and_return(nil)
 
         rule.validate(xml_element, schema_element, collector)
 
