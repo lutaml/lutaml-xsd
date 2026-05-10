@@ -57,9 +57,9 @@ module Lutaml
           # Collect element
           element_parts = []
 
-          if type.respond_to?(:sequence) && type.sequence
+          if type.sequence
             # check whether the type is mixed
-            if type.respond_to?(:mixed) && type.mixed
+            if type.mixed
               element_parts << "#{indent_str}<!-- Mixed content -->"
             end
 
@@ -181,31 +181,31 @@ module Lutaml
         def extract_simple_constraints(simple_content)
           return "string" unless simple_content
 
-          if simple_content.respond_to?(:restriction) && simple_content.restriction
+          if simple_content.restriction
             restriction = simple_content.restriction
             base = restriction.base || "string"
 
             # Check for enumerations
-            if restriction.respond_to?(:enumeration) && restriction.enumeration&.any?
+            if restriction.enumeration&.any?
               enums = restriction.enumeration.map(&:value).join(" | ")
               return "(#{enums})"
             end
 
             # Check for patterns
-            if restriction.respond_to?(:pattern) && restriction.pattern&.any?
+            if restriction.pattern&.any?
               pattern = restriction.pattern.first
-              return "pattern: #{pattern.value}" if pattern.respond_to?(:value)
+              return "pattern: #{pattern.value}" if pattern.value
             end
 
             # Check for length constraints
             constraints = []
-            constraints << "minLength: #{restriction.min_length.first.value}" if restriction.respond_to?(:min_length) && restriction.min_length&.any?
-            constraints << "maxLength: #{restriction.max_length.first.value}" if restriction.respond_to?(:max_length) && restriction.max_length&.any?
+            constraints << "minLength: #{restriction.min_length.first.value}" if restriction.min_length&.any?
+            constraints << "maxLength: #{restriction.max_length.first.value}" if restriction.max_length&.any?
 
             return "#{base} (#{constraints.join(', ')})" if constraints.any?
 
             base
-          elsif simple_content.respond_to?(:extension) && simple_content.extension
+          elsif simple_content.extension
             simple_content.extension.base || "string"
           else
             "string"
@@ -234,7 +234,7 @@ module Lutaml
 
         # Check if type has complex_content
         def has_complex_content?(type)
-          type.respond_to?(:complex_content) && type.complex_content
+          type.complex_content
         end
 
         # Resolve element name from element (handles ref attribute)
@@ -262,7 +262,7 @@ module Lutaml
           attrs = []
 
           # Direct attributes
-          if type.respond_to?(:attribute) && type.attribute
+          if type.attribute
             attrs.concat(type.attribute)
           end
 
@@ -279,11 +279,11 @@ module Lutaml
         def get_base_from_extension(type)
           base_val = nil
           %i[simple_content complex_content].each do |content_type|
-            if type.respond_to?(content_type) && type.send(content_type)
-              sc = type.send(content_type)
-              if sc.respond_to?(:extension) && sc.extension
+            if type.public_send(content_type)
+              sc = type.public_send(content_type)
+              if sc.extension
                 sc_ext = sc.extension
-                if sc_ext.respond_to?(:base) && sc_ext.base
+                if sc_ext.base
                   base_val = sc_ext.base
                 end
               end
@@ -297,22 +297,21 @@ module Lutaml
         def generate_attributes_from_content(type)
           attrs = []
           %i[simple_content complex_content].each do |content_type|
-            if type.respond_to?(content_type) && type.send(content_type)
-              sc = type.send(content_type)
-              if sc.respond_to?(:extension) && sc.extension
+            if type.public_send(content_type)
+              sc = type.public_send(content_type)
+              if sc.extension
                 sc_ext = sc.extension
 
                 # Get attributes from content extension
-                if sc_ext.respond_to?(:attribute) && sc_ext.attribute
+                if sc_ext.attribute
                   attrs.concat(sc_ext.attribute)
                 end
 
                 # Get attributes in attribute groups from content extension
                 attrs.concat(generate_attributes_from_group_ref(sc_ext))
-              elsif sc.respond_to?(:restriction) && sc.restriction
+              elsif sc.restriction
                 # Get attributes from content restriction
-                if sc.restriction.respond_to?(:attribute) &&
-                    sc.restriction.attribute
+                if sc.restriction.attribute
                   attrs.concat(sc.restriction.attribute)
                 end
 
@@ -327,7 +326,7 @@ module Lutaml
         # Get attributes from attribute group ref
         def generate_attributes_from_group_ref(model)
           attrs = []
-          if model.respond_to?(:attribute_group) && model.attribute_group
+          if model.attribute_group
             attrs.concat(
               generate_attributes_from_attribute_group_ref(
                 model.attribute_group,
@@ -357,7 +356,7 @@ module Lutaml
         # Get attributes from attribute group
         def generate_attributes_from_attribute_group(attribute_group)
           attrs = []
-          if attribute_group.respond_to?(:attribute) && attribute_group.attribute
+          if attribute_group.attribute
             attrs.concat(attribute_group.attribute)
           end
           attrs
@@ -368,7 +367,7 @@ module Lutaml
           return nil unless ag_name
 
           # Search in current schema
-          if @schema.respond_to?(:attribute_group) && @schema.attribute_group
+          if @schema.attribute_group
             found = @schema.attribute_group.find { |t| t.name == ag_name }
             return found if found
           end
@@ -384,12 +383,12 @@ module Lutaml
           local_name = type_name.split(":").last
 
           # Search in current schema
-          if @schema.respond_to?(:complex_type) && @schema.complex_type
+          if @schema.complex_type
             found = @schema.complex_type.find { |t| t.name == local_name }
             return found if found
           end
 
-          if @schema.respond_to?(:simple_type) && @schema.simple_type
+          if @schema.simple_type
             found = @schema.simple_type.find { |t| t.name == local_name }
             return found if found
           end
@@ -397,14 +396,14 @@ module Lutaml
           # Search in repository if available
           if @repository
             # Try to find type in all schemas
-            all_schemas = @repository.respond_to?(:all_schemas) ? @repository.all_schemas : {}
+            all_schemas = @repository.all_schemas
             all_schemas.each_value do |schema|
-              if schema.respond_to?(:complex_type) && schema.complex_type
+              if schema.complex_type
                 found = schema.complex_type.find { |t| t.name == local_name }
                 return found if found
               end
 
-              if schema.respond_to?(:simple_type) && schema.simple_type
+              if schema.simple_type
                 found = schema.simple_type.find { |t| t.name == local_name }
                 return found if found
               end
@@ -429,12 +428,12 @@ module Lutaml
           end
 
           # Then add extension elements
-          if extension.respond_to?(:sequence) && extension.sequence
+          if extension.sequence
             all_elements.concat(extension.sequence.element) if extension.sequence.element
-          elsif extension.respond_to?(:choice) && extension.choice
+          elsif extension.choice
             # Handle choice in extension
             return generate_choice_content(extension.choice, indent)
-          elsif extension.respond_to?(:all) && extension.all
+          elsif extension.all
             # Handle all in extension
             return generate_all_content(extension.all, indent)
           end
@@ -468,12 +467,12 @@ module Lutaml
           elements = []
 
           # Direct sequence elements
-          elements.concat(type.sequence.element) if type.respond_to?(:sequence) && type.sequence&.element
+          elements.concat(type.sequence.element) if type.sequence&.element
 
-          # Elements from complex content extension
-          if type.respond_to?(:complex_content) && type.complex_content
+          # Elements from complex_content extension
+          if type.complex_content
             cc = type.complex_content
-            if cc.respond_to?(:extension) && cc.extension
+            if cc.extension
               # Get base type elements
               if cc.extension.base
                 base_type = find_type(cc.extension.base)
@@ -484,7 +483,7 @@ module Lutaml
               end
 
               # Get extension sequence elements
-              elements.concat(cc.extension.sequence.element) if cc.extension.respond_to?(:sequence) && cc.extension.sequence&.element
+              elements.concat(cc.extension.sequence.element) if cc.extension.sequence&.element
             end
           end
 
@@ -541,7 +540,7 @@ module Lutaml
           return nil unless @schema
 
           # Use schema's target namespace or filename to create schema ID
-          return unless @schema.respond_to?(:target_namespace) && @schema.target_namespace
+          return unless @schema.target_namespace
 
           # Extract last part of namespace as schema ID
           uri = @schema.target_namespace
@@ -607,8 +606,7 @@ module Lutaml
 
           # Search all_schemas for one with matching target_namespace
           @all_schemas.each_value do |schema|
-            if schema.respond_to?(:target_namespace) &&
-                schema.target_namespace == namespace_uri
+            if schema.target_namespace == namespace_uri
               return schema
             end
           end
@@ -621,7 +619,7 @@ module Lutaml
           return "unnamed" unless schema
 
           # Use target namespace to derive schema ID
-          if schema.respond_to?(:target_namespace) && schema.target_namespace
+          if schema.target_namespace
             uri = schema.target_namespace
             # Extract last part of namespace as schema ID (e.g., "uro/3.2" -> "uro")
             parts = uri.split("/")

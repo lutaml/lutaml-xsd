@@ -192,12 +192,12 @@ module Lutaml
           end
 
           def extract_element_type(element)
-            return element.type if element.respond_to?(:type) && element.type
+            return element.type if element.type
 
             # If element has a complex or simple type definition
-            if element.respond_to?(:complex_type) && element.complex_type
+            if element.complex_type
               "(inline complex type)"
-            elsif element.respond_to?(:simple_type) && element.simple_type
+            elsif element.simple_type
               "(inline simple type)"
             else
               "(untyped)"
@@ -314,7 +314,7 @@ module Lutaml
             }
 
             # Extract type information
-            if element.respond_to?(:type) && element.type
+            if element.type
               info[:type_ref] =
                 element.type
             end
@@ -326,7 +326,7 @@ module Lutaml
             end
 
             # Extract documentation
-            if element.respond_to?(:annotation) && element.annotation
+            if element.annotation
               info[:documentation] =
                 extract_documentation(element.annotation)
             end
@@ -338,23 +338,23 @@ module Lutaml
             attrs = []
 
             # Direct attributes
-            attrs.concat(Array(element.attribute)) if element.respond_to?(:attribute) && element.attribute
+            attrs.concat(Array(element.attribute)) if element.attribute.any?
 
             attrs.filter_map do |attr|
               {
-                name: attr.respond_to?(:name) ? attr.name : nil,
-                type: attr.respond_to?(:type) ? attr.type : nil,
-                use: attr.respond_to?(:use) ? attr.use : nil,
+                name: attr.name,
+                type: attr.type,
+                use: attr.use,
               }
             end
           end
 
           def extract_documentation(annotation)
-            docs = annotation.respond_to?(:documentation) ? annotation.documentation : nil
+            docs = annotation.documentation
             return nil unless docs
 
             Array(docs).filter_map do |doc|
-              doc.respond_to?(:content) ? doc.content : doc.to_s
+              doc.content || doc.to_s
             end.join("\n").strip
           end
 
@@ -369,9 +369,9 @@ module Lutaml
 
             if info[:type_ref]
               output "Type Reference: #{info[:type_ref]}"
-            elsif element.respond_to?(:complex_type) && element.complex_type
+            elsif element.complex_type
               output "Type: (inline complex type)"
-            elsif element.respond_to?(:simple_type) && element.simple_type
+            elsif element.simple_type
               output "Type: (inline simple type)"
             end
 
@@ -436,7 +436,7 @@ module Lutaml
             return if depth > @max_depth
 
             connector = is_last ? "└── " : "├── "
-            name = element.respond_to?(:name) ? element.name : "(unnamed)"
+            name = element.name || "(unnamed)"
             type_info = get_type_info(element)
 
             output "#{indent}#{connector}#{name}#{type_info}"
@@ -447,13 +447,13 @@ module Lutaml
             child_indent = indent + (is_last ? "    " : "│   ")
 
             # Display child elements from complex type
-            if element.respond_to?(:complex_type) && element.complex_type
+            if element.complex_type
               display_complex_type_children(element.complex_type, child_indent,
                                             depth, repository)
-            elsif element.respond_to?(:type) && element.type
+            elsif element.type
               # Try to resolve the type reference
               type_result = repository.find_type(element.type)
-              if type_result.resolved? && type_result.definition.respond_to?(:sequence)
+              if type_result.resolved? && type_result.definition.sequence
                 display_sequence_children(type_result.definition.sequence, child_indent, depth,
                                           repository)
               end
@@ -461,11 +461,11 @@ module Lutaml
           end
 
           def get_type_info(element)
-            if element.respond_to?(:type) && element.type
+            if element.type
               " : #{element.type}"
-            elsif element.respond_to?(:complex_type) && element.complex_type
+            elsif element.complex_type
               " : (complex type)"
-            elsif element.respond_to?(:simple_type) && element.simple_type
+            elsif element.simple_type
               " : (simple type)"
             else
               ""
@@ -475,20 +475,20 @@ module Lutaml
           def display_complex_type_children(complex_type, indent, depth,
 repository)
             # Display sequence elements
-            if complex_type.respond_to?(:sequence) && complex_type.sequence
+            if complex_type.sequence
               display_sequence_children(complex_type.sequence, indent, depth,
                                         repository)
             end
 
             # Display choice elements
-            return unless complex_type.respond_to?(:choice) && complex_type.choice
+            return unless complex_type.choice
 
             display_choice_children(complex_type.choice, indent, depth,
                                     repository)
           end
 
           def display_sequence_children(sequence, indent, depth, repository)
-            elements = sequence.respond_to?(:element) ? Array(sequence.element).compact : []
+            elements = Array(sequence.element).compact
             return if elements.empty?
 
             elements.each_with_index do |elem, idx|
@@ -498,7 +498,7 @@ repository)
           end
 
           def display_choice_children(choice, indent, depth, repository)
-            elements = choice.respond_to?(:element) ? Array(choice.element).compact : []
+            elements = Array(choice.element).compact
             return if elements.empty?
 
             output "#{indent}└── (choice)"

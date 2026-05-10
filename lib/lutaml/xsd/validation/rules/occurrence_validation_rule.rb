@@ -101,7 +101,7 @@ module Lutaml
           # @return [void]
           def validate_sequence_occurrences(parent_element, sequence,
                                             collector)
-            return unless sequence.respond_to?(:element)
+            return if sequence.element.empty?
 
             Array(sequence.element).each do |element|
               validate_element_occurrence(parent_element, element, collector)
@@ -161,7 +161,7 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_all_occurrences(parent_element, all, collector)
-            return unless all.respond_to?(:element)
+            return if all.element.empty?
 
             # In xs:all, each element can appear 0 or 1 times
             # (or based on its minOccurs/maxOccurs)
@@ -178,21 +178,21 @@ module Lutaml
           # @return [void]
           def validate_nested_particles(parent_element, particle, collector)
             # Check for nested sequences
-            if particle.respond_to?(:sequence)
+            if particle.sequence
               Array(particle.sequence).each do |seq|
                 validate_sequence_occurrences(parent_element, seq, collector)
               end
             end
 
             # Check for nested choices
-            if particle.respond_to?(:choice)
+            if particle.choice
               Array(particle.choice).each do |choice|
                 validate_choice_occurrences(parent_element, choice, collector)
               end
             end
 
             # Check for groups
-            return unless particle.respond_to?(:group)
+            return unless particle.group
 
             Array(particle.group).each do |group|
               # TODO: Resolve and validate group reference
@@ -220,7 +220,7 @@ module Lutaml
           # @param choice [Lutaml::Xsd::Choice] Schema choice
           # @return [Integer]
           def count_choice_alternatives(parent_element, choice)
-            return 0 unless choice.respond_to?(:element)
+            return 0 if choice.element.empty?
 
             alternatives = Array(choice.element)
             alternatives.count do |alt_element|
@@ -313,16 +313,7 @@ module Lutaml
           # @param schema_element [Lutaml::Xsd::Element] Schema element
           # @return [String, nil]
           def resolve_target_namespace(schema_element)
-            return schema_element.target_namespace if
-              schema_element.respond_to?(:target_namespace)
-
-            # Try to get from parent schema
-            if schema_element.respond_to?(:schema) &&
-                schema_element.schema.respond_to?(:target_namespace)
-              return schema_element.schema.target_namespace
-            end
-
-            nil
+            schema_element.target_namespace
           end
 
           # Check if namespaces match

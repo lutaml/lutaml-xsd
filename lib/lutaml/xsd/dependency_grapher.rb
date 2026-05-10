@@ -190,11 +190,29 @@ module Lutaml
         lines.join("\n")
       end
 
+      # Extract type references from a definition
+      # @param definition [Object] XSD type definition
+      # @return [Array<String>] List of referenced type qualified names
+      def extract_type_references(definition)
+        refs = []
+
+        refs.concat(extract_from_complex_content(definition.complex_content)) if definition.complex_content
+        refs.concat(extract_from_simple_content(definition.simple_content)) if definition.simple_content
+        refs << definition.restriction.base if definition.restriction&.base
+        refs.concat(extract_from_sequence(definition.sequence)) if definition.sequence
+        refs.concat(extract_from_choice(definition.choice)) if definition.choice
+        refs.concat(extract_from_all(definition.all)) if definition.all
+        refs.concat(extract_from_attributes(definition.attribute)) if definition.attribute
+        refs << definition.type if definition.type
+
+        refs.compact.uniq.grep_v(/^xsd?:/)
+      end
+
       private
 
       # Collect dependencies recursively
       def collect_dependencies(definition, graph, max_depth, current_depth,
-visited)
+                              visited)
         return if current_depth >= max_depth
 
         refs = extract_type_references(definition)
@@ -229,51 +247,20 @@ visited)
         end
       end
 
-      # Extract type references from a definition
-      def extract_type_references(definition)
-        refs = []
-
-        # Base type from complex content
-        refs.concat(extract_from_complex_content(definition.complex_content)) if definition.respond_to?(:complex_content) && definition.complex_content
-
-        # Base type from simple content
-        refs.concat(extract_from_simple_content(definition.simple_content)) if definition.respond_to?(:simple_content) && definition.simple_content
-
-        # Restriction base for simple types
-        refs << definition.restriction.base if definition.respond_to?(:restriction) && definition.restriction.respond_to?(:base)
-
-        # Element types from sequence
-        refs.concat(extract_from_sequence(definition.sequence)) if definition.respond_to?(:sequence) && definition.sequence
-
-        # Element types from choice
-        refs.concat(extract_from_choice(definition.choice)) if definition.respond_to?(:choice) && definition.choice
-
-        # Element types from all
-        refs.concat(extract_from_all(definition.all)) if definition.respond_to?(:all) && definition.all
-
-        # Attribute types
-        refs.concat(extract_from_attributes(definition.attribute)) if definition.respond_to?(:attribute) && definition.attribute
-
-        # For elements with type references
-        refs << definition.type if definition.respond_to?(:type) && definition.type
-
-        refs.compact.uniq.grep_v(/^xsd?:/)
-      end
-
       def extract_from_complex_content(complex_content)
         refs = []
 
-        if complex_content.respond_to?(:extension) && complex_content.extension
+        if complex_content.extension
           ext = complex_content.extension
-          refs << ext.base if ext.respond_to?(:base)
-          refs.concat(extract_from_sequence(ext.sequence)) if ext.respond_to?(:sequence) && ext.sequence
-          refs.concat(extract_from_attributes(ext.attribute)) if ext.respond_to?(:attribute) && ext.attribute
+          refs << ext.base if ext.base
+          refs.concat(extract_from_sequence(ext.sequence)) if ext.sequence
+          refs.concat(extract_from_attributes(ext.attribute)) if ext.attribute
         end
 
-        if complex_content.respond_to?(:restriction) && complex_content.restriction
+        if complex_content.restriction
           restr = complex_content.restriction
-          refs << restr.base if restr.respond_to?(:base)
-          refs.concat(extract_from_sequence(restr.sequence)) if restr.respond_to?(:sequence) && restr.sequence
+          refs << restr.base if restr.base
+          refs.concat(extract_from_sequence(restr.sequence)) if restr.sequence
         end
 
         refs
@@ -282,15 +269,15 @@ visited)
       def extract_from_simple_content(simple_content)
         refs = []
 
-        if simple_content.respond_to?(:extension) && simple_content.extension
+        if simple_content.extension
           ext = simple_content.extension
-          refs << ext.base if ext.respond_to?(:base)
-          refs.concat(extract_from_attributes(ext.attribute)) if ext.respond_to?(:attribute) && ext.attribute
+          refs << ext.base if ext.base
+          refs.concat(extract_from_attributes(ext.attribute)) if ext.attribute
         end
 
-        if simple_content.respond_to?(:restriction) && simple_content.restriction
+        if simple_content.restriction
           restr = simple_content.restriction
-          refs << restr.base if restr.respond_to?(:base)
+          refs << restr.base if restr.base
         end
 
         refs
@@ -298,12 +285,11 @@ visited)
 
       def extract_from_sequence(sequence)
         refs = []
-        return refs unless sequence.respond_to?(:element)
 
         elements = Array(sequence.element).compact
         elements.each do |elem|
-          refs << elem.type if elem.respond_to?(:type) && elem.type
-          refs << elem.ref if elem.respond_to?(:ref) && elem.ref
+          refs << elem.type if elem.type
+          refs << elem.ref if elem.ref
         end
 
         refs
@@ -311,12 +297,11 @@ visited)
 
       def extract_from_choice(choice)
         refs = []
-        return refs unless choice.respond_to?(:element)
 
         elements = Array(choice.element).compact
         elements.each do |elem|
-          refs << elem.type if elem.respond_to?(:type) && elem.type
-          refs << elem.ref if elem.respond_to?(:ref) && elem.ref
+          refs << elem.type if elem.type
+          refs << elem.ref if elem.ref
         end
 
         refs
@@ -324,12 +309,11 @@ visited)
 
       def extract_from_all(all_group)
         refs = []
-        return refs unless all_group.respond_to?(:element)
 
         elements = Array(all_group.element).compact
         elements.each do |elem|
-          refs << elem.type if elem.respond_to?(:type) && elem.type
-          refs << elem.ref if elem.respond_to?(:ref) && elem.ref
+          refs << elem.type if elem.type
+          refs << elem.ref if elem.ref
         end
 
         refs
@@ -340,8 +324,8 @@ visited)
         attrs = Array(attributes).compact
 
         attrs.each do |attr|
-          refs << attr.type if attr.respond_to?(:type) && attr.type
-          refs << attr.ref if attr.respond_to?(:ref) && attr.ref
+          refs << attr.type if attr.type
+          refs << attr.ref if attr.ref
         end
 
         refs

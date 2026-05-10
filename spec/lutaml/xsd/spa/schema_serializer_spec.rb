@@ -293,9 +293,9 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       end
     end
 
-    context "when object does not respond to annotation" do
+    context "when object has no annotation attribute" do
       it "returns nil" do
-        obj = Object.new
+        obj = Lutaml::Xml::Schema::Xsd::Element.new
         doc = serializer.send(:extract_documentation, obj)
         expect(doc).to be_nil
       end
@@ -481,8 +481,10 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
     it "merges schemas sharing the same targetNamespace" do
       schemas = [
-        make_schema_data(id: "main", namespace: ns_a, entrypoint: true, complex_types: [{ name: "TypeA" }]),
-        make_schema_data(id: "included", namespace: ns_a, elements: [{ name: "ElemB" }]),
+        make_schema_data(id: "main", namespace: ns_a, entrypoint: true,
+                         complex_types: [{ name: "TypeA" }]),
+        make_schema_data(id: "included", namespace: ns_a,
+                         elements: [{ name: "ElemB" }]),
       ]
 
       result = serializer.send(:merge_included_schemas, schemas)
@@ -496,8 +498,10 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
     it "prefers entrypoint as primary schema" do
       schemas = [
-        make_schema_data(id: "big", namespace: ns_a, elements: [1, 2, 3], complex_types: [4, 5]),
-        make_schema_data(id: "entry", namespace: ns_a, entrypoint: true, elements: [1]),
+        make_schema_data(id: "big", namespace: ns_a, elements: [1, 2, 3],
+                         complex_types: [4, 5]),
+        make_schema_data(id: "entry", namespace: ns_a, entrypoint: true,
+                         elements: [1]),
       ]
 
       result = serializer.send(:merge_included_schemas, schemas)
@@ -524,7 +528,9 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
       result = serializer.send(:merge_included_schemas, schemas)
       expect(result.length).to eq(3)
-      expect(result.map { |s| s[:id] }).to contain_exactly("chameleon1", "chameleon2", "named")
+      expect(result.map do |s|
+        s[:id]
+      end).to contain_exactly("chameleon1", "chameleon2", "named")
     end
 
     it "deduplicates merged content arrays" do
@@ -541,8 +547,10 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
     it "merges includes and imports" do
       schemas = [
-        make_schema_data(id: "a", namespace: ns_a, includes: [{ loc: "a1.xsd" }], imports: [{ ns: ns_b }]),
-        make_schema_data(id: "b", namespace: ns_a, includes: [{ loc: "b1.xsd" }], imports: [{ ns: ns_b }]),
+        make_schema_data(id: "a", namespace: ns_a,
+                         includes: [{ loc: "a1.xsd" }], imports: [{ ns: ns_b }]),
+        make_schema_data(id: "b", namespace: ns_a,
+                         includes: [{ loc: "b1.xsd" }], imports: [{ ns: ns_b }]),
       ]
 
       result = serializer.send(:merge_included_schemas, schemas)
@@ -591,24 +599,25 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
   describe "#serialize_facets" do
     it "serializes enumeration facet with values key" do
-      restriction = double("restriction", enumerations: ["a", "b"])
-      allow(restriction).to receive(:respond_to?) do |method|
-        method == :enumerations
-      end
+      restriction = Lutaml::Xml::Schema::Xsd::RestrictionSimpleType.new
+      enum = Lutaml::Xml::Schema::Xsd::Enumeration.new(value: "a")
+      enum2 = Lutaml::Xml::Schema::Xsd::Enumeration.new(value: "b")
+      restriction.enumeration = [enum, enum2]
 
       facets = serializer.send(:serialize_facets, restriction)
-      expect(facets).to include({ type: "enumeration", values: ["a", "b"] })
+      expect(facets).to include({ type: "enumeration", values: [enum, enum2] })
     end
 
     it "serializes scalar facets with value key" do
-      restriction = double("restriction", pattern: "\\d+", min_length: "1")
-      allow(restriction).to receive(:respond_to?) do |method|
-        %i[pattern min_length].include?(method)
-      end
+      restriction = Lutaml::Xml::Schema::Xsd::RestrictionSimpleType.new
+      pattern = Lutaml::Xml::Schema::Xsd::Pattern.new(value: "\\d+")
+      min_len = Lutaml::Xml::Schema::Xsd::MinLength.new(value: "1")
+      restriction.pattern = [pattern]
+      restriction.min_length = [min_len]
 
       facets = serializer.send(:serialize_facets, restriction)
-      expect(facets).to include({ type: "pattern", value: "\\d+" })
-      expect(facets).to include({ type: "min_length", value: "1" })
+      expect(facets).to include({ type: "pattern", value: [pattern] })
+      expect(facets).to include({ type: "min_length", value: [min_len] })
     end
 
     it "returns empty array for nil restriction" do
@@ -616,8 +625,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
     end
 
     it "skips facets with nil values" do
-      restriction = double("restriction")
-      allow(restriction).to receive(:respond_to?).with(anything).and_return(false)
+      restriction = Lutaml::Xml::Schema::Xsd::RestrictionSimpleType.new
       expect(serializer.send(:serialize_facets, restriction)).to eq([])
     end
   end

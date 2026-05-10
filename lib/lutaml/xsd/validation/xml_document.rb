@@ -50,7 +50,7 @@ module Lutaml
         # @param xpath [String] XPath expression
         # @return [Array<XmlElement>]
         def xpath(xpath)
-          return [] unless @moxml_document.respond_to?(:xpath)
+          return [] unless @moxml_document
 
           nodes = @moxml_document.xpath(xpath)
           nodes.select(&:element?).map do |node|
@@ -62,14 +62,14 @@ module Lutaml
         #
         # @return [String, nil]
         def version
-          @moxml_document.version if @moxml_document.respond_to?(:version)
+          @moxml_document.version
         end
 
         # Get the XML encoding
         #
         # @return [String, nil]
         def encoding
-          @moxml_document.encoding if @moxml_document.respond_to?(:encoding)
+          @moxml_document.encoding
         end
 
         # Check if document is valid XML

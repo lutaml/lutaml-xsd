@@ -78,7 +78,7 @@ module Lutaml
         #
         # @return [Array<XmlAttribute>]
         def attributes
-          return [] unless @moxml_element.respond_to?(:attributes)
+          return [] unless @moxml_element
 
           @moxml_element.attributes.map do |attr|
             XmlAttribute.new(
@@ -115,7 +115,7 @@ module Lutaml
         #
         # @return [Array<XmlElement>]
         def children
-          return [] unless @moxml_element.respond_to?(:children)
+          return [] unless @moxml_element
 
           @moxml_element.children.select(&:element?).map do |child|
             XmlElement.new(child, @navigator)

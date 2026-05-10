@@ -327,55 +327,55 @@ module Lutaml
 
           def display_type_structure(definition, repository)
             # Display simple content
-            if definition.respond_to?(:simple_content) && definition.simple_content
+            if definition.simple_content
               display_simple_content(definition.simple_content,
                                      repository)
             end
 
             # Display complex content
-            if definition.respond_to?(:complex_content) && definition.complex_content
+            if definition.complex_content
               display_complex_content(definition.complex_content,
                                       repository)
             end
 
             # Display sequence elements
-            if definition.respond_to?(:sequence) && definition.sequence
+            if definition.sequence
               display_sequence(definition.sequence,
                                repository)
             end
 
             # Display choice elements
-            if definition.respond_to?(:choice) && definition.choice
+            if definition.choice
               display_choice(definition.choice,
                              repository)
             end
 
             # Display all elements
-            if definition.respond_to?(:all) && definition.all
+            if definition.all
               display_all(definition.all,
                           repository)
             end
 
             # Display direct attributes
-            if definition.respond_to?(:attribute) && definition.attribute
+            if definition.attribute
               display_attributes(definition.attribute, repository,
                                  "Attributes")
             end
 
             # Display attribute groups
-            display_attribute_groups(definition.attribute_group) if definition.respond_to?(:attribute_group) && definition.attribute_group
+            display_attribute_groups(definition.attribute_group) if definition.attribute_group
           end
 
           def display_simple_content(simple_content, repository)
             output "Simple Content:"
 
-            return unless simple_content.respond_to?(:extension) && simple_content.extension
+            return unless simple_content.extension
 
             extension = simple_content.extension
             output "  Extension:"
-            output "    Base: #{extension.base}" if extension.respond_to?(:base)
+            output "    Base: #{extension.base}" if extension.base
 
-            return unless extension.respond_to?(:attribute) && extension.attribute
+            return unless extension.attribute
 
             display_attributes(extension.attribute, repository,
                                "    Attributes", indent: "    ")
@@ -384,44 +384,44 @@ module Lutaml
           def display_complex_content(complex_content, repository)
             output "Complex Content:"
 
-            if complex_content.respond_to?(:extension) && complex_content.extension
+            if complex_content.extension
               extension = complex_content.extension
               output "  Extension:"
-              output "    Base: #{extension.base}" if extension.respond_to?(:base)
+              output "    Base: #{extension.base}" if extension.base
 
               # Display sequence from extension
-              if extension.respond_to?(:sequence) && extension.sequence
+              if extension.sequence
                 display_sequence(extension.sequence, repository,
                                  indent: "    ")
               end
 
               # Display attributes from extension
-              if extension.respond_to?(:attribute) && extension.attribute
+              if extension.attribute
                 display_attributes(extension.attribute, repository, "    Attributes",
                                    indent: "    ")
               end
 
               # Display attribute groups from extension
-              if extension.respond_to?(:attribute_group) && extension.attribute_group
+              if extension.attribute_group
                 display_attribute_groups(extension.attribute_group,
                                          indent: "    ")
               end
             end
 
-            return unless complex_content.respond_to?(:restriction) && complex_content.restriction
+            return unless complex_content.restriction
 
             restriction = complex_content.restriction
             output "  Restriction:"
-            output "    Base: #{restriction.base}" if restriction.respond_to?(:base)
+            output "    Base: #{restriction.base}" if restriction.base
 
             # Display sequence from restriction
-            if restriction.respond_to?(:sequence) && restriction.sequence
+            if restriction.sequence
               display_sequence(restriction.sequence, repository,
                                indent: "    ")
             end
 
             # Display attributes from restriction
-            return unless restriction.respond_to?(:attribute) && restriction.attribute
+            return unless restriction.attribute
 
             display_attributes(restriction.attribute, repository, "    Attributes",
                                indent: "    ")
@@ -693,7 +693,7 @@ indent: "")
             return nil unless parsed_schemas
 
             parsed_schemas.each_value do |schema|
-              next unless schema.respond_to?(:attribute)
+              next if schema.attribute.empty?
 
               attrs = schema.attribute
               attrs = [attrs] unless attrs.is_a?(Array)
@@ -758,7 +758,7 @@ indent: "")
             return nil unless parsed_schemas
 
             parsed_schemas.each_value do |schema|
-              next unless schema.respond_to?(:element)
+              next if schema.element.empty?
 
               elements = schema.element
               elements = [elements] unless elements.is_a?(Array)
@@ -803,7 +803,7 @@ indent: "")
             docs = [docs] unless docs.is_a?(Array)
 
             docs.filter_map do |doc|
-              content = doc.respond_to?(:content) ? doc.content : doc.to_s
+              content = doc.content || doc.to_s
               content&.strip
             end.first || ""
           end
@@ -816,7 +816,7 @@ indent: "")
             hints = []
 
             # Collect hints from sequence elements
-            if definition.respond_to?(:sequence) && definition.sequence
+            if definition.sequence
               definition.sequence.element.first(3).each do |elem|
                 ref = elem.ref || elem.name
                 type = nil
@@ -827,7 +827,7 @@ indent: "")
                 elsif elem.ref
                   # Look up the referenced element to get its type
                   elem_def = repository.find_element(elem.ref)
-                  type = elem_def.type if elem_def.respond_to?(:type)
+                  type = elem_def.type if elem_def.type
                 end
 
                 next if !type || type == "(inline)" || type =~ /^xsd?:/
@@ -841,7 +841,7 @@ indent: "")
             end
 
             # Collect hints from choice elements
-            if definition.respond_to?(:choice) && definition.choice
+            if definition.choice
               definition.choice.element.first(3).each do |elem|
                 ref = elem.ref || elem.name
                 type = nil
@@ -852,7 +852,7 @@ indent: "")
                 elsif elem.ref
                   # Look up the referenced element to get its type
                   elem_def = repository.find_element(elem.ref)
-                  type = elem_def.type if elem_def.respond_to?(:type)
+                  type = elem_def.type if elem_def.type
                 end
 
                 next if !type || type == "(inline)" || type =~ /^xsd?:/
@@ -866,9 +866,9 @@ indent: "")
             end
 
             # Collect hints from complex content extensions
-            if definition.respond_to?(:complex_content) && definition.complex_content.respond_to?(:extension) && definition.complex_content.extension
+            if definition.complex_content&.extension
               extension = definition.complex_content.extension
-              if extension.respond_to?(:base) && extension.base && extension.base !~ /^xsd?:/
+              if extension.base && extension.base !~ /^xsd?:/
                 hints << {
                   element: "base type",
                   type: extension.base,
@@ -877,7 +877,7 @@ indent: "")
               end
 
               # Also check sequence in extension
-              if extension.respond_to?(:sequence) && extension.sequence
+              if extension.sequence
                 extension.sequence.element.first(2).each do |elem|
                   ref = elem.ref || elem.name
                   type = elem.type || "(inline)"
@@ -893,9 +893,9 @@ indent: "")
             end
 
             # Collect hints from simple content extensions
-            if definition.respond_to?(:simple_content) && definition.simple_content.respond_to?(:extension) && definition.simple_content.extension
+            if definition.simple_content&.extension
               extension = definition.simple_content.extension
-              if extension.respond_to?(:base) && extension.base && extension.base !~ /^xsd?:/
+              if extension.base && extension.base !~ /^xsd?:/
                 hints << {
                   element: "base type",
                   type: extension.base,

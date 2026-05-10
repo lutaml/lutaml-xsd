@@ -146,18 +146,14 @@ module Lutaml
         dependencies = {}
 
         get_schemas(repository).each do |file_path, schema|
-          deps = []
-
           # Collect import dependencies
-          imports = schema.respond_to?(:import) ? schema.import : []
-          (imports || []).each do |import|
-            deps << import.schema_path if import.respond_to?(:schema_path)
-          end
+          imports = schema.import
+          deps = (imports || []).map(&:schema_path)
 
           # Collect include dependencies
-          includes = schema.respond_to?(:include) ? schema.include : []
+          includes = schema.include
           (includes || []).each do |include|
-            deps << include.schema_path if include.respond_to?(:schema_path)
+            deps << include.schema_path
           end
 
           dependencies[file_path] = deps.compact
@@ -260,17 +256,17 @@ module Lutaml
 
         get_schemas(repository).each do |schema_file, schema|
           # Check imports
-          imports = schema.respond_to?(:import) ? schema.import : []
+          imports = schema.import
           (imports || []).each do |import|
-            next unless import.respond_to?(:namespace) && import.namespace
+            next unless import.namespace
 
-            warnings << "Import in #{File.basename(schema_file)} for namespace '#{import.namespace}' has no schemaLocation" if !import.respond_to?(:schema_path) || !import.schema_path || import.schema_path.empty?
+            warnings << "Import in #{File.basename(schema_file)} for namespace '#{import.namespace}' has no schemaLocation" if !import.schema_path || import.schema_path.empty?
           end
 
           # Check includes
-          includes = schema.respond_to?(:include) ? schema.include : []
+          includes = schema.include
           (includes || []).each do |include|
-            errors << "Include in #{File.basename(schema_file)} has no schemaLocation" if !include.respond_to?(:schema_path) || !include.schema_path || include.schema_path.empty?
+            errors << "Include in #{File.basename(schema_file)} has no schemaLocation" if !include.schema_path || include.schema_path.empty?
           end
         end
 

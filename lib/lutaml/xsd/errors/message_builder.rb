@@ -26,8 +26,8 @@ module Lutaml
           parts = []
           parts << header
           parts << context_details if @error.context && !@error.context.to_h.empty?
-          parts << suggestions_section if @error.respond_to?(:suggestions) && @error.suggestions.any?
-          parts << troubleshooting_section if @error.respond_to?(:troubleshooting_tips) && @error.troubleshooting_tips.any?
+          parts << suggestions_section if @error.suggestions&.any?
+          parts << troubleshooting_section if @error.troubleshooting_tips&.any?
           parts.compact.join("\n\n")
         end
 
@@ -37,7 +37,7 @@ module Lutaml
         #
         # @return [String] Error header
         def header
-          severity = @error.respond_to?(:severity) ? @error.severity.to_s.upcase : "ERROR"
+          severity = @error.severity&.to_s&.upcase || "ERROR"
           "#{severity}: #{@error.message}"
         end
 

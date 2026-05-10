@@ -205,14 +205,13 @@ limit: 20)
       # @param definition [Object] The type definition
       # @return [String] The documentation text or empty string
       def extract_documentation(definition)
-        return "" unless definition.respond_to?(:annotation)
         return "" unless definition.annotation&.documentation
 
         docs = definition.annotation.documentation
         docs = [docs] unless docs.is_a?(Array)
 
         docs.filter_map do |doc|
-          content = doc.respond_to?(:content) ? doc.content : doc.to_s
+          content = doc.content || doc.to_s
           content&.strip
         end.first || ""
       end
