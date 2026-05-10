@@ -29,3 +29,9 @@ frontend/dist/
 # Frontend index with mock data (should not be committed)
 frontend/index.html
 
+
+# Transient build artifacts
+*.gem
+examples/*/pkg/
+examples/*.html
+examples/archive-old/
