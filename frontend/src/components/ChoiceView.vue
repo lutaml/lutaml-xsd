@@ -22,7 +22,7 @@
 
     <!-- Loop nested choices -->
     <div v-if="choice.choices && choice.choices.length > 0">
-      Choices:!!!
+      Choices:
       <div v-for="(nestedChoice, ncIdx) in choice.choices" :key="`nc-${ncIdx}`" class="nested-choice-block">
         nestedChoice: {{ nestedChoice }}
         <ChoiceView :choice="nestedChoice" />

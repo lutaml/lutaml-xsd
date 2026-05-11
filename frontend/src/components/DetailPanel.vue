@@ -52,14 +52,14 @@ import TypeDefinition from '@/components/TypeDefinition.vue'
 import DiagramView from '@/components/DiagramView.vue'
 import SchemaOverview from '@/components/SchemaOverview.vue'
 import SourceView from '@/components/SourceView.vue'
-import type { ComplexType, SimpleType, SchemaElement, Group, AttributeGroup, SchemaAttribute } from '@/types'
+import type { ComplexType, SimpleType, SchemaElement, GroupRef, AttributeGroup, SchemaAttribute } from '@/types'
 
 const schemaStore = useSchemaStore()
 const uiStore = useUiStore()
 
 type TypeData = {
   type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'
-  data: ComplexType | SimpleType | SchemaElement | Group | AttributeGroup | SchemaAttribute
+  data: ComplexType | SimpleType | SchemaElement | GroupRef | AttributeGroup | SchemaAttribute
   schema: { id: string; name: string; prefix?: string }
 }
 

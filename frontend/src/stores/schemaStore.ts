@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { SchemaData, Schema, ComplexType, SimpleType, SchemaElement, Group, AttributeGroup, SchemaAttribute, Namespace } from '@/types'
+import type { SchemaData, Schema, ComplexType, SimpleType, SchemaElement, GroupRef, AttributeGroup, SchemaAttribute, Namespace } from '@/types'
 
 export const useSchemaStore = defineStore('schema', () => {
   // State
@@ -114,7 +114,7 @@ export const useSchemaStore = defineStore('schema', () => {
     return namespaces.value.find(n => n.prefix === prefix)
   }
 
-  function getTypeById(typeId: string): { type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'; data: ComplexType | SimpleType | SchemaElement | Group | AttributeGroup | SchemaAttribute; schema: Schema } | null {
+  function getTypeById(typeId: string): { type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'; data: ComplexType | SimpleType | SchemaElement | GroupRef | AttributeGroup | SchemaAttribute; schema: Schema } | null {
     for (const schema of schemas.value) {
       const complex = schema.complex_types?.find(t => t.id === typeId)
       if (complex) return { type: 'complex', data: complex, schema }
@@ -138,7 +138,7 @@ export const useSchemaStore = defineStore('schema', () => {
   }
 
   // Search across all schemas by name (not id)
-  function getTypeByName(name: string): { type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'; data: ComplexType | SimpleType | SchemaElement | Group | AttributeGroup | SchemaAttribute; schema: Schema } | null {
+  function getTypeByName(name: string): { type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'; data: ComplexType | SimpleType | SchemaElement | GroupRef | AttributeGroup | SchemaAttribute; schema: Schema } | null {
     const cleanName = name.replace(/.*:/, '').replace(/\s/g, '')
     const lowerName = cleanName.toLowerCase()
     for (const schema of schemas.value) {

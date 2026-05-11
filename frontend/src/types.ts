@@ -117,7 +117,7 @@ export interface Schema {
   complex_types: ComplexType[]
   simple_types: SimpleType[]
   elements: SchemaElement[]
-  groups: Group[]
+  groups: GroupRef[]
   attribute_groups: AttributeGroup[]
   attributes: SchemaAttribute[]
   imports: Import[]
@@ -134,7 +134,7 @@ export interface ComplexType {
   mixed?: boolean
   elements: TypeElement[]
   attributes: TypeAttribute[]
-  choice?: ChoiceElement
+  choice: ChoiceElement
   sequence?: SequenceElement
   group?: GroupRef
   attribute_groups?: AttributeGroupRef[]
@@ -228,15 +228,15 @@ export interface SchemaAttribute {
   used_by?: UsedByRef[]
 }
 
-export interface Group {
-  id: string
-  name: string
-  elements: TypeElement[]
-  attributes: TypeAttribute[]
-  choice?: ChoiceElement
-  documentation?: string
-  used_by?: UsedByRef[]
-}
+// export interface Group {
+//   id: string
+//   name: string
+//   elements: TypeElement[]
+//   attributes: TypeAttribute[]
+//   choice: ChoiceElement
+//   documentation?: string
+//   used_by?: UsedByRef[]
+// }
 
 export interface AttributeGroup {
   id: string
@@ -269,14 +269,15 @@ export interface SequenceElement {
 }
 
 export interface GroupRef {
-  id?: string
+  id: string
   ref: string
   name?: string
   occurs?: Occurs
-  choice?: ChoiceElement
+  choice: ChoiceElement
   sequence?: SequenceElement
   documentation?: string
   instance_xml?: string
+  source?: string
 }
 
 export interface AttributeGroupRef {

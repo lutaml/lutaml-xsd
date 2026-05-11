@@ -138,13 +138,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ComplexType, SimpleType, SchemaElement } from '@/types'
+import type { ComplexType, SimpleType, SchemaElement, GroupRef, AttributeGroup, TypeAttribute } from '@/types'
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
 
 type TypeData = {
   type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'
-  data: ComplexType | SimpleType | SchemaElement
+  data: ComplexType | SimpleType | SchemaElement | GroupRef | AttributeGroup | TypeAttribute
   schema: { id: string; name: string; prefix?: string }
 }
 

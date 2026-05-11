@@ -11,11 +11,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ComplexType, SimpleType, SchemaElement } from '@/types'
+import type { ComplexType, SimpleType, SchemaElement, GroupRef, AttributeGroup, SchemaAttribute } from '@/types'
 
 type TypeData = {
   type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'
-  data: ComplexType | SimpleType | SchemaElement
+  data: ComplexType | SimpleType | SchemaElement | GroupRef | AttributeGroup | SchemaAttribute
   schema: { id: string; name: string; prefix?: string }
 }
 
@@ -28,15 +28,17 @@ function generateXmlSource(): string {
   const name = props.type.data.name || ''
 
   if (props.type.type === 'element') {
-    return props.type.data.source as any
+    return ''
   } else if (props.type.type === 'complex') {
-    return props.type.data.source as any
+    return ''
   } else if (props.type.type === 'simple') {
     return generateSimpleTypeXml(name, prefix, props.type.data as SimpleType)
   } else if (props.type.type === 'group') {
-    return generateGroupXml(name, prefix, props.type.data as any)
+    return generateGroupXml(name, prefix, props.type.data as GroupRef)
   } else if (props.type.type === 'attribute_group') {
-    return props.type.data.source as any
+    return ''
+  } else if (props.type.type === 'attribute') {
+    return ''
   }
   return ''
 }

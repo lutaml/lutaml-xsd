@@ -877,8 +877,12 @@ schema_source = nil, file_path = nil)
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized groups
         def serialize_groups(schema, prefix = nil)
-          schema.groups.map.with_index do |group, index|
-            serialize_group(group, index, prefix)
+          return [] unless schema.respond_to?(:groups) || schema.respond_to?(:group)
+
+          grps = schema.respond_to?(:groups) ? schema.groups : schema.group
+          grps.map.with_index do |group, index|
+            # serialize_group(group, index, prefix)
+            serialize_type_group(group, index, prefix)
           end
         end
 
@@ -894,7 +898,7 @@ schema_source = nil, file_path = nil)
             elements: serialize_group_elements(group),
             attributes: serialize_group_attributes(group),
             documentation: extract_documentation(group),
-            choice: serialize_choice(group),
+            choice: serialize_choice(group.choice),
             sequence: serialize_sequence(group),
           }
         end
@@ -1067,11 +1071,11 @@ source = nil)
 
         # @param model [ComplexType|Choice|Sequence]
         # @return [Array<Hash>] Serialized group
-        def serialize_type_group(model)
+        def serialize_type_group(model, index = 0, prefix = nil)
           return nil if model.nil?
 
           {
-            id: model.respond_to?(:id) ? model.id : nil,
+            id: group_id(index, model, prefix),
             ref: model.respond_to?(:ref) ? model.ref : nil,
             name: model.respond_to?(:name) ? model.name : nil,
             occurs: {
