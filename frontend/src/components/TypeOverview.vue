@@ -90,14 +90,6 @@
       </table>
     </div>
 
-    <!-- Choice Section (for groups with choice) -->
-    <div v-for="(gc, index) in groupChoices" :key="`group-choice-${index}`" class="overview-section">
-      <h3 class="section-title">Choice</h3>
-      <div class="choice-card">groupChoices: {{ gc }}
-        <ChoiceView :choice="gc" />
-      </div>
-    </div>
-
     <!-- Attributes Table -->
     <div v-if="attributes.length > 0" class="overview-section">
       <h3 class="section-title">Attributes</h3>
@@ -170,7 +162,7 @@ import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
 import GroupTreeItem from './GroupTreeItem.vue'
-import ChoiceView from './ChoiceView.vue'
+// import ChoiceView from './ChoiceView.vue'
 
 type TypeData = {
   type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'
@@ -261,13 +253,6 @@ const unionMembers = computed(() => {
 const listType = computed(() => {
   if (props.type.type !== 'simple') return ''
   return (props.type.data as SimpleType).list || ''
-})
-
-// Group choice computed property
-const groupChoices = computed<ChoiceElement[]>(() => {
-  const allChoices: ChoiceElement[] = []
-
-  return allChoices
 })
 
 const groupRefs = computed<GroupRef[]>(() => {

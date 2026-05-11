@@ -87,7 +87,7 @@
           >
             <span class="badge badge-group">G</span>
             <span class="group-name">{{ group.name }}</span>
-            <span v-if="group.elements?.length" class="group-count">{{ group.elements.length }} elements</span>
+            <!-- <span v-if="group.elements?.length" class="group-count">{{ group.elements.length }} elements</span> -->
           </div>
         </div>
 
@@ -176,7 +176,7 @@
 import { ref, computed } from 'vue'
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
-import type { ComplexType, SimpleType, SchemaElement, Group, AttributeGroup, SchemaAttribute } from '@/types'
+import type { ComplexType, SimpleType, SchemaElement, GroupRef, AttributeGroup, SchemaAttribute } from '@/types'
 
 type DisplayType = (ComplexType & { type: 'complex' }) | (SimpleType & { type: 'simple' })
 
@@ -224,7 +224,7 @@ function selectElement(element: SchemaElement) {
   uiStore.openDetailPanel()
 }
 
-function selectGroup(group: Group) {
+function selectGroup(group: GroupRef) {
   schemaStore.selectType(group.id)
   uiStore.openDetailPanel()
 }
