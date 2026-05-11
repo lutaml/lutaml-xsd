@@ -195,6 +195,7 @@ export interface SchemaElement {
 export interface TypeElement {
   name: string
   type?: string
+  complex_type?: ComplexType
   type_local?: boolean
   reference?: string
   occurs?: Occurs
@@ -214,6 +215,7 @@ export interface TypeAttribute {
   default?: string
   fixed?: string
   documentation?: string
+  instance_xml?: string
 }
 
 export interface SchemaAttribute {
@@ -274,6 +276,7 @@ export interface GroupRef {
   choice?: ChoiceElement
   sequence?: SequenceElement
   documentation?: string
+  instance_xml?: string
 }
 
 export interface AttributeGroupRef {

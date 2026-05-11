@@ -64,18 +64,6 @@
       <p class="font-mono">{{ listType }}</p>
     </div>
 
-    <!-- Sequence Choices view
-    <div v-if="type.data.sequence" class="overview-section">
-      <h3 class="section-title">Sequence</h3>
-      <div v-if="type.data.sequence.choices.length > 0" class="overview-section">
-        <h4 class="section-title">Choices</h4>
-        <div v-for="el in type.data.sequence.choices">
-          <span>Choice {{ formatOccurs(el.occurs) }}</span>
-        </div>
-      </div
-    </div>
-    -->
-
     <!-- Elements Table -->
     <div v-if="elements.length > 0" class="overview-section">
       <h3 class="section-title">Elements</h3>
@@ -100,6 +88,14 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Choice Section (for groups with choice) -->
+    <div v-for="(gc, index) in groupChoices" :key="`group-choice-${index}`" class="overview-section">
+      <h3 class="section-title">Choice</h3>
+      <div class="choice-card">groupChoices: {{ gc }}
+        <ChoiceView :choice="gc" />
+      </div>
     </div>
 
     <!-- Attributes Table -->
@@ -170,14 +166,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute, GroupRef, AttributeGroupRef, UsedByRef, AttributeGroup } from '@/types'
+import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute, GroupRef, AttributeGroupRef, UsedByRef, AttributeGroup, ChoiceElement } from '@/types'
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
 import GroupTreeItem from './GroupTreeItem.vue'
+import ChoiceView from './ChoiceView.vue'
 
 type TypeData = {
   type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'
-  data: ComplexType | SimpleType | SchemaElement
+  data: ComplexType | SimpleType | SchemaElement | GroupRef | AttributeGroup | TypeAttribute
   schema: { id: string; name: string; prefix?: string }
 }
 
@@ -266,6 +263,13 @@ const listType = computed(() => {
   return (props.type.data as SimpleType).list || ''
 })
 
+// Group choice computed property
+const groupChoices = computed<ChoiceElement[]>(() => {
+  const allChoices: ChoiceElement[] = []
+
+  return allChoices
+})
+
 const groupRefs = computed<GroupRef[]>(() => {
   // if (props.type.type !== 'complex') return []
   const complexType = props.type.data as ComplexType
@@ -304,6 +308,47 @@ function collectGroupsFromSequence(sequence: any, collector: GroupRef[]) {
   // Groups from nested sequences
   if (Array.isArray(sequence.sequences)) {
     sequence.sequences.forEach((seq: any) => collectGroupsFromSequence(seq, collector))
+  }
+}
+
+/**
+ * Recursively collect choices from a sequence object
+ */
+function collectChoicesFromSequence(sequence: any, collector: ChoiceElement[]) {
+  if (!sequence) return
+
+  // Direct choices on this sequence
+  if (sequence.choices.length > 0) {
+    collector.push(...sequence.choices)
+  }
+
+  // Choices from nested sequences
+  if (Array.isArray(sequence.sequences)) {
+    sequence.sequences.forEach((seq: any) => collectChoicesFromSequence(seq, collector))
+  }
+
+  // Choices from elements
+  if (sequence.elements) {
+    sequence.elements.forEach((el: any) => {
+      collectChoicesFromTypeElement(el, collector)
+    })
+  }
+}
+
+/**
+ * Recursively collect choices from a TypeElement object
+ */
+function collectChoicesFromTypeElement(typeElement: any, collector: ChoiceElement[]) {
+  if (!typeElement) return []
+
+  if (typeElement.complex_type) {
+    // Direct choices from complex type of this element
+    collector.push(...typeElement.complex_type.choice)
+
+    // Choices from sequences
+    if (typeElement.complex_type.sequence) {
+      collectChoicesFromSequence(typeElement.complex_type.sequence, collector)
+    }
   }
 }
 
@@ -453,5 +498,106 @@ code {
   background: var(--bg-secondary);
   padding: 1px 4px;
   border-radius: var(--radius-sm);
+}
+
+/* Choice Card Styles */
+.choice-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.choice-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.choice-label {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+}
+
+.choice-occurs {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.choice-documentation {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+.choice-elements,
+.choice-groups,
+.choice-sequences,
+.choice-nested {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.subsection-title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.sequence-block {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.sequence-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.sequence-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.sequence-elements {
+  margin-top: var(--space-2);
+}
+
+.nested-choice-block {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* Smaller table variant */
+.table-sm {
+  font-size: var(--text-xs);
+}
+
+.table-sm th,
+.table-sm td {
+  padding: var(--space-1) var(--space-2);
+}
+
+.table-sm .font-mono {
+  font-size: var(--text-xs);
 }
 </style>
