@@ -1100,8 +1100,8 @@ source = nil)
                          else
                            [model.group]
                          end
-          model_groups.compact.map do |item|
-            serialize_type_group(item)
+          model_groups.compact.map.with_index do |item, index|
+            serialize_type_group(item, index)
           end
         end
 

@@ -162,7 +162,6 @@ import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
 import GroupTreeItem from './GroupTreeItem.vue'
-// import ChoiceView from './ChoiceView.vue'
 
 type TypeData = {
   type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'
