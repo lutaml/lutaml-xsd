@@ -33,6 +33,33 @@
           :group="childGroup"
           :depth="depth + 2"
         />
+        <div v-if="group.choice.choices && group.choice.choices.length > 0" class="nested-header" :style="{ paddingLeft: `${(depth + 1) * 16}px` }">
+          <span class="nested-label">⟨choice option⟩</span>
+          <ul>
+            <li v-for="(option, idx) in group.choice.choices" :key="`o-${idx}`">
+              <span class="group-occurs">{{ formatOccurs(option.occurs) }}</span>
+              <GroupTreeItem 
+                v-for="(childGroup, cidx) in (option.groups || [])" 
+                :key="`o-${idx}-g-${cidx}`"
+                :group="childGroup"
+                :depth="depth + 3"
+              />
+              <div class="group-tree-item">
+                <div
+                  class="group-node"
+                  v-for="(childElement, eidx) in (option.elements || [])" 
+                  :key="`o-${idx}-g-${eidx}`"
+                  :group="childElement"
+                  :depth="depth + 3"
+                  :style="{ paddingLeft: `${(depth + 3) * 16}px` }">
+                  <span class="expand-icon-placeholder"></span>
+                  <span>{{ childElement.reference || childElement.name }}</span>
+                    <span class="group-occurs">{{ formatOccurs(childElement.occurs) }}</span>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
       </template>
       
       <!-- Render nested sequence -->
