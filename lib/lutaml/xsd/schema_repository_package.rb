@@ -98,6 +98,10 @@ module Lutaml
                 )
               when %r{^schemas/.+\.xsd$}
                 schema_entries << entry.name
+              when %r{^schemas/.+\.rng$}
+                schema_entries << entry.name
+              when %r{^schemas/.+\.rnc$}
+                schema_entries << entry.name
               end
             end
           end
