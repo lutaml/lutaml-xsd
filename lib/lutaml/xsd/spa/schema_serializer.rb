@@ -1114,12 +1114,12 @@ source = nil)
         def collect_attribute_group_refs(model)
           refs = []
 
-          if model.attribute_group && !model.attribute_group.empty?
+          if model.respond_to?(:attribute_group) && model.attribute_group && !model.attribute_group.empty?
             groups = model.attribute_group.is_a?(Array) ? model.attribute_group : [model.attribute_group]
             refs.concat(groups)
           end
 
-          if model.extension
+          if model.respond_to?(:extension) && model.extension
             refs.concat(collect_extension_attribute_group_refs(model.extension))
           end
 
