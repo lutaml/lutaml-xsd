@@ -1,6 +1,4 @@
 # RNG Configuration
 
 files:
-  # - ../trang/bsi.xsd
-  # - ../trang/iec.xsd
   - ../trang/basicdoc.xsd

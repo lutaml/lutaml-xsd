@@ -1,5 +1,4 @@
 # RNG Configuration
 
 files:
-  - ../bsi.rnc
-  - ../iec.rnc
+  - ../basicdoc.rnc
