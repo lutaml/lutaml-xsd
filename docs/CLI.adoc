@@ -47,7 +47,9 @@ Package commands create, validate, and inspect LXR schema repository packages.
 
 === pkg build
 
-Build an LXR package from a YAML configuration file.
+Build an LXR package from a YAML configuration file. The `files` list in the
+configuration may reference `.xsd`, `.rng`, or `.rnc` files. RNG/RNC files are
+automatically converted to XSD during the build process.
 
 Syntax:
 
@@ -58,7 +60,9 @@ lutaml-xsd pkg build CONFIG_FILE [options]
 
 Where,
 
-`CONFIG_FILE`:: Path to YAML configuration file (required)
+`CONFIG_FILE`:: Path to YAML configuration file (required). The `files` list
+supports `.xsd`, `.rng` (RELAX NG XML syntax), and `.rnc` (RELAX NG Compact
+syntax) files.
 
 Options:
 
@@ -1480,6 +1484,31 @@ lutaml-xsd type find "gml:CodeType" --from pkg/urban.lxr
 
 # 5. Get statistics
 lutaml-xsd stats show pkg/urban.lxr
+----
+====
+
+=== Building from RELAX NG schemas
+
+.Building a package from RNG/RNC files
+[example]
+====
+[source,bash]
+----
+# 1. Create configuration file referencing .rng or .rnc files
+cat > rng_schemas.yml << 'EOF'
+files:
+  - schemas/isostandard.rnc
+  - schemas/biblio.rnc
+EOF
+
+# 2. Build package (RNG/RNC files are automatically converted to XSD)
+lutaml-xsd pkg build rng_schemas.yml \
+  --name "ISO Standard Schemas" \
+  --version "1.0" \
+  --output pkg/iso_schemas.lxr
+
+# 3. Query types as normal
+lutaml-xsd type list --from pkg/iso_schemas.lxr
 ----
 ====
 

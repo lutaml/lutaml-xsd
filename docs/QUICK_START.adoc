@@ -29,6 +29,8 @@ See link:INSTALLATION[Installation guide] for detailed instructions.
 
 Create a simple XSD file:
 
+Create a simple XSD file:
+
 .Creating example.xsd
 [example]
 ====
@@ -248,6 +250,56 @@ Package statistics:
   Total namespaces: 1
   element: 1
   simple_type: 1
+----
+====
+
+== Working with RELAX NG schemas
+
+Lutaml::Xsd supports building packages directly from RELAX NG schemas (`.rng`
+XML syntax and `.rnc` compact syntax). The schemas are automatically converted
+to XSD during the build process.
+
+=== Creating a package from an RNC file
+
+.Building from RELAX NG Compact syntax
+[example]
+====
+[source,bash]
+----
+# 1. Create minimal configuration
+cat > rng_config.yml << 'EOF'
+files:
+  - path/to/schema.rnc
+EOF
+
+# 2. Build package
+lutaml-xsd pkg build rng_config.yml \
+  --name "My RNG Schemas" \
+  --output my_rng_schemas.lxr
+
+# 3. Query types as normal
+lutaml-xsd type list --from my_rng_schemas.lxr
+----
+====
+
+=== Using the Ruby API with RNG files
+
+.Loading RNG files programmatically
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load directly from an RNG file
+repo = Lutaml::Xsd::SchemaRepository.load_from_file('schema.rng')
+
+# Or from an RNC file
+repo = Lutaml::Xsd::SchemaRepository.load_from_file('schema.rnc')
+
+# Query types exactly as with XSD packages
+result = repo.find_type('TypeName')
+puts result.qname if result.resolved?
 ----
 ====
 

@@ -337,13 +337,13 @@ namespace_mappings: <3>
   - prefix: "ex"
     uri: "http://example.com/namespace"
 ----
-<1> List of XSD files to include (required)
+<1> List of schema files (`.xsd`, `.rng`, or `.rnc`) to include (required)
 <2> Schema location mappings for imports/includes (optional)
 <3> Namespace prefix mappings (optional)
 
 Where,
 
-`files`:: Array of XSD file paths to include in the package (required)
+`files`:: Array of schema file paths (`.xsd`, `.rng`, or `.rnc`) to include in the package (required). RNG/RNC files are automatically converted to XSD.
 `schema_location_mappings`:: Array of schema location redirections (optional)
 `namespace_mappings`:: Array of namespace prefix-to-URI mappings (optional)
 

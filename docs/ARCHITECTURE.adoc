@@ -457,6 +457,33 @@ The [`Lutaml::Xsd::Glob`](lib/lutaml/xsd/glob.rb) class manages schema location 
 
 This design allows offline development, schema version control, and consistent schema handling across environments.
 
+=== RNG to XSD Converter
+
+The [`Lutaml::Xsd::RngToXsdConverter`](lib/lutaml/xsd/rng_to_xsd_converter.rb) converts RELAX NG (`.rng` / `.rnc`) schemas to XSD.
+
+**Responsibilities:**
+
+* Convert `Rng::Grammar` objects to `Lutaml::Xsd::Schema` objects
+* Resolve named `<define>` blocks with cycle detection
+* Classify patterns as elements, attributes, or particles
+* Detect and handle element name collisions across defines
+* Convert include directives from RNC/RNG to XSD `<include>` elements
+* Map RNG patterns (`<element>`, `<attribute>`, `<choice>`, `<group>`, `<interleave>`, `<optional>`, `<zeroOrMore>`, `<oneOrMore>`, `<data>`, `<value>`, `<list>`, `<text>`) to XSD equivalents
+
+**Integration points:**
+
+* `SchemaRepository#parse_schema_file` — automatically invokes the converter for `.rng`/`.rnc` files
+* `SchemaRepository.from_file` — accepts `.rng` and `.rnc` paths
+
+**Conversion pipeline:**
+
+. Parse RNG/RNC file into `Rng::Grammar` object (via the `rng` gem)
+. `RngToXsdConverter#convert` maps the grammar to XSD constructs
+. Phase 0: Convert include directives
+. Phase 1: Convert all named defines (with caching and cycle guards)
+. Phase 2: Convert start elements and top-level elements
+. Result is a standard `Lutaml::Xsd::Schema` object usable by all downstream components
+
 === Schema Repository
 
 The [`Lutaml::Xsd::SchemaRepository`](lib/lutaml/xsd/schema_repository.rb) provides namespace-aware type resolution across multiple schemas.

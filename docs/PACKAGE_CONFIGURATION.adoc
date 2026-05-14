@@ -22,13 +22,15 @@ LXR packages are highly configurable through three independent axes, allowing yo
 
 ==== `files` (required for standalone packages)
 
-Array of XSD file paths to include in the package. Required when building a standalone package (not using `base_packages`).
+Array of schema file paths to include in the package. Supports `.xsd` (XML Schema), `.rng` (RELAX NG XML syntax), and `.rnc` (RELAX NG Compact syntax) files. RNG/RNC files are automatically converted to XSD during the build process. Required when building a standalone package (not using `base_packages`).
 
 [source,yaml]
 ----
 files:
   - path/to/schema.xsd
   - path/to/another.xsd
+  - path/to/schema.rng   # RELAX NG XML syntax
+  - path/to/schema.rnc   # RELAX NG Compact syntax
 ----
 
 ==== `output_package` (optional)

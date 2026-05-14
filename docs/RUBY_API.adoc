@@ -1333,6 +1333,93 @@ puts "Loaded #{stats[:total_types]} types"
 ----
 ====
 
+==== from_file()
+
+Load repository from a single schema file. Supports XSD (`.xsd`), RELAX NG
+XML syntax (`.rng`), and RELAX NG Compact syntax (`.rnc`) files. RNG/RNC files
+are automatically converted to XSD.
+
+Syntax:
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_file(path) <1>
+----
+<1> Load repository from a schema file
+
+Where,
+
+`path`:: Path to a schema file (`.xsd`, `.rng`, or `.rnc`) (String) (required)
+
+Returns a new [`SchemaRepository`](lib/lutaml/xsd/schema_repository.rb:10) instance.
+
+.Loading from different schema formats
+[example]
+====
+[source,ruby]
+----
+# Load from XSD
+repo = Lutaml::Xsd::SchemaRepository.from_file('schema.xsd')
+
+# Load from RELAX NG XML syntax
+repo = Lutaml::Xsd::SchemaRepository.from_file('schema.rng')
+
+# Load from RELAX NG Compact syntax
+repo = Lutaml::Xsd::SchemaRepository.from_file('schema.rnc')
+
+# All formats produce the same type of repository object
+repo.parse.resolve
+result = repo.find_type('TypeName')
+----
+====
+
+==== RngToXsdConverter
+
+Convert a RELAX NG grammar to an XSD Schema object directly.
+
+Syntax:
+
+[source,ruby]
+----
+require 'rng'
+grammar = Rng.parse(rng_content)
+schema = Lutaml::Xsd::RngToXsdConverter.new(grammar, file_path: 'schema.rng').convert
+----
+
+Where,
+
+`grammar`:: A parsed `Rng::Grammar` object (required)
+`file_path`:: Original file path for include directive extraction (optional)
+
+Returns an [`Lutaml::Xsd::Schema`](lib/lutaml/xsd/schema.rb) object.
+
+.Converting RELAX NG to XSD
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'rng'
+
+# Parse an RNG file
+rng_content = File.read('schema.rng')
+grammar = Rng.parse(rng_content,
+  location: File.dirname('schema.rng'),
+  resolve_external: true)
+
+# Convert to XSD
+converter = Lutaml::Xsd::RngToXsdConverter.new(grammar, file_path: 'schema.rng')
+xsd_schema = converter.convert
+
+# Serialize the result
+puts xsd_schema.to_formatted_xml
+
+# Or parse an RNC file directly
+grammar = Rng.parse_file('schema.rnc')
+xsd_schema = Lutaml::Xsd::RngToXsdConverter.new(grammar, file_path: 'schema.rnc').convert
+----
+====
+
 ==== from_yaml_file()
 
 Load repository configuration from a YAML file.

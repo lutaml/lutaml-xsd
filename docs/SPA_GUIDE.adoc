@@ -15,6 +15,8 @@ The SPA (Single Page Application) Documentation Generator creates modern, intera
 * **Dark mode support** - Automatic system preference detection with manual toggle
 * **Advanced search** - Real-time fuzzy matching across all schema components
 * **Type filtering** - Filter by element, complex type, simple type, attribute group, group
+* **Inline complex types** - Anonymous complex types within elements are displayed with synthetic names
+* **Interactive group tree view** - Expandable tree for groups with nested choices and sequences
 * **Zero dependencies** - Self-contained HTML, CSS, and JavaScript
 * **Offline-capable** - Works without internet connection (inlined mode)
 * **Accessibility** - WCAG 2.1 AA compliant
@@ -184,6 +186,27 @@ Click on any schema component to view:
 * **Documentation** - Extracted annotations
 * **Structure** - Elements, attributes, restrictions
 * **Relationships** - Used by, extends, references
+
+=== Inline complex types
+
+Elements that define an anonymous `<xs:complexType>` inline (without a `name`
+attribute) are automatically surfaced in the documentation with a synthetic
+name derived from the element name (e.g., `Person_type` for an element named
+`Person`). These inline types appear alongside named complex types in the type
+listing and include all their elements, attributes, sequences, and choices.
+
+=== Group tree view
+
+Schema groups (`xs:group`) are rendered as expandable tree items that show
+nested structure:
+
+* **Groups** — Display name or reference, cardinality, and expandable content
+* **Choices** — Shown with `⟨choice⟩` labels and nested options
+* **Sequences** — Shown with their contained elements and sub-groups
+* **Recursive nesting** — Groups can contain choices containing sequences
+  containing groups, all navigable in the tree
+
+The tree supports arbitrary nesting depth and lazy expansion for large schemas.
 
 == Configuration
 
