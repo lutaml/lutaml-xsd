@@ -768,12 +768,7 @@ module Lutaml
           # Ensure loaded repository is resolved
           repo.resolve unless repo.instance_variable_get(:@resolved)
           repo
-        when ".xsd"
-          repo = new
-          repo.instance_variable_set(:@files, [File.expand_path(path)])
-          repo.parse.resolve
-          repo
-        when ".rng", ".rnc"
+        when ".xsd", ".rng", ".rnc"
           repo = new
           repo.instance_variable_set(:@files, [File.expand_path(path)])
           repo.parse.resolve

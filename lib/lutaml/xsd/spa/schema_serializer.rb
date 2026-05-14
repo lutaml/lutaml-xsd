@@ -594,7 +594,7 @@ file_path = nil)
         # @param schema_source [String, nil] Optional schema source for context
         # @param file_path [String, nil] Optional file path for diagram generation
         # @return [Array<Hash>] Serialized inline complex types
-        def serialize_inline_complex_types(schema, prefix = nil, schema_source = nil, file_path = nil)
+        def serialize_inline_complex_types(schema, prefix = nil, _schema_source = nil, _file_path = nil)
           return [] unless schema.respond_to?(:element) && schema.element
 
           elements = schema.element.is_a?(Array) ? schema.element : [schema.element]

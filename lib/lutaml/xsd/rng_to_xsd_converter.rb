@@ -143,7 +143,7 @@ module Lutaml
       end
 
       # Convert a single define by name, caching results
-      def convert_define(name)
+      def convert_define(name) # rubocop:disable Metrics/MethodLength
         return @define_results[name] if @define_results.key?(name)
 
         # Cycle guard
@@ -731,26 +731,26 @@ module Lutaml
       # tree consists only of Rng::Ref instances (structural ref pattern).
       # Occurrence wrapper semantics are preserved via minOccurs/maxOccurs on
       # the returned ref element.
-      def extract_inline_element(p)
+      def extract_inline_element(particle)
         min_occurs = nil
         max_occurs = nil
 
         # Unwrap occurrence wrappers, tracking min/max
-        case p
+        case particle
         when Rng::Optional
           min_occurs = "0"
           max_occurs = "1"
-          inner = get_all_patterns(p).first
+          inner = get_all_patterns(particle).first
         when Rng::ZeroOrMore
           min_occurs = "0"
           max_occurs = "unbounded"
-          inner = get_all_patterns(p).first
+          inner = get_all_patterns(particle).first
         when Rng::OneOrMore
           min_occurs = "1"
           max_occurs = "unbounded"
-          inner = get_all_patterns(p).first
+          inner = get_all_patterns(particle).first
         when Rng::Element
-          inner = p
+          inner = particle
         else
           return nil
         end
@@ -805,7 +805,7 @@ module Lutaml
       end
 
       # Assign the appropriate content model (sequence/choice/all) to a ComplexType
-      def assign_content_model(ct, children)
+      def assign_content_model(ctype, children)
         return if children.empty?
 
         elements = []
@@ -824,7 +824,7 @@ module Lutaml
           when Lutaml::Xml::Schema::Xsd::Sequence
             sequences << child
           when Lutaml::Xml::Schema::Xsd::All
-            ct.all = child
+            ctype.all = child
             return
           end
         end
@@ -833,15 +833,15 @@ module Lutaml
           child = children.first
           case child
           when Lutaml::Xml::Schema::Xsd::Sequence
-            ct.sequence = child
+            ctype.sequence = child
             return
           when Lutaml::Xml::Schema::Xsd::Choice
-            ct.choice = child
+            ctype.choice = child
             return
           end
         end
 
-        ct.sequence = Lutaml::Xml::Schema::Xsd::Sequence.new(
+        ctype.sequence = Lutaml::Xml::Schema::Xsd::Sequence.new(
           element: elements,
           choice: choices,
           group: groups,

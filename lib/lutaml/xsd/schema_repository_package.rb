@@ -96,11 +96,7 @@ module Lutaml
                   entry.get_input_stream.read,
                   permitted_classes: [Time, Date, Symbol],
                 )
-              when %r{^schemas/.+\.xsd$}
-                schema_entries << entry.name
-              when %r{^schemas/.+\.rng$}
-                schema_entries << entry.name
-              when %r{^schemas/.+\.rnc$}
+              when %r{^schemas/.+\.xsd$}, %r{^schemas/.+\.xml$}, %r{^schemas/.+\.xs$}
                 schema_entries << entry.name
               end
             end
