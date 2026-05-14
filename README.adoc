@@ -11,7 +11,8 @@ image:https://github.com/lutaml/lutaml-xsd/actions/workflows/rake.yml/badge.svg[
 Lutaml::Xsd is a Ruby gem designed to parse and manipulate XML Schema Definition
 (XSD) files. It provides a robust framework for handling XSD elements,
 attributes, complex types, and all other XSD constructs, allowing users to
-programmatically work with XML schemas.
+programmatically work with XML schemas. It also supports RELAX NG (RNG/RNC)
+schemas through automatic conversion to XSD.
 
 NOTE: For UML-to-XSD mapping and YAML documentation generation (including
 ShapeChange integration), see the
@@ -45,8 +46,16 @@ allowing you to shape and structure your data into useful forms.
   - Single-file mode
   - Entrypoint prioritization in sidebar
   - Schema detail views with elements/types/attributes tables
+  - Interactive group tree view with nested choices and sequences
+  - Inline complex type display for anonymous types within elements
   - Hash-based navigation with browser back/forward support
   - Dark mode with automatic theme detection
+* <<rng-rnc-support,RELAX NG (RNG/RNC) support>> - Convert and build from
+  RELAX NG schemas
+  - Automatic RNG/RNC to XSD conversion via `RngToXsdConverter`
+  - Build LXR packages directly from `.rng` and `.rnc` files
+  - Support for both XML syntax (`.rng`) and compact syntax (`.rnc`)
+  - Automatic include directive conversion
 * <<schema-validation,XSD schema validation>> with automatic version detection
   - Pre-parsing validation to ensure valid XSD schema documents
   - Automatic detection of XSD 1.0 vs 1.1 features
@@ -138,6 +147,8 @@ lutaml-xsd spa schemas.lxr --output docs.html \
 * Schema navigation with entrypoints prioritized
 * Element and type detail views
 * XML Instance Representation for each component
+* Inline complex type display for anonymous types within elements
+* Interactive group tree view showing nested choices, sequences, and sub-groups
 * Clickable cross-references throughout
 * xs3p-quality documentation
 
@@ -230,6 +241,88 @@ For comprehensive documentation on SPA generation, see:
 * link:docs/SPA_CONFIGURATION.adoc[Configuration Reference] - All configuration options
 * link:docs/SPA_DEPLOYMENT.adoc[Deployment Guide] - Hosting and CI/CD integration
 * link:docs/SPA_ARCHITECTURE.adoc[Architecture Documentation] - Design and extension guide
+
+[[rng-rnc-support]]
+== RELAX NG (RNG/RNC) support
+
+=== General
+
+Lutaml::Xsd can convert RELAX NG schema files (`.rng` XML syntax and `.rnc`
+compact syntax) to XSD, allowing you to build LXR packages and generate
+documentation from RELAX NG schemas using the same tools and workflows.
+
+The `RngToXsdConverter` follows the same mapping logic as jing-trang's RNG-to-XSD
+conversion, handling define resolution, element classification, collision
+detection, and include directives.
+
+=== Building from RNG/RNC files
+
+Use `.rng` or `.rnc` files directly in your YAML configuration:
+
+[source,yaml]
+----
+# config.yml
+files:
+  - path/to/schema.rng
+----
+
+Or point to a compact syntax file:
+
+[source,yaml]
+----
+# config.yml
+files:
+  - path/to/schema.rnc
+----
+
+Then build the package as usual:
+
+[source,bash]
+----
+lutaml-xsd pkg build config.yml --output schema.lxr
+----
+
+During package creation, the RNG/RNC file is automatically converted to XSD.
+The generated `.xsd` file is written alongside the original source file (or to a
+temporary directory if the original location is not writable).
+
+=== Ruby API
+
+.Load and query an RNG schema programmatically
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load directly from an RNG or RNC file
+repo = Lutaml::Xsd::SchemaRepository.load_from_file('schema.rng')
+
+# Or use the converter directly
+require 'rng'
+grammar = Rng.parse(File.read('schema.rng'))
+xsd_schema = Lutaml::Xsd::RngToXsdConverter.new(grammar).convert
+
+# Serialize to XML
+puts xsd_schema.to_formatted_xml
+----
+====
+
+=== Conversion details
+
+The converter handles:
+
+* **Define resolution** — Named `<define>` blocks are resolved and expanded
+* **Include directives** — RNC `include "path"` and RNG `<include href="..."/>` are
+  converted to XSD `<include>` elements
+* **Collision detection** — Element name collisions from multiple defines are
+  detected and handled
+* **Pattern mapping** — RNG patterns (`<element>`, `<attribute>`, `<choice>`,
+  `<group>`, `<interleave>`, `<optional>`, `<zeroOrMore>`, `<oneOrMore>`,
+  `<data>`, `<value>`, `<list>`, `<text>`) are mapped to their XSD equivalents
+* **Attribute classification** — Patterns that resolve to attributes (including
+  those wrapped in `<optional>`) are correctly classified
+* **Namespace handling** — Target namespace is preserved from the source grammar
 
 [[schema-validation]]
 == XSD schema validation
@@ -839,12 +932,16 @@ lutaml-xsd xml validate-batch <directory/> --package <file.lxr>
 
 === BUILD commands (package creation)
 
-Create LXR packages from configurations.
+Create LXR packages from configurations. Supports XSD, RNG, and RNC input
+files.
 
 [source,bash]
 ----
-# Build from YAML config
+# Build from YAML config (XSD files)
 lutaml-xsd pkg build <config.yml>
+
+# Build from RNG/RNC files (automatically converted to XSD)
+lutaml-xsd pkg build <config.yml>  # config.yml can reference .rng/.rnc files
 
 # Interactive initialization
 lutaml-xsd build init <entrypoint.xsd>
@@ -1055,18 +1152,23 @@ and their relationships:
 
 === Data transformation flow
 
-The following diagram shows how XSD files are processed through the parsing
-pipeline:
+The following diagram shows how XSD and RNG/RNC files are processed through the
+parsing pipeline:
 
 [source]
 ----
-╔═══════════════════╗           ╔═══════════════════════╗
-║   XSD File(s)     ║           ║  Schema Mappings      ║
-║                   ║           ║  (Local redirects)    ║
-╚═════════┬═════════╝           ╚═══════════┬═══════════╝
-          │                                 │
-          └────────────┬────────────────────┘
-                       │
+╔═══════════════════╗   ╔═══════════════════╗   ╔═══════════════════════╗
+║   XSD File(s)     ║   ║  RNG/RNC File(s)  ║   ║  Schema Mappings      ║
+║                   ║   ║                   ║   ║  (Local redirects)    ║
+╚═════════╦═════════╝   ╚═════════╦═════════╝   ╚═══════════╦═══════════╝
+          ║                       ║                         ║
+          ║             ╔═════════╩════════════╗              ║
+          ║             ║ RngToXsdConverter    ║              ║
+          ║             ║ (RNG/RNC → XSD)     ║              ║
+          ║             ╚═════════╦════════════╝              ║
+          ║                       ║                         ║
+          ╚════════════╦══════════╩═══════════════════════════╝
+                       ║
                        ▼
               ┌────────────────┐
               │  XSD Parser    │
@@ -1453,6 +1555,8 @@ Syntax:
 ----
 files: <1>
   - path/to/schema.xsd
+  - path/to/schema.rng   # RELAX NG XML syntax
+  - path/to/schema.rnc   # RELAX NG Compact syntax
 
 schema_location_mappings: <2>
   - from: "http://schemas.example.com/schema.xsd"
@@ -1465,13 +1569,13 @@ namespace_mappings: <3>
   - prefix: "ex"
     uri: "http://example.com/namespace"
 ----
-<1> List of XSD file paths to include in the package (required)
+<1> List of schema file paths (`.xsd`, `.rng`, or `.rnc`) to include (required)
 <2> Schema location mappings for imports/includes (optional)
 <3> Namespace prefix mappings (optional)
 
 Where,
 
-`files`:: Array of XSD file paths to include in the package (required)
+`files`:: Array of schema file paths (`.xsd`, `.rng`, or `.rnc`) to include in the package (required). RNG/RNC files are automatically converted to XSD.
 `schema_location_mappings`:: Array of schema location redirections (optional)
 `namespace_mappings`:: Array of namespace prefix-to-URI mappings (optional)
 
@@ -1545,9 +1649,13 @@ NOTE: The `pkg build` command requires a YAML configuration file as input. Direc
 [example]
 [source,yaml]
 ----
-# minimal_config.yaml
+# minimal_config.yaml (XSD)
 files:
   - path/to/schema.xsd
+
+# minimal_config.yaml (RNG/RNC — automatically converted to XSD)
+files:
+  - path/to/schema.rng
 ----
 
 Then build the package:
