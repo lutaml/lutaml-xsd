@@ -4,6 +4,12 @@ require "liquid"
 require "lutaml/xsd"
 require "canon"
 
+# Block network calls in tests — return nil so import resolution is gracefully
+# skipped instead of raising and killing the whole parse.
+Net::HTTP.define_singleton_method(:get) do |*_args|
+  nil
+end
+
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
