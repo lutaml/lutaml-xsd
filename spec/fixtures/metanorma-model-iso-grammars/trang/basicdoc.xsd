@@ -1275,7 +1275,6 @@ Typically is a subclass of an admonition type</xs:documentation>
         <xs:documentation>Do not insert text labelling the type of admonition in rendering</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="target" type="xs:IDREF"/>
   </xs:attributeGroup>
   <xs:complexType name="AdmonitionBody">
     <xs:sequence>
