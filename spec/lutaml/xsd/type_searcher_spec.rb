@@ -3,56 +3,37 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Xsd::TypeSearcher do
-  let(:schema_files) do
-    [
-      File.expand_path("../../fixtures/i-ur/urbanObject.xsd", __dir__),
-    ]
-  end
-
-  let(:schema_location_mappings) do
-    [
-      Lutaml::Xsd::SchemaLocationMapping.new(
-        from: '(?:\.\./)+gml/(.+\.xsd)$',
-        to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/gml/\\1',
-                             __dir__),
-        pattern: true,
-      ),
-      Lutaml::Xsd::SchemaLocationMapping.new(
-        from: '(?:\.\./)+iso/(.+\.xsd)$',
-        to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/iso/\\1',
-                             __dir__),
-        pattern: true,
-      ),
-      Lutaml::Xsd::SchemaLocationMapping.new(
-        from: '(?:\.\./)+xlink/(.+\.xsd)$',
-        to: File.expand_path(
-          '../../fixtures/codesynthesis-gml-3.2.1/xlink/\\1', __dir__
+  before(:context) do
+    @repository = Lutaml::Xsd::SchemaRepository.new(
+      files: [File.expand_path("../../fixtures/i-ur/urbanObject.xsd", __dir__)],
+      schema_location_mappings: [
+        Lutaml::Xsd::SchemaLocationMapping.new(
+          from: '(?:\.\./)+gml/(.+\.xsd)$',
+          to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/gml/\1', __dir__),
+          pattern: true,
         ),
-        pattern: true,
-      ),
-    ]
-  end
-
-  let(:namespace_mappings) do
-    {
-      "gml" => "http://www.opengis.net/gml/3.2",
-      "xs" => "http://www.w3.org/2001/XMLSchema",
-      "xlink" => "http://www.w3.org/1999/xlink",
-      "uro" => "https://www.geospatial.jp/iur/uro/3.2",
-    }
-  end
-
-  let(:repository) do
-    repo = Lutaml::Xsd::SchemaRepository.new(
-      files: schema_files,
-      schema_location_mappings: schema_location_mappings,
+        Lutaml::Xsd::SchemaLocationMapping.new(
+          from: '(?:\.\./)+iso/(.+\.xsd)$',
+          to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/iso/\1', __dir__),
+          pattern: true,
+        ),
+        Lutaml::Xsd::SchemaLocationMapping.new(
+          from: '(?:\.\./)+xlink/(.+\.xsd)$',
+          to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/xlink/\1', __dir__),
+          pattern: true,
+        ),
+      ],
     )
-    repo.configure_namespaces(namespace_mappings)
-    repo.parse
-    repo.resolve
-    repo
+    @repository.configure_namespaces({
+                                       "gml" => "http://www.opengis.net/gml/3.2",
+                                       "xs" => "http://www.w3.org/2001/XMLSchema",
+                                       "xlink" => "http://www.w3.org/1999/xlink",
+                                       "uro" => "https://www.geospatial.jp/iur/uro/3.2",
+                                     })
+    @repository.parse.resolve
   end
 
+  let(:repository) { @repository }
   let(:searcher) { described_class.new(repository) }
 
   describe "#initialize" do
@@ -64,7 +45,6 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
   describe "#search" do
     context "when searching by name" do
       it "finds types with exact name match" do
-        # Search for a type that exists in the schema
         results = searcher.search("BuildingDetailsType", in_field: "name")
         expect(results).to be_an(Array)
 
@@ -112,7 +92,6 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
         results_upper = searcher.search("BUILDING", in_field: "name")
         results_mixed = searcher.search("Building", in_field: "name")
 
-        # Should find the same results regardless of case
         expect(results_lower.map(&:qualified_name).sort).to eq(results_upper.map(&:qualified_name).sort)
         expect(results_lower.map(&:qualified_name).sort).to eq(results_mixed.map(&:qualified_name).sort)
       end
@@ -120,11 +99,9 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
 
     context "when searching by documentation" do
       it "searches in documentation text" do
-        # NOTE: Results depend on what documentation exists in the test schemas
         results = searcher.search("building", in_field: "documentation")
         expect(results).to be_an(Array)
 
-        # Verify that all results have documentation
         results.each do |result|
           expect(result.documentation).not_to be_nil
         end
@@ -142,14 +119,12 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
         results = searcher.search("building")
         expect(results).to be_an(Array)
 
-        # Should include matches from both name and documentation
         if results.any?
           name_matches = results.select do |r|
             r.match_type.start_with?("name_")
           end
           doc_matches = results.select { |r| r.match_type.start_with?("doc_") }
 
-          # At least one type of match should exist
           expect(name_matches.any? || doc_matches.any?).to be true
         end
       end
@@ -165,7 +140,6 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
         uro_namespace = "https://www.geospatial.jp/iur/uro/3.2"
         results = searcher.search("Type", namespace: uro_namespace)
 
-        # All results should be from the specified namespace
         results.each do |result|
           expect(result.namespace).to eq(uro_namespace)
         end
@@ -181,7 +155,6 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
       it "filters results by complex_type category" do
         results = searcher.search("Type", category: "complex_type")
 
-        # All results should be complex types
         results.each do |result|
           expect(result.category).to eq(:complex_type)
         end
@@ -190,7 +163,6 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
       it "filters results by element category" do
         results = searcher.search("", category: "element", limit: 100)
 
-        # All results should be elements (if any exist)
         results.each do |result|
           expect(result.category).to eq(:element)
         end
@@ -212,12 +184,10 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
 
       it "returns all results when limit is higher than result count" do
         results = searcher.search("BuildingDetailsType", limit: 100)
-        # Should return at most a few results for this specific search
         expect(results.size).to be <= 100
       end
 
       it "uses default limit of 20" do
-        # Create a searcher and search without specifying limit
         results = searcher.search("Type")
         expect(results.size).to be <= 20
       end
@@ -252,7 +222,6 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
       it "sorts results by relevance score" do
         results = searcher.search("Type", limit: 50)
 
-        # Check that results are sorted by score (descending)
         scores = results.map(&:relevance_score)
         expect(scores).to eq(scores.sort.reverse)
       end
@@ -260,7 +229,6 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
       it "sorts by name when scores are equal" do
         results = searcher.search("building", in_field: "name", limit: 50)
 
-        # Group by score and check alphabetical ordering within each group
         results.group_by(&:relevance_score).each_value do |group|
           names = group.map(&:qualified_name)
           expect(names).to eq(names.sort)
@@ -344,7 +312,6 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
       results = searcher.search("Type", limit: 10)
 
       results.each do |result|
-        # Qualified names should use configured prefixes
         next unless result.namespace
 
         prefix = repository.namespace_to_prefix(result.namespace)

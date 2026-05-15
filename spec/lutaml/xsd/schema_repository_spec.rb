@@ -119,166 +119,142 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     end
   end
 
-  describe "#resolve" do
-    let(:repository) do
-      described_class.new(
-        files: schema_files,
-        schema_location_mappings: schema_location_mappings,
+  # Shared resolved repository for expensive test groups
+  context "with resolved repository" do
+    before(:context) do
+      @resolved_repo = Lutaml::Xsd::SchemaRepository.new(
+        files: [File.expand_path("../../fixtures/i-ur/urbanObject.xsd", __dir__)],
+        schema_location_mappings: [
+          Lutaml::Xsd::SchemaLocationMapping.new(
+            from: '(?:\.\./)+gml/(.+\.xsd)$',
+            to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/gml/\1', __dir__),
+            pattern: true,
+          ),
+          Lutaml::Xsd::SchemaLocationMapping.new(
+            from: '(?:\.\./)+iso/(.+\.xsd)$',
+            to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/iso/\1', __dir__),
+            pattern: true,
+          ),
+          Lutaml::Xsd::SchemaLocationMapping.new(
+            from: '(?:\.\./)+xlink/(.+\.xsd)$',
+            to: File.expand_path('../../fixtures/codesynthesis-gml-3.2.1/xlink/\1', __dir__),
+            pattern: true,
+          ),
+        ],
       )
+      @resolved_repo.configure_namespaces({
+                                            "gml" => "http://www.opengis.net/gml/3.2",
+                                            "xs" => "http://www.w3.org/2001/XMLSchema",
+                                            "xlink" => "http://www.w3.org/1999/xlink",
+                                            "uro" => "https://www.geospatial.jp/iur/uro/3.2",
+                                          })
+      @resolved_repo.parse.resolve
     end
 
-    before do
-      repository.configure_namespaces(namespace_mappings)
-      repository.parse
+    describe "#resolve" do
+      let(:repository) { @resolved_repo }
+
+      it "resolves schemas and builds indexes" do
+        result = repository.resolve
+        expect(result).to eq(repository)
+      end
+
+      it "indexes types from parsed schemas" do
+        repository.resolve
+        stats = repository.statistics
+        expect(stats[:total_types]).to be > 0
+      end
+
+      it "extracts namespaces from schemas" do
+        repository.resolve
+        namespaces = repository.all_namespaces
+        expect(namespaces).not_to be_empty
+      end
     end
 
-    it "resolves schemas and builds indexes" do
-      result = repository.resolve
-      expect(result).to eq(repository)
+    describe "#find_type" do
+      let(:repository) { @resolved_repo }
+
+      it "finds types from urbanObject schema" do
+        result = repository.find_type("uro:BuildingDetailsType")
+        expect(result).to be_a(Lutaml::Xsd::TypeResolutionResult)
+      end
+
+      it "returns failure for non-existent types" do
+        result = repository.find_type("gml:NonExistentType")
+        expect(result.resolved?).to be false
+        expect(result.error_message).to include("not found")
+      end
+
+      it "returns failure for unregistered namespace prefixes" do
+        result = repository.find_type("unknown:Type")
+        expect(result.resolved?).to be false
+        expect(result.error_message).to include("not registered")
+      end
+
+      it "handles Clark notation" do
+        result = repository.find_type("{https://www.geospatial.jp/iur/uro/3.2}BuildingDetailsType")
+        expect(result).to be_a(Lutaml::Xsd::TypeResolutionResult)
+      end
     end
 
-    it "indexes types from parsed schemas" do
-      repository.resolve
-      stats = repository.statistics
-      expect(stats[:total_types]).to be > 0
+    describe "#validate" do
+      it "validates successfully with correct configuration" do
+        errors = @resolved_repo.validate
+        expect(errors).to be_an(Array)
+      end
+
+      it "detects missing schema files" do
+        bad_repository = described_class.new(files: ["/nonexistent/file.xsd"])
+        errors = bad_repository.validate
+        expect(errors).not_to be_empty
+        expect(errors.first).to include("not found")
+      end
+
+      it "validates namespace mappings" do
+        bad_repository = described_class.new(files: schema_files)
+        bad_repository.instance_variable_set(:@namespace_mappings, [
+                                               Lutaml::Xsd::NamespaceMapping.new(prefix: "", uri: "http://example.com"),
+                                             ])
+        errors = bad_repository.validate
+        expect(errors).not_to be_empty
+      end
     end
 
-    it "extracts namespaces from schemas" do
-      repository.resolve
-      namespaces = repository.all_namespaces
-      expect(namespaces).not_to be_empty
-    end
-  end
+    describe "#statistics" do
+      let(:repository) { @resolved_repo }
 
-  describe "#find_type" do
-    let(:repository) do
-      described_class.new(
-        files: schema_files,
-        schema_location_mappings: schema_location_mappings,
-      )
-    end
+      it "returns repository statistics" do
+        stats = repository.statistics
+        expect(stats).to be_a(Hash)
+        expect(stats).to have_key(:total_schemas)
+        expect(stats).to have_key(:total_types)
+        expect(stats).to have_key(:types_by_category)
+        expect(stats).to have_key(:total_namespaces)
+        expect(stats).to have_key(:namespace_prefixes)
+        expect(stats).to have_key(:resolved)
+        expect(stats).to have_key(:validated)
+      end
 
-    before do
-      repository.configure_namespaces(namespace_mappings)
-      repository.parse
-      repository.resolve
-    end
+      it "reports correct schema count" do
+        stats = repository.statistics
+        expect(stats[:total_schemas]).to be >= 1
+      end
 
-    it "finds types from urbanObject schema" do
-      # urbanObject.xsd defines types in the uro namespace
-      result = repository.find_type("uro:BuildingDetailsType")
-      expect(result).to be_a(Lutaml::Xsd::TypeResolutionResult)
-    end
-
-    it "returns failure for non-existent types" do
-      result = repository.find_type("gml:NonExistentType")
-      expect(result.resolved?).to be false
-      expect(result.error_message).to include("not found")
+      it "reports types by category" do
+        stats = repository.statistics
+        expect(stats[:types_by_category]).to be_a(Hash)
+      end
     end
 
-    it "returns failure for unregistered namespace prefixes" do
-      result = repository.find_type("unknown:Type")
-      expect(result.resolved?).to be false
-      expect(result.error_message).to include("not registered")
-    end
+    describe "#all_namespaces" do
+      let(:repository) { @resolved_repo }
 
-    it "handles Clark notation" do
-      result = repository.find_type("{https://www.geospatial.jp/iur/uro/3.2}BuildingDetailsType")
-      # May or may not be resolved depending on schema content
-      expect(result).to be_a(Lutaml::Xsd::TypeResolutionResult)
-    end
-  end
-
-  describe "#validate" do
-    let(:repository) do
-      described_class.new(
-        files: schema_files,
-        schema_location_mappings: schema_location_mappings,
-      )
-    end
-
-    before do
-      repository.configure_namespaces(namespace_mappings)
-      repository.parse
-    end
-
-    it "validates successfully with correct configuration" do
-      errors = repository.validate
-      expect(errors).to be_an(Array)
-    end
-
-    it "detects missing schema files" do
-      bad_repository = described_class.new(files: ["/nonexistent/file.xsd"])
-      errors = bad_repository.validate
-      expect(errors).not_to be_empty
-      expect(errors.first).to include("not found")
-    end
-
-    it "validates namespace mappings" do
-      bad_repository = described_class.new(files: schema_files)
-      bad_repository.instance_variable_set(:@namespace_mappings, [
-                                             Lutaml::Xsd::NamespaceMapping.new(prefix: "", uri: "http://example.com"),
-                                           ])
-      errors = bad_repository.validate
-      expect(errors).not_to be_empty
-    end
-  end
-
-  describe "#statistics" do
-    let(:repository) do
-      described_class.new(
-        files: schema_files,
-        schema_location_mappings: schema_location_mappings,
-      )
-    end
-
-    before do
-      repository.configure_namespaces(namespace_mappings)
-      repository.parse
-      repository.resolve
-    end
-
-    it "returns repository statistics" do
-      stats = repository.statistics
-      expect(stats).to be_a(Hash)
-      expect(stats).to have_key(:total_schemas)
-      expect(stats).to have_key(:total_types)
-      expect(stats).to have_key(:types_by_category)
-      expect(stats).to have_key(:total_namespaces)
-      expect(stats).to have_key(:namespace_prefixes)
-      expect(stats).to have_key(:resolved)
-      expect(stats).to have_key(:validated)
-    end
-
-    it "reports correct schema count" do
-      stats = repository.statistics
-      expect(stats[:total_schemas]).to be >= 1
-    end
-
-    it "reports types by category" do
-      stats = repository.statistics
-      expect(stats[:types_by_category]).to be_a(Hash)
-    end
-  end
-
-  describe "#all_namespaces" do
-    let(:repository) do
-      described_class.new(
-        files: schema_files,
-        schema_location_mappings: schema_location_mappings,
-      )
-    end
-
-    before do
-      repository.configure_namespaces(namespace_mappings)
-      repository.parse
-      repository.resolve
-    end
-
-    it "returns all registered namespace URIs" do
-      namespaces = repository.all_namespaces
-      expect(namespaces).to be_an(Array)
-      expect(namespaces).not_to be_empty
+      it "returns all registered namespace URIs" do
+        namespaces = repository.all_namespaces
+        expect(namespaces).to be_an(Array)
+        expect(namespaces).not_to be_empty
+      end
     end
   end
 
@@ -325,7 +301,6 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
         file.rewind
 
         repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
-        # The repository is created from the config, verify it exists
         expect(repository).to be_a(Lutaml::Xsd::SchemaRepository)
         expect(repository.files).to include(schema_files.first)
       end
@@ -344,7 +319,6 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
         file.rewind
 
         repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
-        # Should still create repository successfully
         expect(repository).to be_a(Lutaml::Xsd::SchemaRepository)
         expect(repository.files).to include(schema_files.first)
       end
@@ -353,7 +327,6 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
 
   describe ".from_yaml_file with base_packages" do
     it "deserializes BasePackageConfig objects from YAML" do
-      # Skip if test packages don't exist
       skip "Test packages not available" unless File.exist?("test1.lxr") && File.exist?("test2.lxr")
 
       yaml_content = <<~YAML
@@ -372,7 +345,6 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
         file.write(yaml_content)
         file.rewind
 
-        # This will fail if packages don't exist, but that's expected
         expect do
           Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
         end.to raise_error(Lutaml::Xsd::ConfigurationError)
@@ -380,7 +352,6 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
     end
 
     it "handles all BasePackageConfig fields" do
-      # Skip if test package doesn't exist
       skip "Test package not available" unless File.exist?("test.lxr")
 
       yaml_content = <<~YAML
@@ -403,7 +374,6 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
         file.write(yaml_content)
         file.rewind
 
-        # This will fail if package doesn't exist, but that's expected
         expect do
           Lutaml::Xsd::SchemaRepository.from_yaml_file(file.path)
         end.to raise_error(Lutaml::Xsd::ConfigurationError)
