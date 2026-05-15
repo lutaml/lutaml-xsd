@@ -80,11 +80,62 @@ from other documents in the same doctype</xs:documentation>
           <xs:element ref="backpage-image"/>
         </xs:choice>
       </xs:choice>
-      <xs:element ref="stagename">
-        <xs:annotation>
-          <xs:documentation>Human-readable name of the stage of publication, corresponding to the numeric stage code given in `/bibdata/status/stage`</xs:documentation>
-        </xs:annotation>
-      </xs:element>
+      <xs:choice>
+        <xs:element ref="horizontal">
+          <xs:annotation>
+            <xs:documentation>Whether the document is a horizontal standard</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="stagename">
+          <xs:annotation>
+            <xs:documentation>Human-readable name of the stage of publication, corresponding to the numeric stage code given in `/bibdata/status/stage`</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="updates-document-type">
+          <xs:annotation>
+            <xs:documentation>If this is an update to another document (e.g. an amendment), the `doctype` will not indicate what type of
+document is being updated (e.g. that this is an amendment to a technical report, as opposed to an amendment to a technical standard).
+The `updates-document-type` value indicates the document type of the document being updated; this may be needed for proper rendering, or
+to formulate the document identifier properly</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="fast-track">
+          <xs:annotation>
+            <xs:documentation>Whether this is a fast-track standard</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="price-code">
+          <xs:annotation>
+            <xs:documentation>The price code of the standard, as documented in https://www.iec.ch/members_experts/tools/pdf/IEC_DATA_FEEDS.pdf
+Used for legacy ISO documents</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="function">
+          <xs:annotation>
+            <xs:documentation>Function of document</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="accessibility-color-inside">
+          <xs:annotation>
+            <xs:documentation>Indication that document contains colour content</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="cen-processing">
+          <xs:annotation>
+            <xs:documentation>CEN (European Committee for Standardization) processing</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="secretary">
+          <xs:annotation>
+            <xs:documentation>Secretary of the secretariat</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="interest-to-committees">
+          <xs:annotation>
+            <xs:documentation>Draft is of interest to these committees</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:choice>
     </xs:choice>
     <xs:attribute name="schema-version">
       <xs:annotation>
