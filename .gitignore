@@ -35,3 +35,4 @@ frontend/index.html
 examples/*/pkg/
 examples/*.html
 examples/archive-old/
+examples/02-urban-function/urban_function_docs.html
