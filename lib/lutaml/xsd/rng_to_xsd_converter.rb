@@ -618,8 +618,16 @@ module Lutaml
         attr_group_refs = []
 
         attributes.each do |a|
-          if a.is_a?(Rng::Ref)
+          case a
+          when Rng::Ref
             attr_group_refs << Lutaml::Xml::Schema::Xsd::AttributeGroup.new(ref: a.name)
+          when Rng::Optional, Rng::ZeroOrMore, Rng::OneOrMore
+            # Unwrap occurrence wrappers to reach the inner attribute pattern
+            inner = get_all_patterns(a).find { |p| p.is_a?(Rng::Attribute) }
+            if inner
+              converted = convert_attribute_pattern(inner)
+              xsd_attrs << converted if converted
+            end
           else
             converted = convert_attribute_pattern(a)
             xsd_attrs << converted if converted
