@@ -313,11 +313,23 @@ module Lutaml
       end
 
       # Check if a Ref resolves to an attribute group define
+      # Check if a ref name follows attribute group naming conventions.
+      # Used as a fallback when the define is not in @define_map (e.g., from
+      # unresolved include files where the Rng gem's IncludeProcessor fails).
+      def attribute_group_name?(name)
+        name.end_with?("Attributes") || name.end_with?("Id")
+      end
+
       def ref_resolves_to_attribute_group?(ref)
         return false unless ref.is_a?(Rng::Ref) && ref.name
 
         define = @define_map[ref.name]
-        return false unless define
+        unless define
+          # Ref not in define map — likely from an unresolved include.
+          # Fall back to name convention: attribute groups in RELAX NG
+          # schemas consistently end with "Attributes" or "Id".
+          return attribute_group_name?(ref.name)
+        end
 
         patterns = get_all_patterns(define)
         # Unwrap single Group

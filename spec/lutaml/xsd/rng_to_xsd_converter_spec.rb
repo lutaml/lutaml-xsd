@@ -37,6 +37,10 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
       attr = complex_type.attribute.first
       expect(attr).to be_a(Lutaml::Xml::Schema::Xsd::Attribute)
       expect(attr.name).to eq("type")
+
+      attr_group = complex_type.attribute_group.first
+      expect(attr_group).to be_a(Lutaml::Xml::Schema::Xsd::AttributeGroup)
+      expect(attr_group.ref).to eq("Section-Attributes")
     end
 
     it "produces 1 simple type" do
