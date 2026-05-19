@@ -219,6 +219,14 @@ module Lutaml
               if xsd_elem
                 @schema&.element(xsd_elem)
 
+                if xsd_elem&.complex_type&.mixed
+                  ct = xsd_elem.complex_type
+                  ct.name = "#{elem_name}_type"
+                  @schema&.complex_type(ct)
+                  xsd_elem.type = "#{elem_name}_type"
+                  xsd_elem.complex_type = nil
+                end
+
                 if name == elem_name
                   # Define result IS the element itself
                   result[:element] = xsd_elem
@@ -317,7 +325,7 @@ module Lutaml
       # Used as a fallback when the define is not in @define_map (e.g., from
       # unresolved include files where the Rng gem's IncludeProcessor fails).
       def attribute_group_name?(name)
-        name.end_with?("Attributes") || name.end_with?("Id")
+        name.end_with?("Attributes", "Id")
       end
 
       def ref_resolves_to_attribute_group?(ref)
@@ -995,6 +1003,14 @@ module Lutaml
           else
             particle_children << p
           end
+        end
+
+        if !has_mixed &&
+            data_child.nil? &&
+            attribute_children.any? &&
+            particle_children.any?
+
+          has_mixed = true
         end
 
         xsd_elem = Lutaml::Xml::Schema::Xsd::Element.new(name: name)
