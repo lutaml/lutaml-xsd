@@ -28,6 +28,17 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
       expect(names).to include("Content-Section")
     end
 
+    it "includes complex type Clause-Section" do
+      complex_type = schema.complex_type.find do |ct|
+        ct.name == "Clause-Section"
+      end
+      expect(complex_type.name).to eq("Clause-Section")
+
+      attr = complex_type.attribute.first
+      expect(attr).to be_a(Lutaml::Xml::Schema::Xsd::Attribute)
+      expect(attr.name).to eq("type")
+    end
+
     it "produces 1 simple type" do
       expect(schema.simple_type.length).to eq(1)
     end
