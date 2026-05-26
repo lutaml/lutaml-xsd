@@ -408,7 +408,12 @@ module Lutaml
           get_all_patterns(pattern).any? { |p| contains_element?(p) }
         when Rng::Ref
           define = @define_map[pattern.name]
-          return false unless define
+          unless define
+            # Unknown ref (from unresolved include): conservative assumption
+            # that it contains elements, since refs in RNC grammars typically
+            # point to element patterns and we must preserve Choice structure
+            return true
+          end
 
           # Check if this ref resolves to an element define
           convert_define(pattern.name)
