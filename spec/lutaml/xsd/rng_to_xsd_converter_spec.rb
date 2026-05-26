@@ -69,5 +69,12 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
       expect(schema.attribute_group.first.attribute.length).to eq(1)
       expect(schema.attribute_group.first.attribute.first.name).to eq("target")
     end
+
+    it "includes 7 choices" do
+      sections_el = schema.element.find { |el| el.name == "sections" }
+      expect(sections_el.complex_type.sequence.choice.length).to eq(7)
+      expect(sections_el.complex_type.sequence.group.length).to eq(2)
+      expect(sections_el.complex_type.sequence.element.length).to eq(0)
+    end
   end
 end
