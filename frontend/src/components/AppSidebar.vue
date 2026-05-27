@@ -17,7 +17,7 @@
         />
         <div class="branding-text">
           <span class="branding-title">{{ schemaStore.metadata?.title || schemaStore.metadata?.name || 'XSD Docs' }}</span>
-          <span class="branding-subtitle">LXR Package</span>
+          <span class="branding-subtitle">{{ schemaStore.metadata?.appearance?.subtitle || 'LXR Package' }}</span>
         </div>
       </div>
 

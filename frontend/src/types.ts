@@ -97,6 +97,7 @@ export interface PackageMetadata {
       md?: string
       lg?: string
     }
+    subtitle?: string
   }
   links?: {
     name: string
