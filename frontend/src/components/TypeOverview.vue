@@ -132,6 +132,19 @@
       </div>
     </div>
 
+    <!-- Choices -->
+     <!-- {{ ChoiceElements }} -->
+    <div v-if="ChoiceElements.length > 0" class="overview-section">
+      <h3 class="section-title">Choices</h3>
+      <div class="choice-tree">
+        <ChoiceTreeItem 
+          v-for="(g, index) in ChoiceElements" 
+          :key="`choice-${index}`" 
+          :choice="g"
+        />
+      </div>
+    </div>
+
     <!-- Attribute Group References -->
     <div v-if="attributeGroupRefs.length > 0" class="overview-section">
       <h3 class="section-title">Attribute Groups</h3>
@@ -162,6 +175,7 @@ import type { ComplexType, SimpleType, SchemaElement, TypeElement, TypeAttribute
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
 import GroupTreeItem from './GroupTreeItem.vue'
+import ChoiceTreeItem from './ChoiceTreeItem.vue'
 
 type TypeData = {
   type: 'complex' | 'simple' | 'element' | 'group' | 'attribute_group' | 'attribute'
@@ -278,6 +292,28 @@ const groupRefs = computed<GroupRef[]>(() => {
   return allGroups
 })
 
+const ChoiceElements = computed<ChoiceElement[]>(() => {
+  if (props.type.type !== 'complex') return []
+
+  const complexType = props.type.data as ComplexType
+  const allChoices: ChoiceElement[] = []
+
+  // It is a complex type, collect choices from its own definition and nested sequences
+  if (props.type.type == 'complex') {
+    // Collect direct choices on the complex type
+    if (complexType.choice) {
+      allChoices.push(complexType.choice)
+    }
+
+    // Recursively collect groups from sequence
+    if (complexType.sequence) {
+      collectChoicesFromSequence(complexType.sequence, allChoices)
+    }
+  }
+
+  return allChoices
+})
+
 /**
  * Recursively collect groups from a sequence object
  */
@@ -311,30 +347,30 @@ function collectChoicesFromSequence(sequence: any, collector: ChoiceElement[]) {
     sequence.sequences.forEach((seq: any) => collectChoicesFromSequence(seq, collector))
   }
 
-  // Choices from elements
-  if (sequence.elements) {
-    sequence.elements.forEach((el: any) => {
-      collectChoicesFromTypeElement(el, collector)
-    })
-  }
+  // // Choices from elements
+  // if (sequence.elements) {
+  //   sequence.elements.forEach((el: any) => {
+  //     collectChoicesFromTypeElement(el, collector)
+  //   })
+  // }
 }
 
-/**
- * Recursively collect choices from a TypeElement object
- */
-function collectChoicesFromTypeElement(typeElement: any, collector: ChoiceElement[]) {
-  if (!typeElement) return []
+// /**
+//  * Recursively collect choices from a TypeElement object
+//  */
+// function collectChoicesFromTypeElement(typeElement: any, collector: ChoiceElement[]) {
+//   if (!typeElement) return []
 
-  if (typeElement.complex_type) {
-    // Direct choices from complex type of this element
-    collector.push(...typeElement.complex_type.choice)
+//   if (typeElement.complex_type) {
+//     // Direct choices from complex type of this element
+//     collector.push(...typeElement.complex_type.choice)
 
-    // Choices from sequences
-    if (typeElement.complex_type.sequence) {
-      collectChoicesFromSequence(typeElement.complex_type.sequence, collector)
-    }
-  }
-}
+//     // Choices from sequences
+//     if (typeElement.complex_type.sequence) {
+//       collectChoicesFromSequence(typeElement.complex_type.sequence, collector)
+//     }
+//   }
+// }
 
 const attributeGroupRefs = computed<AttributeGroupRef[]>(() => {
   if (props.type.type !== 'complex') return []
