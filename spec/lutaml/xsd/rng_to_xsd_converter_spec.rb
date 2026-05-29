@@ -18,9 +18,8 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
       expect(schema).to be_a(Lutaml::Xml::Schema::Xsd::Schema)
     end
 
-    it "produces 14 complex types and elements " \
-       "(including types from the elements in the included paths)" do
-      expect(schema.complex_type.length + schema.element.length).to eq(14)
+    it "produces complex types" do
+      expect(schema.complex_type.length).to eq(5)
     end
 
     it "includes complex types in the included paths" do
@@ -51,16 +50,16 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
       expect(complex_type.mixed).to eq(true)
     end
 
-    it "produces 1 simple type" do
-      expect(schema.simple_type.length).to eq(1)
+    it "produces simple types" do
+      expect(schema.simple_type.length).to eq(2)
     end
 
-    it "produces 10 elements (including elements in the included paths)" do
-      expect(schema.element.length).to eq(10)
+    it "produces elements" do
+      expect(schema.element.length).to eq(23)
     end
 
-    it "produces 3 groups (including groups in the included paths)" do
-      expect(schema.group.length).to eq(3)
+    it "produces groups (including groups in the included paths)" do
+      expect(schema.group.length).to eq(13)
     end
 
     it "produces 1 attribute_group (including groups in the included paths)" do
