@@ -129,7 +129,7 @@ module Lutaml
 
                 <!-- Schema Data -->
                 <script>
-                window.SCHEMA_DATA = #{schema_data_json};
+                window.SCHEMA_DATA = #{schema_data_json.gsub('</', '<\\/')};
                 </script>
 
                 <!-- Embedded JavaScript -->
