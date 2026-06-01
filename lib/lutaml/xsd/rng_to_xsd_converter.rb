@@ -227,12 +227,13 @@ module Lutaml
                   xsd_elem.complex_type = nil
                 end
 
-                if name == elem_name
-                  # Define result IS the element itself
-                  result[:element] = xsd_elem
-                else
-                  # Define name differs: result is a group referencing the
-                  # promoted top-level element
+                # Always store the element result so refs resolve to element refs
+                # rather than group refs (groups are invalid inside xs:all).
+                result[:element] = xsd_elem
+
+                if name != elem_name
+                  # Define name differs: also create a group referencing the
+                  # promoted top-level element.
                   grp = Lutaml::Xml::Schema::Xsd::Group.new(
                     name: name,
                     sequence: Lutaml::Xml::Schema::Xsd::Sequence.new(
@@ -1312,7 +1313,10 @@ module Lutaml
         # Particle context
         if result[:element]
           # Reference to a define promoted to top-level element -> element ref
-          Lutaml::Xml::Schema::Xsd::Element.new(ref: name)
+          # Use the element's actual name (not the define name) as the ref target,
+          # since they may differ (e.g., define "ext_toc" wraps element "name").
+          elem_name = result[:element].respond_to?(:name) ? result[:element].name : name
+          Lutaml::Xml::Schema::Xsd::Element.new(ref: elem_name)
         elsif result[:group]
           Lutaml::Xml::Schema::Xsd::Group.new(ref: name)
         elsif result[:attribute_group]

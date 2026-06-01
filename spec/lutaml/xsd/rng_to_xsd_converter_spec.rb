@@ -76,4 +76,154 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
       expect(sections_el.complex_type.sequence.element.length).to eq(0)
     end
   end
+
+  describe "named pattern resolution" do
+    # Helper to parse RNC string into a grammar and convert it
+    def parse_and_convert(rnc_content)
+      require "tempfile"
+
+      Tempfile.create(["test", ".rnc"]) do |f|
+        f.write(rnc_content)
+        f.flush
+        grammar = Rng.parse_file(f.path)
+        converter = Lutaml::Xsd::RngToXsdConverter.new(grammar, file_path: f.path)
+        converter.convert
+      end
+    end
+
+    context "when a named pattern wraps a single element with a different name" do
+      let(:rnc) do
+        <<~RNC
+          element root {
+            (ext_toc & element email { text })
+          }
+
+          ext_toc = element name { text }
+        RNC
+      end
+
+      subject(:schema) { parse_and_convert(rnc) }
+
+      it "promotes the element to top-level" do
+        names = schema.element.map(&:name)
+        expect(names).to include("name")
+      end
+
+      it "creates a schema-level group for the named pattern" do
+        names = schema.group.map(&:name)
+        expect(names).to include("ext_toc")
+      end
+
+      it "resolves the named pattern to an element ref inside interleave/all" do
+        root = schema.element.find { |e| e.name == "root" }
+        expect(root).not_to be_nil
+
+        all = root.complex_type.all
+        expect(all).not_to be_nil
+
+        # The all should contain element refs, not group refs
+        all.element.each do |el|
+          expect(el).to be_a(Lutaml::Xml::Schema::Xsd::Element)
+        end
+
+        # The named pattern reference should resolve to an element ref
+        name_ref = all.element.find { |el| el.ref == "name" }
+        expect(name_ref).not_to be_nil
+        expect(name_ref.ref).to eq("name")
+
+        # There should NOT be a group ref to "ext_toc" inside all
+        expect(all.element.any? { |el| el.ref == "ext_toc" }).to be false
+      end
+
+      it "produces valid XSD output" do
+        expect { schema.to_formatted_xml }.not_to raise_error
+      end
+    end
+
+    context "when a named pattern wraps a single element with a matching name" do
+      let(:rnc) do
+        <<~RNC
+          element root {
+            (foo & element bar { text })
+          }
+
+          foo = element foo { text }
+        RNC
+      end
+
+      subject(:schema) { parse_and_convert(rnc) }
+
+      it "promotes the element to top-level" do
+        names = schema.element.map(&:name)
+        expect(names).to include("foo")
+      end
+
+      it "resolves the named pattern to an element ref inside interleave/all" do
+        root = schema.element.find { |e| e.name == "root" }
+        all = root.complex_type.all
+
+        foo_ref = all.element.find { |el| el.ref == "foo" }
+        expect(foo_ref).not_to be_nil
+      end
+    end
+
+    context "when a named pattern is referenced directly (not inside interleave)" do
+      let(:rnc) do
+        <<~RNC
+          element root {
+            ext_toc
+          }
+
+          ext_toc = element name { text }
+        RNC
+      end
+
+      subject(:schema) { parse_and_convert(rnc) }
+
+      it "promotes the element to top-level" do
+        names = schema.element.map(&:name)
+        expect(names).to include("name")
+      end
+
+      it "creates a group for the named pattern" do
+        names = schema.group.map(&:name)
+        expect(names).to include("ext_toc")
+      end
+
+      it "resolves to an element ref in the content model" do
+        root = schema.element.find { |e| e.name == "root" }
+        seq = root.complex_type.sequence
+
+        name_ref = seq.element.find { |el| el.ref == "name" }
+        expect(name_ref).not_to be_nil
+      end
+    end
+
+    context "when multiple defines wrap elements with the same name (collision)" do
+      let(:rnc) do
+        <<~RNC
+          element root {
+            (a_ref | b_ref)
+          }
+
+          a_ref = element item { text }
+          b_ref = element item { text }
+        RNC
+      end
+
+      subject(:schema) { parse_and_convert(rnc) }
+
+      it "does not promote colliding elements to top-level" do
+        # "item" should NOT be a top-level element (there are two defines
+        # wrapping elements named "item", so neither gets promoted)
+        names = schema.element.map(&:name)
+        expect(names).not_to include("item")
+      end
+
+      it "creates groups for both defines" do
+        names = schema.group.map(&:name)
+        expect(names).to include("a_ref", "b_ref")
+      end
+    end
+  end
 end
