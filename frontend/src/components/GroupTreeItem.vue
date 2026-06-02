@@ -75,6 +75,19 @@
           :depth="depth + 2"
         />
       </template>
+
+      <!-- Render sequence elements -->
+      <template v-if="group.sequence && group.sequence.elements.length > 0">
+        <div class="nested-header" :style="{ paddingLeft: `${(depth + 1) * 16}px` }">
+          <span class="nested-label">⟨elements⟩</span>
+        </div>
+        <ElementTreeItem 
+          v-for="(childElement, idx) in group.sequence.elements" 
+          :key="`e-${idx}`"
+          :element="childElement"
+          :depth="depth + 2"
+        />
+      </template>
     </div>
   </div>
 </template>
@@ -84,6 +97,7 @@ import { ref, computed } from 'vue'
 import type { GroupRef } from '@/types'
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
+import ElementTreeItem from './ElementTreeItem.vue'
 
 const props = withDefaults(defineProps<{
   group: GroupRef
