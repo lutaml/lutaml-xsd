@@ -227,10 +227,19 @@ const fixedValue = computed(() => {
 })
 
 const elements = computed<TypeElement[]>(() => {
-  if (props.type.type === 'complex' || props.type.type === 'group') {
-    return (props.type.data as ComplexType).elements || []
+  if (props.type.type !== 'complex') return []
+
+  const complexType = props.type.data as ComplexType
+  const allElements: TypeElement[] = []
+
+  if (props.type.type === 'complex') {
+    complexType.elements.forEach((el: TypeElement) => allElements.push(el))
+
+    if (complexType.sequence) {
+      complexType.sequence.elements.forEach((el: TypeElement) => allElements.push(el))
+    }
   }
-  return []
+  return allElements
 })
 
 const attributes = computed<TypeAttribute[]>(() => {
@@ -346,31 +355,7 @@ function collectChoicesFromSequence(sequence: any, collector: ChoiceElement[]) {
   if (Array.isArray(sequence.sequences)) {
     sequence.sequences.forEach((seq: any) => collectChoicesFromSequence(seq, collector))
   }
-
-  // // Choices from elements
-  // if (sequence.elements) {
-  //   sequence.elements.forEach((el: any) => {
-  //     collectChoicesFromTypeElement(el, collector)
-  //   })
-  // }
 }
-
-// /**
-//  * Recursively collect choices from a TypeElement object
-//  */
-// function collectChoicesFromTypeElement(typeElement: any, collector: ChoiceElement[]) {
-//   if (!typeElement) return []
-
-//   if (typeElement.complex_type) {
-//     // Direct choices from complex type of this element
-//     collector.push(...typeElement.complex_type.choice)
-
-//     // Choices from sequences
-//     if (typeElement.complex_type.sequence) {
-//       collectChoicesFromSequence(typeElement.complex_type.sequence, collector)
-//     }
-//   }
-// }
 
 const attributeGroupRefs = computed<AttributeGroupRef[]>(() => {
   if (props.type.type !== 'complex') return []
