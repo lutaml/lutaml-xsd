@@ -90,7 +90,7 @@ RSpec.describe Lutaml::Xsd::DependencyGrapher do
     repo.parse
 
     # Ensure the schema is in the global processed_schemas cache
-    parsed_schema = repo.instance_variable_get(:@parsed_schemas)[temp_file.path]
+    parsed_schema = repo.instance_variable_get(:@parsed_schemas).get(temp_file.path)
     if parsed_schema
       Lutaml::Xml::Schema::Xsd::Schema.schema_processed(temp_file.path,
                                                         parsed_schema)

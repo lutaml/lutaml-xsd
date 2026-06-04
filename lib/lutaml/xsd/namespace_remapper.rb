@@ -77,10 +77,10 @@ module Lutaml
       end
 
       def copy_internal_state(new_repo)
-        # Copy parsed schemas
-        original_parsed_schemas = repository.instance_variable_get(:@parsed_schemas)
-        new_repo.instance_variable_set(:@parsed_schemas,
-                                       original_parsed_schemas.dup)
+        original_store = repository.instance_variable_get(:@parsed_schemas)
+        new_store = Lutaml::Store::BasicStore.new(adapter_type: :memory)
+        original_store.all.each { |k, v| new_store.set(k, v) }
+        new_repo.instance_variable_set(:@parsed_schemas, new_store)
 
         # Copy resolution state
         new_repo.instance_variable_set(:@resolved,

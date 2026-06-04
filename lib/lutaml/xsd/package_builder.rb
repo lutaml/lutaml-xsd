@@ -130,7 +130,8 @@ module Lutaml
           next if serialized.key?(file_path)
           next unless File.exist?(file_path)
 
-          schema = repository.instance_variable_get(:@parsed_schemas)&.[](file_path)
+          store = repository.instance_variable_get(:@parsed_schemas)
+          schema = store&.get(file_path)
           next unless schema
 
           data = serialize_schema(schema, @config.serialization_format)

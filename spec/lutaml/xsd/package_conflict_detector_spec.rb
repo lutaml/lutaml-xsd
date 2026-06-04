@@ -214,7 +214,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
       before do
         allow(mock_repo1).to receive(:namespace_mappings).and_return([mock_ns_mapping])
         allow(mock_repo1).to receive(:schema_location_mappings).and_return([])
-        allow(mock_repo1).to receive(:instance_variable_get).with(:@parsed_schemas).and_return({})
+        allow(mock_repo1).to receive(:instance_variable_get).with(:@parsed_schemas).and_return(Lutaml::Store::BasicStore.new(adapter_type: :memory))
 
         # Mock the new repository creation
         allow(Lutaml::Xsd::SchemaRepository).to receive(:new).and_call_original
