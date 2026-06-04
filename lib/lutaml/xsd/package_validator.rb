@@ -515,7 +515,8 @@ module Lutaml
         repository.all_schemas.values
       rescue StandardError
         # Fallback to parsed_schemas if the method doesn't work
-        repository.instance_variable_get(:@parsed_schemas)&.values || []
+        store = repository.instance_variable_get(:@parsed_schemas)
+        store ? store.all.values : []
       end
 
       # Check if a type is a built-in XML Schema type

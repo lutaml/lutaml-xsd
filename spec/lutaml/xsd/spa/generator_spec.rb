@@ -292,7 +292,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
           repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_file.path)
           package = instance_double(
             Lutaml::Xsd::SchemaRepositoryPackage,
-            schemas: repository.instance_variable_get(:@parsed_schemas)&.values || [],
+            schemas: repository.instance_variable_get(:@parsed_schemas)&.all&.values || [],
           )
 
           generator = described_class.new(package, "/tmp/composed_docs.html",
@@ -322,7 +322,7 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
           repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_file.path)
           package = instance_double(
             Lutaml::Xsd::SchemaRepositoryPackage,
-            schemas: repository.instance_variable_get(:@parsed_schemas)&.values || [],
+            schemas: repository.instance_variable_get(:@parsed_schemas)&.all&.values || [],
           )
 
           generator = described_class.new(package, "/tmp/docs.html",

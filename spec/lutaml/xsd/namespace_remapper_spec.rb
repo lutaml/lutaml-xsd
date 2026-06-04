@@ -134,8 +134,9 @@ RSpec.describe Lutaml::Xsd::NamespaceRemapper do
       repository.instance_variable_set(:@validated, true)
       repository.instance_variable_set(:@lazy_load, false)
       repository.instance_variable_set(:@verbose, true)
-      repository.instance_variable_set(:@parsed_schemas,
-                                       { "test.xsd" => double("Schema") })
+      store = Lutaml::Store::BasicStore.new(adapter_type: :memory)
+      store.set("test.xsd", double("Schema"))
+      repository.instance_variable_set(:@parsed_schemas, store)
     end
 
     it "copies internal state to new repository" do
@@ -152,11 +153,11 @@ RSpec.describe Lutaml::Xsd::NamespaceRemapper do
       changes = { "gml" => "gml32" }
       new_repo = remapper.remap(changes)
 
-      original_schemas = repository.instance_variable_get(:@parsed_schemas)
-      new_schemas = new_repo.instance_variable_get(:@parsed_schemas)
+      original_store = repository.instance_variable_get(:@parsed_schemas)
+      new_store = new_repo.instance_variable_get(:@parsed_schemas)
 
-      expect(new_schemas).to eq(original_schemas)
-      expect(new_schemas.object_id).not_to eq(original_schemas.object_id)
+      expect(new_store.all).to eq(original_store.all)
+      expect(new_store.object_id).not_to eq(original_store.object_id)
     end
   end
 end

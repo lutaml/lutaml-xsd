@@ -2,6 +2,7 @@
 
 require "yaml"
 require "zip"
+require "lutaml/store"
 require_relative "errors"
 
 module Lutaml
@@ -40,7 +41,7 @@ module Lutaml
 
       def initialize(**attributes)
         # Initialize internal state first
-        @parsed_schemas = {}
+        @parsed_schemas = Lutaml::Store::BasicStore.new(adapter_type: :memory)
         @namespace_registry = NamespaceRegistry.new
         @type_index = TypeIndex.new
         @lazy_load = true
@@ -178,7 +179,7 @@ module Lutaml
         end
 
         # Check that all schemas were parsed successfully
-        missing_schemas = (files || []).reject { |f| @parsed_schemas.key?(f) }
+        missing_schemas = (files || []).reject { |f| @parsed_schemas.exists?(f) }
         unless missing_schemas.empty?
           error = "Failed to parse schemas: #{missing_schemas.join(', ')}"
           errors << error
@@ -889,7 +890,8 @@ module Lutaml
         repo = package_source.repository
 
         # Get all schemas from the package
-        all_schemas = repo.instance_variable_get(:@parsed_schemas) || {}
+        store = repo.instance_variable_get(:@parsed_schemas)
+        all_schemas = store ? store.all : {}
 
         # Apply schema filtering from config
         filtered_schemas = all_schemas.select do |path, _schema|
@@ -905,7 +907,7 @@ module Lutaml
         end
 
         # Merge filtered schemas into current repository
-        @parsed_schemas.merge!(filtered_schemas)
+        @parsed_schemas.bulk_set(filtered_schemas)
 
         # Merge files list
         @files ||= []
@@ -1018,7 +1020,7 @@ module Lutaml
       # @param file_path [String] Path to schema file
       # @param glob_mappings [Array<Hash>] Schema location mappings
       def parse_schema_file(file_path, glob_mappings)
-        return if @parsed_schemas.key?(file_path)
+        return if @parsed_schemas.exists?(file_path)
         return unless File.exist?(file_path)
 
         ext = File.extname(file_path).downcase
@@ -1028,7 +1030,7 @@ module Lutaml
                           parse_xsd_schema(file_path, glob_mappings)
                         end
 
-        @parsed_schemas[file_path] = parsed_schema
+        @parsed_schemas.set(file_path, parsed_schema)
 
         # Register in global cache for cross-repository access
         Lutaml::Xml::Schema::Xsd::Schema.schema_processed(file_path,
@@ -1103,9 +1105,10 @@ module Lutaml
           @files[idx] = new_path if idx
         end
 
-        # Update @parsed_schemas hash
-        if @parsed_schemas.key?(old_path)
-          @parsed_schemas[new_path] = @parsed_schemas.delete(old_path)
+        # Update @parsed_schemas store
+        if @parsed_schemas.exists?(old_path)
+          @parsed_schemas.set(new_path, @parsed_schemas.get(old_path))
+          @parsed_schemas.delete(old_path)
         end
 
         # Update global cache
@@ -1122,7 +1125,7 @@ module Lutaml
         # Track schema dependencies
         dependencies = {}
 
-        @parsed_schemas.each do |file_path, schema|
+        @parsed_schemas.all.each do |file_path, schema|
           deps = (schema.imports || []).map(&:schema_path)
           (schema.includes || []).each do |include|
             deps << include.schema_path

@@ -692,7 +692,7 @@ indent: "")
             parsed_schemas = repository.instance_variable_get(:@parsed_schemas)
             return nil unless parsed_schemas
 
-            parsed_schemas.each_value do |schema|
+            parsed_schemas.all.each_value do |schema|
               next if schema.attribute.empty?
 
               attrs = schema.attribute
@@ -757,7 +757,7 @@ indent: "")
             parsed_schemas = repository.instance_variable_get(:@parsed_schemas)
             return nil unless parsed_schemas
 
-            parsed_schemas.each_value do |schema|
+            parsed_schemas.all.each_value do |schema|
               next if schema.element.empty?
 
               elements = schema.element
