@@ -23,7 +23,7 @@ jobs:
     uses: metanorma/ci/.github/workflows/rubygems-release.yml@main
     with:
       next_version: ${{ github.event.inputs.next_version }}
-      post_install: 'cd frontend && npm install && npm run build'
+      post_install: 'cd frontend && npm install && npm run build && cd .. && ls -la'
     secrets:
       rubygems-api-key: ${{ secrets.LUTAML_CI_RUBYGEMS_API_KEY }}
       pat_token: ${{ secrets.GITHUB_TOKEN }}
