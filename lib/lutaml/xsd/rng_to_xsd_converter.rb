@@ -219,7 +219,7 @@ module Lutaml
               if xsd_elem
                 @schema&.element(xsd_elem)
 
-                if xsd_elem&.complex_type&.mixed
+                if xsd_elem&.complex_type
                   ct = xsd_elem.complex_type
                   ct.name = "#{elem_name}_type"
                   @schema&.complex_type(ct)
@@ -367,6 +367,14 @@ module Lutaml
         else
           false
         end
+      end
+
+      # Check if a Ref resolves to a define that is a pure data define (simple type)
+      def ref_resolves_to_simple_type?(ref)
+        return false unless ref.is_a?(Rng::Ref) && ref.name
+
+        result = convert_define(ref.name)
+        result.key?(:simple_type)
       end
 
       # Check if a Ref resolves to a define that was promoted to a top-level element
@@ -587,6 +595,8 @@ module Lutaml
           data_type_name(pattern)
         when Rng::Value
           pattern.type ? "xs:#{pattern.type}" : "xs:string"
+        when Rng::Ref
+          pattern.name
         else
           "xs:string"
         end
@@ -992,7 +1002,9 @@ module Lutaml
           when Rng::Attribute
             attribute_children << p
           when Rng::Ref
-            if ref_resolves_to_attribute_group?(p)
+            if ref_resolves_to_simple_type?(p)
+              data_child = p
+            elsif ref_resolves_to_attribute_group?(p)
               attr_group_refs << Lutaml::Xml::Schema::Xsd::AttributeGroup.new(ref: p.name)
             else
               particle_children << p
@@ -1083,6 +1095,8 @@ module Lutaml
           xsd_elem.type = data_type_name(data_child)
         when Rng::Value
           xsd_elem.type = data_child.type ? "xs:#{data_child.type}" : "xs:string"
+        when Rng::Ref
+          xsd_elem.type = data_child.name
         end
       end
 
