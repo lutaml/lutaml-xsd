@@ -19,7 +19,7 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
     end
 
     it "produces complex types" do
-      expect(schema.complex_type.length).to eq(5)
+      expect(schema.complex_type.length).to eq(20)
     end
 
     it "includes complex types in the included paths" do
@@ -71,9 +71,10 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
 
     it "includes 7 choices" do
       sections_el = schema.element.find { |el| el.name == "sections" }
-      expect(sections_el.complex_type.sequence.choice.length).to eq(7)
-      expect(sections_el.complex_type.sequence.group.length).to eq(2)
-      expect(sections_el.complex_type.sequence.element.length).to eq(0)
+      sections_ct = schema.complex_type.find { |ct| ct.name == sections_el.type }
+      expect(sections_ct.sequence.choice.length).to eq(7)
+      expect(sections_ct.sequence.group.length).to eq(2)
+      expect(sections_ct.sequence.element.length).to eq(0)
     end
   end
 
