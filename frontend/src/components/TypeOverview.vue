@@ -189,12 +189,13 @@ const schemaStore = useSchemaStore()
 const uiStore = useUiStore()
 
 const hasBase = computed(() => {
-  if (props.type.type === 'element' || props.type.type === 'group' || props.type.type === 'attribute_group') return false
+  if (props.type.type === 'element') return !!(props.type.data as SchemaElement).type
+  if (props.type.type === 'group' || props.type.type === 'attribute_group') return false
   return !!(props.type.data as ComplexType | SimpleType).base
 })
 
 const baseValue = computed(() => {
-  if (props.type.type === 'element') return ''
+  if (props.type.type === 'element') return (props.type.data as SchemaElement).type || ''
   return (props.type.data as ComplexType | SimpleType).base || ''
 })
 
@@ -387,7 +388,16 @@ function formatFacetValue(facet: { type: string; values?: string[]; value?: stri
 }
 
 function navigateToBase() {
-  if (props.type.type === 'element') return
+  if (props.type.type === 'element') {
+    const elemType = (props.type.data as SchemaElement).type
+    if (!elemType) return
+    const found = schemaStore.getTypeByName(elemType)
+    if (found) {
+      schemaStore.selectSchema(found.schema.id)
+      schemaStore.selectType(found.data.id)
+    }
+    return
+  }
   const base = (props.type.data as ComplexType | SimpleType).base
   if (!base) return
 
