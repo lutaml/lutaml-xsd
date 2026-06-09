@@ -883,7 +883,7 @@ schema_source = nil, file_path = nil)
           grps.map.with_index do |group, index|
             # serialize_group(group, index, prefix)
             serialize_type_group(group, index, prefix)
-          end
+          end.sort_by { |g| g[:name] || "" }
         end
 
         # Serialize single group
