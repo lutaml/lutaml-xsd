@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "defs_builder"
-
 module Lutaml
   module Xsd
     module Spa

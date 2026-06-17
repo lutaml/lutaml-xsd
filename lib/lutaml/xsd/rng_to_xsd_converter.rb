@@ -65,9 +65,7 @@ module Lutaml
       def get_all_patterns(container)
         patterns = []
         pattern_types.each do |attr|
-          next unless container.respond_to?(attr)
-
-          children = container.send(attr)
+          children = container.public_send(attr)
           next if children.nil?
           next if children.is_a?(Lutaml::Model::UninitializedClass)
 
@@ -394,6 +392,15 @@ module Lutaml
         unwrap_to_element(particles.first)
       end
 
+      # Check if an XSD model supports minOccurs/maxOccurs attributes
+      def supports_occurrences?(obj)
+        obj.is_a?(Lutaml::Xml::Schema::Xsd::Element) ||
+          obj.is_a?(Lutaml::Xml::Schema::Xsd::Sequence) ||
+          obj.is_a?(Lutaml::Xml::Schema::Xsd::Choice) ||
+          obj.is_a?(Lutaml::Xml::Schema::Xsd::All) ||
+          obj.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+      end
+
       # Unwrap occurrence wrappers to get the inner element
       def unwrap_to_element(pattern)
         case pattern
@@ -527,8 +534,7 @@ module Lutaml
         restriction = Lutaml::Xml::Schema::Xsd::RestrictionSimpleType.new(base: type_name)
 
         (data.param || []).each do |param|
-          facet = build_facet(param)
-          restriction.send(facet.first, facet.last) if facet
+          apply_facet(restriction, param)
         end
 
         Lutaml::Xml::Schema::Xsd::SimpleType.new(
@@ -617,34 +623,33 @@ module Lutaml
         "xs:#{type}"
       end
 
-      # Build an XSD facet from an RNG Param
-      def build_facet(param)
+      # Build an XSD facet from an RNG Param and apply it to a restriction
+      def apply_facet(restriction, param)
         case param.name
         when "minInclusive"
-          [:min_inclusive, Lutaml::Xml::Schema::Xsd::MinInclusive.new(value: param.value)]
+          restriction.min_inclusive = Lutaml::Xml::Schema::Xsd::MinInclusive.new(value: param.value)
         when "maxInclusive"
-          [:max_inclusive, Lutaml::Xml::Schema::Xsd::MaxInclusive.new(value: param.value)]
+          restriction.max_inclusive = Lutaml::Xml::Schema::Xsd::MaxInclusive.new(value: param.value)
         when "minExclusive"
-          [:min_exclusive, Lutaml::Xml::Schema::Xsd::MinExclusive.new(value: param.value.to_i)]
+          restriction.min_exclusive = Lutaml::Xml::Schema::Xsd::MinExclusive.new(value: param.value.to_i)
         when "maxExclusive"
-          [:max_exclusive, Lutaml::Xml::Schema::Xsd::MaxExclusive.new(value: param.value.to_i)]
+          restriction.max_exclusive = Lutaml::Xml::Schema::Xsd::MaxExclusive.new(value: param.value.to_i)
         when "pattern"
-          [:pattern, Lutaml::Xml::Schema::Xsd::Pattern.new(value: param.value)]
+          restriction.pattern = Lutaml::Xml::Schema::Xsd::Pattern.new(value: param.value)
         when "totalDigits"
-          [:total_digits, Lutaml::Xml::Schema::Xsd::TotalDigits.new(value: param.value)]
+          restriction.total_digits = Lutaml::Xml::Schema::Xsd::TotalDigits.new(value: param.value)
         when "fractionDigits"
-          [:fraction_digits, Lutaml::Xml::Schema::Xsd::FractionDigits.new(value: param.value)]
+          restriction.fraction_digits = Lutaml::Xml::Schema::Xsd::FractionDigits.new(value: param.value)
         when "minLength"
-          [:min_length, Lutaml::Xml::Schema::Xsd::MinLength.new(value: param.value.to_i)]
+          restriction.min_length = Lutaml::Xml::Schema::Xsd::MinLength.new(value: param.value.to_i)
         when "maxLength"
-          [:max_length, Lutaml::Xml::Schema::Xsd::MaxLength.new(value: param.value.to_i)]
+          restriction.max_length = Lutaml::Xml::Schema::Xsd::MaxLength.new(value: param.value.to_i)
         when "length"
-          [:length, Lutaml::Xml::Schema::Xsd::Length.new(value: param.value.to_i)]
+          restriction.length = Lutaml::Xml::Schema::Xsd::Length.new(value: param.value.to_i)
         when "whiteSpace"
-          [:white_space, Lutaml::Xml::Schema::Xsd::WhiteSpace.new(value: param.value)]
+          restriction.white_space = Lutaml::Xml::Schema::Xsd::WhiteSpace.new(value: param.value)
         else
           warn "Warning: Unknown RNG param '#{param.name}' in #{@file_path}"
-          nil
         end
       end
 
@@ -928,9 +933,7 @@ module Lutaml
       # Get the single pattern child from a Start
       def get_start_pattern(start)
         pattern_types.each do |attr|
-          next unless start.respond_to?(attr)
-
-          child = start.send(attr)
+          child = start.public_send(attr)
           return child if child && !child.is_a?(Array) && !child.is_a?(Lutaml::Model::UninitializedClass)
         end
         nil
@@ -1034,7 +1037,7 @@ module Lutaml
         xsd_elem = Lutaml::Xml::Schema::Xsd::Element.new(name: name)
 
         # Add documentation if present
-        if rng_elem.respond_to?(:documentation) && rng_elem.documentation
+        if rng_elem.documentation
           xsd_elem.annotation = Lutaml::Xml::Schema::Xsd::Annotation.new(
             documentation: [
               Lutaml::Xml::Schema::Xsd::Documentation.new(
@@ -1134,7 +1137,7 @@ module Lutaml
           xsd_attr.type = "xs:string"
         end
 
-        if rng_attr.respond_to?(:documentation) && rng_attr.documentation
+        if rng_attr.documentation
           xsd_attr.annotation = Lutaml::Xml::Schema::Xsd::Annotation.new(
             documentation: [
               Lutaml::Xml::Schema::Xsd::Documentation.new(
@@ -1150,20 +1153,20 @@ module Lutaml
       # Get the single pattern child from an Attribute
       def get_attribute_child(attr)
         pattern_types.each do |type_name|
-          next unless attr.respond_to?(type_name)
-
-          child = attr.send(type_name)
+          child = attr.public_send(type_name)
           return child if child && !child.is_a?(Array) && !child.is_a?(Lutaml::Model::UninitializedClass)
+        rescue NoMethodError
+          next
         end
         nil
       end
 
       # Extract element/attribute name from attr_name or name.value
       def element_name(node)
-        name = node.respond_to?(:attr_name) ? node.attr_name : nil
-        if (name.nil? || name.empty?) && node.respond_to?(:name)
+        name = node.attr_name if node.is_a?(Rng::Element) || node.is_a?(Rng::Attribute)
+        if (name.nil? || name.empty?) && node.is_a?(Rng::Element)
           name_val = node.name
-          name = name_val.value if name_val.respond_to?(:value)
+          name = name_val.to_s if name_val
         end
         name
       end
@@ -1226,7 +1229,7 @@ module Lutaml
           end
 
           # Per jing-trang: if any non-element child, wrap in optional
-          if has_non_element && result.respond_to?(:min_occurs=)
+          if has_non_element && supports_occurrences?(result)
             result.min_occurs = "0"
             result.max_occurs = "1"
           end
@@ -1279,7 +1282,7 @@ module Lutaml
 
         if xsd_children.size == 1
           child = xsd_children.first
-          if child.respond_to?(:min_occurs=)
+          if supports_occurrences?(child)
             child.min_occurs = min
             child.max_occurs = max
           end
@@ -1329,7 +1332,7 @@ module Lutaml
           # Reference to a define promoted to top-level element -> element ref
           # Use the element's actual name (not the define name) as the ref target,
           # since they may differ (e.g., define "ext_toc" wraps element "name").
-          elem_name = result[:element].respond_to?(:name) ? result[:element].name : name
+          elem_name = result[:element].is_a?(Lutaml::Xml::Schema::Xsd::Element) ? result[:element].name : name
           Lutaml::Xml::Schema::Xsd::Element.new(ref: elem_name)
         elsif result[:group]
           Lutaml::Xml::Schema::Xsd::Group.new(ref: name)

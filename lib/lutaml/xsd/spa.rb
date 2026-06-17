@@ -1,54 +1,59 @@
 # frozen_string_literal: true
 
-# SPA (Single Page Application) generation
-require_relative "spa/configuration_loader"
-require_relative "spa/generator"
-require_relative "spa/html_document_builder"
-require_relative "spa/output_strategy"
-require_relative "spa/schema_serializer"
-require_relative "spa/spa_metadata"
-require_relative "spa/xml_instance_generator"
+# SPA module autoload entries are defined in lib/lutaml/xsd.rb
+# This file exists only for backward compatibility with any code
+# that requires "lutaml/xsd/spa" directly.
 
-# SVG diagram generation - MECE architecture
-require_relative "spa/svg/style_configuration"
-require_relative "spa/svg/config/color_scheme"
-require_relative "spa/svg/config/dimensions"
-require_relative "spa/svg/config/effects"
-require_relative "spa/svg/config/connector_styles"
-require_relative "spa/svg/config/layout_config"
-require_relative "spa/svg/config/component_rules"
-require_relative "spa/svg/config/indicator_rules"
+# SVG diagram generation sub-modules
+module Lutaml
+  module Xsd
+    module Spa
+      module Svg
+        module Config
+          autoload :ColorScheme, "lutaml/xsd/spa/svg/config/color_scheme"
+          autoload :Dimensions, "lutaml/xsd/spa/svg/config/dimensions"
+          autoload :Effects, "lutaml/xsd/spa/svg/config/effects"
+          autoload :ConnectorStyles, "lutaml/xsd/spa/svg/config/connector_styles"
+          autoload :LayoutConfig, "lutaml/xsd/spa/svg/config/layout_config"
+          autoload :ComponentRules, "lutaml/xsd/spa/svg/config/component_rules"
+          autoload :IndicatorRules, "lutaml/xsd/spa/svg/config/indicator_rules"
+        end
 
-# SVG geometry
-require_relative "spa/svg/geometry/point"
-require_relative "spa/svg/geometry/box"
+        module Geometry
+          autoload :Point, "lutaml/xsd/spa/svg/geometry/point"
+          autoload :Box, "lutaml/xsd/spa/svg/geometry/box"
+        end
 
-# SVG utilities
-require_relative "spa/svg/utils/svg_builder"
+        module Utils
+          autoload :SvgBuilder, "lutaml/xsd/spa/svg/utils/svg_builder"
+        end
 
-# SVG base classes
-require_relative "spa/svg/component_renderer"
-require_relative "spa/svg/connector_renderer"
-require_relative "spa/svg/layout_engine"
+        module Connectors
+          autoload :InheritanceConnector, "lutaml/xsd/spa/svg/connectors/inheritance_connector"
+          autoload :ContainmentConnector, "lutaml/xsd/spa/svg/connectors/containment_connector"
+          autoload :ReferenceConnector, "lutaml/xsd/spa/svg/connectors/reference_connector"
+        end
 
-# SVG connectors
-require_relative "spa/svg/connectors/inheritance_connector"
-require_relative "spa/svg/connectors/containment_connector"
-require_relative "spa/svg/connectors/reference_connector"
+        module Layouts
+          autoload :VerticalLayout, "lutaml/xsd/spa/svg/layouts/vertical_layout"
+          autoload :TreeLayout, "lutaml/xsd/spa/svg/layouts/tree_layout"
+        end
 
-# SVG layouts
-require_relative "spa/svg/layouts/vertical_layout"
-require_relative "spa/svg/layouts/tree_layout"
+        module Renderers
+          autoload :TypeRenderer, "lutaml/xsd/spa/svg/renderers/type_renderer"
+          autoload :AttributeRenderer, "lutaml/xsd/spa/svg/renderers/attribute_renderer"
+          autoload :GroupRenderer, "lutaml/xsd/spa/svg/renderers/group_renderer"
+          autoload :ElementRenderer, "lutaml/xsd/spa/svg/renderers/element_renderer"
+        end
 
-# SVG renderers
-require_relative "spa/svg/renderers/type_renderer"
-require_relative "spa/svg/renderers/attribute_renderer"
-require_relative "spa/svg/renderers/group_renderer"
-
-# SVG builders
-require_relative "spa/svg/defs_builder"
-require_relative "spa/svg/document_builder"
-
-# SVG main coordinator
-require_relative "spa/svg/diagram_generator"
-require_relative "spa/svg/renderers/element_renderer"
+        autoload :StyleConfiguration, "lutaml/xsd/spa/svg/style_configuration"
+        autoload :ComponentRenderer, "lutaml/xsd/spa/svg/component_renderer"
+        autoload :ConnectorRenderer, "lutaml/xsd/spa/svg/connector_renderer"
+        autoload :LayoutEngine, "lutaml/xsd/spa/svg/layout_engine"
+        autoload :DefsBuilder, "lutaml/xsd/spa/svg/defs_builder"
+        autoload :DocumentBuilder, "lutaml/xsd/spa/svg/document_builder"
+        autoload :DiagramGenerator, "lutaml/xsd/spa/svg/diagram_generator"
+      end
+    end
+  end
+end

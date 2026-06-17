@@ -85,7 +85,7 @@ module Lutaml
         return [] if depth <= 0
 
         descendants = []
-        all_types = @repository.instance_variable_get(:@type_index).all
+        all_types = @repository.type_index.all
 
         all_types.each_value do |type_info|
           definition = type_info[:definition]
@@ -140,7 +140,7 @@ module Lutaml
         end
 
         # Find descendants (derived types)
-        all_types = @repository.instance_variable_get(:@type_index).all
+        all_types = @repository.type_index.all
         all_types.each_value do |type_info|
           definition = type_info[:definition]
           next unless definition

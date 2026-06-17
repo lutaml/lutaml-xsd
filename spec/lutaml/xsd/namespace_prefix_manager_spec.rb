@@ -59,7 +59,7 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixManager do
 
     it "finds schema for namespace" do
       # Create a mock schema with target namespace
-      schema = double("Schema", target_namespace: "http://www.opengis.net/gml/3.2")
+      schema = Lutaml::Xml::Schema::Xsd::Schema.new.tap { |s| s.target_namespace = "http://www.opengis.net/gml/3.2" }
       allow(repository).to receive(:all_schemas)
         .and_return({ "test.xsd" => schema })
 
@@ -75,7 +75,7 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixManager do
     end
 
     it "returns file path for namespace" do
-      schema = double("Schema", target_namespace: "http://www.opengis.net/gml/3.2")
+      schema = Lutaml::Xml::Schema::Xsd::Schema.new.tap { |s| s.target_namespace = "http://www.opengis.net/gml/3.2" }
       allow(repository).to receive(:all_schemas)
         .and_return({ "/path/to/gml.xsd" => schema })
 
@@ -103,11 +103,11 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixInfo do
     allow(repo).to receive(:types_in_namespace).and_return(
       [
         { type: :complex_type,
-          definition: double(name: "TypeA") },
+          definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeA") },
         { type: :simple_type,
-          definition: double(name: "TypeB") },
+          definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeB") },
         { type: :complex_type,
-          definition: double(name: "TypeC") },
+          definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeC") },
       ],
     )
     repo

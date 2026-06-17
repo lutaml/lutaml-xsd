@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../layout_engine"
-
 module Lutaml
   module Xsd
     module Spa

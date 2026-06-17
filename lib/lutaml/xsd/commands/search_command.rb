@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_command"
-require_relative "../type_searcher"
-
 module Lutaml
   module Xsd
     module Commands
@@ -22,7 +19,7 @@ module Lutaml
           # Store package root for path display
           @package_root = if @package_path.end_with?(".lxr")
                             # For LXR packages, get the temp extraction dir
-                            repository.instance_variable_get(:@temp_extraction_dir) || Dir.pwd
+                            repository.temp_extraction_dir || Dir.pwd
                           else
                             # For other formats, use parent directory of first file
                             repository.files&.first ? File.dirname(repository.files.first) : Dir.pwd

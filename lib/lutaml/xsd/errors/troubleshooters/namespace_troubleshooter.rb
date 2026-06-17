@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "troubleshooting_handler"
-
 module Lutaml
   module Xsd
     module Errors

@@ -1,16 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "style_configuration"
-require_relative "layout_engine"
-require_relative "document_builder"
-require_relative "renderers/element_renderer"
-require_relative "renderers/type_renderer"
-require_relative "renderers/attribute_renderer"
-require_relative "renderers/group_renderer"
-require_relative "connectors/inheritance_connector"
-require_relative "connectors/containment_connector"
-require_relative "connectors/reference_connector"
-
 module Lutaml
   module Xsd
     module Spa

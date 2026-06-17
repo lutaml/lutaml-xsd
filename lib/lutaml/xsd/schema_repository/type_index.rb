@@ -61,11 +61,11 @@ module Lutaml
         # @param namespace [String] The namespace URI
         # @param file_path [String] Path to the schema file
         def index_inline_complex_types(schema, namespace, file_path)
-          return unless schema.respond_to?(:element) && schema.element
+          return unless schema.is_a?(Lutaml::Xml::Schema::Xsd::Schema) && schema.element
 
           elements = schema.element.is_a?(Array) ? schema.element : [schema.element]
           elements.compact.each do |element|
-            next unless element.respond_to?(:complex_type) && element.complex_type
+            next unless element.is_a?(Lutaml::Xml::Schema::Xsd::Element) && element.complex_type
 
             inline_ct = element.complex_type
             # Only index if it doesn't already have a name (truly anonymous)

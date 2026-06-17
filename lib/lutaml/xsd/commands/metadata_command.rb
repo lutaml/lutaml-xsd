@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "base_command"
 
 module Lutaml
   module Xsd

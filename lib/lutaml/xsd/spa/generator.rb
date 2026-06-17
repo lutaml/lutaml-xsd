@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "configuration_loader"
-require_relative "schema_serializer"
-require_relative "strategies/vue_inlined_strategy"
-require_relative "strategies/vue_cdn_strategy"
-
 module Lutaml
   module Xsd
     module Spa

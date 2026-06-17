@@ -77,33 +77,18 @@ module Lutaml
       end
 
       def copy_internal_state(new_repo)
-        original_store = repository.instance_variable_get(:@parsed_schemas)
-        new_store = Lutaml::Store::BasicStore.new(adapter_type: :memory)
-        original_store.all.each { |k, v| new_store.set(k, v) }
-        new_repo.instance_variable_set(:@parsed_schemas, new_store)
-
-        # Copy resolution state
-        new_repo.instance_variable_set(:@resolved,
-                                       repository.instance_variable_get(:@resolved))
-        new_repo.instance_variable_set(:@validated,
-                                       repository.instance_variable_get(:@validated))
-        new_repo.instance_variable_set(:@lazy_load,
-                                       repository.instance_variable_get(:@lazy_load))
-        new_repo.instance_variable_set(:@verbose,
-                                       repository.instance_variable_get(:@verbose))
+        new_repo.copy_state_from(repository)
 
         # Re-register namespace mappings with the new registry
-        namespace_registry = new_repo.instance_variable_get(:@namespace_registry)
         new_repo.namespace_mappings.each do |mapping|
-          namespace_registry.register(mapping.prefix, mapping.uri)
+          new_repo.namespace_registry.register(mapping.prefix, mapping.uri)
         end
 
         # Rebuild type index with new namespace registry
-        return unless repository.instance_variable_get(:@resolved)
+        return unless repository.resolved
 
-        type_index = new_repo.instance_variable_get(:@type_index)
         all_schemas = new_repo.all_schemas
-        type_index.build_from_schemas(all_schemas)
+        new_repo.type_index.build_from_schemas(all_schemas)
       end
     end
   end

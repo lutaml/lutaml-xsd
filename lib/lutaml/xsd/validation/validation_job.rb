@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "validation_result"
-require_relative "validation_error"
-require_relative "xml_navigator"
-require_relative "result_collector"
-require_relative "rule_engine"
-
 module Lutaml
   module Xsd
     module Validation

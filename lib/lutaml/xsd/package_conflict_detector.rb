@@ -67,8 +67,7 @@ module Lutaml
           namespace_mappings: new_ns_mappings,
           schema_location_mappings: repo.schema_location_mappings,
         ).tap do |new_repo|
-          new_repo.instance_variable_set(:@parsed_schemas,
-                                         repo.instance_variable_get(:@parsed_schemas))
+          new_repo.parsed_schemas = repo.parsed_schemas
         end
       end
 

@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "text_formatter"
-require_relative "json_formatter"
-require_relative "yaml_formatter"
-require_relative "registry"
-
 module Lutaml
   module Xsd
     module Formatters

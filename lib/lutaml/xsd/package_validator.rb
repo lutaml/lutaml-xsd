@@ -12,6 +12,16 @@ module Lutaml
         @repository = repository
         @errors = []
         @warnings = []
+        @schema_paths = build_schema_paths
+      end
+
+      def build_schema_paths
+        paths = {}
+        paths.compare_by_identity
+        @repository.all_schemas.each do |file_path, schema|
+          paths[schema] = file_path
+        end
+        paths
       end
 
       # Validate that all references in the package are fully resolved
@@ -515,7 +525,7 @@ module Lutaml
         repository.all_schemas.values
       rescue StandardError
         # Fallback to parsed_schemas if the method doesn't work
-        store = repository.instance_variable_get(:@parsed_schemas)
+        store = repository.parsed_schemas
         store ? store.all.values : []
       end
 
@@ -558,7 +568,7 @@ module Lutaml
 
       # Get a readable location for a schema
       def schema_location(schema)
-        schema.instance_variable_get(:@location) || "unknown location"
+        @schema_paths[schema] || "unknown location"
       end
     end
   end

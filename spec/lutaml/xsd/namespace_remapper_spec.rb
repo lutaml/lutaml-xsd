@@ -135,7 +135,7 @@ RSpec.describe Lutaml::Xsd::NamespaceRemapper do
       repository.instance_variable_set(:@lazy_load, false)
       repository.instance_variable_set(:@verbose, true)
       store = Lutaml::Store::BasicStore.new(adapter_type: :memory)
-      store.set("test.xsd", double("Schema"))
+      store.set("test.xsd", Lutaml::Xml::Schema::Xsd::Schema.new)
       repository.instance_variable_set(:@parsed_schemas, store)
     end
 

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "xml_element"
-
 module Lutaml
   module Xsd
     module Validation

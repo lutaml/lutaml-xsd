@@ -29,7 +29,7 @@ RSpec.describe Lutaml::Xsd::Errors::ErrorContext do
     end
 
     it "accepts repository" do
-      repository = double("repository")
+      repository = Lutaml::Xsd::SchemaRepository.new
       context = described_class.new(repository: repository)
 
       expect(context.repository).to eq(repository)
@@ -72,7 +72,7 @@ RSpec.describe Lutaml::Xsd::Errors::ErrorContext do
 
   describe "#has_repository?" do
     it "returns true when repository is present" do
-      repository = double("repository")
+      repository = Lutaml::Xsd::SchemaRepository.new
       context = described_class.new(repository: repository)
 
       expect(context.has_repository?).to be true

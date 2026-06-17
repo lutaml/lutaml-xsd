@@ -130,7 +130,7 @@ module Lutaml
           next if serialized.key?(file_path)
           next unless File.exist?(file_path)
 
-          store = repository.instance_variable_get(:@parsed_schemas)
+          store = repository.parsed_schemas
           schema = store&.get(file_path)
           next unless schema
 
@@ -222,14 +222,21 @@ module Lutaml
             root.pending_plan_root_element = nil
           end
 
-          root.instance_variables.each do |ivar|
-            value = root.instance_variable_get(ivar)
-            next if value.nil? || value.is_a?(Symbol) ||
-              value.is_a?(Integer) || value.is_a?(Float) ||
-              value.is_a?(TrueClass) || value.is_a?(FalseClass)
+          traverse_attributes(root, visited)
+        end
+      end
 
-            clear_pending_plan_references(value, visited)
-          end
+      # Traverse declared model attributes for graph walking
+      def traverse_attributes(root, visited)
+        return unless root.is_a?(Lutaml::Model::Serializable)
+
+        root.class.attributes.each_key do |attr_name|
+          value = root.public_send(attr_name)
+          next if value.nil? || value.is_a?(Symbol) ||
+            value.is_a?(Integer) || value.is_a?(Float) ||
+            value.is_a?(TrueClass) || value.is_a?(FalseClass)
+
+          clear_pending_plan_references(value, visited)
         end
       end
 
@@ -245,24 +252,18 @@ module Lutaml
         )
 
         # Add package configuration
-        metadata.instance_variable_set(:@xsd_mode, @config.xsd_mode)
-        metadata.instance_variable_set(:@resolution_mode,
-                                       @config.resolution_mode)
-        metadata.instance_variable_set(:@serialization_format,
-                                       @config.serialization_format)
+        metadata.xsd_mode = @config.xsd_mode
+        metadata.resolution_mode = @config.resolution_mode
+        metadata.serialization_format = @config.serialization_format
 
         # Backward compatibility: only add serialized_schemas for old format
-        # (new format stores them separately in schemas_data/ directory)
         if @config.resolved_package? && serialized_schemas_data.is_a?(Array)
-          metadata.instance_variable_set(:@serialized_schemas,
-                                         serialized_schemas_data)
+          metadata.serialized_schemas = serialized_schemas_data
         end
 
         # Clear schema_location_mappings if include_all mode
-        # (all XSDs are bundled, mappings not needed and cause validation warnings)
         if @config.include_all_xsds?
-          metadata.instance_variable_set(:@schema_location_mappings,
-                                         [])
+          metadata.schema_location_mappings = []
         end
 
         metadata

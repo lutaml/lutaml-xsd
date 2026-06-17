@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "geometry/box"
-require_relative "geometry/point"
-
 module Lutaml
   module Xsd
     module Spa

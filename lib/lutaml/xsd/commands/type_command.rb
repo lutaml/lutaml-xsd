@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "base_command"
-require_relative "../dependency_grapher"
-require_relative "../batch_type_query"
 
 module Lutaml
   module Xsd
@@ -689,7 +686,7 @@ indent: "")
           end
 
           def find_schema_for_attribute(attr, repository)
-            parsed_schemas = repository.instance_variable_get(:@parsed_schemas)
+            parsed_schemas = repository.parsed_schemas
             return nil unless parsed_schemas
 
             parsed_schemas.all.each_value do |schema|
@@ -754,7 +751,7 @@ indent: "")
           end
 
           def find_schema_for_element(elem, repository)
-            parsed_schemas = repository.instance_variable_get(:@parsed_schemas)
+            parsed_schemas = repository.parsed_schemas
             return nil unless parsed_schemas
 
             parsed_schemas.all.each_value do |schema|

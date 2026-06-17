@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "utils/extract_enumeration"
-
 module Lutaml
   module Xsd
     module Spa
@@ -278,15 +276,9 @@ module Lutaml
         # Get base from extension
         def get_base_from_extension(type)
           base_val = nil
-          %i[simple_content complex_content].each do |content_type|
-            if type.public_send(content_type)
-              sc = type.public_send(content_type)
-              if sc.extension
-                sc_ext = sc.extension
-                if sc_ext.base
-                  base_val = sc_ext.base
-                end
-              end
+          [type.simple_content, type.complex_content].compact.each do |sc|
+            if sc.extension&.base
+              base_val = sc.extension.base
             end
           end
 
@@ -296,28 +288,25 @@ module Lutaml
         # Get attributes from simple or complex content
         def generate_attributes_from_content(type)
           attrs = []
-          %i[simple_content complex_content].each do |content_type|
-            if type.public_send(content_type)
-              sc = type.public_send(content_type)
-              if sc.extension
-                sc_ext = sc.extension
+          [type.simple_content, type.complex_content].compact.each do |sc|
+            if sc.extension
+              sc_ext = sc.extension
 
-                # Get attributes from content extension
-                if sc_ext.attribute
-                  attrs.concat(sc_ext.attribute)
-                end
-
-                # Get attributes in attribute groups from content extension
-                attrs.concat(generate_attributes_from_group_ref(sc_ext))
-              elsif sc.restriction
-                # Get attributes from content restriction
-                if sc.restriction.attribute
-                  attrs.concat(sc.restriction.attribute)
-                end
-
-                # Get attributes in attribute groups from restriction extension
-                attrs.concat(generate_attributes_from_group_ref(sc.restriction))
+              # Get attributes from content extension
+              if sc_ext.attribute
+                attrs.concat(sc_ext.attribute)
               end
+
+              # Get attributes in attribute groups from content extension
+              attrs.concat(generate_attributes_from_group_ref(sc_ext))
+            elsif sc.restriction
+              # Get attributes from content restriction
+              if sc.restriction.attribute
+                attrs.concat(sc.restriction.attribute)
+              end
+
+              # Get attributes in attribute groups from restriction extension
+              attrs.concat(generate_attributes_from_group_ref(sc.restriction))
             end
           end
           attrs

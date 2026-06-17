@@ -3,7 +3,50 @@
 require "spec_helper"
 require "lutaml/xsd/type_hierarchy_analyzer"
 
+# Helpers to build real XSD model instances for testing
+module XsdTestHelper
+  def build_complex_type(name: nil, complex_content: nil, simple_content: nil, restriction: nil)
+    Lutaml::Xml::Schema::Xsd::ComplexType.new(
+      name: name,
+      complex_content: complex_content,
+      simple_content: simple_content,
+      restriction: restriction,
+    )
+  end
+
+  def build_simple_type(name: nil, restriction: nil)
+    Lutaml::Xml::Schema::Xsd::SimpleType.new(
+      name: name,
+      restriction: restriction,
+    )
+  end
+
+  def build_complex_content(extension: nil, restriction: nil)
+    Lutaml::Xml::Schema::Xsd::ComplexContent.new(
+      extension: extension,
+      restriction: restriction,
+    )
+  end
+
+  def build_simple_content(extension: nil, restriction: nil)
+    Lutaml::Xml::Schema::Xsd::SimpleContent.new(
+      extension: extension,
+      restriction: restriction,
+    )
+  end
+
+  def build_extension(base: nil)
+    Lutaml::Xml::Schema::Xsd::ExtensionSimpleContent.new(base: base)
+  end
+
+  def build_restriction(base: nil)
+    Lutaml::Xml::Schema::Xsd::RestrictionSimpleType.new(base: base)
+  end
+end
+
 RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
+  include XsdTestHelper
+
   let(:repository) { Lutaml::Xsd::SchemaRepository.new }
   let(:analyzer) { described_class.new(repository) }
 
@@ -31,34 +74,23 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
     end
 
     context "when type is found" do
-      let(:complex_type) do
-        double("ComplexType", name: "TestType",
-                              complex_content: nil,
-                              simple_content: nil,
-                              restriction: nil,
-                              class: Lutaml::Xml::Schema::Xsd::ComplexType).tap do |obj|
-          allow(obj).to receive(:is_a?) do |klass|
-            klass == Lutaml::Xml::Schema::Xsd::ComplexType
-          end
-        end
-      end
+      let(:complex_type) { build_complex_type(name: "TestType") }
 
       let(:type_result) do
-        result = Lutaml::Xsd::TypeResolutionResult.success(
+        Lutaml::Xsd::TypeResolutionResult.success(
           qname: "test:TestType",
           namespace: "http://test.com",
           local_name: "TestType",
           definition: complex_type,
           schema_file: "/test/schema.xsd",
         )
-        result
       end
 
       before do
         allow(repository).to receive(:find_type).with("test:TestType").and_return(type_result)
-        allow(repository).to receive(:instance_variable_get).with(:@type_index).and_return(
-          double(all: {}),
-        )
+        # Stub type_index.all to return empty (no hierarchy)
+        fake_index = Struct.new(:all).new({})
+        allow(repository).to receive(:type_index).and_return(fake_index)
       end
 
       it "returns hierarchy analysis" do
@@ -87,14 +119,9 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
   describe "private methods" do
     describe "#extract_base_type" do
       context "with complex content extension" do
-        let(:extension) { double("Extension", base: "test:BaseType") }
-        let(:complex_content) do
-          double("ComplexContent", extension: extension, restriction: nil)
-        end
-        let(:complex_type) do
-          double("ComplexType", complex_content: complex_content,
-                                simple_content: nil, restriction: nil)
-        end
+        let(:extension) { build_extension(base: "test:BaseType") }
+        let(:complex_content) { build_complex_content(extension: extension) }
+        let(:complex_type) { build_complex_type(complex_content: complex_content) }
 
         it "extracts base type from complex content extension" do
           base = analyzer.send(:extract_base_type, complex_type)
@@ -103,14 +130,9 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       end
 
       context "with complex content restriction" do
-        let(:restriction) { double("Restriction", base: "test:BaseType") }
-        let(:complex_content) do
-          double("ComplexContent", extension: nil, restriction: restriction)
-        end
-        let(:complex_type) do
-          double("ComplexType", complex_content: complex_content,
-                                simple_content: nil, restriction: nil)
-        end
+        let(:restriction) { build_restriction(base: "test:BaseType") }
+        let(:complex_content) { build_complex_content(restriction: restriction) }
+        let(:complex_type) { build_complex_type(complex_content: complex_content) }
 
         it "extracts base type from complex content restriction" do
           base = analyzer.send(:extract_base_type, complex_type)
@@ -119,14 +141,9 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       end
 
       context "with simple content extension" do
-        let(:extension) { double("Extension", base: "xs:string") }
-        let(:simple_content) do
-          double("SimpleContent", extension: extension, restriction: nil)
-        end
-        let(:complex_type) do
-          double("ComplexType", complex_content: nil,
-                                simple_content: simple_content, restriction: nil)
-        end
+        let(:extension) { build_extension(base: "xs:string") }
+        let(:simple_content) { build_simple_content(extension: extension) }
+        let(:complex_type) { build_complex_type(simple_content: simple_content) }
 
         it "extracts base type from simple content extension" do
           base = analyzer.send(:extract_base_type, complex_type)
@@ -135,14 +152,9 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       end
 
       context "with simple content restriction" do
-        let(:restriction) { double("Restriction", base: "xs:integer") }
-        let(:simple_content) do
-          double("SimpleContent", extension: nil, restriction: restriction)
-        end
-        let(:complex_type) do
-          double("ComplexType", complex_content: nil,
-                                simple_content: simple_content, restriction: nil)
-        end
+        let(:restriction) { build_restriction(base: "xs:integer") }
+        let(:simple_content) { build_simple_content(restriction: restriction) }
+        let(:complex_type) { build_complex_type(simple_content: simple_content) }
 
         it "extracts base type from simple content restriction" do
           base = analyzer.send(:extract_base_type, complex_type)
@@ -151,11 +163,8 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       end
 
       context "with simple type restriction" do
-        let(:restriction) { double("Restriction", base: "xs:string") }
-        let(:simple_type) do
-          double("SimpleType", complex_content: nil, simple_content: nil,
-                               restriction: restriction)
-        end
+        let(:restriction) { build_restriction(base: "xs:string") }
+        let(:simple_type) { build_simple_type(restriction: restriction) }
 
         it "extracts base type from simple type restriction" do
           base = analyzer.send(:extract_base_type, simple_type)
@@ -164,10 +173,7 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       end
 
       context "with no base type" do
-        let(:complex_type) do
-          double("ComplexType", complex_content: nil, simple_content: nil,
-                                restriction: nil)
-        end
+        let(:complex_type) { build_complex_type }
 
         it "returns nil" do
           base = analyzer.send(:extract_base_type, complex_type)
@@ -178,56 +184,32 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
 
     describe "#determine_type_category" do
       it "identifies ComplexType" do
-        type = double("ComplexType", class: Lutaml::Xml::Schema::Xsd::ComplexType,
-                                     is_a?: false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::ComplexType).and_return(true)
-        expect(analyzer.send(:determine_type_category,
-                             type)).to eq(:complex_type)
+        type = build_complex_type
+        expect(analyzer.send(:determine_type_category, type)).to eq(:complex_type)
       end
 
       it "identifies SimpleType" do
-        type = double("SimpleType", class: Lutaml::Xml::Schema::Xsd::SimpleType,
-                                    is_a?: false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::ComplexType).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::SimpleType).and_return(true)
-        expect(analyzer.send(:determine_type_category,
-                             type)).to eq(:simple_type)
+        type = build_simple_type
+        expect(analyzer.send(:determine_type_category, type)).to eq(:simple_type)
       end
 
       it "identifies Element" do
-        type = double("Element", class: Lutaml::Xml::Schema::Xsd::Element,
-                                 is_a?: false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::ComplexType).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::SimpleType).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::Element).and_return(true)
+        type = Lutaml::Xml::Schema::Xsd::Element.new(name: "test")
         expect(analyzer.send(:determine_type_category, type)).to eq(:element)
       end
 
       it "identifies AttributeGroup" do
-        type = double("AttributeGroup", class: Lutaml::Xml::Schema::Xsd::AttributeGroup,
-                                        is_a?: false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::ComplexType).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::SimpleType).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::Element).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::AttributeGroup).and_return(true)
-        expect(analyzer.send(:determine_type_category,
-                             type)).to eq(:attribute_group)
+        type = Lutaml::Xml::Schema::Xsd::AttributeGroup.new(name: "test")
+        expect(analyzer.send(:determine_type_category, type)).to eq(:attribute_group)
       end
 
       it "identifies Group" do
-        type = double("Group", class: Lutaml::Xml::Schema::Xsd::Group,
-                               is_a?: false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::ComplexType).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::SimpleType).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::Element).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::AttributeGroup).and_return(false)
-        allow(type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::Group).and_return(true)
+        type = Lutaml::Xml::Schema::Xsd::Group.new(name: "test")
         expect(analyzer.send(:determine_type_category, type)).to eq(:group)
       end
 
       it "returns unknown for unrecognized type" do
-        type = double("Unknown", is_a?: false)
-        allow(type).to receive(:is_a?).and_return(false)
+        type = Struct.new(:name).new("Unknown")
         expect(analyzer.send(:determine_type_category, type)).to eq(:unknown)
       end
     end
@@ -241,7 +223,7 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       it "builds qualified name with prefix" do
         type_info = {
           namespace: "http://test.com",
-          definition: double(name: "MyType"),
+          definition: build_complex_type(name: "MyType"),
         }
         qname = analyzer.send(:build_qualified_name, type_info)
         expect(qname).to eq("test:MyType")
@@ -250,7 +232,7 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       it "builds local name without prefix when namespace is nil" do
         type_info = {
           namespace: nil,
-          definition: double(name: "MyType"),
+          definition: build_complex_type(name: "MyType"),
         }
         qname = analyzer.send(:build_qualified_name, type_info)
         expect(qname).to eq("MyType")
@@ -260,7 +242,7 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
         allow(repository).to receive(:namespace_to_prefix).with("http://unknown.com").and_return(nil)
         type_info = {
           namespace: "http://unknown.com",
-          definition: double(name: "MyType"),
+          definition: build_complex_type(name: "MyType"),
         }
         qname = analyzer.send(:build_qualified_name, type_info)
         expect(qname).to eq("MyType")
@@ -336,7 +318,6 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
       end
 
       it "prevents infinite recursion with cycles" do
-        # This shouldn't happen in practice, but test the protection
         text = analyzer.send(:to_text_tree, node)
         expect(text).to be_a(String)
         expect(text.length).to be > 0

@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "namespace_uri_remapping"
-require_relative "validation_error"
-require_relative "validation_result"
-
 module Lutaml
   module Xsd
     # Configuration for a single base package with conflict resolution settings

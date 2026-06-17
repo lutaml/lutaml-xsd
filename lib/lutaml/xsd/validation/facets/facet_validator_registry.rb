@@ -1,19 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "facet_validator"
-require_relative "pattern_facet_validator"
-require_relative "length_facet_validator"
-require_relative "min_length_facet_validator"
-require_relative "max_length_facet_validator"
-require_relative "enumeration_facet_validator"
-require_relative "min_inclusive_facet_validator"
-require_relative "max_inclusive_facet_validator"
-require_relative "min_exclusive_facet_validator"
-require_relative "max_exclusive_facet_validator"
-require_relative "total_digits_facet_validator"
-require_relative "fraction_digits_facet_validator"
-require_relative "white_space_facet_validator"
-
 module Lutaml
   module Xsd
     module Validation

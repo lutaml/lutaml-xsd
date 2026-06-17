@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "commands/pkg_command"
-require_relative "commands/xml_command"
-require_relative "commands/build_command"
-require_relative "commands/generate_spa_command"
 
 module Lutaml
   module Xsd

@@ -45,7 +45,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
       allow(Dir).to receive(:glob).with("*.xml").and_return([xml_file])
       allow(File).to receive(:read).and_return("<root/>")
 
-      validator = double("validator")
+      validator = Struct.new(:validate).new
       allow(Lutaml::Xsd::Validation::Validator).to receive(:new).and_return(validator)
       allow(validator).to receive(:validate).and_return(double(valid?: true,
                                                                errors: []))
@@ -62,7 +62,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
       [
         {
           file: xml_file,
-          result: double(valid?: true, errors: []),
+          result: Struct.new(:valid?, :errors).new(true, []),
         },
       ]
     end
@@ -104,7 +104,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
 
     it "exits with 0 for valid files" do
       results = [
-        { file: xml_file, result: double(valid?: true, errors: []) },
+        { file: xml_file, result: Struct.new(:valid?, :errors).new(true, []) },
       ]
 
       expect do
@@ -117,7 +117,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
 
     it "exits with 1 for invalid files" do
       results = [
-        { file: xml_file, result: double(valid?: false, errors: ["error"]) },
+        { file: xml_file, result: Struct.new(:valid?, :errors).new(false, ["error"]) },
       ]
 
       expect do

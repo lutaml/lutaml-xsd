@@ -4,8 +4,30 @@ require "spec_helper"
 require "lutaml/xsd/batch_type_query"
 require "tempfile"
 
+# Helper to create real TypeResolutionResult instances
+def build_resolution_result(qname:, namespace: nil, definition: nil, resolved: true)
+  if resolved
+    Lutaml::Xsd::TypeResolutionResult.success(
+      qname: qname,
+      namespace: namespace,
+      local_name: qname.split(":").last,
+      definition: definition,
+      schema_file: "test.xsd",
+      resolution_path: [qname],
+    )
+  else
+    Lutaml::Xsd::TypeResolutionResult.failure(
+      qname: qname,
+      namespace: namespace,
+      local_name: qname.split(":").last,
+      error_message: "Not found",
+      resolution_path: [qname],
+    )
+  end
+end
+
 RSpec.describe Lutaml::Xsd::BatchTypeQuery do
-  let(:repository) { instance_double(Lutaml::Xsd::SchemaRepository) }
+  let(:repository) { Lutaml::Xsd::SchemaRepository.new }
   let(:batch_query) { described_class.new(repository) }
 
   describe "#initialize" do
@@ -19,36 +41,19 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
     let(:qname2) { "ns:Type2" }
     let(:qname3) { "ns:Type3" }
 
+    let(:ct_def) { Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "Type1") }
+    let(:st_def) { Lutaml::Xml::Schema::Xsd::SimpleType.new(name: "Type2") }
+
     let(:result1) do
-      instance_double(
-        Lutaml::Xsd::TypeResolutionResult,
-        resolved?: true,
-        qname: qname1,
-        namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
-                                    class: Lutaml::Xml::Schema::Xsd::ComplexType),
-      )
+      build_resolution_result(qname: qname1, namespace: "http://example.com/ns", definition: ct_def)
     end
 
     let(:result2) do
-      instance_double(
-        Lutaml::Xsd::TypeResolutionResult,
-        resolved?: true,
-        qname: qname2,
-        namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::SimpleType,
-                                    class: Lutaml::Xml::Schema::Xsd::SimpleType),
-      )
+      build_resolution_result(qname: qname2, namespace: "http://example.com/ns", definition: st_def)
     end
 
     let(:result3) do
-      instance_double(
-        Lutaml::Xsd::TypeResolutionResult,
-        resolved?: false,
-        qname: qname3,
-        namespace: nil,
-        definition: nil,
-      )
+      build_resolution_result(qname: qname3, resolved: false)
     end
 
     before do
@@ -100,25 +105,13 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
     let(:qname2) { "ns:Type2" }
 
     let(:result1) do
-      instance_double(
-        Lutaml::Xsd::TypeResolutionResult,
-        resolved?: true,
-        qname: qname1,
-        namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
-                                    class: Lutaml::Xml::Schema::Xsd::ComplexType),
-      )
+      build_resolution_result(qname: qname1, namespace: "http://example.com/ns",
+                              definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "Type1"))
     end
 
     let(:result2) do
-      instance_double(
-        Lutaml::Xsd::TypeResolutionResult,
-        resolved?: true,
-        qname: qname2,
-        namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::SimpleType,
-                                    class: Lutaml::Xml::Schema::Xsd::SimpleType),
-      )
+      build_resolution_result(qname: qname2, namespace: "http://example.com/ns",
+                              definition: Lutaml::Xml::Schema::Xsd::SimpleType.new(name: "Type2"))
     end
 
     it "executes batch query from file" do
@@ -159,25 +152,13 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
     let(:qname2) { "ns:Type2" }
 
     let(:result1) do
-      instance_double(
-        Lutaml::Xsd::TypeResolutionResult,
-        resolved?: true,
-        qname: qname1,
-        namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
-                                    class: Lutaml::Xml::Schema::Xsd::ComplexType),
-      )
+      build_resolution_result(qname: qname1, namespace: "http://example.com/ns",
+                              definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "Type1"))
     end
 
     let(:result2) do
-      instance_double(
-        Lutaml::Xsd::TypeResolutionResult,
-        resolved?: true,
-        qname: qname2,
-        namespace: "http://example.com/ns",
-        definition: instance_double(Lutaml::Xml::Schema::Xsd::SimpleType,
-                                    class: Lutaml::Xml::Schema::Xsd::SimpleType),
-      )
+      build_resolution_result(qname: qname2, namespace: "http://example.com/ns",
+                              definition: Lutaml::Xml::Schema::Xsd::SimpleType.new(name: "Type2"))
     end
 
     it "executes batch query from stdin" do
@@ -209,17 +190,9 @@ end
 RSpec.describe Lutaml::Xsd::BatchQueryResult do
   let(:query) { "ns:Type1" }
   let(:resolved) { true }
-  let(:definition) do
-    instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
-                    class: Lutaml::Xml::Schema::Xsd::ComplexType)
-  end
+  let(:ct_def) { Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "Type1") }
   let(:result) do
-    instance_double(
-      Lutaml::Xsd::TypeResolutionResult,
-      qname: query,
-      namespace: "http://example.com/ns",
-      definition: definition,
-    )
+    build_resolution_result(qname: query, namespace: "http://example.com/ns", definition: ct_def)
   end
 
   let(:batch_result) do
@@ -250,12 +223,7 @@ RSpec.describe Lutaml::Xsd::BatchQueryResult do
     context "when not resolved" do
       let(:resolved) { false }
       let(:result) do
-        instance_double(
-          Lutaml::Xsd::TypeResolutionResult,
-          qname: query,
-          namespace: nil,
-          definition: nil,
-        )
+        build_resolution_result(qname: query, resolved: false)
       end
 
       it "returns hash with nil type_class" do

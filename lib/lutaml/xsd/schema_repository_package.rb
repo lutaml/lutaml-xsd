@@ -393,7 +393,7 @@ module Lutaml
 
         # Store temp directory path so it can be cleaned up later
         # The repository needs these files to exist during parse/resolve
-        repository.instance_variable_set(:@temp_extraction_dir, temp_dir)
+        repository.temp_extraction_dir = temp_dir
 
         # Set up cleanup when repository is garbage collected
         ObjectSpace.define_finalizer(repository, proc do

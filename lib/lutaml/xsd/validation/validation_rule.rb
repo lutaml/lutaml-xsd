@@ -124,7 +124,7 @@ module Lutaml
           return false unless enabled?
 
           # Check if category is enabled in config
-          return true unless config.respond_to?(:category_enabled?)
+          return true unless config.is_a?(ValidationConfiguration)
 
           config.category_enabled?(category)
         end

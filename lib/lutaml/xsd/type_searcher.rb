@@ -45,7 +45,7 @@ module Lutaml
       # @param repository [SchemaRepository] The schema repository to search
       def initialize(repository)
         @repository = repository
-        @type_index = repository.instance_variable_get(:@type_index)
+        @type_index = repository.type_index
       end
 
       # Search for types matching the query

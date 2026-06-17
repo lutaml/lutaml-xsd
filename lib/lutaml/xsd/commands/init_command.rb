@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_command"
-require_relative "../interactive_builder"
-
 module Lutaml
   module Xsd
     module Commands

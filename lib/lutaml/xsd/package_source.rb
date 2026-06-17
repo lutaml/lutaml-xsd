@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_package_config"
-
 module Lutaml
   module Xsd
     # Represents a loaded package as a source of schemas/types

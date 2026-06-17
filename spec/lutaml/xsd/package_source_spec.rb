@@ -20,12 +20,13 @@ RSpec.describe Lutaml::Xsd::PackageSource do
   end
 
   let(:repository) do
-    double("SchemaRepository",
-           all_namespaces: [
-             "http://example.com/ns1",
-             "http://example.com/ns2",
-           ],
-           files: ["schema1.xsd", "schema2.xsd"])
+    Struct.new(:all_namespaces, :files, keyword_init: true).new(
+      all_namespaces: [
+        "http://example.com/ns1",
+        "http://example.com/ns2",
+      ],
+      files: ["schema1.xsd", "schema2.xsd"],
+    )
   end
 
   let(:package_source) do
@@ -103,9 +104,10 @@ RSpec.describe Lutaml::Xsd::PackageSource do
 
     context "when repository.files is nil" do
       let(:repository) do
-        double("SchemaRepository",
-               all_namespaces: [],
-               files: nil)
+        Struct.new(:all_namespaces, :files, keyword_init: true).new(
+          all_namespaces: [],
+          files: nil,
+        )
       end
 
       it "returns empty array" do
@@ -201,9 +203,10 @@ RSpec.describe Lutaml::Xsd::PackageSource do
     end
 
     let(:real_repository) do
-      double("SchemaRepository",
-             all_namespaces: ["http://new.example.com/"],
-             files: ["core/schema.xsd"])
+      Struct.new(:all_namespaces, :files, keyword_init: true).new(
+        all_namespaces: ["http://new.example.com/"],
+        files: ["core/schema.xsd"],
+      )
     end
 
     let(:real_source) do

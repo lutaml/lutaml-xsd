@@ -3,8 +3,22 @@
 require "spec_helper"
 require "lutaml/xsd/xsd_spec_validator"
 
+# Helper to create a minimal real XSD Schema for testing
+def build_test_schema(attrs = {})
+  s = Lutaml::Xml::Schema::Xsd::Schema.new
+  attrs.each { |k, v| s.public_send(:"#{k}=", v) }
+  s
+end
+
+def build_test_complex_type(name)
+  Lutaml::Xml::Schema::Xsd::ComplexType.new(name: name)
+end
+
 RSpec.describe Lutaml::Xsd::XsdSpecValidator do
-  let(:repository) { instance_double(Lutaml::Xsd::SchemaRepository) }
+  let(:repository) do
+    repo = Lutaml::Xsd::SchemaRepository.new
+    repo
+  end
 
   describe "#initialize" do
     it "creates validator with default version 1.0" do
@@ -21,12 +35,10 @@ RSpec.describe Lutaml::Xsd::XsdSpecValidator do
   describe "#validate" do
     let(:mock_schemas) do
       {
-        "schema1.xsd" => double(
+        "schema1.xsd" => build_test_schema(
           target_namespace: "http://example.com/ns1",
           element_form_default: "qualified",
           attribute_form_default: "unqualified",
-          import: [],
-          include: [],
           complex_type: [],
           simple_type: [],
           element: [],
@@ -60,12 +72,10 @@ RSpec.describe Lutaml::Xsd::XsdSpecValidator do
     context "with missing target namespace" do
       let(:mock_schemas) do
         {
-          "schema1.xsd" => double(
+          "schema1.xsd" => build_test_schema(
             target_namespace: nil,
             element_form_default: "qualified",
             attribute_form_default: "unqualified",
-            import: [],
-            include: [],
             complex_type: [],
             simple_type: [],
             element: [],
@@ -87,28 +97,20 @@ RSpec.describe Lutaml::Xsd::XsdSpecValidator do
     context "with duplicate definitions" do
       let(:mock_schemas) do
         {
-          "schema1.xsd" => double(
+          "schema1.xsd" => build_test_schema(
             target_namespace: "http://example.com/ns",
             element_form_default: "qualified",
             attribute_form_default: "unqualified",
-            import: [],
-            include: [],
-            complex_type: [
-              double(name: "MyType"),
-            ],
+            complex_type: [build_test_complex_type("MyType")],
             simple_type: [],
             element: [],
             attribute: [],
           ),
-          "schema2.xsd" => double(
+          "schema2.xsd" => build_test_schema(
             target_namespace: "http://example.com/ns",
             element_form_default: "qualified",
             attribute_form_default: "unqualified",
-            import: [],
-            include: [],
-            complex_type: [
-              double(name: "MyType"),
-            ],
+            complex_type: [build_test_complex_type("MyType")],
             simple_type: [],
             element: [],
             attribute: [],
@@ -175,12 +177,12 @@ end
 
 RSpec.describe Lutaml::Xsd::TargetNamespaceRule do
   let(:rule) { described_class.new("1.0") }
-  let(:repository) { instance_double(Lutaml::Xsd::SchemaRepository) }
+  let(:repository) { Lutaml::Xsd::SchemaRepository.new }
 
   describe "#validate" do
     it "reports warning for schema without target namespace" do
       schemas = {
-        "test.xsd" => double(target_namespace: nil),
+        "test.xsd" => build_test_schema(target_namespace: nil),
       }
       allow(repository).to receive(:all_schemas)
         .and_return(schemas)
@@ -194,7 +196,7 @@ RSpec.describe Lutaml::Xsd::TargetNamespaceRule do
 
     it "reports warning for non-URI target namespace" do
       schemas = {
-        "test.xsd" => double(target_namespace: "just-a-string"),
+        "test.xsd" => build_test_schema(target_namespace: "just-a-string"),
       }
       allow(repository).to receive(:all_schemas)
         .and_return(schemas)
@@ -208,7 +210,7 @@ RSpec.describe Lutaml::Xsd::TargetNamespaceRule do
 
     it "passes for valid HTTP URI namespace" do
       schemas = {
-        "test.xsd" => double(target_namespace: "http://example.com/ns"),
+        "test.xsd" => build_test_schema(target_namespace: "http://example.com/ns"),
       }
       allow(repository).to receive(:all_schemas)
         .and_return(schemas)
@@ -222,21 +224,21 @@ end
 
 RSpec.describe Lutaml::Xsd::DuplicateDefinitionRule do
   let(:rule) { described_class.new("1.0") }
-  let(:repository) { instance_double(Lutaml::Xsd::SchemaRepository) }
+  let(:repository) { Lutaml::Xsd::SchemaRepository.new }
 
   describe "#validate" do
     it "detects duplicate complex types in same namespace" do
       schemas = {
-        "schema1.xsd" => double(
+        "schema1.xsd" => build_test_schema(
           target_namespace: "http://example.com/ns",
-          complex_type: [double(name: "MyType")],
+          complex_type: [build_test_complex_type("MyType")],
           simple_type: [],
           element: [],
           attribute: [],
         ),
-        "schema2.xsd" => double(
+        "schema2.xsd" => build_test_schema(
           target_namespace: "http://example.com/ns",
-          complex_type: [double(name: "MyType")],
+          complex_type: [build_test_complex_type("MyType")],
           simple_type: [],
           element: [],
           attribute: [],
@@ -254,16 +256,16 @@ RSpec.describe Lutaml::Xsd::DuplicateDefinitionRule do
 
     it "allows same name in different namespaces" do
       schemas = {
-        "schema1.xsd" => double(
+        "schema1.xsd" => build_test_schema(
           target_namespace: "http://example.com/ns1",
-          complex_type: [double(name: "MyType")],
+          complex_type: [build_test_complex_type("MyType")],
           simple_type: [],
           element: [],
           attribute: [],
         ),
-        "schema2.xsd" => double(
+        "schema2.xsd" => build_test_schema(
           target_namespace: "http://example.com/ns2",
-          complex_type: [double(name: "MyType")],
+          complex_type: [build_test_complex_type("MyType")],
           simple_type: [],
           element: [],
           attribute: [],

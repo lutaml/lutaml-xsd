@@ -266,7 +266,7 @@ RSpec.describe Lutaml::Xsd::TypeSearcher do
           documentation: "A building type",
           relevance_score: 1000,
           match_type: "exact_name",
-          definition: double("definition"),
+          definition: Struct.new(:name).new("BuildingType"),
         )
       end
 

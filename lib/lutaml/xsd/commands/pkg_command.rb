@@ -1,20 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "base_command"
-require_relative "package_command"
-require_relative "tree_command"
-require_relative "stats_command"
-require_relative "coverage_command"
-require_relative "verify_command"
-require_relative "metadata_command"
-require_relative "type_command"
-require_relative "search_command"
-require_relative "namespace_command"
-require_relative "element_command"
-require_relative "../entrypoint_identifier"
-require_relative "../schema_dependency_analyzer"
-require_relative "../definition_extractor"
 
 module Lutaml
   module Xsd
@@ -54,7 +40,6 @@ module Lutaml
                default: false,
                desc: "Classify schemas by role and resolution status"
         def ls(package_path)
-          require_relative "package_command"
           PackageCommand::SchemasCommand.new(package_path, options).run
         end
 
@@ -92,7 +77,6 @@ module Lutaml
                enum: %w[tree flat],
                desc: "Output format (tree or flat)"
         def tree(package_path)
-          require_relative "tree_command"
           TreeCommand.new(package_path, options).run
         end
 
@@ -113,7 +97,6 @@ module Lutaml
                enum: %w[text json yaml],
                desc: "Output format"
         def inspect(package_path)
-          require_relative "package_command"
           PackageCommand::InfoCommand.new(package_path, options).run
         end
 
@@ -140,7 +123,6 @@ module Lutaml
                default: "text",
                desc: "Output format (text, json, yaml)"
         def stats(package_path)
-          require_relative "stats_command"
           StatsCommand::ShowCommand.new(package_path, options).run
         end
 
@@ -166,7 +148,6 @@ module Lutaml
                aliases: "-o",
                desc: "Output file path (default: stdout)"
         def extract(package_path, schema_name)
-          require_relative "package_command"
           PackageCommand::ExtractCommand.new(package_path, schema_name,
                                              options).run
         end
@@ -193,7 +174,6 @@ module Lutaml
                enum: %w[text json yaml],
                desc: "Output format"
         def coverage(package_path)
-          require_relative "coverage_command"
           CoverageCommand.new(package_path, options).run
         end
 
@@ -229,7 +209,6 @@ module Lutaml
                enum: %w[text json yaml],
                desc: "Output format"
         def verify(package_path)
-          require_relative "verify_command"
           VerifyCommand.new(package_path, options).run
         end
 
@@ -307,7 +286,6 @@ module Lutaml
                enum: %w[text json yaml],
                desc: "Output format"
         def search(query, package_path)
-          require_relative "search_command"
           Commands::SearchCommand.new(query, package_path, options).run
         end
 

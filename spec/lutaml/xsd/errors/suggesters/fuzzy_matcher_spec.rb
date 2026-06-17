@@ -4,7 +4,7 @@ require "spec_helper"
 require "lutaml/xsd/errors/suggesters/fuzzy_matcher"
 
 RSpec.describe Lutaml::Xsd::Errors::Suggesters::FuzzyMatcher do
-  let(:repository) { double("repository") }
+  let(:repository) { Lutaml::Xsd::SchemaRepository.new }
   let(:matcher) { described_class.new(repository) }
 
   describe "#levenshtein_distance" do
@@ -48,9 +48,9 @@ RSpec.describe Lutaml::Xsd::Errors::Suggesters::FuzzyMatcher do
   describe "#find_similar_types" do
     let(:simple_types) do
       [
-        double("type", name: "CodeType"),
-        double("type", name: "StringType"),
-        double("type", name: "IntegerType"),
+        Struct.new(:name).new("CodeType"),
+        Struct.new(:name).new("StringType"),
+        Struct.new(:name).new("IntegerType"),
       ]
     end
 

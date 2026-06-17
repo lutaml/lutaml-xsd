@@ -72,6 +72,7 @@ module Lutaml
       attribute :xsd_mode, :string
       attribute :resolution_mode, :string
       attribute :serialization_format, :string
+      attribute :extra_fields, :hash
 
       yaml do
         map "files", to: :files
@@ -93,30 +94,10 @@ module Lutaml
       # Override to_yaml to include any extra custom metadata fields
       def to_yaml(*)
         hash = to_hash
-        # Add any instance variables that aren't part of the schema
-        instance_variables.each do |ivar|
-          var_name = ivar.to_s.delete_prefix("@")
-          next if hash.key?(var_name) || hash.key?(var_name.to_sym)
-
-          value = instance_variable_get(ivar)
-          hash[var_name] = value unless value.nil?
-        end
         hash.to_yaml(*)
       end
 
       # Override to_hash to include extra fields
-      def to_hash
-        hash = super
-        # Add any instance variables that aren't part of the schema
-        instance_variables.each do |ivar|
-          var_name = ivar.to_s.delete_prefix("@")
-          next if hash.key?(var_name) || hash.key?(var_name.to_sym)
-
-          value = instance_variable_get(ivar)
-          hash[var_name] = value unless value.nil?
-        end
-        hash
-      end
 
       # Create metadata from a repository
       # @param repository [SchemaRepository] Repository instance
@@ -137,15 +118,9 @@ module Lutaml
           created_by: additional[:created_by] || additional["created_by"],
         )
 
-        # Store any custom metadata fields as instance variables
-        known_fields = [:name, :version, :description, :created_by,
-                        "name", "version", "description", "created_by"]
-        additional.each do |key, value|
-          next if known_fields.include?(key)
-
-          # Set as instance variable to be picked up by to_yaml/to_hash
-          metadata.instance_variable_set("@#{key}", value)
-        end
+        # Store any custom metadata fields
+        known_fields = %i[name version description created_by]
+        metadata.extra_fields = additional.except(*known_fields)
 
         metadata
       end

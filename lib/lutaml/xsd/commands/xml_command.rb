@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "base_command"
 
 module Lutaml
   module Xsd
@@ -58,7 +57,6 @@ module Lutaml
 
           schema = args.pop
           files = args
-          require_relative "validate_command"
           ValidateCommand.new(files, schema, options).run
         end
 

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "base_command"
 
 module Lutaml
   module Xsd
@@ -167,7 +166,7 @@ module Lutaml
           end
 
           def collect_elements(repository)
-            type_index = repository.instance_variable_get(:@type_index)
+            type_index = repository.type_index
             all_types = type_index.all
 
             elements = all_types.select do |_key, type_info|
@@ -213,7 +212,7 @@ module Lutaml
             output "Total Elements: #{elements.size}"
 
             if options[:namespace]
-              namespace_registry = repository.instance_variable_get(:@namespace_registry)
+              namespace_registry = repository.namespace_registry
               prefix = namespace_registry.get_primary_prefix(options[:namespace])
               prefix_str = prefix ? " (#{prefix})" : ""
               output "Filtered by Namespace: #{options[:namespace]}#{prefix_str}"
@@ -224,7 +223,7 @@ module Lutaml
             # Group by namespace
             by_namespace = elements.group_by { |e| e[:namespace] }
             by_namespace.sort_by { |ns, _| ns || "" }.each do |ns, ns_elements|
-              namespace_registry = repository.instance_variable_get(:@namespace_registry)
+              namespace_registry = repository.namespace_registry
               prefix = namespace_registry.get_primary_prefix(ns)
               prefix_str = prefix ? " (#{prefix})" : ""
 

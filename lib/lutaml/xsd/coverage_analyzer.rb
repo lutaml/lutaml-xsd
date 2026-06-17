@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "dependency_grapher"
-
 module Lutaml
   module Xsd
     # Analyzes schema coverage based on entry point types
@@ -11,7 +9,7 @@ module Lutaml
 
       def initialize(repository)
         @repository = repository
-        @type_index = repository.instance_variable_get(:@type_index)
+        @type_index = repository.type_index
         @dependency_grapher = DependencyGrapher.new(repository)
       end
 

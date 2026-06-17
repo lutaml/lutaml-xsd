@@ -25,22 +25,22 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
     {
       "{http://example.com/ns}TypeA" => {
         namespace: "http://example.com/ns",
-        definition: double(name: "TypeA"),
+        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeA"),
         type: :complex_type,
       },
       "{http://example.com/ns}TypeB" => {
         namespace: "http://example.com/ns",
-        definition: double(name: "TypeB"),
+        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeB"),
         type: :complex_type,
       },
       "{http://example.com/ns}TypeC" => {
         namespace: "http://example.com/ns",
-        definition: double(name: "TypeC"),
+        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeC"),
         type: :simple_type,
       },
       "{http://other.com/ns}TypeD" => {
         namespace: "http://other.com/ns",
-        definition: double(name: "TypeD"),
+        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeD"),
         type: :complex_type,
       },
     }
@@ -53,7 +53,7 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
         qname: qname,
         namespace: "http://example.com/ns",
         local_name: "TypeA",
-        definition: double(name: "TypeA"),
+        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeA"),
         schema_file: "test.xsd",
         resolution_path: [],
       )
@@ -62,7 +62,7 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
         qname: qname,
         namespace: "http://example.com/ns",
         local_name: "TypeB",
-        definition: double(name: "TypeB"),
+        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeB"),
         schema_file: "test.xsd",
         resolution_path: [],
       )
@@ -71,7 +71,7 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
         qname: qname,
         namespace: "http://example.com/ns",
         local_name: "TypeC",
-        definition: double(name: "TypeC"),
+        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeC"),
         schema_file: "test.xsd",
         resolution_path: [],
       )
@@ -80,7 +80,7 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
         qname: qname,
         namespace: "http://other.com/ns",
         local_name: "TypeD",
-        definition: double(name: "TypeD"),
+        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeD"),
         schema_file: "test.xsd",
         resolution_path: [],
       )

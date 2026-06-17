@@ -9,7 +9,7 @@ module Lutaml
 
       def initialize(repository)
         @repository = repository
-        @type_index = repository.instance_variable_get(:@type_index)
+        @type_index = repository.type_index
       end
 
       # Find all dependencies of a type (what it depends on)

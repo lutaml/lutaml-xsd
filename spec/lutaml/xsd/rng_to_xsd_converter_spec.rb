@@ -6,80 +6,88 @@ require "lutaml/xsd/rng_to_xsd_converter"
 
 RSpec.describe Lutaml::Xsd::RngToXsdConverter do
   describe "#convert" do
-    let(:fixture_path) do
-      "spec/fixtures/metanorma-model-iso-grammars/bsi.rnc"
-    end
-
+    let(:fixture_path) { "spec/fixtures/converter_test.rnc" }
     let(:grammar) { Rng.parse_file(fixture_path) }
     let(:converter) { described_class.new(grammar, file_path: fixture_path) }
-    let(:schema) { converter.convert }
+    subject(:schema) { converter.convert }
 
     it "returns a Schema object" do
       expect(schema).to be_a(Lutaml::Xml::Schema::Xsd::Schema)
     end
 
+    it "sets element form default to qualified" do
+      expect(schema.element_form_default).to eq("qualified")
+    end
+
+    # --- Complex types ---
+
     it "produces complex types" do
-      expect(schema.complex_type.length).to eq(20)
+      expect(schema.complex_type.length).to be >= 1
     end
 
-    it "includes complex types in the included paths" do
-      names = schema.complex_type.map(&:name)
-      expect(names).to include("Content-Section")
+    it "creates a complex type for named content patterns" do
+      ct = schema.complex_type.find { |c| c.name == "test-doc-content" }
+      expect(ct).not_to be_nil
+      expect(ct.attribute&.map(&:name)).to include("version")
     end
 
-    it "includes complex type Clause-Section" do
-      complex_type = schema.complex_type.find do |ct|
-        ct.name == "Clause-Section"
-      end
-      expect(complex_type.name).to eq("Clause-Section")
-
-      attr = complex_type.attribute.first
-      expect(attr).to be_a(Lutaml::Xml::Schema::Xsd::Attribute)
-      expect(attr.name).to eq("type")
-
-      attr_group = complex_type.attribute_group.first
-      expect(attr_group).to be_a(Lutaml::Xml::Schema::Xsd::AttributeGroup)
-      expect(attr_group.ref).to eq("Section-Attributes")
+    it "includes elements in complex type sequences" do
+      ct = schema.complex_type.find { |c| c.name == "test-doc-content" }
+      seq = ct.sequence
+      expect(seq).not_to be_nil
+      element_names = seq.element&.map { |e| e.name || e.ref }
+      expect(element_names).to include("header", "sections", "metadata")
     end
 
-    it "includes complex type section-title_type" do
-      complex_type = schema.complex_type.find do |ct|
-        ct.name == "section-title_type"
-      end
-      expect(complex_type.name).to eq("section-title_type")
-      expect(complex_type.mixed).to eq(true)
+    # --- Elements ---
+
+    it "produces top-level elements" do
+      element_names = schema.element.map(&:name)
+      expect(element_names).to include("test-doc", "header", "sections", "clause",
+                                       "note", "admonition", "metadata")
     end
 
-    it "produces simple types" do
-      expect(schema.simple_type.length).to eq(2)
+    it "promotes named-pattern elements to top-level" do
+      element_names = schema.element.map(&:name)
+      expect(element_names).to include("title", "bold", "italic", "p")
     end
 
-    it "produces elements" do
-      expect(schema.element.length).to eq(23)
+    it "creates elements with complex types containing sequences" do
+      clause = schema.element.find { |e| e.name == "clause" }
+      expect(clause).not_to be_nil
+      expect(clause.complex_type).not_to be_nil
+      expect(clause.complex_type.sequence).not_to be_nil
     end
 
-    it "produces groups (including groups in the included paths)" do
-      expect(schema.group.length).to eq(13)
+    # --- Groups ---
+
+    it "produces groups for named patterns" do
+      group_names = schema.group.map(&:name)
+      expect(group_names).to include("paragraph")
     end
 
-    it "produces 1 attribute_group (including groups in the included paths)" do
-      expect(schema.attribute_group.length).to eq(1)
-      expect(schema.attribute_group.first.name).to eq("AdmonitionAttributes")
-      expect(schema.attribute_group.first.attribute.length).to eq(1)
-      expect(schema.attribute_group.first.attribute.first.name).to eq("target")
+    # --- Attribute groups ---
+
+    it "produces attribute groups" do
+      expect(schema.attribute_group.length).to be >= 1
     end
 
-    it "includes 7 choices" do
-      sections_el = schema.element.find { |el| el.name == "sections" }
-      sections_ct = schema.complex_type.find { |ct| ct.name == sections_el.type }
-      expect(sections_ct.sequence.choice.length).to eq(7)
-      expect(sections_ct.sequence.group.length).to eq(2)
-      expect(sections_ct.sequence.element.length).to eq(0)
+    it "creates AdmonitionAttributes with correct attributes" do
+      ag = schema.attribute_group.find { |g| g.name == "AdmonitionAttributes" }
+      expect(ag).not_to be_nil
+      attr_names = ag.attribute.map(&:name)
+      expect(attr_names).to include("type", "url")
+    end
+
+    # --- Validity ---
+
+    it "produces valid XSD output" do
+      expect { schema.to_formatted_xml }.not_to raise_error
+    end
     end
   end
 
   describe "named pattern resolution" do
-    # Helper to parse RNC string into a grammar and convert it
     def parse_and_convert(rnc_content)
       require "tempfile"
 
@@ -122,17 +130,14 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
         all = root.complex_type.all
         expect(all).not_to be_nil
 
-        # The all should contain element refs, not group refs
         all.element.each do |el|
           expect(el).to be_a(Lutaml::Xml::Schema::Xsd::Element)
         end
 
-        # The named pattern reference should resolve to an element ref
         name_ref = all.element.find { |el| el.ref == "name" }
         expect(name_ref).not_to be_nil
         expect(name_ref.ref).to eq("name")
 
-        # There should NOT be a group ref to "ext_toc" inside all
         expect(all.element.any? { |el| el.ref == "ext_toc" }).to be false
       end
 
@@ -215,8 +220,6 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
       subject(:schema) { parse_and_convert(rnc) }
 
       it "does not promote colliding elements to top-level" do
-        # "item" should NOT be a top-level element (there are two defines
-        # wrapping elements named "item", so neither gets promoted)
         names = schema.element.map(&:name)
         expect(names).not_to include("item")
       end

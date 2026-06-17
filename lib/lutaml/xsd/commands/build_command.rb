@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "base_command"
 
 module Lutaml
   module Xsd
@@ -64,7 +63,6 @@ module Lutaml
                default: false,
                desc: "Validate package after building"
         def from_config(config_file)
-          require_relative "package_command"
           PackageCommand::BuildCommand.new(config_file, options).run
         end
 
@@ -109,7 +107,6 @@ module Lutaml
                type: :boolean,
                desc: "Resume previous session"
         def init(*entry_points)
-          require_relative "init_command"
           InitCommand.new(entry_points, options).run
         end
 
@@ -142,7 +139,6 @@ module Lutaml
         option :version, type: :string
         option :description, type: :string
         def quick(config_file)
-          require_relative "package_command"
           PackageCommand::QuickCommand.new(config_file, options).run
         end
 
@@ -168,7 +164,6 @@ module Lutaml
         option :version, type: :string
         option :description, type: :string
         def auto(config_file)
-          require_relative "package_command"
           PackageCommand::AutoBuildCommand.new(config_file, options).run
         end
 
@@ -196,7 +191,6 @@ module Lutaml
                default: false,
                desc: "Fail on warnings"
         def validate(package_file)
-          require_relative "package_command"
           PackageCommand::ValidateCommand.new(package_file, options).run
         end
 
@@ -223,7 +217,6 @@ module Lutaml
                enum: %w[text json yaml],
                desc: "Output format"
         def validate_resolution(package_file)
-          require_relative "package_command"
           PackageCommand::ValidateResolutionCommand.new(package_file,
                                                         options).run
         end

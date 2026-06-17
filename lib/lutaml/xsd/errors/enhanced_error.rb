@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "error_context"
-require_relative "message_builder"
-
 module Lutaml
   module Xsd
     module Errors

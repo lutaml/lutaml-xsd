@@ -2,10 +2,6 @@
 
 require "thor"
 require "fileutils"
-require_relative "base_command"
-require_relative "init_command"
-require_relative "metadata_command"
-require_relative "tree_command"
 
 module Lutaml
   module Xsd
@@ -198,7 +194,6 @@ module Lutaml
                default: "text",
                desc: "Output format (text, json, yaml)"
         def stats(package_file)
-          require_relative "stats_command"
           StatsCommand::ShowCommand.new(package_file, options).run
         end
 
@@ -297,7 +292,6 @@ module Lutaml
                enum: %w[text json yaml],
                desc: "Output format"
         def coverage(package_path)
-          require_relative "coverage_command"
           CoverageCommand.new(package_path, options).run
         end
 
@@ -335,7 +329,6 @@ module Lutaml
                enum: %w[text json yaml],
                desc: "Output format"
         def verify(package_path)
-          require_relative "verify_command"
           VerifyCommand.new(package_path, options).run
         end
 
@@ -733,7 +726,6 @@ module Lutaml
               output "═" * 80
               output "Step 3: Package statistics"
               output "═" * 80
-              require_relative "stats_command"
               stats_options = options.dup
               stats_options[:format] = "text"
               stats_cmd = StatsCommand::ShowCommand.new(
@@ -1172,7 +1164,6 @@ module Lutaml
             verbose_output "Validating all references are fully resolved..."
 
             # Create validator and run validation
-            require_relative "../package_validator"
             validator = PackageValidator.new(repository)
             result = validator.validate_full_resolution
 

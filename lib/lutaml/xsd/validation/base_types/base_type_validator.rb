@@ -65,7 +65,6 @@ module Lutaml
             # @return [BaseTypeValidator] Validator instance for the type
             def for(type_name)
               # Load registry on first access
-              require_relative "base_type_validator_registry" unless defined?(BaseTypeValidatorRegistry)
 
               BaseTypeValidatorRegistry.validator_for(type_name)
             end
@@ -75,8 +74,6 @@ module Lutaml
             # @param type_name [String] The XSD type name
             # @return [Boolean] true if type is registered
             def registered?(type_name)
-              require_relative "base_type_validator_registry" unless defined?(BaseTypeValidatorRegistry)
-
               BaseTypeValidatorRegistry.registered?(type_name)
             end
           end

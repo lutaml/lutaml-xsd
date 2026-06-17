@@ -1,13 +1,6 @@
 # frozen_string_literal: true
 
 require "yaml"
-require_relative "config/color_scheme"
-require_relative "config/dimensions"
-require_relative "config/effects"
-require_relative "config/connector_styles"
-require_relative "config/layout_config"
-require_relative "config/component_rules"
-require_relative "config/indicator_rules"
 
 module Lutaml
   module Xsd

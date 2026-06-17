@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "validation_configuration"
-require_relative "validation_job"
-require_relative "validation_result"
-
 module Lutaml
   module Xsd
     module Validation
@@ -117,7 +113,6 @@ module Lutaml
         #
         # @return [RuleRegistry] The initialized rule registry
         def build_rule_registry
-          require_relative "rule_registry"
           Validation::RuleRegistry.new(@config)
         end
       end

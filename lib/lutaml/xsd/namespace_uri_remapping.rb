@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "validation_error"
-require_relative "validation_result"
-
 module Lutaml
   module Xsd
     # Namespace URI remapping rule (URI → URI transformation)

@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "error_suggester"
-require_relative "fuzzy_matcher"
-
 module Lutaml
   module Xsd
     module Errors

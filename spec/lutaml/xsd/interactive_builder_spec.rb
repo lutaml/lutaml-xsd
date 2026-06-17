@@ -139,7 +139,7 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
       it "discovers import dependencies" do
         # Mock user selecting the imported schema
         allow(builder).to receive(:prompt).and_return(
-          double(select: :skip, yes?: false, ask: ""),
+          Struct.new(:menu_choice, :yes?, :ask).new(:skip, false, ""),
         )
 
         builder.run
@@ -372,7 +372,7 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
 
       it "handles missing entry points gracefully" do
         allow(builder).to receive(:prompt).and_return(
-          double(select: :skip, yes?: false, ask: ""),
+          Struct.new(:menu_choice, :yes?, :ask).new(:skip, false, ""),
         )
         allow(builder).to receive(:error)
 
@@ -390,7 +390,7 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
 
       it "handles parse errors gracefully" do
         allow(builder).to receive(:prompt).and_return(
-          double(select: :skip, yes?: false, ask: ""),
+          Struct.new(:menu_choice, :yes?, :ask).new(:skip, false, ""),
         )
         allow(builder).to receive(:verbose_output)
 

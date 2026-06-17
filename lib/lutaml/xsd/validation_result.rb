@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "validation_error"
-require_relative "errors"
-
 module Lutaml
   module Xsd
     # Result of validation with error collection

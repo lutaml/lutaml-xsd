@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../output_strategy"
-
 module Lutaml
   module Xsd
     module Spa

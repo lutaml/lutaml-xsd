@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "rule_registry"
-require_relative "result_collector"
-
 module Lutaml
   module Xsd
     module Validation

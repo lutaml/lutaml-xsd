@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "schema_location_extractor"
-
 module Lutaml
   module Xsd
     module Validation

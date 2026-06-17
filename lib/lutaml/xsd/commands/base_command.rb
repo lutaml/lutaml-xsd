@@ -2,7 +2,6 @@
 
 require "json"
 require "yaml"
-require_relative "../errors"
 
 module Lutaml
   module Xsd

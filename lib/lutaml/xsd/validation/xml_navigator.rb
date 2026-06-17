@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "moxml"
-require_relative "xml_document"
-require_relative "xml_element"
 
 module Lutaml
   module Xsd
