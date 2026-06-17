@@ -84,7 +84,6 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
     it "produces valid XSD output" do
       expect { schema.to_formatted_xml }.not_to raise_error
     end
-    end
   end
 
   describe "named pattern resolution" do

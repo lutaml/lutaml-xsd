@@ -1,0 +1,60 @@
+# Test fixture for RngToXsdConverter
+# Self-contained RNC grammar exercising converter features
+
+start = element test-doc { test-doc-content }
+
+test-doc-content =
+  attribute version { text }?,
+  header,
+  sections,
+  metadata?
+
+header = element header { xsd:NMTOKEN }
+
+sections =
+  element sections {
+    (clause | note | admonition)*
+  }
+
+clause =
+  element clause {
+    attribute id { xsd:ID }?,
+    attribute type { text }?,
+    title?,
+    paragraph+,
+    clause*
+  }
+
+title = element title { text }
+
+paragraph =
+  element p {
+    (text | bold | italic)*
+  }
+
+bold = element bold { text }
+italic = element italic { text }
+
+note = element note { text }
+
+admonition =
+  element admonition {
+    AdmonitionAttributes,
+    text
+  }
+
+AdmonitionAttributes =
+  attribute type { "warning" | "note" | "important" | "tip" }?,
+  attribute url { xsd:anyURI }?
+
+metadata =
+  element metadata {
+    attribute created { xsd:dateTime }?,
+    element author { text }?,
+    element revision { text }?
+  }
+
+status = "draft" | "published" | "archived"
+
+a_ref = element item { text }
+b_ref = element item { text }
