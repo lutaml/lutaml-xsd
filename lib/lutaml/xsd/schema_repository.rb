@@ -148,35 +148,44 @@ module Lutaml
         self
       end
 
+      # --- Service accessors (memoized) ---
+
+      def query
+        @query ||= SchemaQueryService.new(self)
+      end
+
+      def exporter
+        @exporter ||= SchemaExporter.new(self)
+      end
+
       # --- Query delegation ---
 
       def find_type(qname)
-        SchemaQueryService.new(self).find_type(qname)
+        query.find_type(qname)
       end
 
       def find_attribute(qualified_name)
-        SchemaQueryService.new(self).find_attribute(qualified_name)
+        query.find_attribute(qualified_name)
       end
 
       def find_element(qualified_name)
-        SchemaQueryService.new(self).find_element(qualified_name)
+        query.find_element(qualified_name)
       end
 
       def find_group(qualified_name)
-        SchemaQueryService.new(self).find_group(qualified_name)
+        query.find_group(qualified_name)
       end
 
       def find_attribute_group(qualified_name)
-        SchemaQueryService.new(self).find_attribute_group(qualified_name)
+        query.find_attribute_group(qualified_name)
       end
 
       def type_exists?(qualified_name)
-        SchemaQueryService.new(self).type_exists?(qualified_name)
+        query.type_exists?(qualified_name)
       end
 
       def all_type_names(namespace: nil, category: nil)
-        SchemaQueryService.new(self).all_type_names(namespace: namespace,
-                                                    category: category)
+        query.all_type_names(namespace: namespace, category: category)
       end
 
       def parse_qualified_name(qualified_name)
@@ -186,19 +195,19 @@ module Lutaml
       # --- Export delegation ---
 
       def statistics
-        SchemaExporter.new(self).statistics
+        exporter.statistics
       end
 
       def export_statistics(format: :yaml)
-        SchemaExporter.new(self).export_statistics(format: format)
+        exporter.export_statistics(format: format)
       end
 
       def namespace_summary
-        SchemaExporter.new(self).namespace_summary
+        exporter.namespace_summary
       end
 
       def elements_by_namespace(namespace_uri: nil)
-        SchemaExporter.new(self).elements_by_namespace(namespace_uri: namespace_uri)
+        exporter.elements_by_namespace(namespace_uri: namespace_uri)
       end
 
       # --- Schema access ---

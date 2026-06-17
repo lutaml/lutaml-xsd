@@ -15,7 +15,7 @@ module Lutaml
       def find_type(qname)
         resolution_path = [qname]
 
-        parsed = QualifiedNameParser.parse(qname, @namespace_registry)
+        parsed = SchemaRepository::QualifiedNameParser.parse(qname, @namespace_registry)
         unless parsed
           return TypeResolutionResult.failure(
             qname: qname,
@@ -27,7 +27,7 @@ module Lutaml
         namespace = parsed[:namespace]
         local_name = parsed[:local_name]
 
-        clark_notation = QualifiedNameParser.to_clark_notation(parsed)
+        clark_notation = SchemaRepository::QualifiedNameParser.to_clark_notation(parsed)
         resolution_path << clark_notation if clark_notation != qname
 
         if parsed[:prefix] && !namespace
@@ -68,7 +68,7 @@ module Lutaml
 
       # Find an element definition by qualified name
       def find_element(qualified_name)
-        parsed = QualifiedNameParser.parse(qualified_name, @namespace_registry)
+        parsed = SchemaRepository::QualifiedNameParser.parse(qualified_name, @namespace_registry)
         return nil unless parsed
 
         namespace_uri = parsed[:namespace]
@@ -90,7 +90,7 @@ module Lutaml
 
       # Find an attribute definition by qualified name
       def find_attribute(qualified_name)
-        parsed = QualifiedNameParser.parse(qualified_name, @namespace_registry)
+        parsed = SchemaRepository::QualifiedNameParser.parse(qualified_name, @namespace_registry)
         return nil unless parsed
 
         namespace_uri = parsed[:namespace]
@@ -104,7 +104,7 @@ module Lutaml
 
       # Find a group definition by qualified name
       def find_group(qualified_name)
-        parsed = QualifiedNameParser.parse(qualified_name, @namespace_registry)
+        parsed = SchemaRepository::QualifiedNameParser.parse(qualified_name, @namespace_registry)
         return nil unless parsed
 
         namespace_uri = parsed[:namespace]
@@ -124,7 +124,7 @@ module Lutaml
 
       # Find an attribute group definition by qualified name
       def find_attribute_group(qualified_name)
-        parsed = QualifiedNameParser.parse(qualified_name, @namespace_registry)
+        parsed = SchemaRepository::QualifiedNameParser.parse(qualified_name, @namespace_registry)
         return nil unless parsed
 
         namespace_uri = parsed[:namespace]
