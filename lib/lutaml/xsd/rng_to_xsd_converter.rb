@@ -60,12 +60,36 @@ module Lutaml
         value.to_s
       end
 
+      # Reader names that any pattern-container RNG node may expose.
+      # Subset varies by class: Rng::Attribute lacks :element and :attribute;
+      # Rng::Start lacks :attribute. Use defined_readers_for(node) to filter
+      # to the readers the node's class actually defines, instead of probing
+      # with public_send and rescuing NoMethodError.
+      PATTERN_TYPE_READERS = %i[
+        element
+        ref
+        choice
+        group
+        interleave
+        mixed
+        optional
+        zeroOrMore
+        oneOrMore
+        text
+        empty
+        value
+        data
+        list
+        notAllowed
+        attribute
+      ].freeze
+
       # Collect all pattern children from an RNG container node
       # Returns an array of non-nil pattern objects
       def get_all_patterns(container)
         patterns = []
-        pattern_types.each do |attr|
-          children = container.public_send(attr)
+        defined_readers_for(container).each do |reader|
+          children = container.public_send(reader)
           next if children.nil?
           next if children.is_a?(Lutaml::Model::UninitializedClass)
 
@@ -78,10 +102,14 @@ module Lutaml
         patterns
       end
 
-      # The attribute names that hold pattern children
-      def pattern_types
-        %w[element ref choice group interleave mixed optional zeroOrMore
-           oneOrMore text empty value data list notAllowed attribute]
+      # Readers from PATTERN_TYPE_READERS that the given node's class
+      # actually defines. Cached per class to avoid repeated reflection.
+      def defined_readers_for(node)
+        klass = node.class
+        @defined_readers_cache ||= {}
+        @defined_readers_cache[klass] ||= PATTERN_TYPE_READERS.select do |r|
+          klass.method_defined?(r)
+        end
       end
 
       # Build define name -> Define lookup from grammar (including divs)
@@ -932,9 +960,11 @@ module Lutaml
 
       # Get the single pattern child from a Start
       def get_start_pattern(start)
-        pattern_types.each do |attr|
-          child = start.public_send(attr)
-          return child if child && !child.is_a?(Array) && !child.is_a?(Lutaml::Model::UninitializedClass)
+        defined_readers_for(start).each do |reader|
+          child = start.public_send(reader)
+          if child && !child.is_a?(Array) && !child.is_a?(Lutaml::Model::UninitializedClass)
+            return child
+          end
         end
         nil
       end
@@ -1152,11 +1182,11 @@ module Lutaml
 
       # Get the single pattern child from an Attribute
       def get_attribute_child(attr)
-        pattern_types.each do |type_name|
-          child = attr.public_send(type_name)
-          return child if child && !child.is_a?(Array) && !child.is_a?(Lutaml::Model::UninitializedClass)
-        rescue NoMethodError
-          next
+        defined_readers_for(attr).each do |reader|
+          child = attr.public_send(reader)
+          if child && !child.is_a?(Array) && !child.is_a?(Lutaml::Model::UninitializedClass)
+            return child
+          end
         end
         nil
       end
