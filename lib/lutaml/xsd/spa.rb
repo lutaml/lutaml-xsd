@@ -9,15 +9,9 @@ module Lutaml
   module Xsd
     module Spa
       module Svg
-        module Config
-          autoload :ColorScheme, "lutaml/xsd/spa/svg/config/color_scheme"
-          autoload :Dimensions, "lutaml/xsd/spa/svg/config/dimensions"
-          autoload :Effects, "lutaml/xsd/spa/svg/config/effects"
-          autoload :ConnectorStyles, "lutaml/xsd/spa/svg/config/connector_styles"
-          autoload :LayoutConfig, "lutaml/xsd/spa/svg/config/layout_config"
-          autoload :ComponentRules, "lutaml/xsd/spa/svg/config/component_rules"
-          autoload :IndicatorRules, "lutaml/xsd/spa/svg/config/indicator_rules"
-        end
+        # Config value objects are autoloaded from
+        # lutaml/xsd/spa/svg/style_configuration.rb so that file is
+        # self-contained.
 
         module Geometry
           autoload :Point, "lutaml/xsd/spa/svg/geometry/point"

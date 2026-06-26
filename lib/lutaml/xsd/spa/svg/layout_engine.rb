@@ -33,8 +33,6 @@ module Lutaml
             raise NotImplementedError, "#{self.class} must implement #calculate"
           end
 
-          protected
-
           # Creates a layout node
           def create_node(component, position, level = 0)
             box = Geometry::Box.new(

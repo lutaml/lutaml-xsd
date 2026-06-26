@@ -36,13 +36,13 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::LayoutEngine do
     end
   end
 
-  describe "protected helper methods" do
+  describe "helper methods" do
     describe "#create_node" do
       let(:component) { { name: "TestType" } }
       let(:position) { Lutaml::Xsd::Spa::Svg::Geometry::Point.new(10, 20) }
 
       it "creates a layout node with component and box" do
-        node = layout.send(:create_node, component, position)
+        node = layout.create_node(component, position)
 
         expect(node).to be_a(Lutaml::Xsd::Spa::Svg::LayoutNode)
         expect(node.component).to eq(component)
@@ -51,7 +51,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::LayoutEngine do
       end
 
       it "creates box at correct position with config dimensions" do
-        node = layout.send(:create_node, component, position)
+        node = layout.create_node(component, position)
 
         expect(node.box.x).to eq(10.0)
         expect(node.box.y).to eq(20.0)
@@ -60,7 +60,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::LayoutEngine do
       end
 
       it "accepts custom level parameter" do
-        node = layout.send(:create_node, component, position, 3)
+        node = layout.create_node(component, position, 3)
 
         expect(node.level).to eq(3)
       end

@@ -6,6 +6,20 @@ module Lutaml
   module Xsd
     module Spa
       module Svg
+        # StyleConfiguration depends on the Config value objects below.
+        # Declare the autoloads at the Svg module level so StyleConfiguration
+        # is self-contained — callers that load this file directly (without
+        # first loading spa.rb) still resolve Config::ColorScheme etc.
+        module Config
+          autoload :ColorScheme, "lutaml/xsd/spa/svg/config/color_scheme"
+          autoload :Dimensions, "lutaml/xsd/spa/svg/config/dimensions"
+          autoload :Effects, "lutaml/xsd/spa/svg/config/effects"
+          autoload :ConnectorStyles, "lutaml/xsd/spa/svg/config/connector_styles"
+          autoload :LayoutConfig, "lutaml/xsd/spa/svg/config/layout_config"
+          autoload :ComponentRules, "lutaml/xsd/spa/svg/config/component_rules"
+          autoload :IndicatorRules, "lutaml/xsd/spa/svg/config/indicator_rules"
+        end
+
         # Loads and provides access to SVG styling configuration
         class StyleConfiguration
           attr_reader :colors, :dimensions, :effects, :connectors,
