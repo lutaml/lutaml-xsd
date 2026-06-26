@@ -8,7 +8,6 @@ require "lutaml/xsd/validation/validation_configuration"
 require "lutaml/xsd/validation/xml_element"
 require "lutaml/xsd/validation/xml_attribute"
 require "lutaml/xsd/validation/xml_navigator"
-require "ostruct"
 
 RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
   let(:config) { Lutaml::Xsd::Validation::ValidationConfiguration.new }
@@ -29,10 +28,47 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
   end
 
   describe "#validate" do
-    let(:navigator) { instance_double(Lutaml::Xsd::Validation::XmlNavigator, current_xpath: "/root/element") }
+    # Lightweight stub navigator: only needs to expose current_xpath.
+    let(:navigator) { Struct.new(:current_xpath).new("/root/element") }
+
+    # Lightweight value objects representing a Moxml attribute / element /
+    # namespace. Using Structs keeps the test double-free while satisfying
+    # the surface area that XmlElement and XmlAttribute touch.
+    let(:moxml_namespace) { Struct.new(:href, :prefix) }
+
+    let(:moxml_attribute_class) do
+      Struct.new(:name, :value, :namespace) do
+        # XmlElement#attributes maps over Moxml attributes and accesses
+        # namespace&.href / namespace&.prefix, which Structs already provide.
+      end
+    end
+
+    let(:moxml_element_class) do
+      Struct.new(:name, :attributes, :namespace)
+    end
+
+    let(:xsd_attribute) do
+      Lutaml::Xml::Schema::Xsd::Attribute.new.tap do |attr|
+        attr.name = "id"
+        attr.use = "required"
+      end
+    end
+
+    let(:xsd_complex_type) do
+      Lutaml::Xml::Schema::Xsd::ComplexType.new.tap do |ct|
+        ct.attribute = [xsd_attribute]
+      end
+    end
+
+    let(:xsd_schema_element) do
+      Lutaml::Xml::Schema::Xsd::Element.new.tap do |el|
+        el.name = "person"
+        el.complex_type = xsd_complex_type
+      end
+    end
 
     context "when schema element is nil" do
-      let(:moxml_element) { instance_double("Moxml::Element", name: "person", attributes: []) }
+      let(:moxml_element) { moxml_element_class.new("person", [], nil) }
       let(:xml_element) { Lutaml::Xsd::Validation::XmlElement.new(moxml_element, navigator) }
 
       it "does not validate" do
@@ -45,52 +81,16 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
     context "with required attributes" do
       let(:xml_attrs) do
         [
-          instance_double("Moxml::Attribute", name: "id", value: "123",
-                                              namespace: nil),
+          moxml_attribute_class.new("id", "123", moxml_namespace.new(nil, nil)),
         ]
       end
       let(:moxml_element) do
-        instance_double("Moxml::Element", name: "person",
-                                          attributes: xml_attrs, namespace: nil)
+        moxml_element_class.new("person", xml_attrs, moxml_namespace.new(nil, nil))
       end
       let(:xml_element) { Lutaml::Xsd::Validation::XmlElement.new(moxml_element, navigator) }
 
-      let(:required_attr) do
-        instance_double(
-          Lutaml::Xml::Schema::Xsd::Attribute,
-          name: "id",
-          use: "required",
-        )
-      end
-
-      let(:complex_type) do
-        instance_double(
-          Lutaml::Xml::Schema::Xsd::ComplexType,
-          attribute: [required_attr],
-        )
-      end
-
-      let(:schema_element) do
-        instance_double(
-          Lutaml::Xml::Schema::Xsd::Element,
-          name: "person",
-          complex_type: complex_type,
-        )
-      end
-
       it "does not report error when required attribute is present" do
-        allow(complex_type).to receive(:attribute).and_return([required_attr])
-        allow(complex_type).to receive(:attribute_group).and_return([])
-        allow(complex_type).to receive(:complex_content).and_return(nil)
-        allow(complex_type).to receive(:simple_content).and_return(nil)
-        allow(schema_element).to receive(:is_a?).and_return(false)
-        allow(schema_element).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::Element).and_return(true)
-        allow(complex_type).to receive(:is_a?).and_return(false)
-        allow(complex_type).to receive(:is_a?).with(Lutaml::Xml::Schema::Xsd::ComplexType).and_return(true)
-        allow(required_attr).to receive(:fixed).and_return(nil)
-        allow(required_attr).to receive(:default).and_return(nil)
-
-        rule.validate(xml_element, schema_element, collector)
+        rule.validate(xml_element, xsd_schema_element, collector)
 
         required_errors = collector.errors.select do |e|
           e.code == "required_attribute_missing"
@@ -100,56 +100,13 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
     end
 
     context "with missing required attribute" do
-      # Create a simple struct for moxml element
-      let(:moxml_namespace) { Struct.new(:href, :prefix).new(nil, nil) }
       let(:moxml_element) do
-        Struct.new(:name, :attributes, :namespace).new("person", [],
-                                                       moxml_namespace)
+        moxml_element_class.new("person", [], moxml_namespace.new(nil, nil))
       end
       let(:xml_element) { Lutaml::Xsd::Validation::XmlElement.new(moxml_element, navigator) }
 
-      # Create simple test objects that mimic the XSD structure
-      let(:required_attr) do
-        obj = Object.new
-        obj.define_singleton_method(:name) { "id" }
-        obj.define_singleton_method(:use) { "required" }
-        obj.define_singleton_method(:respond_to?) do |method, include_private = false|
-          %i[name use].include?(method) || super(method, include_private)
-        end
-        obj
-      end
-
-      let(:complex_type) do
-        attr = required_attr
-        obj = Object.new
-        obj.define_singleton_method(:attribute) { [attr] }
-        obj.define_singleton_method(:attribute_group) { [] }
-        obj.define_singleton_method(:complex_content) { nil }
-        obj.define_singleton_method(:simple_content) { nil }
-        obj.define_singleton_method(:respond_to?) do |method, include_private = false|
-          %i[attribute attribute_group complex_content
-             simple_content].include?(method) || super(method, include_private)
-        end
-        obj
-      end
-
-      let(:schema_element) do
-        ct = complex_type
-        obj = Object.new
-        obj.define_singleton_method(:name) { "person" }
-        obj.define_singleton_method(:complex_type) { ct }
-        obj.define_singleton_method(:is_a?) do |klass|
-          klass == Lutaml::Xml::Schema::Xsd::Element || super(klass)
-        end
-        obj.define_singleton_method(:respond_to?) do |method, include_private = false|
-          %i[name
-             complex_type].include?(method) || super(method, include_private)
-        end
-        obj
-      end
-
       it "reports required attribute missing error" do
-        rule.validate(xml_element, schema_element, collector)
+        rule.validate(xml_element, xsd_schema_element, collector)
 
         expect(collector.errors.size).to be > 0
         error = collector.errors.find do |e|
@@ -160,7 +117,7 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
       end
 
       it "includes suggestion" do
-        rule.validate(xml_element, schema_element, collector)
+        rule.validate(xml_element, xsd_schema_element, collector)
 
         error = collector.errors.find do |e|
           e.code == "required_attribute_missing"

@@ -17,6 +17,14 @@ if fiddle_available
   require "lutaml/xsd/interactive_builder"
 end
 
+# Stub prompt object that mimics TTY::Prompt without using a double.
+# Defines only the surface area the builder actually calls during runs.
+class StubPrompt
+  def select(*, **) = :skip
+  def yes?(*, **) = false
+  def ask(*, **) = ""
+end
+
 RSpec.describe Lutaml::Xsd::InteractiveBuilder do
   let(:entry_points) { [File.join(fixtures_path, "simple_schema.xsd")] }
   let(:options) { { verbose: false, output: output_file } }
@@ -76,21 +84,20 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
   end
 
   describe "#run" do
+    let(:stub_prompt) { StubPrompt.new }
+
     context "with simple schema without dependencies" do
       let(:entry_points) { [File.join(fixtures_path, "simple_schema.xsd")] }
 
       it "processes the schema successfully" do
-        # Mock prompt to avoid interactive input
-        allow(builder).to receive(:prompt).and_return(double(select: :skip,
-                                                             yes?: false, ask: ""))
+        allow(builder).to receive(:prompt).and_return(stub_prompt)
 
         expect { builder.run }.not_to raise_error
         expect(File.exist?(output_file)).to be true
       end
 
       it "generates configuration file" do
-        allow(builder).to receive(:prompt).and_return(double(select: :skip,
-                                                             yes?: false, ask: ""))
+        allow(builder).to receive(:prompt).and_return(stub_prompt)
 
         builder.run
 
@@ -137,10 +144,7 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
       end
 
       it "discovers import dependencies" do
-        # Mock user selecting the imported schema
-        allow(builder).to receive(:prompt).and_return(
-          Struct.new(:menu_choice, :yes?, :ask).new(:skip, false, ""),
-        )
+        allow(builder).to receive(:prompt).and_return(stub_prompt)
 
         builder.run
 
@@ -166,77 +170,75 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
     end
 
     it "finds unique matches" do
-      matches = builder.send(:search_for_schema, "test2.xsd")
+      matches = builder.search_for_schema("test2.xsd")
       expect(matches.size).to eq(1)
       expect(matches.first).to include("test2.xsd")
     end
 
     it "finds multiple matches" do
-      matches = builder.send(:search_for_schema, "test1.xsd")
+      matches = builder.search_for_schema("test1.xsd")
       expect(matches.size).to eq(2)
     end
 
     it "returns empty array when no matches found" do
-      matches = builder.send(:search_for_schema, "nonexistent.xsd")
+      matches = builder.search_for_schema("nonexistent.xsd")
       expect(matches).to be_empty
     end
   end
 
   describe "#url?" do
     it "detects HTTP URLs" do
-      expect(builder.send(:url?, "http://example.com/schema.xsd")).to be true
+      expect(builder.url?("http://example.com/schema.xsd")).to be true
     end
 
     it "detects HTTPS URLs" do
-      expect(builder.send(:url?, "https://example.com/schema.xsd")).to be true
+      expect(builder.url?("https://example.com/schema.xsd")).to be true
     end
 
     it "rejects file paths" do
-      expect(builder.send(:url?, "/path/to/schema.xsd")).to be false
-      expect(builder.send(:url?, "schema.xsd")).to be false
+      expect(builder.url?("/path/to/schema.xsd")).to be false
+      expect(builder.url?("schema.xsd")).to be false
     end
 
     it "rejects relative paths" do
-      expect(builder.send(:url?, "../schema.xsd")).to be false
-      expect(builder.send(:url?, "./schema.xsd")).to be false
+      expect(builder.url?("../schema.xsd")).to be false
+      expect(builder.url?("./schema.xsd")).to be false
     end
   end
 
-  describe "#format_file_size" do
+  describe ".format_file_size" do
     it "formats bytes" do
-      expect(builder.send(:format_file_size, 500)).to eq("500 B")
+      expect(described_class.format_file_size(500)).to eq("500 B")
     end
 
     it "formats kilobytes" do
-      expect(builder.send(:format_file_size, 2048)).to eq("2.0 KB")
+      expect(described_class.format_file_size(2048)).to eq("2.0 KB")
     end
 
     it "formats megabytes" do
-      expect(builder.send(:format_file_size, 2_097_152)).to eq("2.0 MB")
+      expect(described_class.format_file_size(2_097_152)).to eq("2.0 MB")
     end
   end
 
   describe "#namespace_exists?" do
     before do
-      builder.instance_variable_set(:@namespace_mappings, [
-                                      { "prefix" => "test", "uri" => "http://example.com/test" },
-                                    ])
+      builder.namespace_mappings = [
+        { "prefix" => "test", "uri" => "http://example.com/test" },
+      ]
     end
 
     it "returns true for existing namespace" do
-      expect(builder.send(:namespace_exists?,
-                          "http://example.com/test")).to be true
+      expect(builder.namespace_exists?("http://example.com/test")).to be true
     end
 
     it "returns false for non-existing namespace" do
-      expect(builder.send(:namespace_exists?,
-                          "http://example.com/other")).to be false
+      expect(builder.namespace_exists?("http://example.com/other")).to be false
     end
   end
 
   describe "#add_mapping" do
     it "adds a schema location mapping" do
-      builder.send(:add_mapping, "from.xsd", "to.xsd", "test reason")
+      builder.add_mapping("from.xsd", "to.xsd", "test reason")
 
       expect(builder.resolved_mappings.size).to eq(1)
       expect(builder.resolved_mappings.first).to include(
@@ -249,24 +251,24 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
 
   describe "#save_configuration" do
     before do
-      builder.instance_variable_set(:@resolved_mappings, [
-                                      { "from" => "test.xsd", "to" => "/path/to/test.xsd", "comment" => "Found by: test" },
-                                    ])
-      builder.instance_variable_set(:@namespace_mappings, [
-                                      { "prefix" => "test", "uri" => "http://example.com/test" },
-                                    ])
+      builder.resolved_mappings = [
+        { "from" => "test.xsd", "to" => "/path/to/test.xsd", "comment" => "Found by: test" },
+      ]
+      builder.namespace_mappings = [
+        { "prefix" => "test", "uri" => "http://example.com/test" },
+      ]
     end
 
     it "creates configuration file" do
       allow(builder).to receive(:output)
-      builder.send(:save_configuration)
+      builder.save_configuration
 
       expect(File.exist?(output_file)).to be true
     end
 
     it "includes all required sections" do
       allow(builder).to receive(:output)
-      builder.send(:save_configuration)
+      builder.save_configuration
 
       content = File.read(output_file)
       expect(content).to include("files:")
@@ -280,8 +282,8 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
 
     describe "#save_session" do
       it "saves session data to file" do
-        builder.instance_variable_set(:@dependency_count, 5)
-        builder.send(:save_session)
+        builder.dependency_count = 5
+        builder.save_session
 
         expect(File.exist?(session_file)).to be true
 
@@ -302,21 +304,21 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
 
       it "loads session data from file" do
         allow(builder).to receive(:output)
-        builder.send(:load_session)
+        builder.load_session
 
         expect(builder.resolved_mappings.size).to eq(1)
-        expect(builder.instance_variable_get(:@dependency_count)).to eq(3)
+        expect(builder.dependency_count).to eq(3)
       end
     end
 
     describe "#session_exists?" do
       it "returns true when session file exists" do
         FileUtils.touch(session_file)
-        expect(builder.send(:session_exists?)).to be true
+        expect(builder.session_exists?).to be true
       end
 
       it "returns false when session file does not exist" do
-        expect(builder.send(:session_exists?)).to be false
+        expect(builder.session_exists?).to be false
       end
     end
 
@@ -326,7 +328,7 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
       end
 
       it "removes session file" do
-        builder.send(:cleanup_session)
+        builder.cleanup_session
         expect(File.exist?(session_file)).to be false
       end
     end
@@ -335,7 +337,7 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
   describe "#create_pattern_from_location" do
     it "creates regex pattern from relative path" do
       location = "../../../gml/3.2.1/gml.xsd"
-      pattern = builder.send(:create_pattern_from_location, location)
+      pattern = builder.create_pattern_from_location(location)
 
       # The pattern should contain escaped regex for ../ paths
       expect(pattern).to include('gml/3\\.2\\.1')
@@ -345,35 +347,35 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
 
   describe "#find_pattern_match" do
     before do
-      builder.instance_variable_set(:@pattern_mappings, [
-                                      {
-                                        "from" => '(?:\\.\\./)+gml/(.+\\.xsd)$',
-                                        "to" => '/path/to/gml/\\1',
-                                        "pattern" => true,
-                                      },
-                                    ])
+      builder.pattern_mappings = [
+        {
+          "from" => '(?:\\.\\./)+gml/(.+\\.xsd)$',
+          "to" => '/path/to/gml/\\1',
+          "pattern" => true,
+        },
+      ]
     end
 
     it "finds matching pattern" do
-      match = builder.send(:find_pattern_match, "../gml/feature.xsd")
+      match = builder.find_pattern_match("../gml/feature.xsd")
       expect(match).not_to be_nil
       expect(match["from"]).to include("gml")
     end
 
     it "returns nil for non-matching location" do
-      match = builder.send(:find_pattern_match, "other/file.xsd")
+      match = builder.find_pattern_match("other/file.xsd")
       expect(match).to be_nil
     end
   end
 
   describe "error handling" do
+    let(:stub_prompt) { StubPrompt.new }
+
     context "with invalid entry point" do
       let(:entry_points) { ["/nonexistent/schema.xsd"] }
 
       it "handles missing entry points gracefully" do
-        allow(builder).to receive(:prompt).and_return(
-          Struct.new(:menu_choice, :yes?, :ask).new(:skip, false, ""),
-        )
+        allow(builder).to receive(:prompt).and_return(stub_prompt)
         allow(builder).to receive(:error)
 
         expect { builder.run }.not_to raise_error
@@ -389,9 +391,7 @@ RSpec.describe Lutaml::Xsd::InteractiveBuilder do
       end
 
       it "handles parse errors gracefully" do
-        allow(builder).to receive(:prompt).and_return(
-          Struct.new(:menu_choice, :yes?, :ask).new(:skip, false, ""),
-        )
+        allow(builder).to receive(:prompt).and_return(stub_prompt)
         allow(builder).to receive(:verbose_output)
 
         expect { builder.run }.not_to raise_error
