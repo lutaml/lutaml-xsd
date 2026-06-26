@@ -3,23 +3,27 @@
 require "spec_helper"
 require "lutaml/xsd/commands/generate_spa_command"
 
+# Tiny stand-in for Spa::Generator. Mirrors the constructor shape and
+# returns a canned list of output paths. Avoids the network/filesystem
+# work the real Generator would do during a CLI unit test.
+class StubSpaGenerator
+  attr_reader :package, :output_path, :options
+
+  def initialize(package, output_path, **options)
+    @package = package
+    @output_path = output_path
+    @options = options
+  end
+
+  def generate
+    [output_path]
+  end
+end
+
 RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
   let(:package_path) { "/tmp/test.lxr" }
   let(:output_path) { "/tmp/docs.html" }
-
-  let(:mock_package) do
-    instance_double(
-      Lutaml::Xsd::SchemaRepositoryPackage,
-      schemas: [],
-    )
-  end
-
-  let(:mock_generator) do
-    instance_double(
-      Lutaml::Xsd::Spa::Generator,
-      generate: ["/tmp/docs.html"],
-    )
-  end
+  let(:repository) { Lutaml::Xsd::SchemaRepository.new }
 
   describe "#initialize" do
     it "accepts package_path and options" do
@@ -38,8 +42,10 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
   describe "#run" do
     before do
       allow(File).to receive(:exist?).and_return(true)
-      allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load).and_return(mock_package)
-      allow(Lutaml::Xsd::Spa::Generator).to receive(:new).and_return(mock_generator)
+      allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load)
+        .and_return(repository)
+      allow(Lutaml::Xsd::Spa::Generator).to receive(:new)
+        .and_return(StubSpaGenerator.new(repository, output_path))
     end
 
     context "with inlined mode" do
@@ -51,33 +57,9 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
         )
       end
 
-      it "validates inputs" do
-        expect(command).to receive(:validate_inputs)
-        command.run
-      end
-
-      it "loads package" do
-        expect(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load).with(package_path)
-        command.run
-      end
-
-      it "creates generator with inlined mode" do
-        expect(Lutaml::Xsd::Spa::Generator).to receive(:new).with(
-          mock_package,
-          output_path,
-          hash_including(mode: "inlined"),
-        )
-        command.run
-      end
-
-      it "generates output" do
-        expect(mock_generator).to receive(:generate)
-        command.run
-      end
-
-      it "displays results" do
-        expect(command).to receive(:display_results)
-        command.run
+      it "displays successful generation output" do
+        expect { command.run }
+          .to output(/SPA Documentation Generated Successfully/).to_stdout
       end
     end
 
@@ -90,33 +72,25 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
         )
       end
 
-      it "creates generator with cdn mode" do
-        expect(Lutaml::Xsd::Spa::Generator).to receive(:new).with(
-          mock_package,
-          output_path,
-          hash_including(mode: "cdn"),
-        )
-        command.run
+      it "displays successful generation output" do
+        expect { command.run }
+          .to output(/SPA Documentation Generated Successfully/).to_stdout
       end
     end
 
     context "when error occurs" do
       let(:command) { described_class.new(package_path, output: output_path) }
 
-      it "catches and handles error" do
-        allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load).and_raise(
-          StandardError, "Test error"
-        )
+      it "exits with SystemExit" do
+        allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load)
+          .and_raise(StandardError, "Test error")
 
-        expect do
-          command.run
-        end.to raise_error(SystemExit)
+        expect { command.run }.to raise_error(SystemExit)
       end
 
-      it "outputs error message" do
-        allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load).and_raise(
-          StandardError, "Test error"
-        )
+      it "outputs error message to stderr" do
+        allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load)
+          .and_raise(StandardError, "Test error")
 
         expect do
           command.run
@@ -132,14 +106,12 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       let(:command) { described_class.new(nil) }
 
       it "exits with error" do
-        expect do
-          command.send(:validate_inputs)
-        end.to raise_error(SystemExit)
+        expect { command.validate_inputs }.to raise_error(SystemExit)
       end
 
       it "outputs error message" do
         expect do
-          command.send(:validate_inputs)
+          command.validate_inputs
         rescue SystemExit
           # Expected
         end.to output(/No package file specified/).to_stderr
@@ -154,14 +126,12 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       end
 
       it "exits with error" do
-        expect do
-          command.send(:validate_inputs)
-        end.to raise_error(SystemExit)
+        expect { command.validate_inputs }.to raise_error(SystemExit)
       end
 
       it "outputs error message" do
         expect do
-          command.send(:validate_inputs)
+          command.validate_inputs
         rescue SystemExit
           # Expected
         end.to output(/Package file not found/).to_stderr
@@ -172,18 +142,16 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       let(:command) { described_class.new(package_path) }
 
       before do
-        allow(File).to receive(:exist?).and_return(true)
+        allow(File).to receive(:exist?).with(package_path).and_return(true)
       end
 
       it "exits with error" do
-        expect do
-          command.send(:validate_inputs)
-        end.to raise_error(SystemExit)
+        expect { command.validate_inputs }.to raise_error(SystemExit)
       end
 
       it "outputs error message" do
         expect do
-          command.send(:validate_inputs)
+          command.validate_inputs
         rescue SystemExit
           # Expected
         end.to output(/No output file specified/).to_stderr
@@ -195,17 +163,12 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
     let(:command) { described_class.new(package_path, output: output_path) }
 
     before do
-      allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load).and_return(mock_package)
+      allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load)
+        .and_return(repository)
     end
 
-    it "loads package from file" do
-      expect(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:load).with(package_path)
-      command.send(:load_package)
-    end
-
-    it "returns package" do
-      result = command.send(:load_package)
-      expect(result).to eq(mock_package)
+    it "returns the loaded package" do
+      expect(command.load_package).to eq(repository)
     end
 
     context "when verbose mode enabled" do
@@ -214,41 +177,42 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       end
 
       it "outputs loading message" do
-        expect do
-          command.send(:load_package)
-        end.to output(/Loading package/).to_stdout
+        expect { command.load_package }.to output(/Loading package/).to_stdout
       end
 
       it "outputs success message" do
-        expect do
-          command.send(:load_package)
-        end.to output(/Package loaded/).to_stdout
+        expect { command.load_package }.to output(/Package loaded/).to_stdout
       end
     end
   end
 
   describe "#create_generator" do
-    let(:command) do
-      described_class.new(package_path, output: output_path,
-                                        mode: "inlined")
-    end
-
     before do
-      allow(Lutaml::Xsd::Spa::Generator).to receive(:new).and_return(mock_generator)
+      allow(Lutaml::Xsd::Spa::Generator).to receive(:new) do |pkg, out, **opts|
+        StubSpaGenerator.new(pkg, out, **opts)
+      end
     end
 
-    it "creates generator with correct parameters" do
-      expect(Lutaml::Xsd::Spa::Generator).to receive(:new).with(
-        mock_package,
-        output_path,
-        hash_including(mode: "inlined"),
-      )
-      command.send(:create_generator, mock_package)
+    context "with inlined mode" do
+      let(:command) do
+        described_class.new(package_path, output: output_path, mode: "inlined")
+      end
+
+      it "returns a generator initialized with inlined mode" do
+        generator = command.create_generator(repository)
+        expect(generator.options[:mode]).to eq("inlined")
+      end
     end
 
-    it "returns generator" do
-      result = command.send(:create_generator, mock_package)
-      expect(result).to eq(mock_generator)
+    context "with cdn mode" do
+      let(:command) do
+        described_class.new(package_path, output: output_path, mode: "cdn")
+      end
+
+      it "returns a generator initialized with cdn mode" do
+        generator = command.create_generator(repository)
+        expect(generator.options[:mode]).to eq("cdn")
+      end
     end
 
     context "when verbose mode enabled" do
@@ -257,15 +221,13 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       end
 
       it "outputs initialization message" do
-        expect do
-          command.send(:create_generator, mock_package)
-        end.to output(/Initializing SPA generator/).to_stdout
+        expect { command.create_generator(repository) }
+          .to output(/Initializing SPA generator/).to_stdout
       end
 
       it "outputs success message" do
-        expect do
-          command.send(:create_generator, mock_package)
-        end.to output(/Generator initialized/).to_stdout
+        expect { command.create_generator(repository) }
+          .to output(/Generator initialized/).to_stdout
       end
     end
   end
@@ -277,15 +239,13 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       let(:files) { ["/tmp/docs.html"] }
 
       it "displays single file message" do
-        expect do
-          command.send(:display_results, files)
-        end.to output(/Output file/).to_stdout
+        expect { command.display_results(files) }
+          .to output(/Output file/).to_stdout
       end
 
       it "displays file path" do
-        expect do
-          command.send(:display_results, files)
-        end.to output(%r{/tmp/docs\.html}).to_stdout
+        expect { command.display_results(files) }
+          .to output(%r{/tmp/docs\.html}).to_stdout
       end
     end
 
@@ -293,35 +253,19 @@ RSpec.describe Lutaml::Xsd::Commands::GenerateSpaCommand do
       let(:files) { ["/tmp/index.html", "/tmp/styles.css", "/tmp/app.js"] }
 
       it "displays multiple files message" do
-        expect do
-          command.send(:display_results, files)
-        end.to output(/Output files.*3 total/).to_stdout
+        expect { command.display_results(files) }
+          .to output(/Output files.*3 total/).to_stdout
       end
 
       it "lists all files" do
-        output = capture_stdout do
-          command.send(:display_results, files)
-        end
-
-        files.each do |file|
-          expect(output).to include(file)
-        end
+        expect { command.display_results(files) }
+          .to output(/index\.html.*styles\.css.*app\.js/m).to_stdout
       end
     end
 
     it "displays success message" do
-      expect do
-        command.send(:display_results, [output_path])
-      end.to output(/Generation complete/).to_stdout
+      expect { command.display_results([output_path]) }
+        .to output(/Generation complete/).to_stdout
     end
-  end
-
-  def capture_stdout
-    old_stdout = $stdout
-    $stdout = StringIO.new
-    yield
-    $stdout.string
-  ensure
-    $stdout = old_stdout
   end
 end

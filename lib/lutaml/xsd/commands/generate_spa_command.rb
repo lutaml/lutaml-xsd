@@ -36,8 +36,6 @@ module Lutaml
           exit 1
         end
 
-        private
-
         # Validate command inputs
         #
         # @return [void]
