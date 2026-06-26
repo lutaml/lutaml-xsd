@@ -17,6 +17,9 @@ module Lutaml
       autoload :Loader, "lutaml/xsd/schema_repository/loader"
       autoload :Validator, "lutaml/xsd/schema_repository/validator"
       autoload :ProgressReporter, "lutaml/xsd/schema_repository/progress_reporter"
+      autoload :Metadata, "lutaml/xsd/schema_repository/metadata"
+      autoload :Statistics, "lutaml/xsd/schema_repository/statistics"
+      autoload :Package, "lutaml/xsd/schema_repository/package"
 
       # Serializable attributes
       attribute :files, :string, collection: true
