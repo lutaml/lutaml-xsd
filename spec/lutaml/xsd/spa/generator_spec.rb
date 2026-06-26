@@ -3,58 +3,51 @@
 require "spec_helper"
 require "lutaml/xsd/spa/generator"
 
+# Lightweight stub strategy that records the args it was constructed with
+# and returns a canned list of output paths. Not a double — a tiny real
+# class with the same shape as VueInlinedStrategy / VueCdnStrategy.
+class StubOutputStrategy
+  attr_reader :output_path, :config_loader, :verbose
+
+  def initialize(output_path, config_loader, verbose: false)
+    @output_path = output_path
+    @config_loader = config_loader
+    @verbose = verbose
+  end
+
+  def generate(_serialized_data, _opts = nil)
+    [File.join(File.dirname(output_path), "docs.html")]
+  end
+end
+
 RSpec.describe Lutaml::Xsd::Spa::Generator do
-  let(:mock_schema) do
-    instance_double(
-      Lutaml::Xsd::Schema,
-      name: "test-schema",
-      target_namespace: "http://example.com/test",
-    )
-  end
-
-  let(:mock_package) do
-    instance_double(
-      Lutaml::Xsd::SchemaRepositoryPackage,
-      schemas: [mock_schema],
-    )
-  end
-
+  let(:repository) { Lutaml::Xsd::SchemaRepository.new }
   let(:output_path) { "/tmp/docs.html" }
 
   describe "#initialize" do
     it "accepts package, output_path, and options" do
-      generator = described_class.new(mock_package, output_path,
-                                      mode: "inlined")
+      generator = described_class.new(repository, output_path, mode: "inlined")
 
-      expect(generator.package).to eq(mock_package)
+      expect(generator.package).to eq(repository)
       expect(generator.output_path).to eq(output_path)
       expect(generator.options[:mode]).to eq("inlined")
     end
 
     it "creates configuration loader" do
-      generator = described_class.new(mock_package, output_path)
-      config_loader = generator.instance_variable_get(:@config_loader)
+      generator = described_class.new(repository, output_path)
 
-      expect(config_loader).to be_a(Lutaml::Xsd::Spa::ConfigurationLoader)
+      expect(generator.config_loader).to be_a(Lutaml::Xsd::Spa::ConfigurationLoader)
     end
 
     it "creates schema serializer" do
-      generator = described_class.new(mock_package, output_path)
-      serializer = generator.instance_variable_get(:@serializer)
+      generator = described_class.new(repository, output_path)
 
-      expect(serializer).to be_a(Lutaml::Xsd::Spa::SchemaSerializer)
-      expect(serializer.repository).to eq(mock_package)
+      expect(generator.serializer).to be_a(Lutaml::Xsd::Spa::SchemaSerializer)
+      expect(generator.serializer.repository).to eq(repository)
     end
   end
 
   describe "#generate" do
-    let(:mock_strategy) do
-      instance_double(
-        Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy,
-        generate: ["/tmp/docs.html"],
-      )
-    end
-
     let(:serialized_data) do
       {
         metadata: { title: "Test" },
@@ -69,69 +62,51 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
         .and_return(serialized_data)
     end
 
-    context "when inlined mode" do
-      it "creates inlined strategy" do
-        generator = described_class.new(mock_package, output_path,
-                                        mode: "inlined", verbose: false)
+    shared_examples "selects strategy class" do |mode, strategy_class|
+      it "constructs #{strategy_class.name}" do
+        generator = described_class.new(repository, output_path,
+                                        mode: mode, verbose: false)
 
-        expect(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
-          .to receive(:new)
-          .and_return(mock_strategy)
+        expect(strategy_class).to receive(:new).and_call_original
 
-        expect(mock_strategy).to receive(:generate)
+        # The real strategy will try to read frontend assets, so stub
+        # generate on whatever instance :new returns.
+        allow_any_instance_of(strategy_class).to receive(:generate).and_return([output_path])
 
         generator.generate
       end
+    end
+
+    context "when inlined mode" do
+      include_examples "selects strategy class",
+                       "inlined", Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy
 
       it "returns generated file paths" do
-        generator = described_class.new(mock_package, output_path,
+        generator = described_class.new(repository, output_path,
                                         mode: "inlined", verbose: false)
 
+        stub_strategy = StubOutputStrategy.new(output_path, generator.config_loader)
         allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
-          .to receive(:new)
-          .and_return(mock_strategy)
+          .to receive(:new).and_return(stub_strategy)
 
         result = generator.generate
-        expect(result).to eq(["/tmp/docs.html"])
+        expect(result).to eq([File.join(File.dirname(output_path), "docs.html")])
       end
     end
 
     context "when cdn mode" do
-      it "creates cdn strategy" do
-        generator = described_class.new(mock_package, output_path,
-                                        mode: "cdn", verbose: false)
-
-        mock_cdn_strategy = instance_double(
-          Lutaml::Xsd::Spa::Strategies::VueCdnStrategy,
-          generate: ["/tmp/docs.html"],
-        )
-
-        expect(Lutaml::Xsd::Spa::Strategies::VueCdnStrategy)
-          .to receive(:new)
-          .and_return(mock_cdn_strategy)
-
-        expect(mock_cdn_strategy).to receive(:generate)
-
-        generator.generate
-      end
+      include_examples "selects strategy class",
+                       "cdn", Lutaml::Xsd::Spa::Strategies::VueCdnStrategy
     end
 
     context "when mode not specified" do
-      it "defaults to inlined mode" do
-        generator = described_class.new(mock_package, output_path,
-                                        verbose: false)
-
-        expect(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
-          .to receive(:new)
-          .and_return(mock_strategy)
-
-        generator.generate
-      end
+      include_examples "selects strategy class",
+                       nil, Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy
     end
 
     context "when invalid mode" do
       it "raises ArgumentError" do
-        generator = described_class.new(mock_package, output_path,
+        generator = described_class.new(repository, output_path,
                                         mode: "invalid", verbose: false)
 
         expect do
@@ -141,113 +116,76 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
     end
 
     context "when verbose mode enabled" do
-      it "logs progress messages" do
-        generator = described_class.new(mock_package, output_path,
-                                        mode: "inlined", verbose: true)
+      let(:generator) do
+        described_class.new(repository, output_path, mode: "inlined", verbose: true)
+      end
 
+      before do
+        stub_strategy = StubOutputStrategy.new(output_path, generator.config_loader)
         allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
-          .to receive(:new)
-          .and_return(mock_strategy)
+          .to receive(:new).and_return(stub_strategy)
+      end
 
-        expect do
-          generator.generate
-        end.to output(/Starting SPA generation/).to_stdout
+      it "logs progress messages" do
+        expect { generator.generate }.to output(/Starting SPA generation/).to_stdout
       end
 
       it "logs strategy selection" do
-        generator = described_class.new(mock_package, output_path,
-                                        mode: "inlined", verbose: true)
-
-        allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
-          .to receive(:new)
-          .and_return(mock_strategy)
-
-        expect do
-          generator.generate
-        end.to output(/Using.*Inlined Strategy/).to_stdout
+        expect { generator.generate }.to output(/Using.*Inlined Strategy/).to_stdout
       end
 
       it "logs schema count" do
-        generator = described_class.new(mock_package, output_path,
-                                        mode: "inlined", verbose: true)
-
-        allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
-          .to receive(:new)
-          .and_return(mock_strategy)
-
-        expect do
-          generator.generate
-        end.to output(/Serialized 1 schema/).to_stdout
+        expect { generator.generate }.to output(/Serialized 1 schema/).to_stdout
       end
 
       it "logs file count" do
-        generator = described_class.new(mock_package, output_path,
-                                        mode: "inlined", verbose: true)
-
-        allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
-          .to receive(:new)
-          .and_return(mock_strategy)
-
-        expect do
-          generator.generate
-        end.to output(/Generated 1 file/).to_stdout
+        expect { generator.generate }.to output(/Generated 1 file/).to_stdout
       end
     end
 
     context "when verbose mode disabled" do
       it "does not log messages" do
-        generator = described_class.new(mock_package, output_path,
+        generator = described_class.new(repository, output_path,
                                         mode: "inlined", verbose: false)
 
+        stub_strategy = StubOutputStrategy.new(output_path, generator.config_loader)
         allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
-          .to receive(:new)
-          .and_return(mock_strategy)
+          .to receive(:new).and_return(stub_strategy)
 
-        expect do
-          generator.generate
-        end.not_to output.to_stdout
+        expect { generator.generate }.not_to output.to_stdout
       end
     end
   end
 
-  describe "private methods" do
-    describe "#verbose?" do
-      it "returns true when verbose option is true" do
-        generator = described_class.new(mock_package, output_path,
-                                        verbose: true)
-        expect(generator.send(:verbose?)).to be true
-      end
-
-      it "returns false when verbose option is false" do
-        generator = described_class.new(mock_package, output_path,
-                                        verbose: false)
-        expect(generator.send(:verbose?)).to be false
-      end
-
-      it "returns false when verbose option is not set" do
-        generator = described_class.new(mock_package, output_path)
-        expect(generator.send(:verbose?)).to be false
-      end
+  describe "#verbose?" do
+    it "returns true when verbose option is true" do
+      generator = described_class.new(repository, output_path, verbose: true)
+      expect(generator.verbose?).to be true
     end
 
-    describe "#log" do
-      it "outputs message when verbose mode enabled" do
-        generator = described_class.new(mock_package, output_path,
-                                        verbose: true)
+    it "returns false when verbose option is false" do
+      generator = described_class.new(repository, output_path, verbose: false)
+      expect(generator.verbose?).to be false
+    end
 
-        expect do
-          generator.send(:log, "Test message")
-        end.to output("Test message\n").to_stdout
-      end
+    it "returns false when verbose option is not set" do
+      generator = described_class.new(repository, output_path)
+      expect(generator.verbose?).to be false
+    end
+  end
 
-      it "does not output when verbose mode disabled" do
-        generator = described_class.new(mock_package, output_path,
-                                        verbose: false)
+  describe "#log" do
+    it "outputs message when verbose mode enabled" do
+      generator = described_class.new(repository, output_path, verbose: true)
 
-        expect do
-          generator.send(:log, "Test message")
-        end.not_to output.to_stdout
-      end
+      expect { generator.log("Test message") }
+        .to output("Test message\n").to_stdout
+    end
+
+    it "does not output when verbose mode disabled" do
+      generator = described_class.new(repository, output_path, verbose: false)
+
+      expect { generator.log("Test message") }.not_to output.to_stdout
     end
   end
 
@@ -290,22 +228,13 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
           config_file.rewind
 
           repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_file.path)
-          package = instance_double(
-            Lutaml::Xsd::SchemaRepositoryPackage,
-            schemas: repository.instance_variable_get(:@parsed_schemas)&.all&.values || [],
-          )
 
-          generator = described_class.new(package, "/tmp/composed_docs.html",
+          generator = described_class.new(repository, "/tmp/composed_docs.html",
                                           mode: "inlined", verbose: false)
 
-          mock_strategy = instance_double(
-            Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy,
-            generate: ["/tmp/composed_docs.html"],
-          )
-
+          stub_strategy = StubOutputStrategy.new("/tmp/composed_docs.html", generator.config_loader)
           allow(Lutaml::Xsd::Spa::Strategies::VueInlinedStrategy)
-            .to receive(:new)
-            .and_return(mock_strategy)
+            .to receive(:new).and_return(stub_strategy)
 
           result = generator.generate
           expect(result).to include("/tmp/composed_docs.html")
@@ -320,22 +249,10 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
           config_file.rewind
 
           repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_file.path)
-          package = instance_double(
-            Lutaml::Xsd::SchemaRepositoryPackage,
-            schemas: repository.instance_variable_get(:@parsed_schemas)&.all&.values || [],
-          )
+          generator = described_class.new(repository, "/tmp/docs.html", verbose: false)
 
-          generator = described_class.new(package, "/tmp/docs.html",
-                                          verbose: false)
-          serializer = generator.instance_variable_get(:@serializer)
+          data = generator.serializer.serialize
 
-          allow_any_instance_of(Lutaml::Xsd::Spa::SchemaSerializer)
-            .to receive(:serialize)
-            .and_call_original
-
-          data = serializer.serialize
-
-          # Verify namespaces from both packages are present
           expect(data[:metadata][:namespaces]).to be_an(Array)
           expect(data[:metadata][:namespaces].size).to be > 0
         end
@@ -350,8 +267,6 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
 
           repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_file.path)
 
-          # Test that type resolution works across packages
-          # This verifies the composed package maintains proper type indexes
           expect(repository).to respond_to(:find_type)
         end
       end
@@ -371,12 +286,10 @@ RSpec.describe Lutaml::Xsd::Spa::Generator do
           config_file.write(bad_config)
           config_file.rewind
 
-          # The error should be raised during repository creation
           expect do
             repository = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_file.path)
             repository.parse.resolve
-          end.to raise_error(Lutaml::Xsd::ConfigurationError,
-                             /Base package not found/)
+          end.to raise_error(Lutaml::Xsd::ConfigurationError, /Base package not found/)
         end
       end
     end

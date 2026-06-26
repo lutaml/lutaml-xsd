@@ -3,6 +3,12 @@
 module Lutaml
   module Xsd
     module Spa
+      # Output strategy namespace referenced by Generator.
+      module Strategies
+        autoload :VueInlinedStrategy, "lutaml/xsd/spa/strategies/vue_inlined_strategy"
+        autoload :VueCdnStrategy, "lutaml/xsd/spa/strategies/vue_cdn_strategy"
+      end
+
       # Main SPA documentation generator
       #
       # Generates interactive HTML Single Page Application documentation
@@ -16,7 +22,8 @@ module Lutaml
       #   )
       #   generator.generate
       class Generator
-        attr_reader :package, :output_path, :options
+        attr_reader :package, :output_path, :options, :config_loader,
+                    :serializer
 
         # Initialize SPA generator
         #
@@ -46,7 +53,7 @@ module Lutaml
           log "✓ Using #{strategy_name}"
 
           # Serialize schema data
-          serialized_data = @serializer.serialize
+          serialized_data = serializer.serialize
           log "✓ Serialized #{serialized_data[:schemas]&.size || 0} schema(s)"
 
           # Generate output using strategy
@@ -54,33 +61,6 @@ module Lutaml
           log "✓ Generated #{output_files&.size || 0} file(s)"
 
           output_files
-        end
-
-        private
-
-        # Create appropriate output strategy based on mode
-        #
-        # @return [OutputStrategy] Strategy instance
-        def create_strategy
-          mode = options[:mode] || "inlined"
-
-          case mode
-          when "inlined"
-            Strategies::VueInlinedStrategy.new(
-              output_path,
-              @config_loader,
-              verbose: verbose?,
-            )
-          when "cdn"
-            Strategies::VueCdnStrategy.new(
-              output_path,
-              @config_loader,
-              verbose: verbose?,
-            )
-          else
-            raise ArgumentError,
-                  "Unknown mode: #{mode}. Valid modes: inlined, cdn"
-          end
         end
 
         # Check if verbose mode is enabled
@@ -96,6 +76,33 @@ module Lutaml
         # @return [void]
         def log(message)
           puts message if verbose?
+        end
+
+        private
+
+        # Create appropriate output strategy based on mode
+        #
+        # @return [OutputStrategy] Strategy instance
+        def create_strategy
+          mode = options[:mode] || "inlined"
+
+          case mode
+          when "inlined"
+            Strategies::VueInlinedStrategy.new(
+              output_path,
+              config_loader,
+              verbose: verbose?,
+            )
+          when "cdn"
+            Strategies::VueCdnStrategy.new(
+              output_path,
+              config_loader,
+              verbose: verbose?,
+            )
+          else
+            raise ArgumentError,
+                  "Unknown mode: #{mode}. Valid modes: inlined, cdn"
+          end
         end
       end
     end
