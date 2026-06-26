@@ -87,8 +87,6 @@ module Lutaml
           pretty ? JSON.pretty_generate(data) : JSON.generate(data)
         end
 
-        protected
-
         # Build metadata section (template method hook)
         #
         # Subclasses can override to customize metadata
@@ -1375,12 +1373,13 @@ source = nil)
 
         # Serialize type elements
         #
-        # @param type [ComplexType] Complex type
+        # @param type [ComplexType, Choice, Sequence] Type or content model
         # @return [Array<Hash>] Serialized elements
         def serialize_type_elements(type)
-          return [] unless type.element
+          elements = type_elements(type)
+          return [] unless elements && !elements.empty?
 
-          type.element.map do |elem|
+          elements.map do |elem|
             {
               name: elem.name || "#{elem.ref} (ref)",
               type: elem.type,
@@ -1394,6 +1393,24 @@ source = nil)
               reference: elem.ref,
               documentation: extract_documentation(elem),
             }
+          end
+        end
+
+        # Read the immediate element children of a content model uniformly.
+        #
+        # ComplexType exposes elements via the plural accessor `elements`,
+        # while Choice/Sequence/All expose them via the singular `element`.
+        #
+        # @param type [ComplexType, Choice, Sequence, All] Content model
+        # @return [Array<Element>, nil] Element children, or nil if none
+        def type_elements(type)
+          case type
+          when Lutaml::Xml::Schema::Xsd::ComplexType
+            type.elements
+          when Lutaml::Xml::Schema::Xsd::Sequence,
+               Lutaml::Xml::Schema::Xsd::Choice,
+               Lutaml::Xml::Schema::Xsd::All
+            type.element
           end
         end
 

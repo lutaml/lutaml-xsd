@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/xsd" # Explicitly load all XSD types including group
+require "lutaml/xsd"
 require "lutaml/xsd/spa/schema_serializer"
 require "json"
 
 RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
-  # Helper to create real schema from XML
   let(:test_schema_xml) do
     <<~XML
       <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -28,17 +27,12 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
   let(:real_simple_type) { real_schema.simple_type.first }
   let(:real_attribute) { real_schema.attribute.first }
 
+  # Build a real SchemaRepository and inject a single test schema through the
+  # real parsed_schemas BasicStore API. This is not a double — it is a real
+  # instance that the serializer can introspect.
   let(:real_repository) do
     Lutaml::Xsd::SchemaRepository.new.tap do |repo|
-      # Override all_schemas to return our test schema
-      def repo.all_schemas
-        { "test-schema.xsd" => @test_schema }
-      end
-
-      def repo.test_schema=(schema)
-        @test_schema = schema
-      end
-      repo.test_schema = real_schema
+      repo.parsed_schemas.set("test-schema.xsd", real_schema)
     end
   end
 
@@ -123,8 +117,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
   describe "#serialize_schema" do
     it "serializes schema with all sections" do
-      schema_data = serializer.send(:serialize_schema, real_schema, 0,
-                                    "test-schema.xsd")
+      schema_data = serializer.serialize_schema(real_schema, 0, "test-schema.xsd")
 
       expect(schema_data[:id]).to eq("test-schema")
       expect(schema_data[:name]).to eq("test-schema")
@@ -139,7 +132,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
   describe "#serialize_elements" do
     it "serializes array of elements" do
-      elements = serializer.send(:serialize_elements, real_schema)
+      elements = serializer.serialize_elements(real_schema)
 
       expect(elements).to be_an(Array)
       expect(elements.size).to eq(1)
@@ -152,14 +145,14 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       XML
       empty_schema = Lutaml::Xml::Schema::Xsd.parse(empty_schema_xml)
 
-      elements = serializer.send(:serialize_elements, empty_schema)
+      elements = serializer.serialize_elements(empty_schema)
       expect(elements).to eq([])
     end
   end
 
   describe "#serialize_element" do
     it "serializes element with all properties" do
-      element_data = serializer.send(:serialize_element, real_element, 0)
+      element_data = serializer.serialize_element(real_element, 0)
 
       expect(element_data[:id]).to eq("element-test-element")
       expect(element_data[:name]).to eq("TestElement")
@@ -171,7 +164,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
   describe "#serialize_complex_types" do
     it "serializes array of complex types" do
-      types = serializer.send(:serialize_complex_types, real_schema)
+      types = serializer.serialize_complex_types(real_schema)
 
       expect(types).to be_an(Array)
       expect(types.size).to eq(1)
@@ -184,14 +177,14 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       XML
       empty_schema = Lutaml::Xml::Schema::Xsd.parse(empty_schema_xml)
 
-      types = serializer.send(:serialize_complex_types, empty_schema)
+      types = serializer.serialize_complex_types(empty_schema)
       expect(types).to eq([])
     end
   end
 
   describe "#serialize_complex_type" do
     it "serializes complex type with all properties" do
-      type_data = serializer.send(:serialize_complex_type, real_complex_type, 0)
+      type_data = serializer.serialize_complex_type(real_complex_type, 0)
 
       expect(type_data[:id]).to eq("type-test-complex-type")
       expect(type_data[:name]).to eq("TestComplexType")
@@ -204,7 +197,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
   describe "#serialize_simple_types" do
     it "serializes array of simple types" do
-      types = serializer.send(:serialize_simple_types, real_schema)
+      types = serializer.serialize_simple_types(real_schema)
 
       expect(types).to be_an(Array)
       expect(types.size).to eq(1)
@@ -217,14 +210,14 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       XML
       empty_schema = Lutaml::Xml::Schema::Xsd.parse(empty_schema_xml)
 
-      types = serializer.send(:serialize_simple_types, empty_schema)
+      types = serializer.serialize_simple_types(empty_schema)
       expect(types).to eq([])
     end
   end
 
   describe "#serialize_simple_type" do
     it "serializes simple type with all properties" do
-      type_data = serializer.send(:serialize_simple_type, real_simple_type, 0)
+      type_data = serializer.serialize_simple_type(real_simple_type, 0)
 
       expect(type_data[:id]).to eq("simpletype-test-simple-type")
       expect(type_data[:name]).to eq("TestSimpleType")
@@ -234,7 +227,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
   describe "#serialize_attributes" do
     it "serializes array of attributes" do
-      attributes = serializer.send(:serialize_attributes, real_schema)
+      attributes = serializer.serialize_attributes(real_schema)
 
       expect(attributes).to be_an(Array)
       expect(attributes.size).to eq(1)
@@ -247,14 +240,14 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       XML
       empty_schema = Lutaml::Xml::Schema::Xsd.parse(empty_schema_xml)
 
-      attributes = serializer.send(:serialize_attributes, empty_schema)
+      attributes = serializer.serialize_attributes(empty_schema)
       expect(attributes).to eq([])
     end
   end
 
   describe "#serialize_attribute" do
     it "serializes attribute with all properties" do
-      attr_data = serializer.send(:serialize_attribute, real_attribute, 0)
+      attr_data = serializer.serialize_attribute(real_attribute, 0)
 
       expect(attr_data[:id]).to eq("attr-test-attr")
       expect(attr_data[:name]).to eq("testAttr")
@@ -281,14 +274,14 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       let(:element_with_doc) { schema_with_doc.element.first }
 
       it "extracts documentation content" do
-        doc = serializer.send(:extract_documentation, element_with_doc)
+        doc = serializer.extract_documentation(element_with_doc)
         expect(doc).to eq("Test doc")
       end
     end
 
     context "when object has no annotation" do
       it "returns nil" do
-        doc = serializer.send(:extract_documentation, real_element)
+        doc = serializer.extract_documentation(real_element)
         expect(doc).to be_nil
       end
     end
@@ -296,7 +289,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
     context "when object has no annotation attribute" do
       it "returns nil" do
         obj = Lutaml::Xml::Schema::Xsd::Element.new
-        doc = serializer.send(:extract_documentation, obj)
+        doc = serializer.extract_documentation(obj)
         expect(doc).to be_nil
       end
     end
@@ -316,7 +309,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       schema = Lutaml::Xml::Schema::Xsd.parse(type_xml)
       type = schema.complex_type.first
 
-      model = serializer.send(:extract_content_model, type)
+      model = serializer.extract_content_model(type)
       expect(model).to eq("sequence")
     end
 
@@ -333,71 +326,67 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       schema = Lutaml::Xml::Schema::Xsd.parse(type_xml)
       type = schema.complex_type.first
 
-      model = serializer.send(:extract_content_model, type)
+      model = serializer.extract_content_model(type)
       expect(model).to eq("choice")
     end
 
     it "returns 'empty' when type has no content model" do
-      model = serializer.send(:extract_content_model, real_complex_type)
+      model = serializer.extract_content_model(real_complex_type)
       expect(model).to eq("empty")
     end
   end
 
   describe "ID generation methods" do
     it "generates schema ID" do
-      expect(serializer.send(:schema_id, 5)).to eq("schema-5")
+      expect(serializer.schema_id(5)).to eq("schema-5")
     end
 
     it "generates element ID" do
-      expect(serializer.send(:element_id, 10,
-                             real_element)).to eq("element-test-element")
+      expect(serializer.element_id(10, real_element)).to eq("element-test-element")
     end
 
     it "generates complex type ID" do
-      expect(serializer.send(:complex_type_id, 3,
-                             real_complex_type)).to eq("type-test-complex-type")
+      expect(serializer.complex_type_id(3, real_complex_type)).to eq("type-test-complex-type")
     end
 
     it "generates simple type ID" do
-      expect(serializer.send(:simple_type_id, 7,
-                             real_simple_type)).to eq("simpletype-test-simple-type")
+      expect(serializer.simple_type_id(7, real_simple_type)).to eq("simpletype-test-simple-type")
     end
 
     it "generates attribute ID" do
-      expect(serializer.send(:attribute_id, 2,
-                             real_attribute)).to eq("attr-test-attr")
+      expect(serializer.attribute_id(2, real_attribute)).to eq("attr-test-attr")
     end
 
     it "generates group ID" do
-      expect(serializer.send(:group_id, 1)).to eq("group-1")
+      expect(serializer.group_id(1)).to eq("group-1")
     end
   end
 
   describe "helper methods" do
     it "returns current timestamp in ISO8601 format" do
-      timestamp = serializer.send(:current_timestamp)
+      timestamp = serializer.current_timestamp
       expect(timestamp).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
     end
 
     it "returns generator info" do
-      info = serializer.send(:generator_info)
+      info = serializer.generator_info
       expect(info).to match(/lutaml-xsd v/)
     end
 
     it "returns default title" do
-      title = serializer.send(:default_title)
+      title = serializer.default_title
       expect(title).to eq("XSD Schema Documentation")
     end
 
     it "returns schema name" do
-      name = serializer.send(:schema_name, real_schema)
+      name = serializer.schema_name(real_schema)
       expect(name).to eq("test")
     end
 
     it "returns 'unnamed' for schema without name" do
       minimal_xml = '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>'
       schema = Lutaml::Xml::Schema::Xsd.parse(minimal_xml)
-      name = serializer.send(:schema_name, schema)
+      name = serializer.schema_name(schema)
       expect(name).to eq("unnamed")
     end
   end
@@ -406,9 +395,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
     context "when repository has no schemas" do
       let(:empty_repository) do
         Lutaml::Xsd::SchemaRepository.new.tap do |repo|
-          def repo.all_schemas
-            {}
-          end
+          repo.define_singleton_method(:all_schemas) { {} }
         end
       end
 
@@ -427,14 +414,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
       let(:minimal_repository) do
         Lutaml::Xsd::SchemaRepository.new.tap do |repo|
-          def repo.all_schemas
-            { "minimal.xsd" => @minimal_schema }
-          end
-
-          def repo.minimal_schema=(schema)
-            @minimal_schema = schema
-          end
-          repo.minimal_schema = minimal_schema
+          repo.parsed_schemas.set("minimal.xsd", minimal_schema)
         end
       end
 
@@ -474,7 +454,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
         make_schema_data(id: "b", namespace: ns_b),
       ]
 
-      result = serializer.send(:merge_included_schemas, schemas)
+      result = serializer.merge_included_schemas(schemas)
       expect(result.length).to eq(2)
       expect(result.map { |s| s[:id] }).to contain_exactly("a", "b")
     end
@@ -487,7 +467,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
                          elements: [{ name: "ElemB" }]),
       ]
 
-      result = serializer.send(:merge_included_schemas, schemas)
+      result = serializer.merge_included_schemas(schemas)
       expect(result.length).to eq(1)
       merged = result.first
       expect(merged[:id]).to eq("main")
@@ -504,7 +484,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
                          elements: [1]),
       ]
 
-      result = serializer.send(:merge_included_schemas, schemas)
+      result = serializer.merge_included_schemas(schemas)
       expect(result.first[:id]).to eq("entry")
     end
 
@@ -515,7 +495,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
         make_schema_data(id: "medium", namespace: ns_a, elements: [1, 2]),
       ]
 
-      result = serializer.send(:merge_included_schemas, schemas)
+      result = serializer.merge_included_schemas(schemas)
       expect(result.first[:id]).to eq("big")
     end
 
@@ -526,11 +506,9 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
         make_schema_data(id: "named", namespace: ns_a, entrypoint: true),
       ]
 
-      result = serializer.send(:merge_included_schemas, schemas)
+      result = serializer.merge_included_schemas(schemas)
       expect(result.length).to eq(3)
-      expect(result.map do |s|
-        s[:id]
-      end).to contain_exactly("chameleon1", "chameleon2", "named")
+      expect(result.map { |s| s[:id] }).to contain_exactly("chameleon1", "chameleon2", "named")
     end
 
     it "deduplicates merged content arrays" do
@@ -540,7 +518,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
         make_schema_data(id: "b", namespace: ns_a, elements: [shared_element]),
       ]
 
-      result = serializer.send(:merge_included_schemas, schemas)
+      result = serializer.merge_included_schemas(schemas)
       merged_elements = result.first[:elements]
       expect(merged_elements.length).to eq(1)
     end
@@ -553,7 +531,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
                          includes: [{ loc: "b1.xsd" }], imports: [{ ns: ns_b }]),
       ]
 
-      result = serializer.send(:merge_included_schemas, schemas)
+      result = serializer.merge_included_schemas(schemas)
       merged = result.first
       expect(merged[:includes].length).to eq(2)
       expect(merged[:imports].length).to eq(1)
@@ -565,17 +543,17 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
         make_schema_data(id: "b", namespace: ns_a, file_path: "b.xsd"),
       ]
 
-      result = serializer.send(:merge_included_schemas, schemas)
+      result = serializer.merge_included_schemas(schemas)
       expect(result.first[:file_paths]).to contain_exactly("a.xsd", "b.xsd")
     end
 
     it "returns empty array unchanged" do
-      expect(serializer.send(:merge_included_schemas, [])).to eq([])
+      expect(serializer.merge_included_schemas([])).to eq([])
     end
 
     it "returns single-element array unchanged" do
       schemas = [make_schema_data(id: "solo", namespace: ns_a)]
-      expect(serializer.send(:merge_included_schemas, schemas)).to eq(schemas)
+      expect(serializer.merge_included_schemas(schemas)).to eq(schemas)
     end
   end
 
@@ -589,11 +567,11 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
         groups: [],
         attribute_groups: [7],
       }
-      expect(serializer.send(:content_weight, schema_data)).to eq(7)
+      expect(serializer.content_weight(schema_data)).to eq(7)
     end
 
     it "returns 0 for empty schema" do
-      expect(serializer.send(:content_weight, {})).to eq(0)
+      expect(serializer.content_weight({})).to eq(0)
     end
   end
 
@@ -604,7 +582,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       enum2 = Lutaml::Xml::Schema::Xsd::Enumeration.new(value: "b")
       restriction.enumeration = [enum, enum2]
 
-      facets = serializer.send(:serialize_facets, restriction)
+      facets = serializer.serialize_facets(restriction)
       expect(facets).to include({ type: "enumeration", values: [enum, enum2] })
     end
 
@@ -615,18 +593,18 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       restriction.pattern = [pattern]
       restriction.min_length = [min_len]
 
-      facets = serializer.send(:serialize_facets, restriction)
+      facets = serializer.serialize_facets(restriction)
       expect(facets).to include({ type: "pattern", value: [pattern] })
       expect(facets).to include({ type: "min_length", value: [min_len] })
     end
 
     it "returns empty array for nil restriction" do
-      expect(serializer.send(:serialize_facets, nil)).to eq([])
+      expect(serializer.serialize_facets(nil)).to eq([])
     end
 
     it "skips facets with nil values" do
       restriction = Lutaml::Xml::Schema::Xsd::RestrictionSimpleType.new
-      expect(serializer.send(:serialize_facets, restriction)).to eq([])
+      expect(serializer.serialize_facets(restriction)).to eq([])
     end
   end
 
@@ -636,26 +614,30 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
         <xs:element name="test&apos;s" type="xs:string"/>
       </xs:schema>'
 
-      result = serializer.send(:extract_source_by_type_key_value,
-                               "element", "name", "test's", nil, source)
+      result = serializer.extract_source_by_type_key_value(
+        "element", "name", "test's", nil, source
+      )
       expect(result).to be_nil
     end
 
     it "returns nil when source is nil" do
-      expect(serializer.send(:extract_source_by_type_key_value,
-                             "element", "name", "test", nil, nil)).to be_nil
+      expect(serializer.extract_source_by_type_key_value(
+               "element", "name", "test", nil, nil
+             )).to be_nil
     end
 
     it "returns nil when value is nil" do
-      expect(serializer.send(:extract_source_by_type_key_value,
-                             "element", "name", nil, nil, "<xml/>")).to be_nil
+      expect(serializer.extract_source_by_type_key_value(
+               "element", "name", nil, nil, "<xml/>"
+             )).to be_nil
     end
 
     it "extracts matching source XML when no namespace prefix needed" do
       source = '<root><attributeGroup name="MyGroup"><attribute name="a"/></attributeGroup></root>'
 
-      result = serializer.send(:extract_source_by_type_key_value,
-                               "attributeGroup", "name", "MyGroup", nil, source)
+      result = serializer.extract_source_by_type_key_value(
+        "attributeGroup", "name", "MyGroup", nil, source
+      )
       expect(result).to include("MyGroup")
     end
   end
@@ -674,7 +656,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       schema = Lutaml::Xml::Schema::Xsd.parse(type_xml)
       type = schema.complex_type.first
 
-      expect(serializer.send(:extract_base_type, type)).to eq("Base")
+      expect(serializer.extract_base_type(type)).to eq("Base")
     end
 
     it "extracts base from simpleContent extension" do
@@ -690,11 +672,11 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       schema = Lutaml::Xml::Schema::Xsd.parse(type_xml)
       type = schema.complex_type.first
 
-      expect(serializer.send(:extract_base_type, type)).to eq("xs:string")
+      expect(serializer.extract_base_type(type)).to eq("xs:string")
     end
 
     it "returns nil for type without base" do
-      expect(serializer.send(:extract_base_type, real_complex_type)).to be_nil
+      expect(serializer.extract_base_type(real_complex_type)).to be_nil
     end
   end
 end
