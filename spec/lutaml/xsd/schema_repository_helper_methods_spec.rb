@@ -201,7 +201,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository, "helper methods" do
       it "raises ArgumentError" do
         expect do
           repository.export_statistics(format: :xml)
-        end.to raise_error(ArgumentError, /Unsupported format/)
+        end.to raise_error(ArgumentError, /Unknown format/)
       end
     end
 

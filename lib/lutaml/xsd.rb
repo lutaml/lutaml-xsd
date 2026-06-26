@@ -93,6 +93,15 @@ module Lutaml
       autoload :YamlFormatter, "lutaml/xsd/formatters/yaml_formatter"
     end
 
+    # Statistics computation, formatting, and documentation extraction.
+    # Used by SchemaExporter; safe to use directly.
+    module Stats
+      autoload :Collector, "lutaml/xsd/stats/collector"
+      autoload :DocumentationExtractor, "lutaml/xsd/stats/documentation_extractor"
+      autoload :ElementCatalog, "lutaml/xsd/stats/element_catalog"
+      autoload :Formatters, "lutaml/xsd/stats/formatters"
+    end
+
     module Validation
       autoload :ResultCollector, "lutaml/xsd/validation/result_collector"
       autoload :RuleEngine, "lutaml/xsd/validation/rule_engine"
