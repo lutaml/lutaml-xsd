@@ -48,6 +48,7 @@ module Lutaml
     autoload :PackageTreeFormatter, "lutaml/xsd/package_tree_formatter"
     autoload :PackageValidator, "lutaml/xsd/package_validator"
     autoload :RngToXsdConverter, "lutaml/xsd/rng_to_xsd_converter"
+    autoload :RngToXsd, "lutaml/xsd/rng_to_xsd"
     autoload :SchemaClassifier, "lutaml/xsd/schema_classifier"
     autoload :SchemaDependencyAnalyzer, "lutaml/xsd/schema_dependency_analyzer"
     autoload :SchemaExporter, "lutaml/xsd/schema_exporter"
