@@ -15,7 +15,7 @@ module Lutaml
       def load(glob_mappings)
         configs = normalize_base_packages_to_configs
 
-        if supports_conflict_detection?
+        if @repository.supports_conflict_detection?
           load_with_conflict_detection(configs)
         else
           load_legacy(configs, glob_mappings)
@@ -32,11 +32,6 @@ module Lutaml
 
         filtered_schemas = all_schemas.select do |path, _schema|
           package_source.include_schema?(path)
-        end
-
-        if package_source.namespace_remapping.any?
-          filtered_schemas = apply_namespace_remapping(filtered_schemas,
-                                                       package_source.namespace_remapping)
         end
 
         @repository.parsed_schemas.bulk_set(filtered_schemas)
@@ -65,13 +60,6 @@ module Lutaml
       end
 
       private
-
-      def supports_conflict_detection?
-        @repository.base_packages&.any? do |pkg|
-          pkg.is_a?(Hash) || pkg.is_a?(BasePackageConfig) ||
-            (pkg.is_a?(String) && pkg.start_with?("{"))
-        end
-      end
 
       def load_with_conflict_detection(configs)
         configs.each do |config|
@@ -174,11 +162,6 @@ module Lutaml
 
           mappings << mapping
         end
-      end
-
-      def apply_namespace_remapping(schemas, _remappings)
-        # Namespace remapping is handled during conflict detection
-        schemas
       end
     end
   end
