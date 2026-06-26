@@ -82,7 +82,7 @@ module Lutaml
 
         load_base_packages(glob_mappings)
 
-        SchemaParser.new(self).parse(files || [], glob_mappings, verbose: verbose)
+        parser.parse(files || [], glob_mappings, verbose: verbose)
 
         self
       end
@@ -156,6 +156,10 @@ module Lutaml
 
       def exporter
         @exporter ||= SchemaExporter.new(self)
+      end
+
+      def parser
+        @parser ||= SchemaParser.new(self)
       end
 
       # --- Query delegation ---
@@ -317,47 +321,11 @@ module Lutaml
 
       # --- Package loading (public for PackageLoader) ---
 
-      def normalize_base_packages_to_configs
-        PackageLoader.new(self).normalize_base_packages_to_configs
-      end
-
-      def load_base_packages_with_conflict_detection(glob_mappings)
-        PackageLoader.new(self).load(glob_mappings)
-      end
-
-      def load_package_with_filtering(package_source)
-        PackageLoader.new(self).load_package_with_filtering(package_source)
-      end
-
       def supports_conflict_detection?
         base_packages&.any? do |pkg|
           pkg.is_a?(Hash) || pkg.is_a?(BasePackageConfig) ||
             (pkg.is_a?(String) && pkg.start_with?("{"))
         end
-      end
-
-      def apply_namespace_remapping_to_schemas(schemas, _remappings)
-        schemas
-      end
-
-      # --- Parse single schema (public for SchemaParser) ---
-
-      def parse_schema_file(file_path, glob_mappings)
-        return if @parsed_schemas.exists?(file_path)
-        return unless File.exist?(file_path)
-
-        ext = File.extname(file_path).downcase
-        parsed_schema = if %w[.rng .rnc].include?(ext)
-                          parse_rng_schema(file_path)
-                        else
-                          parse_xsd_schema(file_path, glob_mappings)
-                        end
-
-        @parsed_schemas.set(file_path, parsed_schema)
-
-        import_resolved_schemas
-      rescue StandardError => e
-        warn "Warning: Failed to parse schema #{file_path}: #{e.message}"
       end
 
       # --- Class methods ---
@@ -445,71 +413,6 @@ module Lutaml
 
       # --- Instance private methods ---
 
-      # --- Parse helpers ---
-
-      def import_resolved_schemas
-        global_cache = Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
-        global_cache.each do |path, schema|
-          @parsed_schemas.set(path, schema) unless @parsed_schemas.exists?(path)
-        end
-      end
-
-      def parse_xsd_schema(file_path, glob_mappings)
-        xsd_content = File.read(file_path)
-        Lutaml::Xml::Schema::Xsd.parse(
-          xsd_content,
-          location: File.dirname(file_path),
-          schema_mappings: glob_mappings,
-        )
-      end
-
-      def parse_rng_schema(file_path)
-        require "rng"
-
-        grammar = if file_path.downcase.end_with?(".rnc")
-                    Rng.parse_file(file_path)
-                  else
-                    Rng.parse(File.read(file_path),
-                              location: File.dirname(file_path),
-                              resolve_external: true)
-                  end
-
-        schema = RngToXsdConverter.new(grammar, file_path: file_path).convert
-
-        write_generated_xsd(file_path, schema)
-        schema
-      end
-
-      def write_generated_xsd(file_path, schema)
-        xsd_content = schema.to_formatted_xml
-        xsd_path = file_path.sub(/\.(rng|rnc)$/i, ".xsd")
-
-        begin
-          File.write(xsd_path, xsd_content)
-        rescue StandardError
-          require "tmpdir"
-          xsd_path = File.join(Dir.tmpdir, "lutaml_xsd_#{File.basename(file_path, '.*')}.xsd")
-          File.write(xsd_path, xsd_content)
-        end
-
-        update_rng_file_references(file_path, xsd_path)
-      end
-
-      def update_rng_file_references(old_path, new_path)
-        if @files
-          idx = @files.index(old_path)
-          @files[idx] = new_path if idx
-        end
-
-        if @parsed_schemas.exists?(old_path)
-          @parsed_schemas.set(new_path, @parsed_schemas.get(old_path))
-          @parsed_schemas.delete(old_path)
-        end
-
-        cached = Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
-        cached[new_path] = cached.delete(old_path) if cached.key?(old_path)
-      end
-
       # --- Parse orchestration helpers ---
 
       def register_namespace_mappings
@@ -535,7 +438,7 @@ module Lutaml
       def load_base_packages(glob_mappings)
         return unless base_packages&.any?
 
-        PackageLoader.new(self).load(glob_mappings)
+        PackageLoader.new(parser: parser, repository: self).load(glob_mappings)
       end
 
       # --- Resolve helpers ---

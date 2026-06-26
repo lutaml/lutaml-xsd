@@ -63,7 +63,9 @@ RSpec.describe Lutaml::Xsd::SchemaRepository, "package merging" do
           { "package" => "pkg2.lxr", "conflict_resolution" => "keep" },
         ]
 
-        configs = repo.normalize_base_packages_to_configs
+        loader = Lutaml::Xsd::PackageLoader.new(parser: repo.parser,
+                                                repository: repo)
+        configs = loader.normalize_base_packages_to_configs
 
         expect(configs[0].package).to eq("pkg1.lxr")
         expect(configs[0].priority).to eq(10)
@@ -77,7 +79,9 @@ RSpec.describe Lutaml::Xsd::SchemaRepository, "package merging" do
         repo = described_class.new
         repo.base_packages = [config]
 
-        configs = repo.normalize_base_packages_to_configs
+        loader = Lutaml::Xsd::PackageLoader.new(parser: repo.parser,
+                                                repository: repo)
+        configs = loader.normalize_base_packages_to_configs
 
         expect(configs[0]).to be_a(Lutaml::Xsd::BasePackageConfig)
         expect(configs[0].package).to eq("pkg1.lxr")
@@ -89,20 +93,20 @@ RSpec.describe Lutaml::Xsd::SchemaRepository, "package merging" do
     it "returns true for hash array" do
       repo = described_class.new
       repo.base_packages = [{ "package" => "pkg1.lxr" }]
-      expect(repo.send(:supports_conflict_detection?)).to be true
+      expect(repo.supports_conflict_detection?).to be true
     end
 
     it "returns true for BasePackageConfig array" do
       config = Lutaml::Xsd::BasePackageConfig.new(package: "pkg1.lxr")
       repo = described_class.new
       repo.base_packages = [config]
-      expect(repo.send(:supports_conflict_detection?)).to be true
+      expect(repo.supports_conflict_detection?).to be true
     end
 
     it "returns false for empty array" do
       repo = described_class.new
       repo.base_packages = []
-      expect(repo.send(:supports_conflict_detection?)).to be false
+      expect(repo.supports_conflict_detection?).to be false
     end
   end
 

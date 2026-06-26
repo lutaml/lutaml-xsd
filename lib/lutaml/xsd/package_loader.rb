@@ -5,7 +5,8 @@ module Lutaml
     # Handles loading LXR packages into the repository, with conflict detection.
     # Extracted from SchemaRepository to separate package loading concerns.
     class PackageLoader
-      def initialize(repository)
+      def initialize(parser:, repository:)
+        @parser = parser
         @repository = repository
       end
 
@@ -15,7 +16,7 @@ module Lutaml
         configs = normalize_base_packages_to_configs
 
         if supports_conflict_detection?
-          load_with_conflict_detection(configs, glob_mappings)
+          load_with_conflict_detection(configs)
         else
           load_legacy(configs, glob_mappings)
         end
@@ -72,7 +73,7 @@ module Lutaml
         end
       end
 
-      def load_with_conflict_detection(configs, glob_mappings)
+      def load_with_conflict_detection(configs)
         configs.each do |config|
           result = config.validate
           raise ValidationFailedError, result if result.invalid?
@@ -144,7 +145,7 @@ module Lutaml
 
         package_repo.files&.each do |file_path|
           @repository.add_schema_file(file_path)
-          @repository.parse_schema_file(file_path, glob_mappings) if File.exist?(file_path)
+          @parser.parse_file(file_path, glob_mappings) if File.exist?(file_path)
         end
 
         merge_namespace_mappings(package_repo)
