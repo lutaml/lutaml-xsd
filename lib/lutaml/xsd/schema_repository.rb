@@ -10,7 +10,6 @@ module Lutaml
     class SchemaRepository < Lutaml::Model::Serializable
       extend Forwardable
 
-      # Inner classes loaded via autoload
       autoload :TypeIndex, "lutaml/xsd/schema_repository/type_index"
       autoload :NamespaceRegistry, "lutaml/xsd/schema_repository/namespace_registry"
       autoload :QualifiedNameParser, "lutaml/xsd/schema_repository/qualified_name_parser"
@@ -21,7 +20,6 @@ module Lutaml
       autoload :Statistics, "lutaml/xsd/schema_repository/statistics"
       autoload :Package, "lutaml/xsd/schema_repository/package"
 
-      # Serializable attributes
       attribute :files, :string, collection: true
       attribute :base_packages, BasePackageConfig, collection: true
       attribute :schema_location_mappings, SchemaLocationMapping,
@@ -79,8 +77,6 @@ module Lutaml
         end
       end
 
-      # --- Parse ---
-
       def parse(schema_locations: {}, lazy_load: true, verbose: false)
         @lazy_load = lazy_load
         @verbose = verbose
@@ -95,8 +91,6 @@ module Lutaml
 
         self
       end
-
-      # --- Resolve ---
 
       def resolve(verbose: false)
         return self if @resolved
@@ -113,15 +107,11 @@ module Lutaml
         self
       end
 
-      # --- Validate ---
-
       def validate(strict: false)
         errors = Validator.new(self).validate(strict: strict)
         @validated = errors.empty?
         errors
       end
-
-      # --- Namespace configuration ---
 
       def configure_namespace(prefix:, uri:)
         @namespace_mappings ||= []
@@ -149,13 +139,9 @@ module Lutaml
         self
       end
 
-      # --- Service accessors (memoized) ---
-
       def query = @query ||= SchemaQueryService.new(self)
       def exporter = @exporter ||= SchemaExporter.new(self)
       def parser = @parser ||= SchemaParser.new(self)
-
-      # --- Query / export delegation ---
 
       def_delegators :query, :find_type, :find_attribute, :find_element,
                      :find_group, :find_attribute_group, :type_exists?,
@@ -167,13 +153,9 @@ module Lutaml
         QualifiedNameParser.parse(qualified_name, @namespace_registry)
       end
 
-      # --- Schema access ---
-
       def all_schemas = @parsed_schemas.all
       def schemas = all_schemas
       def needs_parsing? = all_schemas.empty?
-
-      # --- Namespace access ---
 
       def all_namespaces = @namespace_registry.all_uris
 
@@ -185,8 +167,6 @@ module Lutaml
 
       def namespace_prefix_details = NamespacePrefixManager.new(self).detailed_prefix_info
       def types_in_namespace(namespace_uri) = @type_index.find_all_in_namespace(namespace_uri)
-
-      # --- File management ---
 
       def add_schema_file(file_path)
         @files ||= []
@@ -213,15 +193,11 @@ module Lutaml
         self
       end
 
-      # --- Analysis delegation ---
-
       def classify_schemas = SchemaClassifier.new(self).classify
       def remap_namespace_prefixes(changes) = NamespaceRemapper.new(self).remap(changes)
       def analyze_type_hierarchy(qualified_name, depth: 10) = TypeHierarchyAnalyzer.new(self).analyze(qualified_name, depth: depth)
       def analyze_coverage(entry_types: []) = CoverageAnalyzer.new(self).analyze(entry_types: entry_types)
       def validate_xsd_spec(version: "1.0") = XsdSpecValidator.new(self, version: version).validate
-
-      # --- Package ---
 
       def to_package(output_path, xsd_mode: :include_all, resolution_mode: :resolved, serialization_format: :marshal,
                      metadata: {})
@@ -241,8 +217,6 @@ module Lutaml
         )
       end
 
-      # --- Package loading (public for PackageLoader) ---
-
       def supports_conflict_detection?
         base_packages&.any? do |pkg|
           pkg.is_a?(Hash) || pkg.is_a?(BasePackageConfig) ||
@@ -250,17 +224,13 @@ module Lutaml
         end
       end
 
-      # --- Class methods (delegate to Loader) ---
-
       def self.validate_package(zip_path) = Loader.validate_package(zip_path)
       def self.from_package(zip_path) = Loader.from_package(zip_path)
       def self.from_yaml_file(yaml_path) = Loader.from_yaml_file(yaml_path)
       def self.from_file(path) = Loader.from_file(path)
       def self.from_file_cached(source_path, lxr_path: nil) = Loader.from_file_cached(source_path, lxr_path: lxr_path)
 
-      # --- Instance private methods ---
-
-      # --- Parse orchestration helpers ---
+      private
 
       def register_namespace_mappings
         return unless namespace_mappings && !namespace_mappings.empty?
