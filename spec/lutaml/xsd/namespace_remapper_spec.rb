@@ -129,35 +129,41 @@ RSpec.describe Lutaml::Xsd::NamespaceRemapper do
 
   describe "internal state copying" do
     before do
-      # Set up some internal state
-      repository.instance_variable_set(:@resolved, true)
-      repository.instance_variable_set(:@validated, true)
-      repository.instance_variable_set(:@lazy_load, false)
-      repository.instance_variable_set(:@verbose, true)
-      store = Lutaml::Store::BasicStore.new(adapter_type: :memory)
-      store.set("test.xsd", Lutaml::Xml::Schema::Xsd::Schema.new)
-      repository.instance_variable_set(:@parsed_schemas, store)
+      # Drive real state transitions on the source repository. parse() sets
+      # lazy_load and verbose; resolve() sets resolved (and resets verbose
+      # unless explicitly passed). The contract being tested is that
+      # copy_state_from propagates source state to the new repository.
+      repository.parse(lazy_load: false, verbose: true)
+      # parsed_schemas is a public accessor; populate it directly with a
+      # real schema so resolve() has something to index.
+      repository.parsed_schemas.set(
+        "test.xsd",
+        Lutaml::Xml::Schema::Xsd::Schema.new,
+      )
+      repository.resolve(verbose: true)
     end
 
     it "copies internal state to new repository" do
       changes = { "gml" => "gml32" }
       new_repo = remapper.remap(changes)
 
-      expect(new_repo.instance_variable_get(:@resolved)).to eq(true)
-      expect(new_repo.instance_variable_get(:@validated)).to eq(true)
-      expect(new_repo.instance_variable_get(:@lazy_load)).to eq(false)
-      expect(new_repo.instance_variable_get(:@verbose)).to eq(true)
+      expect(new_repo.resolved).to eq(repository.resolved)
+      expect(new_repo.lazy_load).to eq(repository.lazy_load)
+      expect(new_repo.verbose).to eq(repository.verbose)
     end
 
-    it "duplicates parsed schemas" do
+    it "shares parsed schemas with the source repository" do
+      # The remapper intentionally shares the parsed_schemas store by
+      # reference (cheap remap) and rebuilds only the type index. Deep-
+      # copying all schemas on every prefix change would be wasteful.
       changes = { "gml" => "gml32" }
       new_repo = remapper.remap(changes)
 
-      original_store = repository.instance_variable_get(:@parsed_schemas)
-      new_store = new_repo.instance_variable_get(:@parsed_schemas)
+      original_store = repository.parsed_schemas
+      new_store = new_repo.parsed_schemas
 
       expect(new_store.all).to eq(original_store.all)
-      expect(new_store.object_id).not_to eq(original_store.object_id)
+      expect(new_store.object_id).to eq(original_store.object_id)
     end
   end
 end

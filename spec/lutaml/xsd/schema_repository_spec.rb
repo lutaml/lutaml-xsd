@@ -213,9 +213,9 @@ RSpec.describe Lutaml::Xsd::SchemaRepository do
 
       it "validates namespace mappings" do
         bad_repository = described_class.new(files: schema_files)
-        bad_repository.instance_variable_set(:@namespace_mappings, [
-                                               Lutaml::Xsd::NamespaceMapping.new(prefix: "", uri: "http://example.com"),
-                                             ])
+        bad_repository.namespace_mappings = [
+          Lutaml::Xsd::NamespaceMapping.new(prefix: "", uri: "http://example.com"),
+        ]
         errors = bad_repository.validate
         expect(errors).not_to be_empty
       end

@@ -82,6 +82,22 @@ module Lutaml
         output.join("\n")
       end
 
+      # Format file size as a human-readable string.
+      # Public class method so specs can verify unit boundaries directly
+      # without bypassing private visibility.
+      #
+      # @param bytes [Integer] Size in bytes
+      # @return [String] Formatted size
+      def self.format_size(bytes)
+        return "0 B" if bytes.zero?
+
+        units = %w[B KB MB GB TB]
+        exp = (Math.log(bytes) / Math.log(1024)).to_i
+        exp = [exp, units.length - 1].min
+
+        Kernel.format("%.1f %s", bytes.to_f / (1024**exp), units[exp])
+      end
+
       private
 
       # Extract all entries from package
@@ -349,13 +365,7 @@ module Lutaml
       # @param bytes [Integer] Size in bytes
       # @return [String] Formatted size
       def format_size(bytes)
-        return "0 B" if bytes.zero?
-
-        units = %w[B KB MB GB TB]
-        exp = (Math.log(bytes) / Math.log(1024)).to_i
-        exp = [exp, units.length - 1].min
-
-        Kernel.format("%.1f %s", bytes.to_f / (1024**exp), units[exp])
+        self.class.format_size(bytes)
       end
 
       # Colorize text if colors enabled

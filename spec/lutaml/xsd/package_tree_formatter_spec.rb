@@ -281,27 +281,19 @@ RSpec.describe Lutaml::Xsd::PackageTreeFormatter do
 
   describe "file size formatting" do
     it "formats bytes correctly" do
-      formatter = described_class.new("/some/path/package.lxr")
-      size_str = formatter.send(:format_size, 500)
-      expect(size_str).to eq("500.0 B")
+      expect(described_class.format_size(500)).to eq("500.0 B")
     end
 
     it "formats kilobytes correctly" do
-      formatter = described_class.new("/some/path/package.lxr")
-      size_str = formatter.send(:format_size, 1536)
-      expect(size_str).to eq("1.5 KB")
+      expect(described_class.format_size(1536)).to eq("1.5 KB")
     end
 
     it "formats megabytes correctly" do
-      formatter = described_class.new("/some/path/package.lxr")
-      size_str = formatter.send(:format_size, 1_572_864)
-      expect(size_str).to eq("1.5 MB")
+      expect(described_class.format_size(1_572_864)).to eq("1.5 MB")
     end
 
     it "handles zero bytes" do
-      formatter = described_class.new("/some/path/package.lxr")
-      size_str = formatter.send(:format_size, 0)
-      expect(size_str).to eq("0 B")
+      expect(described_class.format_size(0)).to eq("0 B")
     end
   end
 end

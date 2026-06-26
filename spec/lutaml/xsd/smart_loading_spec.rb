@@ -25,8 +25,8 @@ RSpec.describe Lutaml::Xsd::SchemaRepository, "smart loading" do
         repository = described_class.from_file(xsd_fixture_path)
 
         expect(repository).to be_a(described_class)
-        expect(repository.instance_variable_get(:@resolved)).to be true
-        expect(repository.instance_variable_get(:@parsed_schemas).size).to be > 0
+        expect(repository.resolved).to be true
+        expect(repository.parsed_schemas.size).to be > 0
       end
 
       it "creates a repository with correct file path" do

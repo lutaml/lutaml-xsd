@@ -4,6 +4,12 @@ require "spec_helper"
 require "lutaml/xsd"
 
 RSpec.describe Lutaml::Xsd::NamespacePrefixManager do
+  let(:gml_schema) do
+    Lutaml::Xml::Schema::Xsd::Schema.new.tap do |s|
+      s.target_namespace = "http://www.opengis.net/gml/3.2"
+    end
+  end
+
   let(:repository) do
     repo = Lutaml::Xsd::SchemaRepository.new(
       namespace_mappings: [
@@ -17,7 +23,7 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixManager do
         ),
       ],
     )
-    repo.instance_variable_set(:@resolved, true)
+    repo.parsed_schemas.set("/path/to/gml.xsd", gml_schema)
     repo
   end
 
@@ -58,13 +64,8 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixManager do
     end
 
     it "finds schema for namespace" do
-      # Create a mock schema with target namespace
-      schema = Lutaml::Xml::Schema::Xsd::Schema.new.tap { |s| s.target_namespace = "http://www.opengis.net/gml/3.2" }
-      allow(repository).to receive(:all_schemas)
-        .and_return({ "test.xsd" => schema })
-
       result = manager.find_schema_for_namespace("http://www.opengis.net/gml/3.2")
-      expect(result).to eq(schema)
+      expect(result).to eq(gml_schema)
     end
   end
 
@@ -75,10 +76,6 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixManager do
     end
 
     it "returns file path for namespace" do
-      schema = Lutaml::Xml::Schema::Xsd::Schema.new.tap { |s| s.target_namespace = "http://www.opengis.net/gml/3.2" }
-      allow(repository).to receive(:all_schemas)
-        .and_return({ "/path/to/gml.xsd" => schema })
-
       location = manager.get_package_location("http://www.opengis.net/gml/3.2")
       expect(location).to eq("/path/to/gml.xsd")
     end
@@ -94,22 +91,15 @@ RSpec.describe Lutaml::Xsd::NamespacePrefixInfo do
   end
 
   let(:repository) do
-    repo = Lutaml::Xsd::SchemaRepository.new(
-      namespace_mappings: [mapping],
-    )
-    repo.instance_variable_set(:@resolved, true)
+    schema = Lutaml::Xml::Schema::Xsd::Schema.new
+    schema.target_namespace = "http://example.com/test"
+    schema.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeA")
+    schema.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeC")
+    schema.simple_type << Lutaml::Xml::Schema::Xsd::SimpleType.new(name: "TypeB")
 
-    allow(repo).to receive(:all_schemas).and_return({})
-    allow(repo).to receive(:types_in_namespace).and_return(
-      [
-        { type: :complex_type,
-          definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeA") },
-        { type: :simple_type,
-          definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeB") },
-        { type: :complex_type,
-          definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeC") },
-      ],
-    )
+    repo = Lutaml::Xsd::SchemaRepository.new(namespace_mappings: [mapping])
+    repo.parsed_schemas.set("/path/to/test.xsd", schema)
+    repo.type_index.index_schema(schema, "/path/to/test.xsd")
     repo
   end
 

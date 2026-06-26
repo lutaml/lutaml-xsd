@@ -115,8 +115,7 @@ RSpec.describe Lutaml::Xsd::SchemaRepository, "helper methods" do
 
       # If there are types, they should be from the specified namespace
       if type_names.any?
-        prefix = repository.instance_variable_get(:@namespace_registry)
-          .prefix_for(first_ns)
+        prefix = repository.namespace_registry.prefix_for(first_ns)
         type_names.each do |name|
           expect(name).to start_with("#{prefix}:")
         end

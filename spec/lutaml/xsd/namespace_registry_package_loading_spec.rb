@@ -59,7 +59,7 @@ RSpec.describe "Namespace registry when loading from package" do
 
     # Load from package
     loaded_repo = Lutaml::Xsd::SchemaRepository.from_package(package_file)
-    loaded_repo.resolve unless loaded_repo.instance_variable_get(:@resolved)
+    loaded_repo.resolve unless loaded_repo.resolved
 
     # Verify namespace mappings are present in repository
     expect(loaded_repo.namespace_mappings).not_to be_empty
@@ -68,7 +68,7 @@ RSpec.describe "Namespace registry when loading from package" do
     expect(loaded_repo.namespace_mappings.first.uri).to eq("http://example.com/test")
 
     # Verify namespace mappings are registered in the namespace registry
-    registry = loaded_repo.instance_variable_get(:@namespace_registry)
+    registry = loaded_repo.namespace_registry
     expect(registry.get_uri("test")).to eq("http://example.com/test")
     expect(registry.prefix_registered?("test")).to be true
 
@@ -102,7 +102,7 @@ RSpec.describe "Namespace registry when loading from package" do
 
     # Load from package and attempt to find type
     loaded_repo = Lutaml::Xsd::SchemaRepository.from_package(package_file)
-    loaded_repo.resolve unless loaded_repo.instance_variable_get(:@resolved)
+    loaded_repo.resolve unless loaded_repo.resolved
 
     # This should NOT raise an error
     expect { loaded_repo.find_type("test:TestType") }.not_to raise_error
