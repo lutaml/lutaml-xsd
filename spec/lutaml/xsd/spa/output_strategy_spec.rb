@@ -14,8 +14,6 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
         @files_written = []
       end
 
-      protected
-
       def write_files(_html_content, _schema_data)
         @files_written = ["/tmp/test.html"]
       end
@@ -43,22 +41,6 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
     before do
       allow(File).to receive(:exist?).and_return(true)
       allow(File).to receive(:size).and_return(100)
-    end
-
-    it "calls prepare_output" do
-      expect(strategy).to receive(:prepare_output)
-      strategy.write(html_content, schema_data)
-    end
-
-    it "calls write_files" do
-      expect(strategy).to receive(:write_files).with(html_content,
-                                                     schema_data).and_call_original
-      strategy.write(html_content, schema_data)
-    end
-
-    it "calls verify_files" do
-      expect(strategy).to receive(:verify_files).and_call_original
-      strategy.write(html_content, schema_data)
     end
 
     it "returns list of written files" do
@@ -96,14 +78,8 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
       base_strategy = described_class.new
 
       expect do
-        base_strategy.send(:write_files, "", {})
+        base_strategy.write_files("", {})
       end.to raise_error(NotImplementedError, /must implement #write_files/)
-    end
-  end
-
-  describe "#prepare_output" do
-    it "has default implementation that does nothing" do
-      expect { strategy.send(:prepare_output) }.not_to raise_error
     end
   end
 
@@ -116,7 +92,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
 
       it "does not raise error" do
         expect do
-          strategy.send(:verify_files, ["/tmp/test.html"])
+          strategy.verify_files(["/tmp/test.html"])
         end.not_to raise_error
       end
     end
@@ -128,7 +104,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
 
       it "raises IOError" do
         expect do
-          strategy.send(:verify_files, ["/tmp/missing.html"])
+          strategy.verify_files(["/tmp/missing.html"])
         end.to raise_error(IOError, /Failed to write file/)
       end
     end
@@ -142,7 +118,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
 
       it "raises IOError" do
         expect do
-          strategy.send(:verify_files, ["/tmp/empty.html"])
+          strategy.verify_files(["/tmp/empty.html"])
         end.to raise_error(IOError, /File is empty/)
       end
     end
@@ -153,7 +129,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
         allow(File).to receive(:size).and_return(100)
 
         expect do
-          strategy.send(:verify_files, ["/tmp/file1.html", "/tmp/file2.html"])
+          strategy.verify_files(["/tmp/file1.html", "/tmp/file2.html"])
         end.not_to raise_error
       end
     end
@@ -167,7 +143,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
 
       it "does not create directory" do
         expect(FileUtils).not_to receive(:mkdir_p)
-        strategy.send(:ensure_directory, "/tmp/existing")
+        strategy.ensure_directory("/tmp/existing")
       end
     end
 
@@ -178,7 +154,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
 
       it "creates directory" do
         expect(FileUtils).to receive(:mkdir_p).with("/tmp/new")
-        strategy.send(:ensure_directory, "/tmp/new")
+        strategy.ensure_directory("/tmp/new")
       end
 
       context "when verbose mode enabled" do
@@ -188,7 +164,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
           allow(FileUtils).to receive(:mkdir_p)
 
           expect do
-            strategy.send(:ensure_directory, "/tmp/new")
+            strategy.ensure_directory("/tmp/new")
           end.to output(/Created directory:.*new/).to_stdout
         end
       end
@@ -201,12 +177,12 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
 
     it "writes content to file" do
       expect(File).to receive(:write).with(path, content)
-      strategy.send(:write_file, path, content)
+      strategy.write_file(path, content)
     end
 
     it "returns file path" do
       allow(File).to receive(:write)
-      result = strategy.send(:write_file, path, content)
+      result = strategy.write_file(path, content)
 
       expect(result).to eq(path)
     end
@@ -218,7 +194,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
         allow(File).to receive(:write)
 
         expect do
-          strategy.send(:write_file, path, content)
+          strategy.write_file(path, content)
         end.to output(/Wrote:.*test\.html/).to_stdout
       end
     end
@@ -226,27 +202,27 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
 
   describe "#format_size" do
     it "formats bytes" do
-      expect(strategy.send(:format_size, 500)).to eq("500 B")
+      expect(strategy.format_size(500)).to eq("500 B")
     end
 
     it "formats kilobytes" do
-      expect(strategy.send(:format_size, 2048)).to eq("2.0 KB")
+      expect(strategy.format_size(2048)).to eq("2.0 KB")
     end
 
     it "formats megabytes" do
-      expect(strategy.send(:format_size, 1_572_864)).to eq("1.5 MB")
+      expect(strategy.format_size(1_572_864)).to eq("1.5 MB")
     end
 
     it "rounds to one decimal place" do
-      expect(strategy.send(:format_size, 1234)).to eq("1.2 KB")
+      expect(strategy.format_size(1234)).to eq("1.2 KB")
     end
 
     it "handles edge case at 1KB boundary" do
-      expect(strategy.send(:format_size, 1024)).to eq("1.0 KB")
+      expect(strategy.format_size(1024)).to eq("1.0 KB")
     end
 
     it "handles edge case at 1MB boundary" do
-      expect(strategy.send(:format_size, 1_048_576)).to eq("1.0 MB")
+      expect(strategy.format_size(1_048_576)).to eq("1.0 MB")
     end
   end
 
@@ -256,7 +232,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
 
       it "outputs message" do
         expect do
-          strategy.send(:log, "Test message")
+          strategy.log("Test message")
         end.to output("Test message\n").to_stdout
       end
     end
@@ -264,7 +240,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
     context "when verbose mode disabled" do
       it "does not output message" do
         expect do
-          strategy.send(:log, "Test message")
+          strategy.log("Test message")
         end.not_to output.to_stdout
       end
     end
@@ -272,7 +248,6 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
 
   describe "template method pattern" do
     it "defines overall algorithm in base class" do
-      # The #write method defines the algorithm
       expect(described_class.instance_methods(false)).to include(:write)
     end
 
@@ -280,7 +255,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
       base_strategy = described_class.new
 
       expect do
-        base_strategy.send(:write_files, "", {})
+        base_strategy.write_files("", {})
       end.to raise_error(NotImplementedError)
     end
 
@@ -292,8 +267,6 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
           super
           @prepared = false
         end
-
-        protected
 
         def prepare_output
           @prepared = true
@@ -319,7 +292,7 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
       allow(File).to receive(:size).and_return(100)
 
       expect do
-        strategy.send(:verify_files, [])
+        strategy.verify_files([])
       end.not_to raise_error
     end
 
@@ -327,12 +300,12 @@ RSpec.describe Lutaml::Xsd::Spa::OutputStrategy do
       allow(File).to receive(:write)
 
       expect do
-        strategy.send(:write_file, "/tmp/test.html", nil)
+        strategy.write_file("/tmp/test.html", nil)
       end.not_to raise_error
     end
 
     it "handles very large file sizes" do
-      size = strategy.send(:format_size, 10_737_418_240)
+      size = strategy.format_size(10_737_418_240)
       expect(size).to match(/MB$/)
     end
   end

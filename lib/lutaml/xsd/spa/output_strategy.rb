@@ -54,8 +54,6 @@ module Lutaml
           files
         end
 
-        protected
-
         # Prepare output directory (template method hook)
         #
         # Subclasses can override this to customize directory preparation.
