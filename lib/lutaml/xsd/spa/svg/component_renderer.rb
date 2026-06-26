@@ -4,6 +4,11 @@ module Lutaml
   module Xsd
     module Spa
       module Svg
+        # Utility namespace referenced by this file.
+        module Utils
+          autoload :SvgBuilder, "lutaml/xsd/spa/svg/utils/svg_builder"
+        end
+
         # Abstract base class for component renderers
         # Subclasses must implement #render method
         class ComponentRenderer
@@ -21,8 +26,6 @@ module Lutaml
           def render(component_data, box)
             raise NotImplementedError, "#{self.class} must implement #render"
           end
-
-          protected
 
           # Creates a basic box with fill and stroke
           def create_box(box, fill, options = {})

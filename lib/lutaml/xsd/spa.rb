@@ -13,11 +13,6 @@ module Lutaml
         # lutaml/xsd/spa/svg/style_configuration.rb so that file is
         # self-contained.
 
-        module Geometry
-          autoload :Point, "lutaml/xsd/spa/svg/geometry/point"
-          autoload :Box, "lutaml/xsd/spa/svg/geometry/box"
-        end
-
         module Connectors
           autoload :InheritanceConnector, "lutaml/xsd/spa/svg/connectors/inheritance_connector"
           autoload :ContainmentConnector, "lutaml/xsd/spa/svg/connectors/containment_connector"

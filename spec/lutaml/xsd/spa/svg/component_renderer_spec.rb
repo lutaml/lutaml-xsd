@@ -28,51 +28,51 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ComponentRenderer do
 
   describe "#slugify" do
     it "converts CamelCase to kebab-case" do
-      expect(renderer.send(:slugify, "PersonType")).to eq("person-type")
+      expect(renderer.slugify("PersonType")).to eq("person-type")
     end
 
     it "handles consecutive capitals" do
-      expect(renderer.send(:slugify, "XMLSchema")).to eq("xml-schema")
+      expect(renderer.slugify("XMLSchema")).to eq("xml-schema")
     end
 
     it "handles lowercase names" do
-      expect(renderer.send(:slugify, "person")).to eq("person")
+      expect(renderer.slugify("person")).to eq("person")
     end
 
     it "removes special characters" do
-      expect(renderer.send(:slugify,
+      expect(renderer.slugify(
                            "Person_Type@123")).to eq("person-type-123")
     end
 
     it "handles nil input" do
-      expect(renderer.send(:slugify, nil)).to eq("")
+      expect(renderer.slugify(nil)).to eq("")
     end
 
     it "removes leading and trailing dashes" do
-      expect(renderer.send(:slugify, "_Person_")).to eq("person")
+      expect(renderer.slugify("_Person_")).to eq("person")
     end
   end
 
   describe "#semantic_uri" do
     it "generates semantic URI for element" do
-      uri = renderer.send(:semantic_uri, "element", "PersonType")
+      uri = renderer.semantic_uri("element", "PersonType")
 
       expect(uri).to eq("#/schemas/test_schema/element/person-type")
     end
 
     it "generates semantic URI for type" do
-      uri = renderer.send(:semantic_uri, "type", "AddressType")
+      uri = renderer.semantic_uri("type", "AddressType")
 
       expect(uri).to eq("#/schemas/test_schema/type/address-type")
     end
   end
 
-  describe "protected helper methods" do
+  describe "helper methods" do
     let(:box) { Lutaml::Xsd::Spa::Svg::Geometry::Box.new(10, 20, 100, 50) }
 
     describe "#create_box" do
       it "creates SVG rectangle with default styling" do
-        result = renderer.send(:create_box, box, "blue")
+        result = renderer.create_box(box, "blue")
 
         expect(result).to include("<rect")
         expect(result).to include('x="10.0"')
@@ -86,7 +86,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ComponentRenderer do
       end
 
       it "accepts custom options" do
-        result = renderer.send(:create_box, box, "red",
+        result = renderer.create_box(box, "red",
                                stroke: "black",
                                stroke_width: 3,
                                corner_radius: 5)
@@ -98,7 +98,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ComponentRenderer do
       end
 
       it "adds filter if provided" do
-        result = renderer.send(:create_box, box, "green", filter: "shadow")
+        result = renderer.create_box(box, "green", filter: "shadow")
 
         expect(result).to include('filter="url(#shadow)"')
       end
@@ -106,7 +106,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ComponentRenderer do
 
     describe "#create_centered_text" do
       it "creates centered text element" do
-        result = renderer.send(:create_centered_text, box, "Test Label")
+        result = renderer.create_centered_text(box, "Test Label")
 
         expect(result).to include("<text")
         expect(result).to include('x="60.0"')  # center x
@@ -116,7 +116,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ComponentRenderer do
       end
 
       it "accepts custom options" do
-        result = renderer.send(:create_centered_text, box, "Custom",
+        result = renderer.create_centered_text(box, "Custom",
                                fill: "red",
                                font_size: 20,
                                font_weight: "normal",
@@ -131,7 +131,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ComponentRenderer do
 
     describe "#create_link" do
       it "creates SVG anchor element" do
-        result = renderer.send(:create_link, "#/test") do
+        result = renderer.create_link("#/test") do
           "<circle/>"
         end
 

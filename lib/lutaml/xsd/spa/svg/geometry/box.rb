@@ -5,6 +5,10 @@ module Lutaml
     module Spa
       module Svg
         module Geometry
+          # Point is referenced by Box methods below; autoload it so this
+          # file is self-contained when required directly.
+          autoload :Point, "lutaml/xsd/spa/svg/geometry/point"
+
           # Immutable value object representing a rectangular box
           class Box
             attr_reader :x, :y, :width, :height
