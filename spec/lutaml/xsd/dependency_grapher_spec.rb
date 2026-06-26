@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "tempfile"
 require "lutaml/xsd/dependency_grapher"
 require "lutaml/xsd/schema_repository"
 
@@ -88,19 +89,10 @@ RSpec.describe Lutaml::Xsd::DependencyGrapher do
     # Add to repository
     repo.add_schema_file(temp_file.path)
     repo.parse
-
-    # Ensure the schema is in the global processed_schemas cache
-    parsed_schema = repo.instance_variable_get(:@parsed_schemas).get(temp_file.path)
-    if parsed_schema
-      Lutaml::Xml::Schema::Xsd::Schema.schema_processed(temp_file.path,
-                                                        parsed_schema)
-    end
-
     repo.resolve
 
     # Register namespace
-    namespace_registry = repo.instance_variable_get(:@namespace_registry)
-    namespace_registry.register("test", "http://example.com/test")
+    repo.namespace_registry.register("test", "http://example.com/test")
 
     temp_file.unlink
 

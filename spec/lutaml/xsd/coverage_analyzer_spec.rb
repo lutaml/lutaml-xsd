@@ -1,116 +1,52 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/xsd/coverage_analyzer"
+require "lutaml/xsd/coverage_analyzer"
 
 RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
-  let(:repository) { Lutaml::Xsd::SchemaRepository.new }
+  let(:repository) do
+    repo = Lutaml::Xsd::SchemaRepository.new
+    repo.namespace_registry.register("ns", "http://example.com/ns")
+    repo.namespace_registry.register("other", "http://other.com/ns")
 
-  before do
-    # Create a simple test schema structure
-    # We'll use mock data to test the coverage analysis logic
-    allow(repository).to receive(:instance_variable_get).with(:@type_index).and_return(type_index)
-    allow(repository).to receive(:find_type) do |qname|
-      find_mock_type(qname)
-    end
+    # Schema 1: ns namespace with TypeA (depends on TypeB), TypeB, TypeC
+    schema1 = Lutaml::Xml::Schema::Xsd::Schema.new
+    schema1.target_namespace = "http://example.com/ns"
+
+    type_a_extension = Lutaml::Xml::Schema::Xsd::ExtensionComplexContent.new(
+      base: "ns:TypeB",
+    )
+    type_a_content = Lutaml::Xml::Schema::Xsd::ComplexContent.new(
+      extension: type_a_extension,
+    )
+    schema1.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(
+      name: "TypeA",
+      complex_content: type_a_content,
+    )
+    schema1.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeB")
+    schema1.simple_type << Lutaml::Xml::Schema::Xsd::SimpleType.new(name: "TypeC")
+
+    # Schema 2: other namespace with TypeD
+    schema2 = Lutaml::Xml::Schema::Xsd::Schema.new
+    schema2.target_namespace = "http://other.com/ns"
+    schema2.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeD")
+
+    repo.parsed_schemas.set("/test/schema1.xsd", schema1)
+    repo.parsed_schemas.set("/test/schema2.xsd", schema2)
+    repo.type_index.index_schema(schema1, "/test/schema1.xsd")
+    repo.type_index.index_schema(schema2, "/test/schema2.xsd")
+    repo
   end
 
-  let(:type_index) do
-    index = instance_double("TypeIndex")
-    allow(index).to receive(:all).and_return(all_types_data)
-    index
-  end
-
-  let(:all_types_data) do
-    {
-      "{http://example.com/ns}TypeA" => {
-        namespace: "http://example.com/ns",
-        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeA"),
-        type: :complex_type,
-      },
-      "{http://example.com/ns}TypeB" => {
-        namespace: "http://example.com/ns",
-        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeB"),
-        type: :complex_type,
-      },
-      "{http://example.com/ns}TypeC" => {
-        namespace: "http://example.com/ns",
-        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeC"),
-        type: :simple_type,
-      },
-      "{http://other.com/ns}TypeD" => {
-        namespace: "http://other.com/ns",
-        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeD"),
-        type: :complex_type,
-      },
-    }
-  end
-
-  def find_mock_type(qname)
-    case qname
-    when "ns:TypeA"
-      Lutaml::Xsd::TypeResolutionResult.success(
-        qname: qname,
-        namespace: "http://example.com/ns",
-        local_name: "TypeA",
-        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeA"),
-        schema_file: "test.xsd",
-        resolution_path: [],
-      )
-    when "ns:TypeB"
-      Lutaml::Xsd::TypeResolutionResult.success(
-        qname: qname,
-        namespace: "http://example.com/ns",
-        local_name: "TypeB",
-        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeB"),
-        schema_file: "test.xsd",
-        resolution_path: [],
-      )
-    when "ns:TypeC"
-      Lutaml::Xsd::TypeResolutionResult.success(
-        qname: qname,
-        namespace: "http://example.com/ns",
-        local_name: "TypeC",
-        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeC"),
-        schema_file: "test.xsd",
-        resolution_path: [],
-      )
-    when "other:TypeD"
-      Lutaml::Xsd::TypeResolutionResult.success(
-        qname: qname,
-        namespace: "http://other.com/ns",
-        local_name: "TypeD",
-        definition: Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeD"),
-        schema_file: "test.xsd",
-        resolution_path: [],
-      )
-    else
-      Lutaml::Xsd::TypeResolutionResult.failure(
-        qname: qname,
-        error_message: "Type not found",
-        resolution_path: [],
-      )
-    end
-  end
+  let(:analyzer) { described_class.new(repository) }
 
   describe "#initialize" do
     it "creates analyzer with repository" do
-      analyzer = described_class.new(repository)
       expect(analyzer.repository).to eq(repository)
     end
   end
 
   describe "#analyze" do
-    let(:analyzer) { described_class.new(repository) }
-    let(:dependency_grapher) { instance_double(Lutaml::Xsd::DependencyGrapher) }
-
-    before do
-      allow(Lutaml::Xsd::DependencyGrapher).to receive(:new).with(repository).and_return(dependency_grapher)
-      allow(dependency_grapher).to receive(:extract_type_references)
-        .with(anything)
-        .and_return([])
-    end
-
     context "with no entry types" do
       it "returns report with all types unused" do
         report = analyzer.analyze(entry_types: [])
@@ -124,14 +60,41 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
     end
 
     context "with single entry type" do
-      it "marks entry type as used" do
+      it "marks entry type and its direct base as used" do
+        # TypeA extends TypeB, so tracing from TypeA pulls in TypeB.
         report = analyzer.analyze(entry_types: ["ns:TypeA"])
 
         expect(report.total_types).to eq(4)
-        expect(report.used_count).to eq(1)
-        expect(report.unused_count).to eq(3)
-        expect(report.coverage_percentage).to eq(25.0)
+        expect(report.used_count).to eq(2) # TypeA + TypeB
+        expect(report.unused_count).to eq(2)
+        expect(report.coverage_percentage).to eq(50.0)
         expect(report.entry_types).to eq(["ns:TypeA"])
+      end
+    end
+
+    context "with isolated entry type" do
+      # Use a type with no outgoing edges to verify a single-type use case.
+      let(:repository) do
+        repo = Lutaml::Xsd::SchemaRepository.new
+        repo.namespace_registry.register("ns", "http://example.com/ns")
+
+        schema1 = Lutaml::Xml::Schema::Xsd::Schema.new
+        schema1.target_namespace = "http://example.com/ns"
+        schema1.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeA")
+        schema1.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeB")
+        schema1.simple_type << Lutaml::Xml::Schema::Xsd::SimpleType.new(name: "TypeC")
+
+        repo.parsed_schemas.set("/test/schema1.xsd", schema1)
+        repo.type_index.index_schema(schema1, "/test/schema1.xsd")
+        repo
+      end
+
+      it "marks only the entry type as used" do
+        report = analyzer.analyze(entry_types: ["ns:TypeA"])
+
+        expect(report.total_types).to eq(3)
+        expect(report.used_count).to eq(1)
+        expect(report.coverage_percentage).to eq(33.33)
       end
     end
 
@@ -148,19 +111,8 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
     end
 
     context "with dependencies" do
-      before do
-        # TypeA depends on TypeB
-        allow(dependency_grapher).to receive(:extract_type_references)
-          .with(anything) do |definition|
-          if definition.name == "TypeA"
-            ["ns:TypeB"]
-          else
-            []
-          end
-        end
-      end
-
       it "includes dependent types in used types" do
+        # TypeA extends TypeB, so tracing from TypeA reaches TypeB.
         report = analyzer.analyze(entry_types: ["ns:TypeA"])
 
         expect(report.used_count).to eq(2) # TypeA + TypeB
@@ -177,15 +129,56 @@ RSpec.describe Lutaml::Xsd::CoverageAnalyzer do
         expect(by_ns).to have_key("http://example.com/ns")
         expect(by_ns).to have_key("http://other.com/ns")
 
-        # http://example.com/ns has 3 types, 1 used
+        # http://example.com/ns has 3 types, 1 used (TypeA extends TypeB but
+        # only TypeA is the entry — TypeB gets pulled in by trace too, so
+        # used count = 2: TypeA + TypeB)
+        # Wait: the original test expected used=1 here. We need to check why.
+        # Original test had stubbed extract_type_references to return []
+        # for all definitions, severing the TypeA→TypeB edge.
         expect(by_ns["http://example.com/ns"][:total]).to eq(3)
-        expect(by_ns["http://example.com/ns"][:used]).to eq(1)
-        expect(by_ns["http://example.com/ns"][:coverage_percentage]).to eq(33.33)
+        # With real DependencyGrapher, TypeA→TypeB edge is real.
+        expect(by_ns["http://example.com/ns"][:used]).to eq(2)
+        expect(by_ns["http://example.com/ns"][:coverage_percentage]).to eq(66.67)
 
         # http://other.com/ns has 1 type, 1 used
         expect(by_ns["http://other.com/ns"][:total]).to eq(1)
         expect(by_ns["http://other.com/ns"][:used]).to eq(1)
         expect(by_ns["http://other.com/ns"][:coverage_percentage]).to eq(100.0)
+      end
+    end
+
+    context "with dependency-severed namespace analysis" do
+      # Recreate repository without the TypeA→TypeB edge to mirror the
+      # original namespace-analysis test (which stubbed extract_type_references
+      # to return []). Used count is then 1 per namespace entry.
+      let(:repository) do
+        repo = Lutaml::Xsd::SchemaRepository.new
+        repo.namespace_registry.register("ns", "http://example.com/ns")
+        repo.namespace_registry.register("other", "http://other.com/ns")
+
+        schema1 = Lutaml::Xml::Schema::Xsd::Schema.new
+        schema1.target_namespace = "http://example.com/ns"
+        schema1.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeA")
+        schema1.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeB")
+        schema1.simple_type << Lutaml::Xml::Schema::Xsd::SimpleType.new(name: "TypeC")
+
+        schema2 = Lutaml::Xml::Schema::Xsd::Schema.new
+        schema2.target_namespace = "http://other.com/ns"
+        schema2.complex_type << Lutaml::Xml::Schema::Xsd::ComplexType.new(name: "TypeD")
+
+        repo.parsed_schemas.set("/test/schema1.xsd", schema1)
+        repo.parsed_schemas.set("/test/schema2.xsd", schema2)
+        repo.type_index.index_schema(schema1, "/test/schema1.xsd")
+        repo.type_index.index_schema(schema2, "/test/schema2.xsd")
+        repo
+      end
+
+      it "calculates 1-of-3 coverage for ns namespace" do
+        report = analyzer.analyze(entry_types: ["ns:TypeA", "other:TypeD"])
+
+        by_ns = report.by_namespace
+        expect(by_ns["http://example.com/ns"][:used]).to eq(1)
+        expect(by_ns["http://example.com/ns"][:coverage_percentage]).to eq(33.33)
       end
     end
   end
@@ -323,7 +316,6 @@ RSpec.describe Lutaml::Xsd::CoverageReport do
     end
 
     it "sorts unused types by namespace and name" do
-      # Test with multiple unused types
       extended_by_namespace = {
         "http://example.com/ns" => {
           total: 3,
@@ -350,19 +342,17 @@ RSpec.describe Lutaml::Xsd::CoverageReport do
       hash = extended_report.to_h
       names = hash[:unused_type_details].map { |t| t[:name] }
 
-      expect(names).to eq(%w[TypeB TypeC]) # Sorted alphabetically
+      expect(names).to eq(%w[TypeB TypeC])
     end
   end
 
   describe "MECE principle" do
     it "ensures used and unused types are mutually exclusive" do
-      # No overlap between used and unused
       intersection = report.used_types & report.unused_types
       expect(intersection).to be_empty
     end
 
     it "ensures used and unused types are collectively exhaustive" do
-      # Union equals all types
       union = report.used_types | report.unused_types
       expect(union).to eq(report.all_types)
     end
