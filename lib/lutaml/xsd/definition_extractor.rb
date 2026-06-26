@@ -101,7 +101,7 @@ module Lutaml
       def find_type_in_repository(repository, qname)
         namespace, local_name = parse_qname(repository, qname)
 
-        Lutaml::Xml::Schema::Xsd::Schema.processed_schemas.each do |schema_file, schema|
+        repository.all_schemas.each do |schema_file, schema|
           next unless namespace.nil? || schema.target_namespace == namespace
 
           # Check complex types
@@ -123,7 +123,7 @@ module Lutaml
       def find_element_in_repository(repository, qname)
         namespace, local_name = parse_qname(repository, qname)
 
-        Lutaml::Xml::Schema::Xsd::Schema.processed_schemas.each do |schema_file, schema|
+        repository.all_schemas.each do |schema_file, schema|
           next unless namespace.nil? || schema.target_namespace == namespace
 
           element_obj = schema.element.find { |e| e.name == local_name }
@@ -140,7 +140,7 @@ module Lutaml
       def find_attribute_in_repository(repository, qname)
         namespace, local_name = parse_qname(repository, qname)
 
-        Lutaml::Xml::Schema::Xsd::Schema.processed_schemas.each do |schema_file, schema|
+        repository.all_schemas.each do |schema_file, schema|
           next unless namespace.nil? || schema.target_namespace == namespace
 
           attr_obj = schema.attribute.find { |a| a.name == local_name }

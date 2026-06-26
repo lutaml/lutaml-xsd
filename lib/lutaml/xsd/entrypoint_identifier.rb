@@ -46,8 +46,8 @@ module Lutaml
         validation = package.validate
         metadata = validation.metadata
 
-        package.load_repository
-        all_schemas = Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
+        repository = package.load_repository
+        all_schemas = repository.all_schemas
 
         # Exclude entrypoint files from dependencies
         entrypoint_files = metadata&.[]("files") || []
@@ -77,8 +77,8 @@ module Lutaml
       # @param repository [SchemaRepository] Repository to search
       # @param file_path [String] File path to find
       # @return [Schema, nil] Found schema or nil
-      def find_schema_by_path(_repository, file_path)
-        all_schemas = Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
+      def find_schema_by_path(repository, file_path)
+        all_schemas = repository.all_schemas
 
         # Try exact match first
         schema = all_schemas[file_path]

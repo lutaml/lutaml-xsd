@@ -625,10 +625,10 @@ module Lutaml
         end
 
         # Filter types by namespace
-        def filter_types_by_namespace(_repository, namespace_uri)
+        def filter_types_by_namespace(repository, namespace_uri)
           types = []
 
-          Lutaml::Xml::Schema::Xsd::Schema.processed_schemas.each_value do |schema|
+          repository.all_schemas.each_value do |schema|
             next unless schema.target_namespace == namespace_uri
 
             schema.complex_type.each do |type|
@@ -652,10 +652,10 @@ module Lutaml
         end
 
         # Filter elements by namespace
-        def filter_elements_by_namespace(_repository, namespace_uri)
+        def filter_elements_by_namespace(repository, namespace_uri)
           elements = []
 
-          Lutaml::Xml::Schema::Xsd::Schema.processed_schemas.each_value do |schema|
+          repository.all_schemas.each_value do |schema|
             next unless schema.target_namespace == namespace_uri
 
             schema.element.each do |elem|

@@ -14,11 +14,6 @@ RSpec.describe Lutaml::Xsd::SchemaClassifier do
 
   describe "#classify" do
     context "with empty repository" do
-      before do
-        # Clear global schema cache to ensure truly empty repository
-        Lutaml::Xml::Schema::Xsd::Schema.reset_processed_schemas
-      end
-
       it "returns classification structure with empty categories" do
         result = classifier.classify
 
@@ -47,42 +42,24 @@ RSpec.describe Lutaml::Xsd::SchemaClassifier do
       end
     end
 
-    context "with mock schemas in processed cache" do
+    context "with schemas in repository" do
       let(:schema1_path) { "/path/to/schema1.xsd" }
       let(:schema2_path) { "/path/to/schema2.xsd" }
       let(:schema1) do
-        instance_double(
-          Lutaml::Xml::Schema::Xsd::Schema,
-          target_namespace: "http://example.com/schema1",
-          element: [],
-          complex_type: [],
-          simple_type: [],
-          import: [],
-          include: [],
-        )
+        Lutaml::Xml::Schema::Xsd::Schema.new.tap do |s|
+          s.target_namespace = "http://example.com/schema1"
+        end
       end
       let(:schema2) do
-        instance_double(
-          Lutaml::Xml::Schema::Xsd::Schema,
-          target_namespace: "http://example.com/schema2",
-          element: [],
-          complex_type: [],
-          simple_type: [],
-          import: [],
-          include: [],
-        )
+        Lutaml::Xml::Schema::Xsd::Schema.new.tap do |s|
+          s.target_namespace = "http://example.com/schema2"
+        end
       end
 
       before do
-        # Clear and setup processed schemas
-        Lutaml::Xml::Schema::Xsd::Schema.reset_processed_schemas
-        Lutaml::Xml::Schema::Xsd::Schema.schema_processed(schema1_path, schema1)
-        Lutaml::Xml::Schema::Xsd::Schema.schema_processed(schema2_path, schema2)
-        repository.instance_variable_set(:@files, [schema1_path])
-      end
-
-      after do
-        Lutaml::Xml::Schema::Xsd::Schema.reset_processed_schemas
+        repository.parsed_schemas.set(schema1_path, schema1)
+        repository.parsed_schemas.set(schema2_path, schema2)
+        repository.files = [schema1_path]
       end
 
       it "classifies entrypoint schemas correctly" do

@@ -52,6 +52,10 @@ module Lutaml
 
       private
 
+      # Upstream interop shim: the lutaml-xml parser writes schemas resolved
+      # via xs:import/xs:include into its class-level cache during parse.
+      # Pull those into this repository's per-instance store so each
+      # SchemaRepository is isolated.
       def import_resolved_schemas
         global_cache = Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
         global_cache.each do |path, schema|
@@ -110,11 +114,6 @@ module Lutaml
         if store.exists?(old_path)
           store.set(new_path, store.get(old_path))
           store.delete(old_path)
-        end
-
-        cached = Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
-        if cached.key?(old_path)
-          cached[new_path] = cached.delete(old_path)
         end
       end
     end

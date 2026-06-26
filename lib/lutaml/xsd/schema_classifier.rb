@@ -118,7 +118,7 @@ module Lutaml
       # Get all processed schemas
       # @return [Hash] All schemas from the repository
       def get_all_schemas
-        Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
+        repository.all_schemas
       end
 
       # Get schema by file path

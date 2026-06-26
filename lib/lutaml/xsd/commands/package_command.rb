@@ -884,10 +884,10 @@ module Lutaml
 
             # Load package and get serialized schemas (already parsed!)
             package = SchemaRepositoryPackage.new(@package_file)
-            package.load_repository
+            repository = package.load_repository
 
-            # Get all schemas from global cache
-            all_schemas = Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
+            # Get all schemas from the loaded repository
+            all_schemas = repository.all_schemas
 
             schemas_info = all_schemas.map do |file_path, schema|
               {
