@@ -55,6 +55,9 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
             output_package: #{tmpdir}/test.lxr
             files:
               - #{schema_file}
+            namespace_mappings:
+              - prefix: test
+                uri: http://example.com/test
           YAML
 
           config_file = File.join(tmpdir, "config.yml")
@@ -135,6 +138,9 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
             output_package: #{tmpdir}/test.lxr
             files:
               - #{schema_file}
+            namespace_mappings:
+              - prefix: test
+                uri: http://example.com/test
           YAML
 
           config_file = File.join(tmpdir, "config.yml")
@@ -183,6 +189,9 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
             output_package: #{tmpdir}/test.lxr
             files:
               - #{schema_file}
+            namespace_mappings:
+              - prefix: test
+                uri: http://example.com/test
           YAML
 
           config_file = File.join(tmpdir, "config.yml")
@@ -350,6 +359,9 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
           output_package: #{tmpdir}/test.lxr
           files:
             - #{schema_file}
+          namespace_mappings:
+            - prefix: test
+              uri: http://example.com/test
         YAML
 
         config_file = File.join(tmpdir, "config.yml")
