@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "fileutils"
+require "tmpdir"
 
 RSpec.describe Lutaml::Xsd::PackageConflictDetector do
   let(:config1) do
     Lutaml::Xsd::BasePackageConfig.new(
-      package: "pkg1.lxr",
+      package: pkg_path("pkg1.lxr"),
       priority: 0,
       conflict_resolution: "keep",
     )
@@ -13,76 +15,67 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
 
   let(:config2) do
     Lutaml::Xsd::BasePackageConfig.new(
-      package: "pkg2.lxr",
+      package: pkg_path("pkg2.lxr"),
       priority: 10,
       conflict_resolution: "override",
     )
   end
 
-  let(:mock_repo1) do
-    instance_double(
-      Lutaml::Xsd::SchemaRepository,
+  # Real repositories built via factories, wired into the detector through
+  # the loader: callable seam. No File.stubbing or class-level allow.
+  let(:repos_by_path) do
+    {
+      pkg_path("pkg1.lxr") => repo1,
+      pkg_path("pkg2.lxr") => repo2,
+    }
+  end
+
+  let(:loader) { ->(path) { repos_by_path[path] } }
+
+  let(:repo1) do
+    repo_with(
+      namespaces: { "ns1" => "http://example.com/ns1" },
+      types_by_namespace: {},
       files: ["schemas/person.xsd", "schemas/company.xsd"],
-      namespace_mappings: [],
     )
   end
 
-  let(:mock_repo2) do
-    instance_double(
-      Lutaml::Xsd::SchemaRepository,
+  let(:repo2) do
+    repo_with(
+      namespaces: { "ns2" => "http://example.com/ns2" },
+      types_by_namespace: {},
       files: ["xsd/person.xsd", "xsd/address.xsd"],
-      namespace_mappings: [],
     )
-  end
-
-  before do
-    allow(File).to receive(:exist?).with("pkg1.lxr").and_return(true)
-    allow(File).to receive(:exist?).with("pkg2.lxr").and_return(true)
-    allow(Lutaml::Xsd::SchemaRepository).to receive(:from_package)
-      .with("pkg1.lxr").and_return(mock_repo1)
-    allow(Lutaml::Xsd::SchemaRepository).to receive(:from_package)
-      .with("pkg2.lxr").and_return(mock_repo2)
   end
 
   describe "#initialize" do
     it "accepts package configs array" do
-      detector = described_class.new([config1, config2])
+      detector = described_class.new([config1, config2], loader: loader)
       expect(detector.package_configs).to eq([config1, config2])
     end
   end
 
   describe "#detect_conflicts" do
     context "with no conflicts" do
-      let(:mock_repo1_no_conflict) do
-        instance_double(
-          Lutaml::Xsd::SchemaRepository,
+      let(:repo1) do
+        repo_with(
+          namespaces: { "ns1" => "http://example.com/ns1" },
+          types_by_namespace: {},
           files: ["schemas/person.xsd"],
-          namespace_mappings: [],
         )
       end
 
-      let(:mock_repo2_no_conflict) do
-        instance_double(
-          Lutaml::Xsd::SchemaRepository,
+      let(:repo2) do
+        repo_with(
+          namespaces: { "ns2" => "http://example.com/ns2" },
+          types_by_namespace: {},
           files: ["schemas/company.xsd"],
-          namespace_mappings: [],
         )
-      end
-
-      before do
-        allow(Lutaml::Xsd::SchemaRepository).to receive(:from_package)
-          .with("pkg1.lxr").and_return(mock_repo1_no_conflict)
-        allow(Lutaml::Xsd::SchemaRepository).to receive(:from_package)
-          .with("pkg2.lxr").and_return(mock_repo2_no_conflict)
-
-        allow(mock_repo1_no_conflict).to receive(:all_namespaces).and_return(["http://example.com/ns1"])
-        allow(mock_repo2_no_conflict).to receive(:all_namespaces).and_return(["http://example.com/ns2"])
-        allow(mock_repo1_no_conflict).to receive(:all_type_names).and_return(["Type1"])
-        allow(mock_repo2_no_conflict).to receive(:all_type_names).and_return(["Type2"])
       end
 
       it "returns report with no conflicts" do
-        detector = described_class.new([config1, config2])
+        touch_packages("pkg1.lxr", "pkg2.lxr")
+        detector = described_class.new([config1, config2], loader: loader)
         report = detector.detect_conflicts
 
         expect(report).to be_a(Lutaml::Xsd::ConflictReport)
@@ -91,68 +84,103 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
       end
 
       it "includes package info" do
-        detector = described_class.new([config1, config2])
+        touch_packages("pkg1.lxr", "pkg2.lxr")
+        detector = described_class.new([config1, config2], loader: loader)
         report = detector.detect_conflicts
 
         expect(report.package_info.size).to eq(2)
-        expect(report.package_info[0].package_path).to eq("pkg1.lxr")
-        expect(report.package_info[1].package_path).to eq("pkg2.lxr")
+        expect(report.package_info[0].package_path).to eq(pkg_path("pkg1.lxr"))
+        expect(report.package_info[1].package_path).to eq(pkg_path("pkg2.lxr"))
       end
     end
 
     context "with namespace conflicts" do
-      before do
-        shared_ns = "http://example.com/shared"
-        allow(mock_repo1).to receive(:all_namespaces).and_return([shared_ns])
-        allow(mock_repo2).to receive(:all_namespaces).and_return([shared_ns])
-        allow(mock_repo1).to receive(:all_type_names).with(namespace: shared_ns).and_return([])
-        allow(mock_repo2).to receive(:all_type_names).with(namespace: shared_ns).and_return([])
+      let(:shared_ns) { "http://example.com/shared" }
+
+      let(:repo1) do
+        repo_with(
+          namespaces: { "ns1" => shared_ns },
+          types_by_namespace: { shared_ns => [] },
+          files: ["schemas/person.xsd", "schemas/company.xsd"],
+        )
+      end
+
+      let(:repo2) do
+        repo_with(
+          namespaces: { "ns1" => shared_ns },
+          types_by_namespace: { shared_ns => [] },
+          files: ["xsd/person.xsd", "xsd/address.xsd"],
+        )
       end
 
       it "detects namespace URI conflicts" do
-        detector = described_class.new([config1, config2])
+        touch_packages("pkg1.lxr", "pkg2.lxr")
+        detector = described_class.new([config1, config2], loader: loader)
         report = detector.detect_conflicts
 
         expect(report.namespace_conflicts.size).to eq(1)
         conflict = report.namespace_conflicts.first
-        expect(conflict.namespace_uri).to eq("http://example.com/shared")
-        expect(conflict.package_paths).to contain_exactly("pkg1.lxr",
-                                                          "pkg2.lxr")
+        expect(conflict.namespace_uri).to eq(shared_ns)
+        expect(conflict.package_paths).to contain_exactly(
+          pkg_path("pkg1.lxr"), pkg_path("pkg2.lxr")
+        )
       end
     end
 
     context "with type conflicts" do
-      before do
-        shared_ns = "http://example.com/ns1"
-        allow(mock_repo1).to receive(:all_namespaces).and_return([shared_ns])
-        allow(mock_repo2).to receive(:all_namespaces).and_return([shared_ns])
-        allow(mock_repo1).to receive(:all_type_names)
-          .with(namespace: shared_ns).and_return(["PersonType", "UniqueType1"])
-        allow(mock_repo2).to receive(:all_type_names)
-          .with(namespace: shared_ns).and_return(["PersonType", "UniqueType2"])
+      let(:shared_ns) { "http://example.com/ns1" }
+
+      let(:repo1) do
+        repo_with(
+          namespaces: { "ns1" => shared_ns },
+          types_by_namespace: { shared_ns => %w[PersonType UniqueType1] },
+          files: ["schemas/person.xsd", "schemas/company.xsd"],
+        )
+      end
+
+      let(:repo2) do
+        repo_with(
+          namespaces: { "ns1" => shared_ns },
+          types_by_namespace: { shared_ns => %w[PersonType UniqueType2] },
+          files: ["xsd/person.xsd", "xsd/address.xsd"],
+        )
       end
 
       it "detects type name conflicts" do
-        detector = described_class.new([config1, config2])
+        touch_packages("pkg1.lxr", "pkg2.lxr")
+        detector = described_class.new([config1, config2], loader: loader)
         report = detector.detect_conflicts
 
         expect(report.type_conflicts.size).to eq(1)
         conflict = report.type_conflicts.first
-        expect(conflict.type_name).to eq("PersonType")
-        expect(conflict.namespace_uri).to eq("http://example.com/ns1")
-        expect(conflict.package_paths).to contain_exactly("pkg1.lxr",
-                                                          "pkg2.lxr")
+        expect(conflict.type_name).to eq("ns1:PersonType")
+        expect(conflict.namespace_uri).to eq(shared_ns)
+        expect(conflict.package_paths).to contain_exactly(
+          pkg_path("pkg1.lxr"), pkg_path("pkg2.lxr")
+        )
       end
     end
 
     context "with schema conflicts" do
-      before do
-        allow(mock_repo1).to receive(:all_namespaces).and_return([])
-        allow(mock_repo2).to receive(:all_namespaces).and_return([])
+      let(:repo1) do
+        repo_with(
+          namespaces: {},
+          types_by_namespace: {},
+          files: ["schemas/person.xsd", "schemas/company.xsd"],
+        )
+      end
+
+      let(:repo2) do
+        repo_with(
+          namespaces: {},
+          types_by_namespace: {},
+          files: ["xsd/person.xsd", "xsd/address.xsd"],
+        )
       end
 
       it "detects schema file conflicts by basename" do
-        detector = described_class.new([config1, config2])
+        touch_packages("pkg1.lxr", "pkg2.lxr")
+        detector = described_class.new([config1, config2], loader: loader)
         report = detector.detect_conflicts
 
         expect(report.schema_conflicts.size).to eq(1)
@@ -167,18 +195,27 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
     end
 
     context "with multiple conflict types" do
-      before do
-        shared_ns = "http://example.com/shared"
-        allow(mock_repo1).to receive(:all_namespaces).and_return([shared_ns])
-        allow(mock_repo2).to receive(:all_namespaces).and_return([shared_ns])
-        allow(mock_repo1).to receive(:all_type_names)
-          .with(namespace: shared_ns).and_return(["SharedType"])
-        allow(mock_repo2).to receive(:all_type_names)
-          .with(namespace: shared_ns).and_return(["SharedType"])
+      let(:shared_ns) { "http://example.com/shared" }
+
+      let(:repo1) do
+        repo_with(
+          namespaces: { "ns1" => shared_ns },
+          types_by_namespace: { shared_ns => %w[SharedType] },
+          files: ["schemas/person.xsd", "schemas/company.xsd"],
+        )
+      end
+
+      let(:repo2) do
+        repo_with(
+          namespaces: { "ns1" => shared_ns },
+          types_by_namespace: { shared_ns => %w[SharedType] },
+          files: ["xsd/person.xsd", "xsd/address.xsd"],
+        )
       end
 
       it "detects all types of conflicts" do
-        detector = described_class.new([config1, config2])
+        touch_packages("pkg1.lxr", "pkg2.lxr")
+        detector = described_class.new([config1, config2], loader: loader)
         report = detector.detect_conflicts
 
         expect(report.namespace_conflicts.size).to eq(1)
@@ -191,7 +228,7 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
     context "with namespace remapping" do
       let(:config_with_remap) do
         Lutaml::Xsd::BasePackageConfig.new(
-          package: "pkg1.lxr",
+          package: pkg_path("pkg1.lxr"),
           priority: 0,
           conflict_resolution: "keep",
           namespace_remapping: [
@@ -203,67 +240,62 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
         )
       end
 
-      let(:mock_ns_mapping) do
-        instance_double(
-          Lutaml::Xsd::NamespaceMapping,
-          prefix: "ex",
-          uri: "http://old.example.com/ns",
+      let(:repo1) do
+        Lutaml::Xsd::SchemaRepository.new(
+          files: ["schemas/person.xsd", "schemas/company.xsd"],
+          namespace_mappings: [
+            ns_mapping(prefix: "ex", uri: "http://old.example.com/ns"),
+          ],
         )
       end
 
-      before do
-        allow(mock_repo1).to receive(:namespace_mappings).and_return([mock_ns_mapping])
-        allow(mock_repo1).to receive(:schema_location_mappings).and_return([])
-        allow(mock_repo1).to receive(:instance_variable_get).with(:@parsed_schemas).and_return(Lutaml::Store::BasicStore.new(adapter_type: :memory))
-
-        # Mock the new repository creation
-        allow(Lutaml::Xsd::SchemaRepository).to receive(:new).and_call_original
-        allow(Lutaml::Xsd::NamespaceMapping).to receive(:new).and_call_original
-
-        allow(mock_repo1).to receive(:all_namespaces).and_return([])
-        allow(mock_repo2).to receive(:all_namespaces).and_return([])
-      end
-
       it "applies namespace remapping during load" do
-        detector = described_class.new([config_with_remap, config2])
+        touch_packages("pkg1.lxr", "pkg2.lxr")
+        detector = described_class.new([config_with_remap, config2], loader: loader)
         report = detector.detect_conflicts
 
-        # Should not raise errors and complete successfully
         expect(report).to be_a(Lutaml::Xsd::ConflictReport)
       end
     end
 
     context "with missing package file" do
-      before do
-        allow(File).to receive(:exist?).with("missing.lxr").and_return(false)
-      end
-
       it "raises ConfigurationError" do
         bad_config = Lutaml::Xsd::BasePackageConfig.new(
-          package: "missing.lxr",
+          package: "/nonexistent/missing.lxr",
           priority: 0,
         )
 
-        detector = described_class.new([bad_config])
+        detector = described_class.new([bad_config], loader: loader)
 
         expect { detector.detect_conflicts }.to raise_error(
           Lutaml::Xsd::ConfigurationError,
-          /Base package not found: missing.lxr/,
+          /Base package not found: \/nonexistent\/missing\.lxr/,
         )
       end
-    end
-  end
+    end  end
 
   describe "private methods behavior" do
-    before do
-      allow(mock_repo1).to receive(:all_namespaces).and_return(["http://example.com/ns1"])
-      allow(mock_repo2).to receive(:all_namespaces).and_return(["http://example.com/ns1"])
-      allow(mock_repo1).to receive(:all_type_names).and_return([])
-      allow(mock_repo2).to receive(:all_type_names).and_return([])
+    let(:shared_ns) { "http://example.com/ns1" }
+
+    let(:repo1) do
+      repo_with(
+        namespaces: { "ns1" => shared_ns },
+        types_by_namespace: {},
+        files: ["schemas/person.xsd", "schemas/company.xsd"],
+      )
+    end
+
+    let(:repo2) do
+      repo_with(
+        namespaces: { "ns1" => shared_ns },
+        types_by_namespace: {},
+        files: ["xsd/person.xsd", "xsd/address.xsd"],
+      )
     end
 
     it "creates PackageSource objects" do
-      detector = described_class.new([config1, config2])
+      touch_packages("pkg1.lxr", "pkg2.lxr")
+      detector = described_class.new([config1, config2], loader: loader)
       report = detector.detect_conflicts
 
       expect(report.package_sources).to all(be_a(Lutaml::Xsd::PackageSource))
@@ -271,7 +303,8 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
     end
 
     it "preserves package priorities" do
-      detector = described_class.new([config1, config2])
+      touch_packages("pkg1.lxr", "pkg2.lxr")
+      detector = described_class.new([config1, config2], loader: loader)
       report = detector.detect_conflicts
 
       sources = report.package_sources
@@ -280,12 +313,32 @@ RSpec.describe Lutaml::Xsd::PackageConflictDetector do
     end
 
     it "preserves conflict resolution strategies" do
-      detector = described_class.new([config1, config2])
+      touch_packages("pkg1.lxr", "pkg2.lxr")
+      detector = described_class.new([config1, config2], loader: loader)
       report = detector.detect_conflicts
 
       sources = report.package_sources
       expect(sources[0].conflict_resolution).to eq("keep")
       expect(sources[1].conflict_resolution).to eq("override")
+    end
+  end
+
+  private
+
+  # Use a per-test tmp dir to avoid touching the working directory.
+  def pkg_dir
+    @pkg_dir ||= Dir.mktmpdir
+  end
+
+  def pkg_path(name)
+    File.join(pkg_dir, name)
+  end
+
+  # Real files on disk so File.exist? returns true without stubbing.
+  def touch_packages(*names)
+    names.each do |n|
+      path = pkg_path(n)
+      FileUtils.touch(path) unless File.exist?(path)
     end
   end
 end

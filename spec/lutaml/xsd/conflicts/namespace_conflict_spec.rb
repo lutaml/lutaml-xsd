@@ -8,19 +8,11 @@ RSpec.describe Lutaml::Xsd::Conflicts::NamespaceConflict do
   let(:priorities) { [0, 10] }
 
   let(:mock_source1) do
-    instance_double(
-      Lutaml::Xsd::PackageSource,
-      package_path: package_paths[0],
-      priority: priorities[0],
-    )
+    package_source(path: package_paths[0], priority: priorities[0])
   end
 
   let(:mock_source2) do
-    instance_double(
-      Lutaml::Xsd::PackageSource,
-      package_path: package_paths[1],
-      priority: priorities[1],
-    )
+    package_source(path: package_paths[1], priority: priorities[1])
   end
 
   describe ".from_sources" do

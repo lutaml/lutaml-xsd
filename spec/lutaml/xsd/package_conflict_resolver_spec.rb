@@ -4,30 +4,15 @@ require "spec_helper"
 
 RSpec.describe Lutaml::Xsd::PackageConflictResolver do
   let(:mock_source1) do
-    instance_double(
-      Lutaml::Xsd::PackageSource,
-      package_path: "pkg1.lxr",
-      priority: 0,
-      conflict_resolution: "keep",
-    )
+    package_source(path: "pkg1.lxr", priority: 0, conflict_resolution: "keep")
   end
 
   let(:mock_source2) do
-    instance_double(
-      Lutaml::Xsd::PackageSource,
-      package_path: "pkg2.lxr",
-      priority: 10,
-      conflict_resolution: "override",
-    )
+    package_source(path: "pkg2.lxr", priority: 10, conflict_resolution: "override")
   end
 
   let(:mock_source3) do
-    instance_double(
-      Lutaml::Xsd::PackageSource,
-      package_path: "pkg3.lxr",
-      priority: 5,
-      conflict_resolution: "error",
-    )
+    package_source(path: "pkg3.lxr", priority: 5, conflict_resolution: "error")
   end
 
   let(:empty_report) do
@@ -65,7 +50,6 @@ RSpec.describe Lutaml::Xsd::PackageConflictResolver do
     it "sorts package sources by priority" do
       resolver = described_class.new(empty_report, [mock_source2, mock_source1])
 
-      # Should be sorted by priority (0 < 10)
       expect(resolver.package_sources).to eq([mock_source1, mock_source2])
     end
   end
@@ -186,29 +170,20 @@ RSpec.describe Lutaml::Xsd::PackageConflictResolver do
       end
 
       it "resolves using 'override' strategy (last wins)" do
-        mock_override1 = instance_double(
-          Lutaml::Xsd::PackageSource,
-          package_path: "pkg1.lxr",
-          priority: 0,
-          conflict_resolution: "override",
-        )
-        mock_override2 = instance_double(
-          Lutaml::Xsd::PackageSource,
-          package_path: "pkg2.lxr",
-          priority: 10,
-          conflict_resolution: "override",
-        )
+        override1 = package_source(path: "pkg1.lxr", priority: 0,
+                                   conflict_resolution: "override")
+        override2 = package_source(path: "pkg2.lxr", priority: 10,
+                                   conflict_resolution: "override")
 
         conflict = Lutaml::Xsd::Conflicts::NamespaceConflict.from_sources(
           namespace_uri: "http://example.com/ns",
-          sources: [mock_override1, mock_override2],
+          sources: [override1, override2],
         )
 
-        resolver = described_class.new(empty_report,
-                                       [mock_override1, mock_override2])
+        resolver = described_class.new(empty_report, [override1, override2])
         winner = resolver.resolve_conflict(conflict)
 
-        expect(winner).to eq(mock_override2)
+        expect(winner).to eq(override2)
       end
     end
 
@@ -254,21 +229,9 @@ RSpec.describe Lutaml::Xsd::PackageConflictResolver do
   describe "resolution priority" do
     it "uses lowest priority number as highest priority" do
       sources = [
-        instance_double(
-          Lutaml::Xsd::PackageSource,
-          priority: 100,
-          conflict_resolution: "keep",
-        ),
-        instance_double(
-          Lutaml::Xsd::PackageSource,
-          priority: 1,
-          conflict_resolution: "keep",
-        ),
-        instance_double(
-          Lutaml::Xsd::PackageSource,
-          priority: 50,
-          conflict_resolution: "keep",
-        ),
+        package_source(path: "a.lxr", priority: 100),
+        package_source(path: "b.lxr", priority: 1),
+        package_source(path: "c.lxr", priority: 50),
       ]
 
       resolver = described_class.new(empty_report, sources)

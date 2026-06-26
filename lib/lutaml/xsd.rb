@@ -80,6 +80,7 @@ module Lutaml
     module Conflicts
       autoload :NamespaceConflict, "lutaml/xsd/conflicts/namespace_conflict"
       autoload :SchemaConflict, "lutaml/xsd/conflicts/schema_conflict"
+      autoload :SchemaFileSource, "lutaml/xsd/conflicts/schema_conflict"
       autoload :TypeConflict, "lutaml/xsd/conflicts/type_conflict"
     end
 

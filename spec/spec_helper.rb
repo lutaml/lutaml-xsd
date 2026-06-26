@@ -4,6 +4,7 @@ require "liquid"
 require "lutaml/xsd"
 require "canon"
 require "net/http"
+require "support/factories"
 
 # Block network calls in tests — return nil so import resolution is gracefully
 # skipped instead of raising and killing the whole parse.

@@ -24,14 +24,13 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
 
     describe ".from_source" do
       it "creates from PackageSource object" do
-        mock_source = instance_double(
-          Lutaml::Xsd::PackageSource,
-          package_path: package_path,
+        source = package_source(
+          path: package_path,
           priority: priority,
           conflict_resolution: conflict_resolution,
         )
 
-        info = described_class.from_source(mock_source)
+        info = described_class.from_source(source)
 
         expect(info.package_path).to eq(package_path)
         expect(info.priority).to eq(priority)
@@ -120,18 +119,8 @@ RSpec.describe Lutaml::Xsd::ConflictReport do
 
     let(:mock_sources) do
       [
-        instance_double(
-          Lutaml::Xsd::PackageSource,
-          package_path: "pkg1.lxr",
-          priority: 0,
-          conflict_resolution: "keep",
-        ),
-        instance_double(
-          Lutaml::Xsd::PackageSource,
-          package_path: "pkg2.lxr",
-          priority: 10,
-          conflict_resolution: "override",
-        ),
+        package_source(path: "pkg1.lxr", priority: 0, conflict_resolution: "keep"),
+        package_source(path: "pkg2.lxr", priority: 10, conflict_resolution: "override"),
       ]
     end
 

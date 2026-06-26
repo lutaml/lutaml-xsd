@@ -4,10 +4,14 @@ module Lutaml
   module Xsd
     # Service class for detecting conflicts between packages
     class PackageConflictDetector
-      attr_reader :package_configs
+      attr_reader :package_configs, :loader
 
-      def initialize(package_configs)
+      # @param package_configs [Array<BasePackageConfig>]
+      # @param loader [#call] callable(path) -> SchemaRepository. Defaults to
+      #   SchemaRepository.from_package. Injectable for testing.
+      def initialize(package_configs, loader: SchemaRepository.method(:from_package))
         @package_configs = package_configs
+        @loader = loader
         @package_sources = []
       end
 
@@ -37,7 +41,7 @@ module Lutaml
                   "Base package not found: #{config.package}"
           end
 
-          repo = SchemaRepository.from_package(config.package)
+          repo = @loader.call(config.package)
           if config.namespace_remapping&.any?
             repo = apply_namespace_remapping(repo,
                                              config)
