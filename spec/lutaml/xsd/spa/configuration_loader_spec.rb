@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "fileutils"
 require "lutaml/xsd/spa/configuration_loader"
 
 RSpec.describe Lutaml::Xsd::Spa::ConfigurationLoader do
@@ -87,7 +88,7 @@ RSpec.describe Lutaml::Xsd::Spa::ConfigurationLoader do
           loader.theme
         end.to output(/Failed to parse ui_theme\.yml/).to_stderr
         theme = loader.theme
-        expect(theme).to eq(loader.send(:default_theme))
+        expect(theme).to eq(loader.default_theme)
       end
     end
   end

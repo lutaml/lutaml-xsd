@@ -5,8 +5,7 @@ require_relative "../../lib/lutaml_xsd"
 
 # Create a schema repository from the test schema
 repo = Lutaml::Xsd::SchemaRepository.new
-repo.instance_variable_set(:@files,
-                           [File.expand_path("test_schema.xsd", __dir__)])
+repo.add_schema_file(File.expand_path("test_schema.xsd", __dir__))
 repo.parse.resolve
 
 # Create the LXR package

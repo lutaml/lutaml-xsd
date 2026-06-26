@@ -135,31 +135,6 @@ module Lutaml
           @cache.clear
         end
 
-        private
-
-        # Load configuration file
-        #
-        # @param name [String] Configuration file name (without extension)
-        # @param default [Hash] Default configuration to use if file not found
-        # @return [Hash] Loaded configuration
-        def load_config(name, default)
-          return @cache[name] if @cache.key?(name)
-
-          config_path = File.join(config_dir, "#{name}.yml")
-
-          config = if File.exist?(config_path)
-                     YAML.load_file(config_path)
-                   else
-                     default
-                   end
-
-          @cache[name] = config
-        rescue Psych::SyntaxError => e
-          warn "Warning: Failed to parse #{name}.yml: #{e.message}"
-          warn "Using default configuration for #{name}"
-          @cache[name] = default
-        end
-
         # Default theme configuration
         #
         # @return [Hash] Default theme
@@ -185,6 +160,31 @@ module Lutaml
               },
             },
           }
+        end
+
+        private
+
+        # Load configuration file
+        #
+        # @param name [String] Configuration file name (without extension)
+        # @param default [Hash] Default configuration to use if file not found
+        # @return [Hash] Loaded configuration
+        def load_config(name, default)
+          return @cache[name] if @cache.key?(name)
+
+          config_path = File.join(config_dir, "#{name}.yml")
+
+          config = if File.exist?(config_path)
+                     YAML.load_file(config_path)
+                   else
+                     default
+                   end
+
+          @cache[name] = config
+        rescue Psych::SyntaxError => e
+          warn "Warning: Failed to parse #{name}.yml: #{e.message}"
+          warn "Using default configuration for #{name}"
+          @cache[name] = default
         end
 
         # Default features configuration

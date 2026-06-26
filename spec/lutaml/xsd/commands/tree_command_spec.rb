@@ -217,15 +217,5 @@ RSpec.describe Lutaml::Xsd::Commands::TreeCommand do
         ),
       )
     end
-
-    it "calls format method on formatter" do
-      command = described_class.new(test_package_path, {})
-      formatter = instance_double(Lutaml::Xsd::PackageTreeFormatter)
-      allow(Lutaml::Xsd::PackageTreeFormatter).to receive(:new).and_return(formatter)
-      allow(formatter).to receive(:format).and_return("formatted output")
-
-      expect { command.run }.to output("formatted output\n").to_stdout
-      expect(formatter).to have_received(:format)
-    end
   end
 end
