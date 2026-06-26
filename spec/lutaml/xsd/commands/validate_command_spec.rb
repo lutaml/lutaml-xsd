@@ -4,6 +4,15 @@ require "spec_helper"
 require "lutaml/xsd/commands/validate_command"
 
 RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
+  # Lightweight stand-in for Lutaml::Xsd::Validation::Validator used to stub
+  # the validator in the glob-expansion test. Returns a successful result on
+  # every call. Not a double — a real (tiny) class.
+  class StubValidator
+    Result = Struct.new(:valid?, :errors)
+
+    def validate(*) = Result.new(true, [])
+  end
+
   let(:schema_path) { "spec/fixtures/schema.lxr" }
   let(:xml_file) { "spec/fixtures/valid.xml" }
   let(:options) { { verbose: false } }
@@ -45,10 +54,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
       allow(Dir).to receive(:glob).with("*.xml").and_return([xml_file])
       allow(File).to receive(:read).and_return("<root/>")
 
-      validator = Struct.new(:validate).new
-      allow(Lutaml::Xsd::Validation::Validator).to receive(:new).and_return(validator)
-      allow(validator).to receive(:validate).and_return(double(valid?: true,
-                                                               errors: []))
+      allow(Lutaml::Xsd::Validation::Validator).to receive(:new).and_return(StubValidator.new)
 
       expect { pattern_command.run }.to raise_error(SystemExit) do |error|
         expect(error.status).to eq(0)
@@ -73,8 +79,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
 
     it "outputs text format by default" do
       expect do
-        command.send(:output_results,
-                     results)
+        command.output_results(results)
       end.to output(/Validation Results/).to_stdout
     end
 
@@ -84,7 +89,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
       allow(json_command).to receive(:exit_with_status)
 
       expect do
-        json_command.send(:output_results, results)
+        json_command.output_results(results)
       end.to output(/"summary"/).to_stdout
     end
 
@@ -94,7 +99,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
       allow(yaml_command).to receive(:exit_with_status)
 
       expect do
-        yaml_command.send(:output_results, results)
+        yaml_command.output_results(results)
       end.to output(/summary:/).to_stdout
     end
   end
@@ -108,8 +113,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
       ]
 
       expect do
-        command.send(:exit_with_status,
-                     results)
+        command.exit_with_status(results)
       end.to raise_error(SystemExit) do |error|
         expect(error.status).to eq(0)
       end
@@ -121,8 +125,7 @@ RSpec.describe Lutaml::Xsd::Commands::ValidateCommand do
       ]
 
       expect do
-        command.send(:exit_with_status,
-                     results)
+        command.exit_with_status(results)
       end.to raise_error(SystemExit) do |error|
         expect(error.status).to eq(1)
       end

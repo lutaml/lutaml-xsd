@@ -47,6 +47,34 @@ module Lutaml
           exit 1
         end
 
+        # Output validation results in the requested format
+        #
+        # @param results [Array<Hash>] Validation results
+        # @return [void]
+        def output_results(results)
+          format = options[:format] || "text"
+
+          case format
+          when "json"
+            output_json(results)
+          when "yaml"
+            output_yaml(results)
+          else
+            output_text(results)
+          end
+        end
+
+        # Exit with appropriate status code based on validation results
+        #
+        # @param results [Array<Hash>] Validation results
+        # @return [void]
+        def exit_with_status(results)
+          invalid_count = results.count do |r|
+            !(r[:result].is_a?(Hash) ? r[:result][:valid] : r[:result].valid?)
+          end
+          exit invalid_count.positive? ? 1 : 0
+        end
+
         private
 
         # Validate command inputs
@@ -142,23 +170,6 @@ module Lutaml
               location: file,
             }],
           }
-        end
-
-        # Output validation results
-        #
-        # @param results [Array<Hash>] Validation results
-        # @return [void]
-        def output_results(results)
-          format = options[:format] || "text"
-
-          case format
-          when "json"
-            output_json(results)
-          when "yaml"
-            output_yaml(results)
-          else
-            output_text(results)
-          end
         end
 
         # Output results as JSON
@@ -290,17 +301,6 @@ module Lutaml
               error.to_h
             end
           end
-        end
-
-        # Exit with appropriate status code
-        #
-        # @param results [Array<Hash>] Validation results
-        # @return [void]
-        def exit_with_status(results)
-          invalid_count = results.count do |r|
-            !(r[:result].is_a?(Hash) ? r[:result][:valid] : r[:result].valid?)
-          end
-          exit invalid_count.positive? ? 1 : 0
         end
       end
     end
