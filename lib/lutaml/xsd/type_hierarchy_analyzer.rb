@@ -45,29 +45,16 @@ module Lutaml
       def self.extract_base_type(definition)
         return nil unless definition
 
-        if definition.respond_to?(:complex_content) && definition.complex_content
-          if definition.complex_content.extension
-            return definition.complex_content.extension.base
+        case definition
+        when Lutaml::Xml::Schema::Xsd::ComplexType
+          if (cc = definition.complex_content)
+            cc.extension&.base || cc.restriction&.base
+          elsif (sc = definition.simple_content)
+            sc.extension&.base || sc.restriction&.base
           end
-          if definition.complex_content.restriction
-            return definition.complex_content.restriction.base
-          end
+        when Lutaml::Xml::Schema::Xsd::SimpleType
+          definition.restriction&.base
         end
-
-        if definition.respond_to?(:simple_content) && definition.simple_content
-          if definition.simple_content.extension
-            return definition.simple_content.extension.base
-          end
-          if definition.simple_content.restriction
-            return definition.simple_content.restriction.base
-          end
-        end
-
-        if definition.respond_to?(:restriction) && definition.restriction
-          return definition.restriction.base
-        end
-
-        nil
       end
 
       # Determine type category from definition (pure)
