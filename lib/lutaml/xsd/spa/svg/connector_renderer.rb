@@ -4,6 +4,11 @@ module Lutaml
   module Xsd
     module Spa
       module Svg
+        # Utility namespaces referenced by this file.
+        module Utils
+          autoload :SvgBuilder, "lutaml/xsd/spa/svg/utils/svg_builder"
+        end
+
         # Abstract base class for connector renderers
         # Subclasses must implement #render method
         class ConnectorRenderer
@@ -21,8 +26,6 @@ module Lutaml
           def render(from_point, to_point)
             raise NotImplementedError, "#{self.class} must implement #render"
           end
-
-          protected
 
           # Creates a basic line
           def create_line(from_point, to_point, options = {})

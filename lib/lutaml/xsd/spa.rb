@@ -18,10 +18,6 @@ module Lutaml
           autoload :Box, "lutaml/xsd/spa/svg/geometry/box"
         end
 
-        module Utils
-          autoload :SvgBuilder, "lutaml/xsd/spa/svg/utils/svg_builder"
-        end
-
         module Connectors
           autoload :InheritanceConnector, "lutaml/xsd/spa/svg/connectors/inheritance_connector"
           autoload :ContainmentConnector, "lutaml/xsd/spa/svg/connectors/containment_connector"

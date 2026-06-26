@@ -30,13 +30,13 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ConnectorRenderer do
     end
   end
 
-  describe "protected helper methods" do
+  describe "helper methods" do
     let(:from_point) { Lutaml::Xsd::Spa::Svg::Geometry::Point.new(10, 20) }
     let(:to_point) { Lutaml::Xsd::Spa::Svg::Geometry::Point.new(50, 80) }
 
     describe "#create_line" do
       it "creates SVG line with default styling" do
-        result = renderer.send(:create_line, from_point, to_point)
+        result = renderer.create_line(from_point, to_point)
 
         expect(result).to include("<line")
         expect(result).to include('x1="10.0"')
@@ -47,7 +47,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ConnectorRenderer do
       end
 
       it "accepts custom stroke options" do
-        result = renderer.send(:create_line, from_point, to_point,
+        result = renderer.create_line(from_point, to_point,
                                stroke: "red",
                                stroke_width: 3)
 
@@ -56,14 +56,14 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ConnectorRenderer do
       end
 
       it "adds dash pattern when provided" do
-        result = renderer.send(:create_line, from_point, to_point,
+        result = renderer.create_line(from_point, to_point,
                                dash_pattern: "5,5")
 
         expect(result).to include('stroke-dasharray="5,5"')
       end
 
       it "omits dash pattern when not provided" do
-        result = renderer.send(:create_line, from_point, to_point)
+        result = renderer.create_line(from_point, to_point)
 
         expect(result).not_to include("stroke-dasharray")
       end
@@ -73,14 +73,14 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ConnectorRenderer do
       let(:point) { Lutaml::Xsd::Spa::Svg::Geometry::Point.new(50, 50) }
 
       it "creates downward-pointing arrow polygon" do
-        result = renderer.send(:create_arrow_down, point)
+        result = renderer.create_arrow_down(point)
 
         expect(result).to include("<polygon")
         expect(result).to include("points=")
       end
 
       it "creates arrow with correct points" do
-        result = renderer.send(:create_arrow_down, point, size: 5)
+        result = renderer.create_arrow_down(point, size: 5)
 
         # Arrow should point down: apex at point, base points above
         expect(result).to include("50.0,50.0") # apex
@@ -89,7 +89,7 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ConnectorRenderer do
       end
 
       it "accepts custom fill and stroke" do
-        result = renderer.send(:create_arrow_down, point,
+        result = renderer.create_arrow_down(point,
                                fill: "blue",
                                stroke: "black",
                                stroke_width: 2)
@@ -104,14 +104,14 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ConnectorRenderer do
       let(:point) { Lutaml::Xsd::Spa::Svg::Geometry::Point.new(50, 50) }
 
       it "creates upward-pointing arrow polygon" do
-        result = renderer.send(:create_arrow_up, point)
+        result = renderer.create_arrow_up(point)
 
         expect(result).to include("<polygon")
         expect(result).to include("points=")
       end
 
       it "creates arrow with correct points" do
-        result = renderer.send(:create_arrow_up, point, size: 5)
+        result = renderer.create_arrow_up(point, size: 5)
 
         # Arrow should point up: apex at point, base points below
         expect(result).to include("50.0,50.0") # apex
@@ -125,28 +125,28 @@ RSpec.describe Lutaml::Xsd::Spa::Svg::ConnectorRenderer do
         from = Lutaml::Xsd::Spa::Svg::Geometry::Point.new(50, 10)
         to = Lutaml::Xsd::Spa::Svg::Geometry::Point.new(55, 100)
 
-        expect(renderer.send(:direction, from, to)).to eq(:down)
+        expect(renderer.direction(from, to)).to eq(:down)
       end
 
       it "returns :up when moving predominantly upward" do
         from = Lutaml::Xsd::Spa::Svg::Geometry::Point.new(50, 100)
         to = Lutaml::Xsd::Spa::Svg::Geometry::Point.new(55, 10)
 
-        expect(renderer.send(:direction, from, to)).to eq(:up)
+        expect(renderer.direction(from, to)).to eq(:up)
       end
 
       it "returns :right when moving predominantly rightward" do
         from = Lutaml::Xsd::Spa::Svg::Geometry::Point.new(10, 50)
         to = Lutaml::Xsd::Spa::Svg::Geometry::Point.new(100, 55)
 
-        expect(renderer.send(:direction, from, to)).to eq(:right)
+        expect(renderer.direction(from, to)).to eq(:right)
       end
 
       it "returns :left when moving predominantly leftward" do
         from = Lutaml::Xsd::Spa::Svg::Geometry::Point.new(100, 50)
         to = Lutaml::Xsd::Spa::Svg::Geometry::Point.new(10, 55)
 
-        expect(renderer.send(:direction, from, to)).to eq(:left)
+        expect(renderer.direction(from, to)).to eq(:left)
       end
     end
   end
