@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "forwardable"
 require "lutaml/store"
 
 module Lutaml
@@ -7,10 +8,15 @@ module Lutaml
     # A fully resolved, validated, searchable collection of XSD schemas.
     # Delegates to focused service objects for parsing, querying, loading, and export.
     class SchemaRepository < Lutaml::Model::Serializable
+      extend Forwardable
+
       # Inner classes loaded via autoload
       autoload :TypeIndex, "lutaml/xsd/schema_repository/type_index"
       autoload :NamespaceRegistry, "lutaml/xsd/schema_repository/namespace_registry"
       autoload :QualifiedNameParser, "lutaml/xsd/schema_repository/qualified_name_parser"
+      autoload :Loader, "lutaml/xsd/schema_repository/loader"
+      autoload :Validator, "lutaml/xsd/schema_repository/validator"
+      autoload :ProgressReporter, "lutaml/xsd/schema_repository/progress_reporter"
 
       # Serializable attributes
       attribute :files, :string, collection: true
@@ -95,9 +101,7 @@ module Lutaml
         @verbose = verbose
         all_schemas = self.all_schemas
 
-        if @verbose
-          show_resolution_progress(all_schemas)
-        end
+        ProgressReporter.new.report_resolve(all_schemas) if @verbose
 
         register_namespaces_for_resolution(all_schemas)
         @type_index.build_from_schemas(all_schemas)
@@ -109,13 +113,7 @@ module Lutaml
       # --- Validate ---
 
       def validate(strict: false)
-        errors = []
-
-        validate_file_existence(errors, strict)
-        validate_parsed_schemas(errors, strict)
-        check_circular_imports(errors, strict)
-        validate_namespace_mappings(errors, strict)
-
+        errors = Validator.new(self).validate(strict: strict)
         @validated = errors.empty?
         errors
       end
@@ -150,89 +148,31 @@ module Lutaml
 
       # --- Service accessors (memoized) ---
 
-      def query
-        @query ||= SchemaQueryService.new(self)
-      end
+      def query = @query ||= SchemaQueryService.new(self)
+      def exporter = @exporter ||= SchemaExporter.new(self)
+      def parser = @parser ||= SchemaParser.new(self)
 
-      def exporter
-        @exporter ||= SchemaExporter.new(self)
-      end
+      # --- Query / export delegation ---
 
-      def parser
-        @parser ||= SchemaParser.new(self)
-      end
-
-      # --- Query delegation ---
-
-      def find_type(qname)
-        query.find_type(qname)
-      end
-
-      def find_attribute(qualified_name)
-        query.find_attribute(qualified_name)
-      end
-
-      def find_element(qualified_name)
-        query.find_element(qualified_name)
-      end
-
-      def find_group(qualified_name)
-        query.find_group(qualified_name)
-      end
-
-      def find_attribute_group(qualified_name)
-        query.find_attribute_group(qualified_name)
-      end
-
-      def type_exists?(qualified_name)
-        query.type_exists?(qualified_name)
-      end
-
-      def all_type_names(namespace: nil, category: nil)
-        query.all_type_names(namespace: namespace, category: category)
-      end
+      def_delegators :query, :find_type, :find_attribute, :find_element,
+                     :find_group, :find_attribute_group, :type_exists?,
+                     :all_type_names
+      def_delegators :exporter, :statistics, :export_statistics,
+                     :namespace_summary, :elements_by_namespace
 
       def parse_qualified_name(qualified_name)
         QualifiedNameParser.parse(qualified_name, @namespace_registry)
       end
 
-      # --- Export delegation ---
-
-      def statistics
-        exporter.statistics
-      end
-
-      def export_statistics(format: :yaml)
-        exporter.export_statistics(format: format)
-      end
-
-      def namespace_summary
-        exporter.namespace_summary
-      end
-
-      def elements_by_namespace(namespace_uri: nil)
-        exporter.elements_by_namespace(namespace_uri: namespace_uri)
-      end
-
       # --- Schema access ---
 
-      def all_schemas
-        @parsed_schemas.all
-      end
-
-      def schemas
-        all_schemas
-      end
-
-      def needs_parsing?
-        all_schemas.empty?
-      end
+      def all_schemas = @parsed_schemas.all
+      def schemas = all_schemas
+      def needs_parsing? = all_schemas.empty?
 
       # --- Namespace access ---
 
-      def all_namespaces
-        @namespace_registry.all_uris
-      end
+      def all_namespaces = @namespace_registry.all_uris
 
       def namespace_to_prefix(namespace_uri)
         return nil if namespace_uri.nil? || namespace_uri.empty?
@@ -240,13 +180,8 @@ module Lutaml
         @namespace_registry.get_primary_prefix(namespace_uri)
       end
 
-      def namespace_prefix_details
-        NamespacePrefixManager.new(self).detailed_prefix_info
-      end
-
-      def types_in_namespace(namespace_uri)
-        @type_index.find_all_in_namespace(namespace_uri)
-      end
+      def namespace_prefix_details = NamespacePrefixManager.new(self).detailed_prefix_info
+      def types_in_namespace(namespace_uri) = @type_index.find_all_in_namespace(namespace_uri)
 
       # --- File management ---
 
@@ -255,9 +190,7 @@ module Lutaml
         @files << file_path unless @files.include?(file_path)
       end
 
-      def add_schema_files(file_paths)
-        file_paths.each { |fp| add_schema_file(fp) }
-      end
+      def add_schema_files(file_paths) = file_paths.each { |fp| add_schema_file(fp) }
 
       def add_schema_location_mapping(mapping)
         @schema_location_mappings ||= []
@@ -279,25 +212,11 @@ module Lutaml
 
       # --- Analysis delegation ---
 
-      def classify_schemas
-        SchemaClassifier.new(self).classify
-      end
-
-      def remap_namespace_prefixes(changes)
-        NamespaceRemapper.new(self).remap(changes)
-      end
-
-      def analyze_type_hierarchy(qualified_name, depth: 10)
-        TypeHierarchyAnalyzer.new(self).analyze(qualified_name, depth: depth)
-      end
-
-      def analyze_coverage(entry_types: [])
-        CoverageAnalyzer.new(self).analyze(entry_types: entry_types)
-      end
-
-      def validate_xsd_spec(version: "1.0")
-        XsdSpecValidator.new(self, version: version).validate
-      end
+      def classify_schemas = SchemaClassifier.new(self).classify
+      def remap_namespace_prefixes(changes) = NamespaceRemapper.new(self).remap(changes)
+      def analyze_type_hierarchy(qualified_name, depth: 10) = TypeHierarchyAnalyzer.new(self).analyze(qualified_name, depth: depth)
+      def analyze_coverage(entry_types: []) = CoverageAnalyzer.new(self).analyze(entry_types: entry_types)
+      def validate_xsd_spec(version: "1.0") = XsdSpecValidator.new(self, version: version).validate
 
       # --- Package ---
 
@@ -328,88 +247,13 @@ module Lutaml
         end
       end
 
-      # --- Class methods ---
+      # --- Class methods (delegate to Loader) ---
 
-      def self.validate_package(zip_path)
-        SchemaRepositoryPackage.new(zip_path).validate
-      end
-
-      def self.from_package(zip_path)
-        SchemaRepositoryPackage.new(zip_path).load_repository
-      end
-
-      def self.from_yaml_file(yaml_path)
-        yaml_content = File.read(yaml_path)
-        base_dir = File.dirname(yaml_path)
-
-        repository = from_yaml(yaml_content)
-
-        resolve_relative_paths(repository, base_dir)
-        repository
-      end
-
-      def self.from_file(path)
-        raise Errno::ENOENT, "No such file or directory - #{path}" unless File.exist?(path)
-
-        case File.extname(path).downcase
-        when ".lxr"
-          repo = from_package(path)
-          repo.resolve unless repo.resolved
-          repo
-        when ".xsd", ".rng", ".rnc"
-          repo = new
-          repo.files = [File.expand_path(path)]
-          repo.parse.resolve
-          repo
-        when ".yml", ".yaml"
-          repo = from_yaml_file(path)
-          repo.parse.resolve if repo.needs_parsing?
-          repo
-        else
-          raise ConfigurationError,
-                "Unsupported file type: #{path}. Expected .xsd, .rng, .rnc, .lxr, .yml, or .yaml"
-        end
-      end
-
-      def self.from_file_cached(source_path, lxr_path: nil)
-        lxr_path ||= source_path.sub(/\.(xsd|ya?ml)$/, ".lxr")
-
-        if File.exist?(lxr_path) && File.mtime(lxr_path) >= File.mtime(source_path)
-          from_file(lxr_path)
-        else
-          repo = from_file(source_path)
-          repo.to_package(
-            lxr_path,
-            xsd_mode: :include_all,
-            resolution_mode: :resolved,
-            serialization_format: :marshal,
-          )
-          repo
-        end
-      end
-
-      def self.resolve_relative_paths(repository, base_dir)
-        if repository.files
-          repository.files = repository.files.map do |file|
-            File.absolute_path?(file) ? file : File.expand_path(file, base_dir)
-          end
-        end
-
-        if repository.base_packages
-          repository.base_packages = repository.base_packages.map do |pkg|
-            pkg_path = pkg.package
-            pkg.package = File.expand_path(pkg_path, base_dir) unless File.absolute_path?(pkg_path)
-            pkg
-          end
-        end
-
-        repository.schema_location_mappings&.each do |mapping|
-          next if File.absolute_path?(mapping.to)
-
-          mapping.to = File.expand_path(mapping.to, base_dir)
-        end
-      end
-      private_class_method :resolve_relative_paths
+      def self.validate_package(zip_path) = Loader.validate_package(zip_path)
+      def self.from_package(zip_path) = Loader.from_package(zip_path)
+      def self.from_yaml_file(yaml_path) = Loader.from_yaml_file(yaml_path)
+      def self.from_file(path) = Loader.from_file(path)
+      def self.from_file_cached(source_path, lxr_path: nil) = Loader.from_file_cached(source_path, lxr_path: lxr_path)
 
       # --- Instance private methods ---
 
@@ -441,29 +285,6 @@ module Lutaml
         PackageLoader.new(parser: parser, repository: self).load(glob_mappings)
       end
 
-      # --- Resolve helpers ---
-
-      def show_resolution_progress(all_schemas)
-        total_imports = all_schemas.values.sum do |schema|
-          (schema.import || []).size
-        end
-
-        if total_imports.positive?
-          puts "Resolving #{total_imports} schema dependencies..."
-          processed = 0
-          all_schemas.each_value do |schema|
-            (schema.import || []).each do |import|
-              processed += 1
-              print "\r[#{processed}/#{total_imports}] #{import.namespace || 'no namespace'}"
-              $stdout.flush
-            end
-          end
-          puts "\n✓ All dependencies resolved"
-        else
-          puts "✓ No schema dependencies to resolve"
-        end
-      end
-
       def register_namespaces_for_resolution(all_schemas)
         if namespace_mappings.nil? || namespace_mappings.empty?
           @namespace_registry.extract_from_schemas(all_schemas.values)
@@ -472,83 +293,6 @@ module Lutaml
             @namespace_registry.register(mapping.prefix, mapping.uri)
           end
         end
-      end
-
-      # --- Validate helpers ---
-
-      def validate_file_existence(errors, strict)
-        (files || []).each do |file_path|
-          next if File.exist?(file_path)
-
-          error = "Schema file not found: #{file_path}"
-          errors << error
-          raise Error, error if strict
-        end
-      end
-
-      def validate_parsed_schemas(errors, strict)
-        missing_schemas = (files || []).reject { |f| @parsed_schemas.exists?(f) }
-        return if missing_schemas.empty?
-
-        error = "Failed to parse schemas: #{missing_schemas.join(', ')}"
-        errors << error
-        raise Error, error if strict
-      end
-
-      def validate_namespace_mappings(errors, strict)
-        (namespace_mappings || []).each do |mapping|
-          if mapping.prefix.nil? || mapping.prefix.empty?
-            error = "Invalid namespace mapping: prefix cannot be empty"
-            errors << error
-            raise Error, error if strict
-          end
-          next unless mapping.uri.nil? || mapping.uri.empty?
-
-          error = "Invalid namespace mapping for prefix '#{mapping.prefix}': URI cannot be empty"
-          errors << error
-          raise Error, error if strict
-        end
-      end
-
-      def check_circular_imports(errors, strict)
-        dependencies = build_dependency_graph
-        visited = {}
-
-        dependencies.each_key do |file|
-          next unless has_circular_dependency?(file, dependencies, visited, [])
-
-          error = "Circular import detected involving: #{file}"
-          errors << error
-          raise Error, error if strict
-        end
-      end
-
-      def build_dependency_graph
-        dependencies = {}
-        @parsed_schemas.all.each do |file_path, schema|
-          deps = (schema.imports || []).map(&:schema_path)
-          (schema.includes || []).each do |inc|
-            deps << inc.schema_path
-          end
-          dependencies[file_path] = deps.compact
-        end
-        dependencies
-      end
-
-      def has_circular_dependency?(file, dependencies, visited, path)
-        return false if visited[file] == :permanent
-        return true if path.include?(file)
-
-        visited[file] = :temporary
-        path.push(file)
-
-        (dependencies[file] || []).each do |dep|
-          return true if has_circular_dependency?(dep, dependencies, visited, path)
-        end
-
-        path.pop
-        visited[file] = :permanent
-        false
       end
     end
   end
