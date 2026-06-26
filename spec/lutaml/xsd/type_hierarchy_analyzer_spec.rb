@@ -42,6 +42,12 @@ module XsdTestHelper
   def build_restriction(base: nil)
     Lutaml::Xml::Schema::Xsd::RestrictionSimpleType.new(base: base)
   end
+
+  # Wire a real schema + namespace into the repository's type index
+  def index_schema_with(repo, schema, file_path)
+    repo.parsed_schemas.set(file_path, schema)
+    repo.type_index.index_schema(schema, file_path)
+  end
 end
 
 RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
@@ -58,39 +64,30 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
 
   describe "#analyze" do
     context "when type is not found" do
-      before do
-        allow(repository).to receive(:find_type).and_return(
-          Lutaml::Xsd::TypeResolutionResult.failure(
-            qname: "unknown:Type",
-            error_message: "Type not found",
-          ),
-        )
+      it "returns nil for unknown prefix" do
+        result = analyzer.analyze("unknown:Type")
+        expect(result).to be_nil
       end
 
-      it "returns nil" do
-        result = analyzer.analyze("unknown:Type")
+      it "returns nil for unregistered local name" do
+        repository.namespace_registry.register("test", "http://test.com")
+        result = analyzer.analyze("test:Nonexistent")
         expect(result).to be_nil
       end
     end
 
     context "when type is found" do
       let(:complex_type) { build_complex_type(name: "TestType") }
-
-      let(:type_result) do
-        Lutaml::Xsd::TypeResolutionResult.success(
-          qname: "test:TestType",
-          namespace: "http://test.com",
-          local_name: "TestType",
-          definition: complex_type,
-          schema_file: "/test/schema.xsd",
-        )
+      let(:schema) do
+        s = Lutaml::Xml::Schema::Xsd::Schema.new
+        s.target_namespace = "http://test.com"
+        s.complex_type << complex_type
+        s
       end
 
       before do
-        allow(repository).to receive(:find_type).with("test:TestType").and_return(type_result)
-        # Stub type_index.all to return empty (no hierarchy)
-        fake_index = Struct.new(:all).new({})
-        allow(repository).to receive(:type_index).and_return(fake_index)
+        repository.namespace_registry.register("test", "http://test.com")
+        index_schema_with(repository, schema, "/test/schema.xsd")
       end
 
       it "returns hierarchy analysis" do
@@ -116,147 +113,160 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
     end
   end
 
-  describe "private methods" do
-    describe "#extract_base_type" do
-      context "with complex content extension" do
-        let(:extension) { build_extension(base: "test:BaseType") }
-        let(:complex_content) { build_complex_content(extension: extension) }
-        let(:complex_type) { build_complex_type(complex_content: complex_content) }
+  describe ".extract_base_type" do
+    context "with complex content extension" do
+      let(:extension) { build_extension(base: "test:BaseType") }
+      let(:complex_content) { build_complex_content(extension: extension) }
+      let(:complex_type) { build_complex_type(complex_content: complex_content) }
 
-        it "extracts base type from complex content extension" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to eq("test:BaseType")
-        end
-      end
-
-      context "with complex content restriction" do
-        let(:restriction) { build_restriction(base: "test:BaseType") }
-        let(:complex_content) { build_complex_content(restriction: restriction) }
-        let(:complex_type) { build_complex_type(complex_content: complex_content) }
-
-        it "extracts base type from complex content restriction" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to eq("test:BaseType")
-        end
-      end
-
-      context "with simple content extension" do
-        let(:extension) { build_extension(base: "xs:string") }
-        let(:simple_content) { build_simple_content(extension: extension) }
-        let(:complex_type) { build_complex_type(simple_content: simple_content) }
-
-        it "extracts base type from simple content extension" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to eq("xs:string")
-        end
-      end
-
-      context "with simple content restriction" do
-        let(:restriction) { build_restriction(base: "xs:integer") }
-        let(:simple_content) { build_simple_content(restriction: restriction) }
-        let(:complex_type) { build_complex_type(simple_content: simple_content) }
-
-        it "extracts base type from simple content restriction" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to eq("xs:integer")
-        end
-      end
-
-      context "with simple type restriction" do
-        let(:restriction) { build_restriction(base: "xs:string") }
-        let(:simple_type) { build_simple_type(restriction: restriction) }
-
-        it "extracts base type from simple type restriction" do
-          base = analyzer.send(:extract_base_type, simple_type)
-          expect(base).to eq("xs:string")
-        end
-      end
-
-      context "with no base type" do
-        let(:complex_type) { build_complex_type }
-
-        it "returns nil" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to be_nil
-        end
+      it "extracts base type from complex content extension" do
+        base = described_class.extract_base_type(complex_type)
+        expect(base).to eq("test:BaseType")
       end
     end
 
-    describe "#determine_type_category" do
-      it "identifies ComplexType" do
-        type = build_complex_type
-        expect(analyzer.send(:determine_type_category, type)).to eq(:complex_type)
-      end
+    context "with complex content restriction" do
+      let(:restriction) { build_restriction(base: "test:BaseType") }
+      let(:complex_content) { build_complex_content(restriction: restriction) }
+      let(:complex_type) { build_complex_type(complex_content: complex_content) }
 
-      it "identifies SimpleType" do
-        type = build_simple_type
-        expect(analyzer.send(:determine_type_category, type)).to eq(:simple_type)
-      end
-
-      it "identifies Element" do
-        type = Lutaml::Xml::Schema::Xsd::Element.new(name: "test")
-        expect(analyzer.send(:determine_type_category, type)).to eq(:element)
-      end
-
-      it "identifies AttributeGroup" do
-        type = Lutaml::Xml::Schema::Xsd::AttributeGroup.new(name: "test")
-        expect(analyzer.send(:determine_type_category, type)).to eq(:attribute_group)
-      end
-
-      it "identifies Group" do
-        type = Lutaml::Xml::Schema::Xsd::Group.new(name: "test")
-        expect(analyzer.send(:determine_type_category, type)).to eq(:group)
-      end
-
-      it "returns unknown for unrecognized type" do
-        type = Struct.new(:name).new("Unknown")
-        expect(analyzer.send(:determine_type_category, type)).to eq(:unknown)
+      it "extracts base type from complex content restriction" do
+        base = described_class.extract_base_type(complex_type)
+        expect(base).to eq("test:BaseType")
       end
     end
 
-    describe "#build_qualified_name" do
-      before do
-        allow(repository).to receive(:namespace_to_prefix).with("http://test.com").and_return("test")
-        allow(repository).to receive(:namespace_to_prefix).with(nil).and_return(nil)
-      end
+    context "with simple content extension" do
+      let(:extension) { build_extension(base: "xs:string") }
+      let(:simple_content) { build_simple_content(extension: extension) }
+      let(:complex_type) { build_complex_type(simple_content: simple_content) }
 
-      it "builds qualified name with prefix" do
-        type_info = {
-          namespace: "http://test.com",
-          definition: build_complex_type(name: "MyType"),
-        }
-        qname = analyzer.send(:build_qualified_name, type_info)
-        expect(qname).to eq("test:MyType")
-      end
-
-      it "builds local name without prefix when namespace is nil" do
-        type_info = {
-          namespace: nil,
-          definition: build_complex_type(name: "MyType"),
-        }
-        qname = analyzer.send(:build_qualified_name, type_info)
-        expect(qname).to eq("MyType")
-      end
-
-      it "builds local name when namespace has no prefix" do
-        allow(repository).to receive(:namespace_to_prefix).with("http://unknown.com").and_return(nil)
-        type_info = {
-          namespace: "http://unknown.com",
-          definition: build_complex_type(name: "MyType"),
-        }
-        qname = analyzer.send(:build_qualified_name, type_info)
-        expect(qname).to eq("MyType")
+      it "extracts base type from simple content extension" do
+        base = described_class.extract_base_type(complex_type)
+        expect(base).to eq("xs:string")
       end
     end
 
-    describe "#to_mermaid" do
+    context "with simple content restriction" do
+      let(:restriction) { build_restriction(base: "xs:integer") }
+      let(:simple_content) { build_simple_content(restriction: restriction) }
+      let(:complex_type) { build_complex_type(simple_content: simple_content) }
+
+      it "extracts base type from simple content restriction" do
+        base = described_class.extract_base_type(complex_type)
+        expect(base).to eq("xs:integer")
+      end
+    end
+
+    context "with simple type restriction" do
+      let(:restriction) { build_restriction(base: "xs:string") }
+      let(:simple_type) { build_simple_type(restriction: restriction) }
+
+      it "extracts base type from simple type restriction" do
+        base = described_class.extract_base_type(simple_type)
+        expect(base).to eq("xs:string")
+      end
+    end
+
+    context "with no base type" do
+      let(:complex_type) { build_complex_type }
+
+      it "returns nil" do
+        base = described_class.extract_base_type(complex_type)
+        expect(base).to be_nil
+      end
+    end
+
+    it "returns nil for nil definition" do
+      expect(described_class.extract_base_type(nil)).to be_nil
+    end
+  end
+
+  describe ".determine_type_category" do
+    it "identifies ComplexType" do
+      type = build_complex_type
+      expect(described_class.determine_type_category(type)).to eq(:complex_type)
+    end
+
+    it "identifies SimpleType" do
+      type = build_simple_type
+      expect(described_class.determine_type_category(type)).to eq(:simple_type)
+    end
+
+    it "identifies Element" do
+      type = Lutaml::Xml::Schema::Xsd::Element.new(name: "test")
+      expect(described_class.determine_type_category(type)).to eq(:element)
+    end
+
+    it "identifies AttributeGroup" do
+      type = Lutaml::Xml::Schema::Xsd::AttributeGroup.new(name: "test")
+      expect(described_class.determine_type_category(type)).to eq(:attribute_group)
+    end
+
+    it "identifies Group" do
+      type = Lutaml::Xml::Schema::Xsd::Group.new(name: "test")
+      expect(described_class.determine_type_category(type)).to eq(:group)
+    end
+
+    it "returns unknown for unrecognized type" do
+      type = Struct.new(:name).new("Unknown")
+      expect(described_class.determine_type_category(type)).to eq(:unknown)
+    end
+  end
+
+  describe ".build_qualified_name" do
+    let(:repo_with_ns) do
+      repo = Lutaml::Xsd::SchemaRepository.new
+      repo.namespace_registry.register("test", "http://test.com")
+      repo
+    end
+
+    it "builds qualified name with prefix" do
+      type_info = {
+        namespace: "http://test.com",
+        definition: build_complex_type(name: "MyType"),
+      }
+      qname = described_class.build_qualified_name(type_info, repo_with_ns)
+      expect(qname).to eq("test:MyType")
+    end
+
+    it "builds local name without prefix when namespace is nil" do
+      type_info = {
+        namespace: nil,
+        definition: build_complex_type(name: "MyType"),
+      }
+      qname = described_class.build_qualified_name(type_info, repo_with_ns)
+      expect(qname).to eq("MyType")
+    end
+
+    it "builds local name when namespace has no registered prefix" do
+      type_info = {
+        namespace: "http://unknown.com",
+        definition: build_complex_type(name: "MyType"),
+      }
+      qname = described_class.build_qualified_name(type_info, repo_with_ns)
+      expect(qname).to eq("MyType")
+    end
+
+    it "falls back to local name when repository is nil" do
+      type_info = {
+        namespace: "http://test.com",
+        definition: build_complex_type(name: "MyType"),
+      }
+      qname = described_class.build_qualified_name(type_info, nil)
+      expect(qname).to eq("MyType")
+    end
+  end
+
+  describe Lutaml::Xsd::TypeHierarchyFormatter do
+    describe ".to_mermaid" do
       let(:node) do
         Lutaml::Xsd::TypeHierarchyNode.new("test:RootType",
                                            category: :complex_type)
       end
 
       it "generates Mermaid diagram syntax" do
-        mermaid = analyzer.send(:to_mermaid, node)
+        mermaid = described_class.to_mermaid(node)
         expect(mermaid).to include("graph TD")
         expect(mermaid).to include("test:RootType")
         expect(mermaid).to include("complex_type")
@@ -267,7 +277,7 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
                                                       category: :complex_type)
         node.add_ancestor(ancestor)
 
-        mermaid = analyzer.send(:to_mermaid, node)
+        mermaid = described_class.to_mermaid(node)
         expect(mermaid).to include("test:BaseType")
         expect(mermaid).to include("-->")
       end
@@ -277,20 +287,20 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
                                                         category: :complex_type)
         node.add_descendant(descendant)
 
-        mermaid = analyzer.send(:to_mermaid, node)
+        mermaid = described_class.to_mermaid(node)
         expect(mermaid).to include("test:DerivedType")
         expect(mermaid).to include("-->")
       end
     end
 
-    describe "#to_text_tree" do
+    describe ".to_text_tree" do
       let(:node) do
         Lutaml::Xsd::TypeHierarchyNode.new("test:RootType",
                                            category: :complex_type)
       end
 
       it "generates text tree representation" do
-        text = analyzer.send(:to_text_tree, node)
+        text = described_class.to_text_tree(node)
         expect(text).to include("test:RootType")
         expect(text).to include("complex_type")
       end
@@ -300,7 +310,7 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
                                                       category: :complex_type)
         node.add_ancestor(ancestor)
 
-        text = analyzer.send(:to_text_tree, node)
+        text = described_class.to_text_tree(node)
         expect(text).to include("Ancestors (base types):")
         expect(text).to include("test:BaseType")
         expect(text).to include("↑")
@@ -311,16 +321,30 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
                                                         category: :complex_type)
         node.add_descendant(descendant)
 
-        text = analyzer.send(:to_text_tree, node)
+        text = described_class.to_text_tree(node)
         expect(text).to include("Descendants (derived types):")
         expect(text).to include("test:DerivedType")
         expect(text).to include("↓")
       end
 
       it "prevents infinite recursion with cycles" do
-        text = analyzer.send(:to_text_tree, node)
+        text = described_class.to_text_tree(node)
         expect(text).to be_a(String)
         expect(text.length).to be > 0
+      end
+    end
+
+    describe ".render" do
+      let(:node) do
+        Lutaml::Xsd::TypeHierarchyNode.new("test:RootType",
+                                           category: :complex_type)
+      end
+
+      it "returns both mermaid and text formats" do
+        result = described_class.render(node)
+        expect(result).to be_a(Hash)
+        expect(result[:mermaid]).to include("graph TD")
+        expect(result[:text]).to include("test:RootType")
       end
     end
   end

@@ -26,15 +26,92 @@ module Lutaml
           root: qualified_name,
           namespace: type_result.namespace,
           local_name: type_result.local_name,
-          type_category: determine_type_category(type_result.definition),
+          type_category: self.class.determine_type_category(type_result.definition),
           ancestors: find_ancestors(type_result.definition, depth),
           descendants: find_descendants(qualified_name, depth),
           tree: root_node.to_h,
-          formats: {
-            mermaid: to_mermaid(root_node),
-            text: to_text_tree(root_node),
-          },
+          formats: TypeHierarchyFormatter.render(root_node),
         }
+      end
+
+      # Public class-method versions of pure helpers. These used to be
+      # private instance methods but were promoted so specs could test them
+      # without using `send` to bypass visibility. Build-tree and find-*
+      # remain on the instance because they need repository state.
+
+      # Extract base type from a type definition (pure)
+      # @param definition [Base] The type definition
+      # @return [String, nil] The base type qualified name
+      def self.extract_base_type(definition)
+        return nil unless definition
+
+        if definition.respond_to?(:complex_content) && definition.complex_content
+          if definition.complex_content.extension
+            return definition.complex_content.extension.base
+          end
+          if definition.complex_content.restriction
+            return definition.complex_content.restriction.base
+          end
+        end
+
+        if definition.respond_to?(:simple_content) && definition.simple_content
+          if definition.simple_content.extension
+            return definition.simple_content.extension.base
+          end
+          if definition.simple_content.restriction
+            return definition.simple_content.restriction.base
+          end
+        end
+
+        if definition.respond_to?(:restriction) && definition.restriction
+          return definition.restriction.base
+        end
+
+        nil
+      end
+
+      # Determine type category from definition (pure)
+      # @param definition [Base] The type definition
+      # @return [Symbol] Type category
+      def self.determine_type_category(definition)
+        return :complex_type if definition.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+        return :simple_type if definition.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
+        return :element if definition.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+        return :attribute_group if definition.is_a?(Lutaml::Xml::Schema::Xsd::AttributeGroup)
+        return :group if definition.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+
+        :unknown
+      end
+
+      # Build qualified name from type info (uses repository)
+      # @param type_info [Hash] Type information from index
+      # @param repository [SchemaRepository, nil] Repository for prefix lookup
+      # @return [String] Qualified name
+      def self.build_qualified_name(type_info, repository = nil)
+        namespace = type_info[:namespace]
+        name = type_info[:definition]&.name
+        return name unless namespace
+
+        prefix = repository&.namespace_to_prefix(namespace)
+        prefix ? "#{prefix}:#{name}" : name
+      end
+
+      # Check if two type names match (accounting for different prefixes)
+      # @param type1 [String] First type name
+      # @param type2 [String] Second type name
+      # @param namespace [String, nil] Namespace URI for resolution
+      # @param repository [SchemaRepository, nil] For qualified-name parsing
+      # @return [Boolean] True if types match
+      def self.types_match?(type1, type2, _namespace = nil, repository = nil)
+        return true if type1 == type2
+
+        parsed1 = repository&.parse_qualified_name(type1)
+        parsed2 = repository&.parse_qualified_name(type2)
+
+        return false unless parsed1 && parsed2
+
+        parsed1[:namespace] == parsed2[:namespace] &&
+          parsed1[:local_name] == parsed2[:local_name]
       end
 
       private
@@ -51,7 +128,7 @@ module Lutaml
         visited.add(definition.object_id)
         ancestors = []
 
-        base_type = extract_base_type(definition)
+        base_type = self.class.extract_base_type(definition)
         return ancestors unless base_type
 
         # Skip XML Schema built-in types
@@ -66,7 +143,7 @@ module Lutaml
           qualified_name: base_type,
           namespace: base_result.namespace,
           local_name: base_result.local_name,
-          type_category: determine_type_category(base_result.definition),
+          type_category: self.class.determine_type_category(base_result.definition),
         }
 
         # Recursively find ancestors of the base type
@@ -91,14 +168,14 @@ module Lutaml
           definition = type_info[:definition]
           next unless definition
 
-          base_type = extract_base_type(definition)
+          base_type = self.class.extract_base_type(definition)
           next unless base_type
 
           # Check if this type extends/restricts our target type
-          next unless types_match?(base_type, qualified_name,
-                                   type_info[:namespace])
+          next unless self.class.types_match?(base_type, qualified_name,
+                                              type_info[:namespace], @repository)
 
-          qname = build_qualified_name(type_info)
+          qname = self.class.build_qualified_name(type_info, @repository)
           descendants << {
             qualified_name: qname,
             namespace: type_info[:namespace],
@@ -128,12 +205,12 @@ module Lutaml
         type_result = @repository.find_type(qualified_name)
         return nil unless type_result.resolved?
 
-        category = determine_type_category(type_result.definition)
+        category = self.class.determine_type_category(type_result.definition)
         node = TypeHierarchyNode.new(qualified_name, category: category,
                                                      depth: 0)
 
         # Find ancestors (base types)
-        base_type = extract_base_type(type_result.definition)
+        base_type = self.class.extract_base_type(type_result.definition)
         if base_type && base_type !~ /^xsd?:/
           ancestor_node = build_tree(base_type, depth - 1, visited)
           node.add_ancestor(ancestor_node) if ancestor_node
@@ -145,13 +222,13 @@ module Lutaml
           definition = type_info[:definition]
           next unless definition
 
-          def_base_type = extract_base_type(definition)
+          def_base_type = self.class.extract_base_type(definition)
           next unless def_base_type
 
-          next unless types_match?(def_base_type, qualified_name,
-                                   type_info[:namespace])
+          next unless self.class.types_match?(def_base_type, qualified_name,
+                                              type_info[:namespace], @repository)
 
-          child_qname = build_qualified_name(type_info)
+          child_qname = self.class.build_qualified_name(type_info, @repository)
           next if visited.include?(child_qname)
 
           child_node = build_tree(child_qname, depth - 1, visited)
@@ -160,16 +237,28 @@ module Lutaml
 
         node
       end
+    end
+
+    # Renders a TypeHierarchyNode to Mermaid and text-tree formats.
+    # Extracted from TypeHierarchyAnalyzer so presentation has its own home
+    # and is unit-testable without touching analyzer state.
+    class TypeHierarchyFormatter
+      # Render both formats for a node.
+      # @param node [TypeHierarchyNode]
+      # @return [Hash] { mermaid:, text: }
+      def self.render(node)
+        {
+          mermaid: to_mermaid(node),
+          text: to_text_tree(node),
+        }
+      end
 
       # Generate Mermaid diagram syntax
-      # @param node [TypeHierarchyNode] The root node
-      # @return [String] Mermaid diagram syntax
-      def to_mermaid(node)
+      def self.to_mermaid(node)
         lines = ["graph TD"]
         node_id_map = {}
         counter = 0
 
-        # Helper to generate unique node IDs
         generate_node_id = lambda do |qname|
           node_id_map[qname] ||= begin
             counter += 1
@@ -177,7 +266,6 @@ module Lutaml
           end
         end
 
-        # Recursive helper to add nodes and edges
         add_to_diagram = lambda do |current_node, visited = Set.new|
           return if visited.include?(current_node.qualified_name)
 
@@ -187,14 +275,12 @@ module Lutaml
           label = "#{current_node.qualified_name}<br/>#{current_node.category}"
           lines << "  #{current_id}[\"#{label}\"]"
 
-          # Add ancestors
           current_node.ancestors.each do |ancestor|
             ancestor_id = generate_node_id.call(ancestor.qualified_name)
             lines << "  #{ancestor_id} --> #{current_id}"
             add_to_diagram.call(ancestor, visited)
           end
 
-          # Add descendants
           current_node.descendants.each do |descendant|
             descendant_id = generate_node_id.call(descendant.qualified_name)
             lines << "  #{current_id} --> #{descendant_id}"
@@ -207,18 +293,13 @@ module Lutaml
       end
 
       # Generate text tree with indentation
-      # @param node [TypeHierarchyNode] The root node
-      # @param indent [String] Current indentation
-      # @param visited [Set] Already visited nodes (cycle detection)
-      # @return [String] Text tree representation
-      def to_text_tree(node, indent = "", visited = Set.new)
+      def self.to_text_tree(node, indent = "", visited = Set.new)
         return "" if visited.include?(node.qualified_name)
 
         visited.add(node.qualified_name)
 
         lines = []
 
-        # Show ancestors first (base types)
         unless node.ancestors.empty?
           lines << "#{indent}Ancestors (base types):"
           node.ancestors.each do |ancestor|
@@ -228,10 +309,8 @@ module Lutaml
           lines << ""
         end
 
-        # Show current node
         lines << "#{indent}#{node.qualified_name} (#{node.category})"
 
-        # Show descendants (derived types)
         unless node.descendants.empty?
           lines << "#{indent}Descendants (derived types):"
           node.descendants.each do |descendant|
@@ -241,73 +320,6 @@ module Lutaml
         end
 
         lines.join("\n")
-      end
-
-      # Extract base type from a type definition
-      # @param definition [Base] The type definition
-      # @return [String, nil] The base type qualified name
-      def extract_base_type(definition)
-        # ComplexType with complexContent/extension
-        if definition.complex_content
-          return definition.complex_content.extension.base if definition.complex_content.extension
-          return definition.complex_content.restriction.base if definition.complex_content.restriction
-        end
-
-        # ComplexType with simpleContent/extension
-        if definition.simple_content
-          return definition.simple_content.extension.base if definition.simple_content.extension
-          return definition.simple_content.restriction.base if definition.simple_content.restriction
-        end
-
-        # SimpleType with restriction
-        return definition.restriction.base if definition.restriction
-
-        nil
-      end
-
-      # Check if two type names match (accounting for different prefixes)
-      # @param type1 [String] First type name
-      # @param type2 [String] Second type name
-      # @param namespace [String, nil] Namespace URI for resolution
-      # @return [Boolean] True if types match
-      def types_match?(type1, type2, _namespace = nil)
-        # Try direct match first
-        return true if type1 == type2
-
-        # Parse both types
-        parsed1 = @repository.parse_qualified_name(type1)
-        parsed2 = @repository.parse_qualified_name(type2)
-
-        return false unless parsed1 && parsed2
-
-        # Compare namespaces and local names
-        parsed1[:namespace] == parsed2[:namespace] &&
-          parsed1[:local_name] == parsed2[:local_name]
-      end
-
-      # Build qualified name from type info
-      # @param type_info [Hash] Type information from index
-      # @return [String] Qualified name
-      def build_qualified_name(type_info)
-        namespace = type_info[:namespace]
-        name = type_info[:definition]&.name
-        return name unless namespace
-
-        prefix = @repository.namespace_to_prefix(namespace)
-        prefix ? "#{prefix}:#{name}" : name
-      end
-
-      # Determine type category from definition
-      # @param definition [Base] The type definition
-      # @return [Symbol] Type category
-      def determine_type_category(definition)
-        return :complex_type if definition.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
-        return :simple_type if definition.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
-        return :element if definition.is_a?(Lutaml::Xml::Schema::Xsd::Element)
-        return :attribute_group if definition.is_a?(Lutaml::Xml::Schema::Xsd::AttributeGroup)
-        return :group if definition.is_a?(Lutaml::Xml::Schema::Xsd::Group)
-
-        :unknown
       end
     end
 
