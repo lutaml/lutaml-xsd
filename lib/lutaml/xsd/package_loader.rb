@@ -23,8 +23,7 @@ module Lutaml
 
       # Load a single package source with schema filtering
       # @param package_source [PackageSource] The package to load
-      # @param _glob_mappings [Array<Hash>] Schema location mappings
-      def load_package_with_filtering(package_source, _glob_mappings)
+      def load_package_with_filtering(package_source)
         repo = package_source.repository
 
         store = repo.parsed_schemas
@@ -106,7 +105,7 @@ module Lutaml
             $stdout.flush
           end
 
-          load_package_with_filtering(source, glob_mappings)
+          load_package_with_filtering(source)
         end
 
         puts "\n✓ All packages merged successfully" if verbose

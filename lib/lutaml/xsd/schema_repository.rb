@@ -325,8 +325,8 @@ module Lutaml
         PackageLoader.new(self).load(glob_mappings)
       end
 
-      def load_package_with_filtering(package_source, glob_mappings)
-        PackageLoader.new(self).load_package_with_filtering(package_source, glob_mappings)
+      def load_package_with_filtering(package_source)
+        PackageLoader.new(self).load_package_with_filtering(package_source)
       end
 
       def supports_conflict_detection?
