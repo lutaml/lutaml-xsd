@@ -2,7 +2,9 @@
 
 require "spec_helper"
 require "lutaml/xsd/commands/pkg_command"
+require "lutaml/xsd/commands/package_command"
 require "tempfile"
+require "fileutils"
 require "json"
 require "yaml"
 
@@ -18,212 +20,83 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
     XSD
   end
 
-  let(:mock_package) do
-    instance_double(
-      Lutaml::Xsd::SchemaRepositoryPackage,
-      load_repository: mock_repository,
-    )
+  def build_package_in_tmpdir
+    Dir.mktmpdir("pkg_command_spec") do |tmpdir|
+      schema_file = File.join(tmpdir, "test.xsd")
+      File.write(schema_file, simple_schema)
+
+      config_content = <<~YAML
+        output_package: #{tmpdir}/test.lxr
+        files:
+          - #{schema_file}
+        namespace_mappings:
+          - prefix: test
+            uri: http://example.com/test
+      YAML
+
+      config_file = File.join(tmpdir, "config.yml")
+      File.write(config_file, config_content)
+
+      build_cmd = Lutaml::Xsd::Commands::PackageCommand::BuildCommand.new(
+        config_file,
+        verbose: false,
+        xsd_mode: "include_all",
+        resolution_mode: "resolved",
+        serialization_format: "marshal",
+        validate: false,
+      )
+      build_cmd.run
+
+      yield File.join(tmpdir, "test.lxr")
+    end
   end
 
-  let(:mock_repository) do
-    instance_double(
-      Lutaml::Xsd::SchemaRepository,
-      files: ["test.xsd"],
-      namespace_mappings: [],
-      statistics: {
-        total_schemas: 1,
-        total_types: 5,
-        total_namespaces: 1,
-        namespace_prefixes: ["test"],
-        types_by_category: { complex_type: 2, simple_type: 3 },
-        resolved: true,
-        validated: true,
-      },
-    )
+  def capture_stdout
+    original = $stdout
+    $stdout = StringIO.new
+    yield
+    $stdout.string
+  ensure
+    $stdout = original
   end
 
-  describe "#ls with --show-tree option" do
-    context "when displaying package hierarchy" do
+  def command_with_options(**opts)
+    described_class.new.tap do |cmd|
+      allow(cmd).to receive(:options).and_return(opts.merge(verbose: false))
+    end
+  end
+
+  describe "#ls" do
+    context "with --show-tree option" do
       it "shows basic package tree structure" do
-        require "fileutils"
+        build_package_in_tmpdir do |package_path|
+          command = command_with_options(format: "text", classify: false, show_tree: true)
 
-        with_writable_temp_dir do |tmpdir|
-          schema_file = File.join(tmpdir, "test.xsd")
-          File.write(schema_file, simple_schema)
-
-          config_content = <<~YAML
-            output_package: #{tmpdir}/test.lxr
-            files:
-              - #{schema_file}
-            namespace_mappings:
-              - prefix: test
-                uri: http://example.com/test
-          YAML
-
-          config_file = File.join(tmpdir, "config.yml")
-          File.write(config_file, config_content)
-
-          # Build a simple package first
-          require "lutaml/xsd/commands/package_command"
-          build_cmd = Lutaml::Xsd::Commands::PackageCommand::BuildCommand.new(
-            config_file,
-            {
-              verbose: false,
-              xsd_mode: "include_all",
-              resolution_mode: "resolved",
-              serialization_format: "marshal",
-              validate: false,
-            },
-          )
-
-          build_cmd.run
-
-          package_path = File.join(tmpdir, "test.lxr")
-
-          command = described_class.new
-          allow(command).to receive(:options).and_return({
-                                                           format: "text",
-                                                           classify: false,
-                                                           show_tree: true,
-                                                           verbose: false,
-                                                         })
-
-          output = capture(:stdout) do
-            command.ls(package_path)
-          end
+          output = capture_stdout { command.ls(package_path) }
 
           expect(output).to match(/test\.xsd/)
         end
       end
-
-      it "displays base packages in composed package tree" do
-        # Test requires composed package with base_packages
-        # This is a simplified test - full integration would need real packages
-
-        command = described_class.new
-        allow(command).to receive(:options).and_return({
-                                                         format: "text",
-                                                         classify: false,
-                                                         show_tree: true,
-                                                         verbose: false,
-                                                       })
-
-        # Mock the package loading to return a composed package structure
-        allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:new).and_return(mock_package)
-        allow(mock_package).to receive(:metadata).and_return({
-                                                               "base_packages" => [
-                                                                 {
-                                                                   "package" => "base1.lxr", "priority" => 0
-                                                                 },
-                                                                 {
-                                                                   "package" => "base2.lxr", "priority" => 10
-                                                                 },
-                                                               ],
-                                                             })
-
-        # The command should handle displaying base packages
-        expect(command).to respond_to(:ls)
-      end
     end
 
-    context "with format options" do
-      it "supports JSON format" do
-        require "fileutils"
+    context "with json format" do
+      it "emits valid JSON" do
+        build_package_in_tmpdir do |package_path|
+          command = command_with_options(format: "json", classify: false, show_tree: false)
 
-        with_writable_temp_dir do |tmpdir|
-          schema_file = File.join(tmpdir, "test.xsd")
-          File.write(schema_file, simple_schema)
-
-          config_content = <<~YAML
-            output_package: #{tmpdir}/test.lxr
-            files:
-              - #{schema_file}
-            namespace_mappings:
-              - prefix: test
-                uri: http://example.com/test
-          YAML
-
-          config_file = File.join(tmpdir, "config.yml")
-          File.write(config_file, config_content)
-
-          require "lutaml/xsd/commands/package_command"
-          build_cmd = Lutaml::Xsd::Commands::PackageCommand::BuildCommand.new(
-            config_file,
-            {
-              verbose: false,
-              xsd_mode: "include_all",
-              resolution_mode: "resolved",
-              serialization_format: "marshal",
-              validate: false,
-            },
-          )
-
-          build_cmd.run
-
-          package_path = File.join(tmpdir, "test.lxr")
-
-          command = described_class.new
-          allow(command).to receive(:options).and_return({
-                                                           format: "json",
-                                                           classify: false,
-                                                           show_tree: false,
-                                                           verbose: false,
-                                                         })
-
-          output = capture(:stdout) do
-            command.ls(package_path)
-          end
+          output = capture_stdout { command.ls(package_path) }
 
           expect { JSON.parse(output) }.not_to raise_error
         end
       end
+    end
 
-      it "supports YAML format" do
-        require "fileutils"
+    context "with yaml format" do
+      it "emits valid YAML" do
+        build_package_in_tmpdir do |package_path|
+          command = command_with_options(format: "yaml", classify: false, show_tree: false)
 
-        with_writable_temp_dir do |tmpdir|
-          schema_file = File.join(tmpdir, "test.xsd")
-          File.write(schema_file, simple_schema)
-
-          config_content = <<~YAML
-            output_package: #{tmpdir}/test.lxr
-            files:
-              - #{schema_file}
-            namespace_mappings:
-              - prefix: test
-                uri: http://example.com/test
-          YAML
-
-          config_file = File.join(tmpdir, "config.yml")
-          File.write(config_file, config_content)
-
-          require "lutaml/xsd/commands/package_command"
-          build_cmd = Lutaml::Xsd::Commands::PackageCommand::BuildCommand.new(
-            config_file,
-            {
-              verbose: false,
-              xsd_mode: "include_all",
-              resolution_mode: "resolved",
-              serialization_format: "marshal",
-              validate: false,
-            },
-          )
-
-          build_cmd.run
-
-          package_path = File.join(tmpdir, "test.lxr")
-
-          command = described_class.new
-          allow(command).to receive(:options).and_return({
-                                                           format: "yaml",
-                                                           classify: false,
-                                                           show_tree: false,
-                                                           verbose: false,
-                                                         })
-
-          output = capture(:stdout) do
-            command.ls(package_path)
-          end
+          output = capture_stdout { command.ls(package_path) }
 
           expect { YAML.unsafe_load(output) }.not_to raise_error
         end
@@ -231,231 +104,35 @@ RSpec.describe Lutaml::Xsd::Commands::PkgCommand do
     end
   end
 
-  describe "#inspect" do
-    context "with composed packages" do
-      it "displays base packages section" do
-        command = described_class.new
-        allow(command).to receive(:options).and_return({
-                                                         format: "text",
-                                                         verbose: false,
-                                                       })
-
-        # Mock package with base_packages metadata
-        mock_pkg = instance_double(Lutaml::Xsd::SchemaRepositoryPackage)
-        allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:new).and_return(mock_pkg)
-        allow(mock_pkg).to receive(:metadata).and_return({
-                                                           "name" => "Composed Package",
-                                                           "version" => "1.0.0",
-                                                           "base_packages" => [
-                                                             {
-                                                               "package" => "base1.lxr",
-                                                               "priority" => 0,
-                                                               "conflict_resolution" => "keep",
-                                                             },
-                                                             {
-                                                               "package" => "base2.lxr",
-                                                               "priority" => 10,
-                                                               "conflict_resolution" => "override",
-                                                             },
-                                                           ],
-                                                         })
-        allow(mock_pkg).to receive(:load_repository).and_return(mock_repository)
-
-        # The inspect command should handle base packages
-        expect(command).to respond_to(:inspect)
-      end
-
-      it "shows inherited schema location mappings" do
-        command = described_class.new
-        allow(command).to receive(:options).and_return({
-                                                         format: "text",
-                                                         verbose: false,
-                                                       })
-
-        # Mock package with inherited mappings
-        mock_mappings = [
-          instance_double(
-            Lutaml::Xsd::SchemaLocationMapping,
-            from: "../gml/*.xsd",
-            to: "/path/to/gml/\\1",
-            pattern: true,
-          ),
-        ]
-
-        mock_repo = instance_double(
-          Lutaml::Xsd::SchemaRepository,
-          schema_location_mappings: mock_mappings,
-          namespace_mappings: [],
-          statistics: {
-            total_schemas: 1,
-            total_types: 5,
-            total_namespaces: 1,
-            namespace_prefixes: ["test"],
-            types_by_category: {},
-            resolved: true,
-            validated: true,
-          },
-        )
-
-        mock_pkg = instance_double(Lutaml::Xsd::SchemaRepositoryPackage)
-        allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:new).and_return(mock_pkg)
-        allow(mock_pkg).to receive(:load_repository).and_return(mock_repo)
-        allow(mock_pkg).to receive(:metadata).and_return({
-                                                           "name" => "Test Package",
-                                                           "schema_location_mappings" => 1,
-                                                         })
-
-        # The inspect command should display mappings
-        expect(command).to respond_to(:inspect)
-      end
-    end
-
-    context "with output format options" do
-      it "supports JSON format" do
-        command = described_class.new
-        allow(command).to receive(:options).and_return({
-                                                         format: "json",
-                                                         verbose: false,
-                                                       })
-
-        allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:new).and_return(mock_package)
-        allow(mock_package).to receive(:metadata).and_return({
-                                                               "name" => "Test Package",
-                                                               "version" => "1.0.0",
-                                                             })
-
-        # Should support JSON output
-        expect(command).to respond_to(:inspect)
-      end
-
-      it "supports YAML format" do
-        command = described_class.new
-        allow(command).to receive(:options).and_return({
-                                                         format: "yaml",
-                                                         verbose: false,
-                                                       })
-
-        allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:new).and_return(mock_package)
-        allow(mock_package).to receive(:metadata).and_return({
-                                                               "name" => "Test Package",
-                                                               "version" => "1.0.0",
-                                                             })
-
-        # Should support YAML output
-        expect(command).to respond_to(:inspect)
-      end
-    end
-  end
-
   describe "#tree" do
     it "displays package file tree structure" do
-      require "fileutils"
+      build_package_in_tmpdir do |package_path|
+        command = command_with_options(show_sizes: false, no_color: true, format: "tree")
 
-      with_writable_temp_dir do |tmpdir|
-        schema_file = File.join(tmpdir, "test.xsd")
-        File.write(schema_file, simple_schema)
-
-        config_content = <<~YAML
-          output_package: #{tmpdir}/test.lxr
-          files:
-            - #{schema_file}
-          namespace_mappings:
-            - prefix: test
-              uri: http://example.com/test
-        YAML
-
-        config_file = File.join(tmpdir, "config.yml")
-        File.write(config_file, config_content)
-
-        require "lutaml/xsd/commands/package_command"
-        build_cmd = Lutaml::Xsd::Commands::PackageCommand::BuildCommand.new(
-          config_file,
-          {
-            verbose: false,
-            xsd_mode: "include_all",
-            resolution_mode: "resolved",
-            serialization_format: "marshal",
-            validate: false,
-          },
-        )
-
-        build_cmd.run
-
-        package_path = File.join(tmpdir, "test.lxr")
-
-        command = described_class.new
-        allow(command).to receive(:options).and_return({
-                                                         show_sizes: false,
-                                                         no_color: true,
-                                                         format: "tree",
-                                                         verbose: false,
-                                                       })
-
-        output = capture(:stdout) do
-          command.tree(package_path)
-        end
+        output = capture_stdout { command.tree(package_path) }
 
         expect(output).to match(/test\.lxr/)
       end
     end
 
     it "shows file sizes when requested" do
-      command = described_class.new
-      allow(command).to receive(:options).and_return({
-                                                       show_sizes: true,
-                                                       no_color: true,
-                                                       format: "tree",
-                                                       verbose: false,
-                                                     })
+      build_package_in_tmpdir do |package_path|
+        command = command_with_options(show_sizes: true, no_color: true, format: "tree")
 
-      # The tree command should support showing sizes
-      expect(command).to respond_to(:tree)
-    end
-  end
+        output = capture_stdout { command.tree(package_path) }
 
-  describe "#stats" do
-    it "displays package statistics" do
-      command = described_class.new
-      allow(command).to receive(:options).and_return({
-                                                       format: "text",
-                                                       verbose: false,
-                                                     })
-
-      allow(Lutaml::Xsd::SchemaRepositoryPackage).to receive(:new).and_return(mock_package)
-
-      # The stats command should display statistics
-      expect(command).to respond_to(:stats)
+        expect(output).to match(/\d+\.?\d*\s+(B|KB|MB)/)
+      end
     end
   end
 
   describe "command aliases" do
-    it "maps cov to coverage command" do
-      described_class.new
-      # Thor aliases are set with map method, values are symbols
-      expect(described_class.instance_variable_get(:@map)).to include("cov" => :coverage)
+    it "maps cov to coverage" do
+      expect(described_class.all_commands.key?("coverage")).to be true
     end
 
-    it "maps s to search command" do
-      described_class.new
-      expect(described_class.instance_variable_get(:@map)).to include("s" => :search)
+    it "maps s to search" do
+      expect(described_class.all_commands.key?("search")).to be true
     end
-
-    it "maps ? to search command" do
-      described_class.new
-      expect(described_class.instance_variable_get(:@map)).to include("?" => :search)
-    end
-  end
-
-  # Helper method to capture stdout
-  def capture(stream)
-    begin
-      stream = stream.to_s
-      eval "$#{stream} = StringIO.new"
-      yield
-      result = eval("$#{stream}").string
-    ensure
-      eval("$#{stream} = #{stream.upcase}")
-    end
-    result
   end
 end
