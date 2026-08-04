@@ -4,10 +4,11 @@
       <!-- Branding Header -->
       <div class="sidebar-branding">
         <img
-          v-if="schemaStore.metadata?.appearance?.logos?.square"
-          :src="uiStore.isDark ? schemaStore.metadata.appearance.logos.square.dark.path : schemaStore.metadata.appearance.logos.square.light.path"
+          v-if="schemaStore.metadata?.appearance?.logos?.square && !squareLogoFailed"
+          :src="logoSrc(schemaStore.metadata.appearance.logos.square)"
           alt="Package logo"
           class="branding-logo"
+          @error="squareLogoFailed = true"
         />
         <img
           v-else
@@ -179,6 +180,12 @@ const schemaStore = useSchemaStore()
 const uiStore = useUiStore()
 
 const expandedNamespaces = ref(new Set<string>())
+const squareLogoFailed = ref(false)
+
+function logoSrc(logo: { light?: { path?: string; url?: string }; dark?: { path?: string; url?: string } }): string {
+  const variant = uiStore.isDark ? logo.dark : logo.light
+  return variant?.path || variant?.url || ''
+}
 
 // Find the namespace prefix containing the currently selected schema
 const selectedNamespacePrefix = computed(() => {
