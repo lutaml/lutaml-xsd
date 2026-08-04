@@ -111,10 +111,11 @@
       <!-- Long Logo and Header -->
       <div class="landing-header">
         <img
-          v-if="schemaStore.metadata?.appearance?.logos?.long"
-          :src="uiStore.isDark ? schemaStore.metadata.appearance.logos.long.dark.path : schemaStore.metadata.appearance.logos.long.light.path"
+          v-if="schemaStore.metadata?.appearance?.logos?.long && !longLogoFailed"
+          :src="logoSrc(schemaStore.metadata.appearance.logos.long)"
           alt="Package logo"
           class="landing-logo"
+          @error="longLogoFailed = true"
         />
         <div class="landing-badges">
           <span v-if="schemaStore.metadata?.license" class="badge badge-license">
@@ -186,6 +187,13 @@ const schemaStore = useSchemaStore()
 const uiStore = useUiStore()
 
 const activeTab = ref<TabId>('types')
+const longLogoFailed = ref(false)
+const squareLogoFailed = ref(false)
+
+function logoSrc(logo: { light?: { path?: string; url?: string }; dark?: { path?: string; url?: string } }): string {
+  const variant = uiStore.isDark ? logo.dark : logo.light
+  return variant?.path || variant?.url || ''
+}
 
 const tabs = computed(() => {
   type Tab = { id: TabId; label: string; count: number }

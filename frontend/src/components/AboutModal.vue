@@ -16,9 +16,10 @@
           <div class="package-identity">
             <img
               v-if="schemaStore.metadata?.appearance?.logos?.long"
-              :src="uiStore.isDark ? schemaStore.metadata.appearance.logos.long.dark.path : schemaStore.metadata.appearance.logos.long.light.path"
+              :src="logoSrc(schemaStore.metadata.appearance.logos.long)"
               alt="Package logo"
               class="package-logo"
+              @error="longLogoFailed = true"
             />
             <div class="package-title-block">
               <h3 class="package-title">{{ schemaStore.metadata?.title || schemaStore.metadata?.name || 'XSD Schema Package' }}</h3>
@@ -136,12 +137,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useSchemaStore } from '@/stores/schemaStore'
 import { useUiStore } from '@/stores/uiStore'
 
 const schemaStore = useSchemaStore()
 const uiStore = useUiStore()
+
+const longLogoFailed = ref(false)
+const squareLogoFailed = ref(false)
+
+function logoSrc(logo: { light?: { path?: string; url?: string }; dark?: { path?: string; url?: string } }): string {
+  const variant = uiStore.isDark ? logo.dark : logo.light
+  return variant?.path || variant?.url || ''
+}
 
 const hasAdditionalLinks = computed(() => {
   const m = schemaStore.metadata
