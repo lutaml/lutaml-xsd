@@ -188,7 +188,6 @@ const uiStore = useUiStore()
 
 const activeTab = ref<TabId>('types')
 const longLogoFailed = ref(false)
-const squareLogoFailed = ref(false)
 
 function logoSrc(logo: { light?: { path?: string; url?: string }; dark?: { path?: string; url?: string } }): string {
   const variant = uiStore.isDark ? logo.dark : logo.light
