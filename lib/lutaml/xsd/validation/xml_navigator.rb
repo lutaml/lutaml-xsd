@@ -173,9 +173,9 @@ module Lutaml
         # @return [Moxml::Document]
         # @raise [Moxml::ParseError] if parsing fails
         def parse_xml(content, adapter)
-          context = adapter ? Moxml::Context.new(adapter) : Moxml::Context.new
-          builder = Moxml::DocumentBuilder.new(context)
-          builder.build(content)
+          Moxml::Context.new(adapter).parse(content)
+        rescue Moxml::ParseError
+          raise
         rescue StandardError => e
           raise Moxml::ParseError, "Failed to parse XML: #{e.message}"
         end
