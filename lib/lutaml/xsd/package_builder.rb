@@ -67,7 +67,7 @@ module Lutaml
           # Clear lazy XML element references that hold non-serializable
           # adapter nodes throughout the object graph.
           # lutaml-model's :lazy import_declaration_plan mode stores
-          # XmlElement references (containing Nokogiri nodes) on every
+          # XmlElement references (containing XML adapter nodes) on every
           # model instance during deserialization.
           clear_pending_plan_references(schema)
           Marshal.dump(schema)
@@ -201,7 +201,7 @@ module Lutaml
       private
 
       # Recursively walk an object graph and clear pending_plan_root_element
-      # on every Lutaml::Model::Serializable instance. This removes Nokogiri
+      # on every Lutaml::Model::Serializable instance. This removes XML
       # adapter_node references that prevent Marshal.dump from succeeding.
       #
       # @param root [Object] Root of the object graph to walk
