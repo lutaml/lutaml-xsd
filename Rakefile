@@ -22,9 +22,9 @@ namespace :deps do
         dependencies: parsed.dependencies.keys.sort,
         # name→version only: platform-variant listing differs across
         # environments and is not the behavior contract we guard.
-        versions: parsed.specs.map { |s|
+        versions: parsed.specs.map do |s|
           "#{s.name} #{s.version}"
-        }.uniq.sort,
+        end.uniq.sort,
       }
     end
 
