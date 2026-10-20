@@ -119,7 +119,7 @@ module Lutaml
         # @return [RuleRegistry] The initialized rule registry
         def build_rule_registry
           require_relative "rule_registry"
-          Validation::RuleRegistry.new(@config)
+          Validation::RuleRegistry.default(@config)
         end
       end
     end

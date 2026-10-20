@@ -13,22 +13,24 @@ w3.org (owner can vendor a tarball later; provenance README goes with it).
 | mode | pass-rate |
 |---|---|
 | engine (Moxml::XSD tier-1 on leptris) | 20/25 (80.0%) |
-| pipeline (ValidationJob, default registry) | 20/25 (80.0%) |
+| pipeline (ValidationJob + wired rule engine) | 20/25 (80.0%) |
 
 Gap register (each failure is a tracked gap, not a test bug):
 
 - `identity-keykeyref` — dangling keyref not detected (engine tier-1 gap;
-  rule-engine identity rules unwired)
+  no identity-constraint rule exists yet)
 - `wildcards-any` — `xs:any processContents="strict"` is not enforced:
-  an undeclared element is accepted (tier-1 engine gap)
-- `xsi-nil` — `xsi:nil` on a non-nillable element accepted
+  an undeclared element is accepted (engine tier-1 gap; no wildcard rule)
+- `xsi-nil` — `xsi:nil` on a non-nillable element accepted (no rule)
 - `xsi-type` — derived `xsi:type` rejected AND unknown `xsi:type`
-  accepted
-- Pipeline == engine because the rule engine's registries are still
-  unwired in production (`RuleRegistry` is registered empty and rule
-  `validate` signatures don't share the engine's calling convention) —
-  wiring it is the headline gap; every rule-engine gap below is
-  subsumed by it.
+  accepted (engine tier-1 gap + no dynamic-type resolution)
+- Substitution groups now PASS in pipeline mode (the rule engine's
+  content-model and occurrence checks are substitution-aware); the engine
+  handles them too.
+
+History: before the rule-engine wiring (below), pipeline mode was
+identical to engine mode because `RuleRegistry` was empty and rule
+signatures did not match the engine's calling convention.
 
 ## Harness
 
@@ -47,31 +49,33 @@ Gap register (each failure is a tracked gap, not a test bug):
       populated — DEFERRED: subsumed by the rule-registry wiring design
       below
 
-## Rule-engine wiring (the headline gap)
+## Rule-engine wiring (done 2026-10-21)
 
-- [ ] Design note: rule dispatch contract (which rule validates which
-      node/schema pair), rule `validate` signature unification, and the
-      registry population path — DEFERRED: needs an owner-reviewed design
-      note; today `RuleRegistry` is constructed empty in production and
-      the rule classes use per-rule signatures that the `RuleEngine`
-      calling convention does not match
-- [ ] Wire `validation/base_types/*` and `validation/facets/*` into the
-      rule paths where the engine cannot answer — DEFERRED (same design)
+- [x] Design note: `docs/superpowers/specs/2026-10-21-rule-engine-wiring-design.md`
+- [x] Element-scoped dispatch contract: `ValidationRule#schema_argument`
+      (defaults to the resolved declaration; occurrence rule returns the
+      content-model particle) and `runs_without_schema?`
+- [x] `SchemaDefinitionResolver`: top-level + inline element index with
+      namespace matching and named-type resolution
+- [x] `RuleRegistry.default(config)`: production rule set, feature-gated;
+      shared by `Validator` and the conformance harness
+- [x] Rules resolve `type="prefix:Name"` references via the repository
+- [x] Substitution groups: content-model and occurrence matching are
+      substitution-aware (substitution case now passes in pipeline mode)
+- [x] Facet-collection handling fixed (empty arrays were treated as
+      present facets; `XmlAttribute` namespace ported to `.uri`)
+- [x] Integration specs prove rule findings fire with the engine phase
+      disabled (ordering, missing content) and valid instances stay clean
 
-## Rule-engine depth (after wiring)
+## Rule-engine depth (remaining)
 
-- [ ] Particle checking: full sequence/choice/all/mixed content with
-      occurrence semantics; UPA detection — DEFERRED (after wiring);
-      engine covers the tier-1 subset measured above
-- [ ] Substitution groups: head/expansion/closure, `xsi:type` derivation
-      checks — DEFERRED (after wiring; engine gaps are in the register)
-- [ ] `xsi:nil`, `xsi:schemaLocation`, defaults and fixed values —
-      DEFERRED (after wiring; engine gaps in the register)
-- [ ] Identity constraints: `key`, `keyref`, `unique` selector/field
-      evaluation — DEFERRED (after wiring; engine gap in the register)
+- [ ] Identity constraints: `key`, `keyref`, `unique` — DEFERRED: needs a
+      new rule (selector/field XPath evaluation); engine lacks them
 - [ ] Wildcards: `any`/`anyAttribute` namespace + processContents modes —
-      DEFERRED (after wiring; the strict-mode gap is in the register)
-- [ ] Type unification checks; abstract elements/types enforcement —
-      DEFERRED (after wiring)
+      DEFERRED: needs a wildcard rule; strict-mode gap in the register
+- [ ] `xsi:nil` and dynamic `xsi:type` resolution — DEFERRED: needs
+      attribute-aware rules plus derivation closure in the resolver
+- [ ] Particle checking: UPA detection — DEFERRED (engine covers the
+      tier-1 subset; UPA is schema-side checking)
 - [ ] XSD 1.1 constructs behind a version flag — DEFERRED: 1.1 strategy
       decision needed (see TODO.som.md)

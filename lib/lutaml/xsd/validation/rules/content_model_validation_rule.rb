@@ -47,23 +47,26 @@ module Lutaml
           #   The schema definition
           # @param collector [ResultCollector] Collector for validation results
           # @return [void]
-          def validate(xml_element, schema_def, collector)
+          def validate(xml_element, schema_def, collector, repository: nil)
             return unless schema_def
 
             return if engine_content_check(xml_element, collector) == :handled
 
             # Resolve content model
-            content_model = resolve_content_model(schema_def)
+            content_model = resolve_content_model(schema_def, repository)
             return unless content_model
 
             # Validate based on content model type
             case content_model
             when Lutaml::Xsd::Sequence
-              validate_sequence(xml_element, content_model, collector)
+              validate_sequence(xml_element, content_model, collector,
+                                repository: repository)
             when Lutaml::Xsd::Choice
-              validate_choice(xml_element, content_model, collector)
+              validate_choice(xml_element, content_model, collector,
+                              repository: repository)
             when Lutaml::Xsd::All
-              validate_all(xml_element, content_model, collector)
+              validate_all(xml_element, content_model, collector,
+                           repository: repository)
             end
           end
 
@@ -101,11 +104,11 @@ module Lutaml
           # @param schema_def [Lutaml::Xsd::ComplexType, Lutaml::Xsd::Element]
           # @return [Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice,
           #   Lutaml::Xsd::All, nil]
-          def resolve_content_model(schema_def)
+          def resolve_content_model(schema_def, repository = nil)
             # For elements, get type first
             if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
-              type_def = resolve_type(schema_def)
-              return resolve_content_model(type_def) if type_def
+              type_def = resolve_type(schema_def, repository)
+              return resolve_content_model(type_def, repository) if type_def
             end
 
             # For complex types, check content model
@@ -125,11 +128,12 @@ module Lutaml
           #
           # @param element [Lutaml::Xsd::Element] Schema element
           # @return [Lutaml::Xsd::ComplexType, nil]
-          def resolve_type(element)
+          def resolve_type(element, repository = nil)
             return element.complex_type if element.complex_type
+            return nil unless element.type
 
-            # TODO: Resolve type reference from repository
-            nil
+            resolved = repository&.resolve_type(element)
+            resolved if resolved.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
           end
 
           # Resolve content model from complex content
@@ -163,7 +167,8 @@ module Lutaml
           # @param sequence [Lutaml::Xsd::Sequence] The sequence definition
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_sequence(xml_element, sequence, collector)
+          def validate_sequence(xml_element, sequence, collector,
+                                repository: nil)
             particles = collect_particles(sequence)
             return if particles.empty?
 
@@ -179,7 +184,7 @@ module Lutaml
               while child_index < children.size
                 child = children[child_index]
 
-                break unless particle_matches?(child, particle)
+                break unless particle_matches?(child, particle, repository)
 
                 matched_count += 1
                 child_index += 1
@@ -237,7 +242,8 @@ module Lutaml
           # @param choice [Lutaml::Xsd::Choice] The choice definition
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_choice(xml_element, choice, collector)
+          def validate_choice(xml_element, choice, collector,
+                              repository: nil)
             particles = collect_particles(choice)
             return if particles.empty?
 
@@ -247,7 +253,7 @@ module Lutaml
             # Find which particles match
             particles.each do |particle|
               matches = children.select do |child|
-                particle_matches?(child, particle)
+                particle_matches?(child, particle, repository)
               end
               matched_particles << particle if matches.any?
             end
@@ -292,7 +298,7 @@ module Lutaml
           # @param all [Lutaml::Xsd::All] The all definition
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_all(xml_element, all, collector)
+          def validate_all(xml_element, all, collector, repository: nil)
             particles = collect_particles(all)
             return if particles.empty?
 
@@ -304,7 +310,7 @@ module Lutaml
 
               # Count matches
               matched_count = children.count do |child|
-                particle_matches?(child, particle)
+                particle_matches?(child, particle, repository)
               end
 
               # Check minimum occurrence
@@ -371,10 +377,10 @@ module Lutaml
           # @param xml_element [XmlElement] The XML element
           # @param particle [Object] The schema particle
           # @return [Boolean]
-          def particle_matches?(xml_element, particle)
+          def particle_matches?(xml_element, particle, repository = nil)
             case particle
             when Lutaml::Xsd::Element
-              element_matches?(xml_element, particle)
+              element_matches?(xml_element, particle, repository)
             when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice, Lutaml::Xsd::All
               # Nested content model - would need recursive validation
               false
@@ -383,25 +389,52 @@ module Lutaml
             end
           end
 
-          # Check if XML element matches schema element
+          # Check if XML element matches schema element.
+          #
+          # A substitution-group member matches a reference to its head.
           #
           # @param xml_element [XmlElement] The XML element
           # @param schema_element [Lutaml::Xsd::Element] The schema element
+          # @param repository [SchemaDefinitionResolver, nil]
           # @return [Boolean]
-          def element_matches?(xml_element, schema_element)
-            return false unless xml_element.name == schema_element.name
+          def element_matches?(xml_element, schema_element, repository = nil)
+            if xml_element.name == schema_element.name
+              return namespaces_match_instance?(
+                xml_element, resolve_target_namespace(schema_element)
+              )
+            end
 
-            # Check namespace
-            target_ns = resolve_target_namespace(schema_element)
+            substitution_member?(xml_element, schema_element, repository)
+          end
 
-            # Get XML element namespace, treating nil and empty string as equivalent
+          # Whether the instance element's declaration is in the
+          # substitution group headed by the particle's name/ref.
+          #
+          # @param xml_element [XmlElement]
+          # @param particle [Lutaml::Xsd::Element]
+          # @param repository [SchemaDefinitionResolver, nil]
+          # @return [Boolean]
+          def substitution_member?(xml_element, particle, repository)
+            return false unless repository
+
+            expected = particle.name || particle.ref
+            return false if expected.to_s.empty?
+
+            declaration = repository.resolve(
+              xml_element.name, xml_element.namespace_uri
+            )
+            return false unless declaration
+
+            declaration.substitution_group.to_s.split(":").last ==
+              expected.to_s.split(":").last
+          end
+
+          # @return [Boolean]
+          def namespaces_match_instance?(xml_element, target_ns)
             xml_ns = xml_element.namespace_uri
             xml_ns = nil if xml_ns.to_s.empty?
             target_ns = nil if target_ns.to_s.empty?
 
-            # For inline elements with no explicit namespace, match if both are nil
-            # This handles the common case where elements are defined without
-            # a target namespace in the schema and XML has no namespace declarations
             xml_ns == target_ns
           end
 

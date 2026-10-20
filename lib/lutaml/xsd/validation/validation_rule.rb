@@ -41,19 +41,45 @@ module Lutaml
 
         # Execute the validation rule
         #
-        # This is the main entry point for validation. Subclasses must
-        # implement this method to define their validation logic.
+        # This is the main entry point for validation. Rules are
+        # element-scoped: the engine calls this once per instance element
+        # with the schema argument selected by {#schema_argument}.
         #
         # @abstract
-        # @param document [XmlDocument] The XML document to validate
-        # @param repository [SchemaRepository] The schema repository
+        # @param xml_element [XmlElement] The instance element to validate
+        # @param schema_argument [Object, nil] What this rule validates
+        #   against (schema element by default; see {#schema_argument})
         # @param collector [ResultCollector] Collector for validation results
+        # @param repository [SchemaDefinitionResolver, nil] Named-type
+        #   resolution for `type="prefix:Name"` references
         # @return [void]
         #
         # @raise [NotImplementedError] if not implemented by subclass
-        def validate(document, repository, collector)
+        def validate(xml_element, schema_argument, collector, repository: nil)
           raise NotImplementedError,
                 "#{self.class} must implement #validate"
+        end
+
+        # The schema object this rule validates the element against.
+        #
+        # Defaults to the resolved schema element; rules that need a
+        # different shape override this (e.g. the occurrence rule wants
+        # the content-model particle).
+        #
+        # @param schema_def [Object, nil] Resolved schema declaration
+        # @param repository [SchemaDefinitionResolver, nil]
+        # @return [Object, nil]
+        def schema_argument(schema_def, repository: nil) # rubocop:disable Lint/UnusedMethodArgument
+          # `repository` is part of the contract; the default selection
+          # does not consult it.
+          schema_def
+        end
+
+        # Whether the rule still runs when no schema declaration resolves.
+        #
+        # @return [Boolean]
+        def runs_without_schema?
+          false
         end
 
         # Get the category of this validation rule

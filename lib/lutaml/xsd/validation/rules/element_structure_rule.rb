@@ -48,7 +48,8 @@ module Lutaml
           # @param collector [ResultCollector] Collector for validation
           #   results
           # @return [void]
-          def validate(xml_element, schema_element, collector)
+          def validate(xml_element, schema_element, collector,
+                       repository: nil)
             # Step 1: Validate element declaration exists
             unless validate_element_exists(xml_element, schema_element,
                                            collector)
@@ -59,7 +60,19 @@ module Lutaml
             validate_element_name(xml_element, schema_element, collector)
 
             # Step 3: Validate namespace correctness
-            validate_namespace(xml_element, schema_element, collector)
+            validate_namespace(xml_element, schema_element, collector,
+                               repository: repository)
+          end
+
+          # Structure checks run only for declarations the resolver could
+          # match: unresolved names also cover refs/substitution groups the
+          # resolver does not model yet, so treating them as errors here
+          # would misfire. Undeclared-element detection is tracked in
+          # TODO.conformance.md.
+          #
+          # @return [Boolean]
+          def runs_without_schema?
+            false
           end
 
           private
@@ -117,8 +130,9 @@ module Lutaml
           # @param schema_element [Lutaml::Xsd::Element] Schema element
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_namespace(xml_element, schema_element, collector)
-            expected_ns = resolve_expected_namespace(schema_element)
+          def validate_namespace(xml_element, schema_element, collector,
+                                 repository: nil)
+            expected_ns = resolve_expected_namespace(schema_element, repository)
             actual_ns = xml_element.namespace_uri
 
             # Both nil is ok (no namespace)
@@ -152,21 +166,17 @@ module Lutaml
             xml_element.name == schema_element.name
           end
 
-          # Resolve expected namespace from schema element
+          # Resolve expected namespace for a schema declaration via the
+          # resolver's index (parsed declarations carry no owner-schema
+          # link).
           #
           # @param schema_element [Lutaml::Xsd::Element] Schema element
+          # @param repository [SchemaDefinitionResolver, nil]
           # @return [String, nil]
-          def resolve_expected_namespace(schema_element)
-            # Check if element has explicit targetNamespace
-            return schema_element.target_namespace if
-              schema_element.target_namespace
+          def resolve_expected_namespace(schema_element, repository)
+            return nil unless repository
 
-            # Check parent schema's targetNamespace
-            if schema_element.schema&.target_namespace
-              return schema_element.schema.target_namespace
-            end
-
-            nil
+            repository.target_namespace_for(schema_element)
           end
 
           # Normalize namespace (treat empty string as nil)

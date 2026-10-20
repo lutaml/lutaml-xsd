@@ -2,6 +2,7 @@
 
 require_relative "rule_registry"
 require_relative "result_collector"
+require_relative "schema_definition_resolver"
 
 module Lutaml
   module Xsd
@@ -45,9 +46,19 @@ module Lutaml
         # @raise [StopValidationError] if stop-on-first-error is enabled
         def execute_category(category, document, repository)
           rules = @registry.rules_for_category(category)
+          return if rules.empty?
 
-          rules.each do |rule|
-            execute_rule(rule, document, repository)
+          resolver = SchemaDefinitionResolver.new(repository)
+          each_element(document) do |xml_element|
+            schema_def = resolver.resolve(
+              xml_element.name, xml_element.namespace_uri
+            )
+            rules.each do |rule|
+              argument = rule.schema_argument(schema_def, repository: resolver)
+              next if argument.nil? && !rule.runs_without_schema?
+
+              execute_rule(rule, xml_element, argument, resolver)
+            end
           end
         rescue ResultCollector::StopValidationError
           # Stop validation early if configured
@@ -72,16 +83,19 @@ module Lutaml
           # Stop validation early if configured
         end
 
-        # Execute a single rule
+        # Execute a single rule for one instance element
         #
         # @param rule [ValidationRule] The rule to execute
-        # @param document [XmlDocument] The XML document
-        # @param repository [SchemaRepository] The schema repository
+        # @param xml_element [XmlElement] The instance element
+        # @param schema_argument [Object, nil] What the rule validates against
+        # @param resolver [SchemaDefinitionResolver] Named-type resolver
         # @return [void]
-        def execute_rule(rule, document, repository)
+        def execute_rule(rule, xml_element, schema_argument, resolver)
           return unless rule.enabled?
 
-          rule.validate(document, repository, @collector)
+          rule.validate(
+            xml_element, schema_argument, @collector, repository: resolver
+          )
         rescue StandardError => e
           handle_rule_error(rule, e)
         end
@@ -106,16 +120,8 @@ module Lutaml
         # @param repository [SchemaRepository] The schema repository
         # @return [void]
         def execute_enabled(document, repository)
-          enabled_rules = @registry.all_rules(enabled_only: true)
-
-          # Group by category and execute in order
-          categories = ValidationRule::CATEGORIES
-
-          categories.each do |category|
-            category_rules = enabled_rules.select { |r| r.category == category }
-            category_rules.each do |rule|
-              execute_rule(rule, document, repository)
-            end
+          ValidationRule::CATEGORIES.each do |category|
+            execute_category(category, document, repository)
           end
         rescue ResultCollector::StopValidationError
           # Stop validation early if configured
@@ -163,6 +169,18 @@ module Lutaml
         end
 
         private
+
+        # Depth-first walk over instance elements.
+        #
+        # @param node [XmlDocument, XmlElement] Start node
+        # @yieldparam element [XmlElement]
+        def each_element(node, &)
+          element = node.is_a?(XmlDocument) ? node.root_element : node
+          return unless element
+
+          yield element
+          element.children.each { |child| each_element(child, &) }
+        end
 
         # Handle errors that occur during rule execution
         #

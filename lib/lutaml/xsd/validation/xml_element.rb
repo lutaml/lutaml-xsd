@@ -84,7 +84,7 @@ module Lutaml
             XmlAttribute.new(
               attr.name,
               attr.value,
-              attr.namespace&.href,
+              attr.namespace&.uri,
               attr.namespace&.prefix,
             )
           end

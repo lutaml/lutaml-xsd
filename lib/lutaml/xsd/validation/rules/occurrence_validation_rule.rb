@@ -46,7 +46,8 @@ module Lutaml
           #   Lutaml::Xsd::Choice, Lutaml::Xsd::All] The schema particle
           # @param collector [ResultCollector] Collector for validation results
           # @return [void]
-          def validate(parent_element, schema_particle, collector)
+          def validate(parent_element, schema_particle, collector,
+                       repository: nil)
             return unless schema_particle
             return unless parent_element
 
@@ -54,17 +55,29 @@ module Lutaml
             case schema_particle
             when Lutaml::Xsd::Element
               validate_element_occurrence(parent_element, schema_particle,
-                                          collector)
+                                          collector, repository: repository)
             when Lutaml::Xsd::Sequence
               validate_sequence_occurrences(parent_element, schema_particle,
-                                            collector)
+                                            collector, repository: repository)
             when Lutaml::Xsd::Choice
               validate_choice_occurrences(parent_element, schema_particle,
-                                          collector)
+                                          collector, repository: repository)
             when Lutaml::Xsd::All
               validate_all_occurrences(parent_element, schema_particle,
-                                       collector)
+                                       collector, repository: repository)
             end
+          end
+
+          # This rule validates the element's children against the
+          # content-model particle of the element's type.
+          #
+          # @param schema_def [Object, nil] Resolved schema declaration
+          # @param repository [SchemaDefinitionResolver, nil]
+          # @return [Object, nil]
+          def schema_argument(schema_def, repository: nil)
+            return nil unless schema_def && repository
+
+            repository.content_model_for(schema_def)
           end
 
           private
@@ -76,13 +89,14 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_element_occurrence(parent_element, schema_element,
-                                          collector)
+                                          collector, repository: nil)
             min_occurs = parse_occurs(schema_element.min_occurs, 1)
             max_occurs = parse_max_occurs(schema_element.max_occurs, 1)
 
             # Count actual occurrences
-            actual_count = count_element_occurrences(parent_element,
-                                                     schema_element)
+            actual_count = count_element_occurrences(
+              parent_element, schema_element, repository
+            )
 
             # Check minimum occurrence
             validate_min_occurs(parent_element, schema_element, actual_count,
@@ -100,15 +114,17 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_sequence_occurrences(parent_element, sequence,
-                                            collector)
+                                            collector, repository: nil)
             return if sequence.element.empty?
 
             Array(sequence.element).each do |element|
-              validate_element_occurrence(parent_element, element, collector)
+              validate_element_occurrence(parent_element, element, collector,
+                                          repository: repository)
             end
 
             # Also check nested sequences, choices, groups
-            validate_nested_particles(parent_element, sequence, collector)
+            validate_nested_particles(parent_element, sequence, collector,
+                                      repository: repository)
           end
 
           # Validate choice particle occurrences
@@ -117,13 +133,15 @@ module Lutaml
           # @param choice [Lutaml::Xsd::Choice] Schema choice
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_choice_occurrences(parent_element, choice, collector)
+          def validate_choice_occurrences(parent_element, choice, collector,
+                                          repository: nil)
             min_occurs = parse_occurs(choice.min_occurs, 1)
             max_occurs = parse_max_occurs(choice.max_occurs, 1)
 
             # For choice, at least one alternative should be present
             # Count how many alternatives are present
-            present_count = count_choice_alternatives(parent_element, choice)
+            present_count = count_choice_alternatives(parent_element, choice,
+                                                      repository)
 
             if present_count < min_occurs
               report_error(
@@ -160,13 +178,15 @@ module Lutaml
           # @param all [Lutaml::Xsd::All] Schema all
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_all_occurrences(parent_element, all, collector)
+          def validate_all_occurrences(parent_element, all, collector,
+                                       repository: nil)
             return if all.element.empty?
 
             # In xs:all, each element can appear 0 or 1 times
             # (or based on its minOccurs/maxOccurs)
             Array(all.element).each do |element|
-              validate_element_occurrence(parent_element, element, collector)
+              validate_element_occurrence(parent_element, element, collector,
+                                          repository: repository)
             end
           end
 
@@ -176,18 +196,21 @@ module Lutaml
           # @param particle [Object] Schema particle
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_nested_particles(parent_element, particle, collector)
+          def validate_nested_particles(parent_element, particle, collector,
+                                        repository: nil)
             # Check for nested sequences
             if particle.sequence
               Array(particle.sequence).each do |seq|
-                validate_sequence_occurrences(parent_element, seq, collector)
+                validate_sequence_occurrences(parent_element, seq, collector,
+                                              repository: repository)
               end
             end
 
             # Check for nested choices
             if particle.choice
               Array(particle.choice).each do |choice|
-                validate_choice_occurrences(parent_element, choice, collector)
+                validate_choice_occurrences(parent_element, choice, collector,
+                                            repository: repository)
               end
             end
 
@@ -204,14 +227,35 @@ module Lutaml
           # @param parent_element [XmlElement] Parent element
           # @param schema_element [Lutaml::Xsd::Element] Schema element
           # @return [Integer]
-          def count_element_occurrences(parent_element, schema_element)
-            element_name = schema_element.name
+          def count_element_occurrences(parent_element, schema_element,
+                                        repository = nil)
+            element_name = schema_element.name ||
+              schema_element.ref.to_s.split(":").last
             target_ns = resolve_target_namespace(schema_element)
 
             parent_element.children.count do |child|
-              child.name == element_name &&
+              name_matches = child.name == element_name &&
                 namespaces_match?(child.namespace_uri, target_ns)
+              name_matches ||
+                substitution_member?(child, schema_element, repository)
             end
+          end
+
+          # Whether the child's declaration is a member of the
+          # substitution group headed by the particle's name/ref.
+          #
+          # @return [Boolean]
+          def substitution_member?(child, schema_element, repository)
+            return false unless repository
+
+            head = schema_element.ref
+            return false if head.to_s.empty?
+
+            declaration = repository.resolve(child.name, child.namespace_uri)
+            return false unless declaration
+
+            declaration.substitution_group.to_s.split(":").last ==
+              head.to_s.split(":").last
           end
 
           # Count how many choice alternatives are present
@@ -219,12 +263,14 @@ module Lutaml
           # @param parent_element [XmlElement] Parent element
           # @param choice [Lutaml::Xsd::Choice] Schema choice
           # @return [Integer]
-          def count_choice_alternatives(parent_element, choice)
+          def count_choice_alternatives(parent_element, choice,
+                                        repository = nil)
             return 0 if choice.element.empty?
 
             alternatives = Array(choice.element)
             alternatives.count do |alt_element|
-              count_element_occurrences(parent_element, alt_element).positive?
+              count_element_occurrences(parent_element, alt_element,
+                                        repository).positive?
             end
           end
 

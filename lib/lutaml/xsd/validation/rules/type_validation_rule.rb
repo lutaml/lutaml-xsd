@@ -46,10 +46,11 @@ module Lutaml
           # @param collector [ResultCollector] Collector for validation
           #   results
           # @return [void]
-          def validate(xml_element, schema_element, collector)
+          def validate(xml_element, schema_element, collector,
+                       repository: nil)
             return unless schema_element
 
-            type_def = resolve_element_type(schema_element)
+            type_def = resolve_element_type(schema_element, repository)
             return unless type_def
 
             case type_def
@@ -69,7 +70,7 @@ module Lutaml
           #
           # @param schema_element [Lutaml::Xsd::Element] Schema element
           # @return [Lutaml::Xsd::SimpleType, Lutaml::Xsd::ComplexType, nil]
-          def resolve_element_type(schema_element)
+          def resolve_element_type(schema_element, repository = nil)
             # Check for inline type definition
             return schema_element.simple_type if
               schema_element.simple_type
@@ -79,8 +80,9 @@ module Lutaml
 
             # Check for type reference
             if schema_element.type
-              # TODO: Resolve type from repository
-              # For now, return the type reference as-is
+              resolved = repository&.resolve_type(schema_element)
+              return resolved if resolved
+
               return schema_element.type
             end
 
@@ -236,9 +238,11 @@ module Lutaml
                                      collector)
             value_length = value.length
 
-            # Check exact length
-            if restriction.length
-              expected_length = restriction.length.value.to_i
+            # Facet collections are arrays; an empty array must not be
+            # treated as a present facet.
+            length_facet = Array(restriction.length).first
+            if length_facet
+              expected_length = length_facet.value.to_i
               if value_length != expected_length
                 report_error(
                   collector,
@@ -256,8 +260,9 @@ module Lutaml
             end
 
             # Check minimum length
-            if restriction.min_length
-              min_length = restriction.min_length.value.to_i
+            min_length_facet = Array(restriction.min_length).first
+            if min_length_facet
+              min_length = min_length_facet.value.to_i
               if value_length < min_length
                 report_error(
                   collector,
@@ -275,9 +280,10 @@ module Lutaml
             end
 
             # Check maximum length
-            return unless restriction.max_length
+            max_length_facet = Array(restriction.max_length).first
+            return unless max_length_facet
 
-            max_length = restriction.max_length.value.to_i
+            max_length = max_length_facet.value.to_i
             return unless value_length > max_length
 
             report_error(

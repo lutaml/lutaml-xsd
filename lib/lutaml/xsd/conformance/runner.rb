@@ -137,13 +137,12 @@ module Lutaml
         end
 
         def pipeline_valid?(kase, instance_path)
+          config = Validation::ValidationConfiguration.new
           job = Validation::ValidationJob.new(
             xml_content: File.read(instance_path),
             repository: repository_for(kase),
-            rule_registry: Validation::RuleRegistry.new(
-              Validation::ValidationConfiguration.new,
-            ),
-            config: Validation::ValidationConfiguration.new,
+            rule_registry: Validation::RuleRegistry.default(config),
+            config: config,
           )
           job.execute.valid?
         end

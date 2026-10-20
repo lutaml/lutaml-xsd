@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 require_relative "validation_rule"
+require_relative "rules/element_structure_rule"
+require_relative "rules/type_validation_rule"
+require_relative "rules/attribute_validation_rule"
+require_relative "rules/occurrence_validation_rule"
+require_relative "rules/content_model_validation_rule"
 
 module Lutaml
   module Xsd
@@ -10,6 +15,9 @@ module Lutaml
       # This class implements the Registry pattern to manage validation rules.
       # It organizes rules by category and provides methods to register,
       # retrieve, and filter rules based on configuration.
+      #
+      # {RuleRegistry.default} builds the production rule set that the
+      # Validator and the conformance harness share.
       #
       # @example Create and populate a registry
       #   registry = RuleRegistry.new(config)
@@ -29,6 +37,28 @@ module Lutaml
           @config = config
           @rules = []
           @rules_by_category = Hash.new { |h, k| h[k] = [] }
+        end
+
+        # Production rule set, gated by the validation feature flags.
+        #
+        # @param config [ValidationConfiguration]
+        # @return [RuleRegistry]
+        def self.default(config)
+          registry = new(config)
+          registry.register(Rules::ElementStructureRule.new)
+          if config.feature_enabled?(:validate_types)
+            registry.register(Rules::TypeValidationRule.new)
+          end
+          if config.feature_enabled?(:validate_attributes)
+            registry.register(Rules::AttributeValidationRule.new)
+          end
+          if config.feature_enabled?(:validate_occurrences)
+            registry.register(Rules::OccurrenceValidationRule.new)
+          end
+          if config.feature_enabled?(:validate_content_models)
+            registry.register(Rules::ContentModelValidationRule.new)
+          end
+          registry
         end
 
         # Register a validation rule

@@ -47,10 +47,12 @@ module Lutaml
           #   The schema definition
           # @param collector [ResultCollector] Collector for validation results
           # @return [void]
-          def validate(xml_element, schema_element, collector)
+          def validate(xml_element, schema_element, collector,
+                       repository: nil)
             return unless schema_element
 
-            schema_attributes = collect_schema_attributes(schema_element)
+            schema_attributes =
+              collect_schema_attributes(schema_element, repository)
             xml_attributes = xml_element.attributes
 
             # Step 1: Check required attributes are present
@@ -73,13 +75,13 @@ module Lutaml
           # @param schema_def [Lutaml::Xsd::Element, Lutaml::Xsd::ComplexType]
           #   Schema definition
           # @return [Array<Lutaml::Xsd::Attribute>]
-          def collect_schema_attributes(schema_def)
+          def collect_schema_attributes(schema_def, repository = nil)
             attributes = []
 
             # For elements, get attributes from type
             if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
-              type_def = resolve_type(schema_def)
-              return collect_schema_attributes(type_def) if type_def
+              type_def = resolve_type(schema_def, repository)
+              return collect_schema_attributes(type_def, repository) if type_def
             end
 
             # For complex types, collect attributes
@@ -113,11 +115,12 @@ module Lutaml
           #
           # @param element [Lutaml::Xsd::Element] Schema element
           # @return [Lutaml::Xsd::ComplexType, nil]
-          def resolve_type(element)
+          def resolve_type(element, repository = nil)
             return element.complex_type if element.complex_type
+            return nil unless element.type
 
-            # TODO: Resolve type reference from repository
-            nil
+            resolved = repository&.resolve_type(element)
+            resolved if resolved.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
           end
 
           # Expand attribute group reference
