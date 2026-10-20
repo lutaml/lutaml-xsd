@@ -20,7 +20,10 @@ bundle exec rspec spec/lutaml/liquid_spec.rb  # Run liquid methods tests
 ## Architecture
 
 ### Entry Point
-`lib/lutaml/xsd.rb` - Main module with `Lutaml::Xsd.parse(xsd, location:)` method for parsing XSD content.
+`lib/lutaml/xsd.rb` loads the stack. The public parse entry (provided by
+lutaml-model's `Lutaml::Xml::Schema::Xsd`) is
+`Lutaml::Xml::Schema::Xsd.parse(xsd, location:)`, returning a `Schema`.
+Model extensions live in `lib/lutaml/xsd/xsd_model_extensions.rb`.
 
 ### Base Class
 `lib/lutaml/xsd/base.rb` - `Lutaml::Xsd::Base` extends `Lutaml::Model::Serializable`. All XSD element classes inherit from it. Provides:
