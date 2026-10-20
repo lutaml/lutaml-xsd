@@ -57,6 +57,27 @@ end
 
 task default: %i[deps:lockfile_check spec rubocop]
 
+namespace :conformance do
+  desc "Run the conformance corpus and write tmp/conformance_report.md"
+  task :run do
+    require "lutaml/xsd"
+    require_relative "lib/lutaml/xsd/conformance/runner"
+
+    runner = Lutaml::Xsd::Conformance::Runner.new(
+      File.join(__dir__, "spec", "conformance", "cases"),
+    )
+    results = runner.run
+    report = runner.report(results)
+    puts report
+    FileUtils.mkdir_p(File.join(__dir__, "tmp"))
+    File.write(File.join(__dir__, "tmp", "conformance_report.md"),
+               "# Conformance report\n\n```\n#{report}\n```\n")
+  end
+end
+
+desc "Run the conformance suite"
+task conformance: "conformance:run"
+
 namespace :benchmark do
   desc "Benchmark leptris vs nokogiri through Moxml on a real corpus"
   task :engines do
