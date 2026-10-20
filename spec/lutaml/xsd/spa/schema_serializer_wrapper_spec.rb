@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "fileutils"
 require "moxml"
 require "tempfile"
 
@@ -33,7 +34,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
   end
 
   after do
-    File.delete(schema_path) if File.exist?(schema_path)
+    FileUtils.rm_f(schema_path)
   end
 
   def wrapper_document(path)
@@ -42,6 +43,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
 
   describe "#create_type_wrapper_xsd" do
     it "wraps a schema-level type in a synthetic root element" do
+      wrapper_path = nil
       wrapper_path = serializer.create_type_wrapper_xsd("Address", schema_path)
       wrapper = File.read(wrapper_path)
       doc = wrapper_document(wrapper_path)
@@ -53,7 +55,7 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
       expect(wrapper).to include("complexType")
       expect(wrapper).to include('name="street"')
     ensure
-      wrapper_path && File.exist?(wrapper_path) && File.delete(wrapper_path)
+      FileUtils.rm_f(wrapper_path)
     end
 
     it "returns the original path when no xs:schema exists" do
