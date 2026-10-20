@@ -193,7 +193,7 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::ContentModelValidationRule do
       ctx = Moxml::Context.new
       compiled = ctx.xsd(xsd_xml)
       node = ctx.parse("<person><name>A</name></person>").root
-      compiled.content_valid?("person", node.children.to_a) != nil
+      !compiled.content_valid?("person", node.children.to_a).nil?
     rescue StandardError
       false
     end
