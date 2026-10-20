@@ -19,9 +19,8 @@ Gap register (each failure is a tracked gap, not a test bug):
 
 - `identity-keykeyref` — dangling keyref not detected (engine tier-1 gap;
   rule-engine identity rules unwired)
-- `wildcards-any` — FALSE POSITIVE: engine rejects a valid `xs:any
-  namespace="##other"` document (upstream tier-1 strictness bug; write up
-  for moxml/leptris owners)
+- `wildcards-any` — `xs:any processContents="strict"` is not enforced:
+  an undeclared element is accepted (tier-1 engine gap)
 - `xsi-nil` — `xsi:nil` on a non-nillable element accepted
 - `xsi-type` — derived `xsi:type` rejected AND unknown `xsi:type`
   accepted
