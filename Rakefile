@@ -28,7 +28,14 @@ namespace :deps do
       }
     end
 
-    if signature.call(fresh) != signature.call(committed)
+    fresh_sig = signature.call(fresh)
+    committed_sig = signature.call(committed)
+
+    if fresh_sig != committed_sig
+      deltas = fresh_sig.keys.flat_map do |key|
+        (fresh_sig[key] - committed_sig[key]).map { |v| "fresh-only #{key}: #{v}" } +
+          (committed_sig[key] - fresh_sig[key]).map { |v| "lock-only #{key}: #{v}" }
+      end
       warn <<~MSG
         Gemfile.lock is out of sync with the current Gemfile/gemspec.
         A fresh resolution differs from the committed lockfile — run
@@ -36,6 +43,7 @@ namespace :deps do
         (Unlocked CI resolutions have shipped silent dependency behavior
         changes before, e.g. rng 0.3.8; the lockfile is the contract.)
       MSG
+      deltas.first(20).each { |line| warn "  #{line}" }
       abort("deps:lockfile_check failed")
     end
   end
