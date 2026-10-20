@@ -48,6 +48,10 @@ validation:
     # Validate namespace declarations
     validate_namespaces: true
 
+    # Engine-native XSD validation (Moxml::XSD) when the adapter
+    # provides an engine (leptris/nokogiri); findings are additive
+    engine_validation: true
+
   # Error reporting configuration
   error_reporting:
     # Include XPath location in error messages

@@ -3,16 +3,18 @@
 require "spec_helper"
 require "moxml"
 
-RSpec.describe Lutaml::Xsd::Validation::EngineContext do
-  ENGINE_SUPPORTED = described_class.xsd_supported?(Moxml::Context.new)
-  # Some tier-1 engines (nokogiri) validate documents but ship no
-  # standalone built-in lexical table — capability, not adapter, decides.
-  ENGINE_BUILTIN = begin
-    Moxml::XSD.builtin_valid?(Moxml::Context.new, "xs:date", "2024-01-15")
-  rescue StandardError
-    nil
-  end == true
+ENGINE_SUPPORTED = Lutaml::Xsd::Validation::EngineContext.xsd_supported?(
+  Moxml::Context.new,
+)
+# Some tier-1 engines (nokogiri) validate documents but ship no
+# standalone built-in lexical table — capability, not adapter, decides.
+ENGINE_BUILTIN = begin
+  Moxml::XSD.builtin_valid?(Moxml::Context.new, "xs:date", "2024-01-15")
+rescue StandardError
+  nil
+end == true
 
+RSpec.describe Lutaml::Xsd::Validation::EngineContext do
   let(:context) { Moxml::Context.new }
 
   let(:xsd_source) do
@@ -91,13 +93,13 @@ RSpec.describe Lutaml::Xsd::Validation::EngineContext do
     end
   end
 
-  describe "#simple_valid? and #content_valid?", if: ENGINE_SUPPORTED do
+  describe "#simple_valid and #content_valid", if: ENGINE_SUPPORTED do
     it "returns nil when no compiled schema knows the type" do
       engine = compile
       root = Moxml::Context.new.parse("<a><b/></a>").root
 
-      expect(engine.simple_valid?("noSuchType", "x")).to be_nil
-      expect(engine.content_valid?("noSuchElement", root.children.to_a)).to be_nil
+      expect(engine.simple_valid("noSuchType", "x")).to be_nil
+      expect(engine.content_valid("noSuchElement", root.children.to_a)).to be_nil
     end
   end
 end

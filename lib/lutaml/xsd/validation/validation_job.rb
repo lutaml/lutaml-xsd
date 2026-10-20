@@ -48,9 +48,10 @@ module Lutaml
         #
         # Performs validation in the following order:
         # 1. Parse XML document
-        # 2. Validate structure (elements, namespaces)
-        # 3. Validate types (simple and complex types)
-        # 4. Validate constraints (occurrences, identity constraints)
+        # 2. Engine-native XSD validation (when the adapter provides one)
+        # 3. Validate structure (elements, namespaces)
+        # 4. Validate types (simple and complex types)
+        # 5. Validate constraints (occurrences, identity constraints)
         #
         # @return [ValidationResult] The complete validation result
         def execute
@@ -59,6 +60,7 @@ module Lutaml
           parse_xml
           return result_from_collector if should_stop_after_parse?
 
+          run_engine_validation if @config.feature_enabled?(:engine_validation)
           validate_structure if @config.feature_enabled?(:validate_types)
           return result_from_collector if should_stop_after_structure?
 
@@ -72,6 +74,27 @@ module Lutaml
         end
 
         private
+
+        # Run engine-native XSD validation (Moxml::XSD) when the adapter
+        # supports it. Findings are additive to rule findings.
+        #
+        # @return [void]
+        def run_engine_validation
+          @engine_context ||= EngineContext.compile(@repository)
+          return unless @engine_context&.supported?
+
+          @engine_context.findings_for(@xml_content).each do |finding|
+            @result_collector.add_error(finding)
+          end
+        rescue StandardError => e
+          @result_collector.add_warning(
+            ValidationError.new(
+              code: "engine_validation_unavailable",
+              message: "Engine validation skipped: #{e.message}",
+              severity: :warning,
+            ),
+          )
+        end
 
         # Parse the XML content into a document object
         #
