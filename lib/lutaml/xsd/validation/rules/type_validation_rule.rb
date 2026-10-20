@@ -154,9 +154,16 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_base_type(value, base_type, xml_element, collector)
-            # TODO: Implement base type validation
-            # This should use BaseTypeValidator registry
-            # For now, skip validation
+            answer = engine_builtin_answer(base_type, value)
+            return if answer.nil? || answer
+
+            report_error(
+              collector,
+              code: "type_validation_error",
+              message: "'#{value}' is not a valid #{base_type}",
+              location: xml_element.xpath,
+              context: { value: value, type: base_type },
+            )
           end
 
           # Validate facets
@@ -378,13 +385,44 @@ module Lutaml
 
           # Validate built-in type
           #
+          # The engine answers builtin lexical checks when the adapter ships
+          # an XSD engine; otherwise validation stays unimplemented here
+          # (matching historical behavior).
+          #
           # @param xml_element [XmlElement] The element
           # @param type_name [String] The type name
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_builtin_type(xml_element, type_name, collector)
-            # TODO: Implement built-in type validation using BaseTypeValidator
-            # For now, skip validation
+            answer = engine_builtin_answer(type_name, xml_element.text_content)
+            return if answer.nil?
+            return if answer
+
+            report_error(
+              collector,
+              code: "type_validation_error",
+              message: "'#{xml_element.text_content}' is not a valid " \
+                       "#{type_name}",
+              location: xml_element.xpath,
+              context: {
+                value: xml_element.text_content,
+                type: type_name,
+              },
+            )
+          end
+
+          # Engine answer for a builtin lexical check, nil when unavailable
+          #
+          # @param type_name [String] XSD type name (any prefix spelling)
+          # @param value [String, nil] The lexical value
+          # @return [Boolean, nil]
+          def engine_builtin_answer(type_name, value)
+            engine = @options[:engine_context]
+            return unless engine&.supported?
+
+            engine.builtin_valid?(
+              "xs:#{type_name.to_s.split(':').last}", value
+            )
           end
         end
       end
