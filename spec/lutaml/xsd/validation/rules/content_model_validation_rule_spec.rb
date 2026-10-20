@@ -157,4 +157,105 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::ContentModelValidationRule do
       end
     end
   end
+
+  describe "#validate with engine context" do
+    engine_supported = Lutaml::Xsd::Validation::EngineContext.xsd_supported?(
+      Moxml::Context.new,
+    )
+
+    let(:xsd_xml) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="person">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="name" type="xs:string"/>
+                <xs:element name="age" type="xs:integer"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+    let(:schema) { Lutaml::Xml::Schema::Xsd.parse(xsd_xml) }
+    let(:schema_def) { schema.element.first }
+    let(:engine_rule) { described_class.new(engine_context: engine) }
+    let(:navigator) do
+      Object.new.tap do |nav|
+        nav.define_singleton_method(:current_xpath) { "/person" }
+      end
+    end
+
+    # Some engine bindings cannot answer content checks at all (e.g.
+    # moxml/leptris content_valid? raising on identity minting) — the
+    # contract degrades to the Ruby walk and the engine cases are skipped.
+    engine_content_capable = begin
+      ctx = Moxml::Context.new
+      compiled = ctx.xsd(xsd_xml)
+      node = ctx.parse("<person><name>A</name></person>").root
+      compiled.content_valid?("person", node.children.to_a) != nil
+    rescue StandardError
+      false
+    end
+    let(:engine) do
+      Lutaml::Xsd::Validation::EngineContext.compile(
+        engine_repository, context: Moxml::Context.new
+      )
+    end
+    let(:engine_repository) do
+      Class.new do
+        def initialize(schemas)
+          @schemas = schemas
+        end
+
+        def all_schemas
+          @schemas
+        end
+      end.new({ "http://example.com/test" => schema })
+    end
+
+    def real_xml_element(xml)
+      moxml_root = Moxml::Context.new.parse(xml).root
+      Lutaml::Xsd::Validation::XmlElement.new(moxml_root, navigator)
+    end
+
+    it "accepts a valid child order", if: engine_supported && engine_content_capable do
+      element = real_xml_element(
+        "<person><name>A</name><age>30</age></person>",
+      )
+      engine_rule.validate(element, schema_def, collector)
+
+      expect(collector.errors).to be_empty
+    end
+
+    it "reports an invalid child order", if: engine_supported && engine_content_capable do
+      element = real_xml_element(
+        "<person><age>30</age><name>A</name></person>",
+      )
+      engine_rule.validate(element, schema_def, collector)
+
+      expect(collector.errors.map(&:code)).to include("content_model_error")
+    end
+
+    it "degrades to the Ruby walk when the engine cannot answer content checks", if: engine_supported && !engine_content_capable do
+      element = real_xml_element(
+        "<person><age>30</age><name>A</name></person>",
+      )
+      engine_rule.validate(element, schema_def, collector)
+
+      codes = collector.errors.map(&:code)
+      expect(codes).not_to include("content_model_error")
+      expect(codes).not_to be_empty
+    end
+
+    it "falls back to the Ruby walk when the engine cannot answer" do
+      element = real_xml_element(
+        "<person><age>30</age><name>A</name></person>",
+      )
+      plain_rule = described_class.new
+      plain_rule.validate(element, schema_def, collector)
+
+      expect(collector.errors).not_to be_empty
+    end
+  end
 end

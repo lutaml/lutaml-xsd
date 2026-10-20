@@ -50,6 +50,8 @@ module Lutaml
           def validate(xml_element, schema_def, collector)
             return unless schema_def
 
+            return if engine_content_check(xml_element, collector) == :handled
+
             # Resolve content model
             content_model = resolve_content_model(schema_def)
             return unless content_model
@@ -66,6 +68,33 @@ module Lutaml
           end
 
           private
+
+          # Engine-first content-model check for this element.
+          #
+          # @param xml_element [XmlElement] The XML element
+          # @param collector [ResultCollector] Collector for results
+          # @return [:handled, :skipped] :skipped lets the Ruby walk run
+          def engine_content_check(xml_element, collector)
+            engine = @options[:engine_context]
+            return :skipped unless engine&.supported?
+
+            answer = engine.content_valid(
+              xml_element.name, xml_element.moxml_element.children.to_a
+            )
+            return :skipped if answer.nil?
+
+            unless answer
+              report_error(
+                collector,
+                code: "content_model_error",
+                message: "Content of element '#{xml_element.name}' is not " \
+                         "valid against its content model",
+                location: xml_element.xpath,
+              )
+            end
+
+            :handled
+          end
 
           # Resolve content model from schema definition
           #
