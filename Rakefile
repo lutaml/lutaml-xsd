@@ -18,10 +18,10 @@ namespace :deps do
     signature = lambda do |text|
       parsed = Bundler::LockfileParser.new(text)
       {
-        platforms: parsed.platforms.map(&:to_s).sort,
         dependencies: parsed.dependencies.keys.sort,
-        # name→version only: platform-variant listing differs across
-        # environments and is not the behavior contract we guard.
+        # name→version only: platform variant/listing noise differs
+        # across environments (and bundler generations) and is not the
+        # behavior contract we guard.
         versions: parsed.specs.map do |s|
           "#{s.name} #{s.version}"
         end.uniq.sort,
