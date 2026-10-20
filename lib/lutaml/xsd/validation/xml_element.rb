@@ -42,7 +42,7 @@ module Lutaml
         #
         # @return [String, nil]
         def namespace_uri
-          @moxml_element.namespace&.href
+          @moxml_element.namespace&.uri
         end
 
         # Get the element's namespace prefix
