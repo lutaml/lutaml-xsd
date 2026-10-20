@@ -1,1 +1,1 @@
-<container><known>x</known></container>
+<container xmlns="http://example.com/w"><known>x</known></container>
