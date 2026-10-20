@@ -13,7 +13,11 @@ RSpec.describe Lutaml::Xsd::Conformance::Runner do
 
   describe "#cases" do
     it "discovers every case directory with a schema" do
-      expect(runner.cases.length).to eq(12)
+      expected = Dir.glob(
+        File.expand_path("../../../conformance/cases/*/schema.xsd", __dir__),
+      ).length
+
+      expect(runner.cases.length).to eq(expected)
       expect(runner.cases.map(&:name)).to include("particles-sequence")
     end
 

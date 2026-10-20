@@ -15,6 +15,8 @@ module Lutaml
       # Deliberately not resolved here (rule-engine backlog): dynamic
       # typing via xsi:type and derivation closure.
       class SchemaDefinitionResolver
+        PARTICLE_KINDS = %i[sequence choice all].freeze
+
         def initialize(repository)
           @repository = repository
           @namespaces = {}.compare_by_identity
@@ -97,19 +99,27 @@ module Lutaml
         def index_elements
           index = Hash.new { |hash, key| hash[key] = [] }
           schemas.each do |schema|
-            namespace = schema.target_namespace
-            Array(schema.element).each do |element|
-              index_element(index, element, namespace, :top)
-            end
-            Array(schema.complex_type).each do |complex_type|
-              index_type(index, complex_type, namespace)
-            end
+            index_schema(index, schema)
+          rescue StandardError
+            # Repositories can carry unparsable entries (broken packages);
+            # they contribute no declarations.
+            next
           end
           # Prefer top-level declarations over inline ones.
           index.each_value do |candidates|
             candidates.sort_by! { |_element, _ns, kind| kind == :top ? 0 : 1 }
           end
           index
+        end
+
+        def index_schema(index, schema)
+          namespace = schema.target_namespace
+          Array(schema.element).each do |element|
+            index_element(index, element, namespace, :top)
+          end
+          Array(schema.complex_type).each do |complex_type|
+            index_type(index, complex_type, namespace)
+          end
         end
 
         def index_element(index, element, namespace, kind)
@@ -133,18 +143,23 @@ module Lutaml
         def each_particle_element(node, &)
           return unless node
 
-          %i[sequence choice all].each do |kind|
+          if node.is_a?(Array)
+            node.each { |child| each_particle_element(child, &) }
+            return
+          end
+          return if visited_particle?(node)
+
+          PARTICLE_KINDS.each do |kind|
             next unless node.respond_to?(kind) # optional particle collections
 
-            particle = node.public_send(kind)
-            next unless particle
+            Array(node.public_send(kind)).each do |particle|
+              next unless particle
 
-            Array(particle.element).each(&)
-            %i[sequence choice all].each do |nested|
-              next unless particle.respond_to?(nested)
+              Array(particle.element).each(&)
+              PARTICLE_KINDS.each do |nested|
+                next unless particle.respond_to?(nested)
 
-              Array(particle.public_send(nested)).each do |child|
-                each_particle_element(child, &)
+                each_particle_element(particle.public_send(nested), &)
               end
             end
           end
@@ -155,6 +170,16 @@ module Lutaml
             part = node.complex_content.public_send(kind)
             each_particle_element(part, &) if part
           end
+        end
+
+        # Particle collections can be cyclic in parsed models (a nested
+        # sequence pointing back at its container); visit each node once.
+        def visited_particle?(node)
+          @visited ||= {}.compare_by_identity
+          return true if @visited[node]
+
+          @visited[node] = true
+          false
         end
       end
     end

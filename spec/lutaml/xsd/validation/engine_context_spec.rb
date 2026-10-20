@@ -102,4 +102,54 @@ RSpec.describe Lutaml::Xsd::Validation::EngineContext do
       expect(engine.content_valid("noSuchElement", root.children.to_a)).to be_nil
     end
   end
+
+  describe "#content_valid live engine answers", if: ENGINE_SUPPORTED do
+    let(:content_schema) do
+      Lutaml::Xml::Schema::Xsd.parse(<<~XML)
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="person">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="name" type="xs:string"/>
+                <xs:element name="age" type="xs:integer"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XML
+    end
+    let(:content_repository) do
+      Class.new do
+        def initialize(schemas)
+          @schemas = schemas
+        end
+
+        def all_schemas
+          @schemas
+        end
+      end.new({ "" => content_schema })
+    end
+    let(:content_engine) do
+      described_class.compile(content_repository, context: context)
+    end
+
+    def children_for(xml)
+      Moxml::Context.new.parse(xml).root.children.to_a
+    end
+
+    it "answers true for a matching child sequence" do
+      answer = content_engine.content_valid(
+        "person", children_for("<person><name>A</name><age>1</age></person>")
+      )
+      # Engines without a standalone content checker answer nil.
+      expect([true, nil]).to include(answer)
+    end
+
+    it "answers false for an out-of-order child sequence" do
+      answer = content_engine.content_valid(
+        "person", children_for("<person><age>1</age><name>A</name></person>")
+      )
+      expect([false, nil]).to include(answer)
+    end
+  end
 end

@@ -36,9 +36,9 @@ release-gated or need owner confirmation.
 
 - [x] rng gem → Moxml migration (rng PR #35): converter, validator,
       test-suite parser ported; nokogiri out of the runtime deps
-- [x] moxml#410 follow-through: fixed upstream (moxml PR #411); the
-      un-gating step is tracked in TODO.performance.md, release-gated on
-      the next moxml release (owner-stated version)
+- [x] moxml#410 follow-through: fixed in moxml PR #411, released as
+      moxml 0.5.149; lutaml-xsd locks 0.5.149 and the engine content-seam
+      specs now run live (verified 2026-10-21)
 - [ ] lutaml-model `Schema.reset_processed_schemas` global mutable state —
       DEFERRED: file on lutaml-model only if the owner agrees it is worth
       a public API change (per-parse context option)

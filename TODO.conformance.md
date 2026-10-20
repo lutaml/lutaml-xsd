@@ -3,34 +3,37 @@
 Goal: conformance is a number, not a feeling. Vendor the W3C XML Schema
 test-suite categories, build the harness, publish the pass-rate, grow it.
 
-## Baseline (2026-10-20)
+## Baseline (2026-10-21, 19 cases / 39 checks)
 
-Corpus: 12 case classes under `spec/conformance/cases/` (25 checks),
-modelled on the W3C XML Schema Test Suite category taxonomy — self-authored
-because the canonical 2007 suite distribution is no longer served from
-w3.org (owner can vendor a tarball later; provenance README goes with it).
+Corpus: 19 case classes under `spec/conformance/cases/`, modelled on the
+W3C XML Schema Test Suite category taxonomy — self-authored because the
+canonical 2007 suite distribution is no longer served from w3.org (owner
+can vendor a tarball later; provenance README goes with it).
 
 | mode | pass-rate |
 |---|---|
-| engine (Moxml::XSD tier-1 on leptris) | 20/25 (80.0%) |
-| pipeline (ValidationJob + wired rule engine) | 20/25 (80.0%) |
+| engine (Moxml::XSD tier-1, moxml 0.5.149) | 33/39 (84.6%) |
+| pipeline (ValidationJob + wired rule engine) | 34/39 (87.2%) |
 
-Gap register (each failure is a tracked gap, not a test bug):
+The pipeline now **outperforms** the engine: the root-declaration check
+catches a wrong-namespace root that engine root-matching silently skips.
+Pipeline added nested sequences, union/list types, derivation and attribute
+typing via the rule engine while keeping zero false positives.
 
-- `identity-keykeyref` — dangling keyref not detected (engine tier-1 gap;
-  no identity-constraint rule exists yet)
-- `wildcards-any` — `xs:any processContents="strict"` is not enforced:
-  an undeclared element is accepted (engine tier-1 gap; no wildcard rule)
-- `xsi-nil` — `xsi:nil` on a non-nillable element accepted (no rule)
+Gap register (each failure is a tracked gap, not a test bug; identical in
+both modes):
+
+- `identity-keykeyref` — dangling keyref not detected (no identity rule)
+- `wildcards-any` — `xs:any processContents="strict"` not enforced
+- `xsi-nil` — `xsi:nil` on a non-nillable element accepted
 - `xsi-type` — derived `xsi:type` rejected AND unknown `xsi:type`
-  accepted (engine tier-1 gap + no dynamic-type resolution)
-- Substitution groups now PASS in pipeline mode (the rule engine's
-  content-model and occurrence checks are substitution-aware); the engine
-  handles them too.
+  accepted (needs dynamic type resolution/derivation closure)
+- engine-only: `namespaces-qualified` wrong-namespace root accepted
+  (EngineContext root-matching skips it; pipeline's root check catches it)
 
-History: before the rule-engine wiring (below), pipeline mode was
-identical to engine mode because `RuleRegistry` was empty and rule
-signatures did not match the engine's calling convention.
+History: the 2026-10-20 baseline was 20/25 (80.0%) with pipeline ==
+engine because `RuleRegistry` was empty and rule signatures did not match
+the engine's calling convention.
 
 ## Harness
 
