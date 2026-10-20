@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "engine_context"
 require_relative "validation_configuration"
 require_relative "validation_job"
 require_relative "validation_result"
