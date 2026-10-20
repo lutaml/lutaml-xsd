@@ -58,6 +58,20 @@ Classes register themselves via `Lutaml::Xsd.register_model(self, :element_name)
 3. **Liquid templating**: Parsed objects respond to `to_liquid` for use in templates
 4. **Reference resolution**: Elements can reference other elements via `ref` attribute; use `referenced_object` to resolve
 
+### XML Stack: Moxml Only
+
+All XML handling goes through `Moxml::Context` (moxml ~> 0.5.147). Never
+require or call Nokogiri/REXML/Ox directly in `lib/` — xsdvi keeps nokogiri
+in the lockfile transitively, but our code does not touch it.
+
+- Adapter selection is moxml's: leptris when bundled (dev Gemfile), nokogiri
+  fallback otherwise. No adapter is hardcoded here.
+- `Moxml::XSD` (engine XSD validation, tier-1: leptris/nokogiri) backs the
+  validation fast-path — see `lib/lutaml/xsd/validation/engine_context.rb`.
+  Engine findings are additive (`code: "engine_validation"`); the Ruby rule
+  engine remains authoritative because tier-1 validates laxly outside its
+  scope.
+
 ## SPA / Frontend Assets
 
 ### Directory Structure
