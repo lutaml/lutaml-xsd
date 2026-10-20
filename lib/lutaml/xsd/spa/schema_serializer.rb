@@ -5,7 +5,6 @@ require "moxml"
 require "tmpdir"
 require "fileutils"
 require "tempfile"
-require "nokogiri"
 require "xsdvi"
 require_relative "xml_instance_generator"
 require_relative "utils/extract_enumeration"
@@ -494,6 +493,8 @@ module Lutaml
           end
         end
 
+        public
+
         # Create a temporary XSD file that wraps a complexType/simpleType
         # in a synthetic root element, so xsdvi can generate a diagram for it.
         #
@@ -501,7 +502,7 @@ module Lutaml
         # @param original_file_path [String] Path to the original XSD file
         # @return [String] Path to the temporary XSD file
         def create_type_wrapper_xsd(type_name, original_file_path)
-          doc = Nokogiri::XML(File.read(original_file_path))
+          doc = Moxml::Context.new.parse(File.read(original_file_path))
           ns = { "xs" => "http://www.w3.org/2001/XMLSchema" }
           schema = doc.at_xpath("//xs:schema", ns)
 
@@ -519,11 +520,11 @@ module Lutaml
           # Create element with proper XSD namespace from the schema
           xsd_ns = "http://www.w3.org/2001/XMLSchema"
           xsd_ns_decl = schema.namespace_definitions.find do |nd|
-            nd.href == xsd_ns
+            nd.uri == xsd_ns
           end
 
           element_node = doc.create_element("element")
-          element_node.namespace = xsd_ns_decl
+          element_node.namespace = xsd_ns_decl if xsd_ns_decl
           element_node["name"] = wrapper_name
           element_node["type"] = type_ref
 
@@ -540,7 +541,7 @@ module Lutaml
         # that the schema uses internally for its targetNamespace.
         #
         # @param type_name [String] The type name
-        # @param doc [Nokogiri::Document] The parsed XSD document
+        # @param doc [Moxml::Document] The parsed XSD document
         # @param ns [Hash] Namespace mapping
         # @return [String] The type reference string (possibly prefixed)
         def resolve_type_prefix(type_name, doc, ns)
@@ -558,11 +559,13 @@ module Lutaml
           # Find what prefix maps to the targetNamespace
           ns_decls = schema.namespace_definitions
           tns_prefix = ns_decls.find do |nd|
-            nd.href == target_ns && nd.prefix
+            nd.uri == target_ns && nd.prefix
           end
 
           tns_prefix ? "#{tns_prefix.prefix}:#{type_name}" : type_name
         end
+
+        protected
 
         # Serialize complex types from schema
         #
