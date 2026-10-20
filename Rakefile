@@ -20,9 +20,11 @@ namespace :deps do
       {
         platforms: parsed.platforms.map(&:to_s).sort,
         dependencies: parsed.dependencies.keys.sort,
-        specs: parsed.specs.map do |s|
-          "#{s.name} #{s.version} #{s.platform}".strip
-        end.sort,
+        # name→version only: platform-variant listing differs across
+        # environments and is not the behavior contract we guard.
+        versions: parsed.specs.map { |s|
+          "#{s.name} #{s.version}"
+        }.uniq.sort,
       }
     end
 
