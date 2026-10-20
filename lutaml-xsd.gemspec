@@ -36,7 +36,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "lutaml-store", "~> 0.3"
   spec.add_dependency "moxml", "~> 0.5.147"
   spec.add_dependency "paint", "~> 2.3"
-  spec.add_dependency "rng", "~> 0.3.5"
+  spec.add_dependency "rng", "~> 0.3.7.0"
   spec.add_dependency "rubyzip", "~> 3.4"
   spec.add_dependency "table_tennis", "~> 0.0.7"
   spec.add_dependency "thor", "~> 1.0"
