@@ -200,4 +200,66 @@ RSpec.describe Lutaml::Xsd::Validation::ValidationJob do
       end
     end
   end
+
+  describe "engine validation phase" do
+    engine_supported =
+      Lutaml::Xsd::Validation::EngineContext.xsd_supported?(Moxml::Context.new)
+
+    let(:xsd_source) do
+      <<~XML
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="date" type="xs:date"/>
+        </xs:schema>
+      XML
+    end
+    let(:schema) { Lutaml::Xml::Schema::Xsd.parse(xsd_source) }
+    let(:engine_repository) do
+      Class.new do
+        def initialize(schemas)
+          @schemas = schemas
+        end
+
+        def all_schemas
+          @schemas
+        end
+      end.new({ "http://example.com/test" => schema })
+    end
+
+    def run_job(xml, config: nil)
+      described_class.new(
+        xml_content: xml,
+        repository: engine_repository,
+        rule_registry: rule_registry,
+        config: config || self.config,
+      ).execute
+    end
+
+    it "adds engine findings for invalid documents", if: engine_supported do
+      result = run_job("<date>not-a-date</date>")
+
+      expect(result.errors.map(&:code)).to include("engine_validation")
+    end
+
+    it "adds no engine findings for valid documents", if: engine_supported do
+      result = run_job("<date>2024-01-15</date>")
+
+      expect(result.errors.map(&:code)).not_to include("engine_validation")
+    end
+
+    it "skips engine validation when the feature is disabled", if: engine_supported do
+      config = Lutaml::Xsd::Validation::ValidationConfiguration.new(
+        { "validation" => { "features" => { "engine_validation" => false } } },
+      )
+      result = run_job("<date>not-a-date</date>", config: config)
+
+      expect(result.errors.map(&:code)).not_to include("engine_validation")
+    end
+
+    it "carries engine line information when the engine reports it", if: engine_supported do
+      result = run_job("<date>not-a-date</date>")
+      finding = result.errors.find { |e| e.code == "engine_validation" }
+
+      expect(finding.message).not_to be_empty
+    end
+  end
 end

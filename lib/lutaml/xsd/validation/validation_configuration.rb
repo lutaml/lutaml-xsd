@@ -237,6 +237,7 @@ module Lutaml
                 "validate_facets" => true,
                 "validate_content_models" => true,
                 "validate_namespaces" => true,
+                "engine_validation" => true,
               },
               "error_reporting" => {
                 "include_xpath" => true,
