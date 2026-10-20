@@ -237,18 +237,35 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::ContentModelValidationRule do
       expect(collector.errors.map(&:code)).to include("content_model_error")
     end
 
-    it "degrades to the Ruby walk when the engine cannot answer content checks", if: engine_supported && !engine_content_capable do
+    it "reports content_model_error when the engine answers false" do
+      engine = Object.new
+      engine.define_singleton_method(:supported?) { true }
+      engine.define_singleton_method(:content_valid) { |*, **| false }
+      answering_rule = described_class.new(engine_context: engine)
       element = real_xml_element(
         "<person><age>30</age><name>A</name></person>",
       )
-      engine_rule.validate(element, schema_def, collector)
+      answering_rule.validate(element, schema_def, collector)
+
+      expect(collector.errors.map(&:code)).to include("content_model_error")
+    end
+
+    it "degrades to the Ruby walk when the engine cannot answer" do
+      engine = Object.new
+      engine.define_singleton_method(:supported?) { true }
+      engine.define_singleton_method(:content_valid) { |*, **| nil }
+      inert_engine_rule = described_class.new(engine_context: engine)
+      element = real_xml_element(
+        "<person><age>30</age><name>A</name></person>",
+      )
+      inert_engine_rule.validate(element, schema_def, collector)
 
       codes = collector.errors.map(&:code)
       expect(codes).not_to include("content_model_error")
       expect(codes).not_to be_empty
     end
 
-    it "falls back to the Ruby walk when the engine cannot answer" do
+    it "falls back to the Ruby walk when no engine context is given" do
       element = real_xml_element(
         "<person><age>30</age><name>A</name></person>",
       )
