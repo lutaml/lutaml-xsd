@@ -57,6 +57,16 @@ end
 
 task default: %i[deps:lockfile_check spec rubocop]
 
+namespace :benchmark do
+  desc "Benchmark leptris vs nokogiri through Moxml on a real corpus"
+  task :engines do
+    %w[leptris nokogiri].each do |adapter|
+      puts
+      sh({ "ADAPTER" => adapter }, "bundle exec ruby benchmark/engines.rb")
+    end
+  end
+end
+
 # Build the frontend SPA (frontend/dist/)
 desc "Build frontend SPA assets"
 task :build_frontend do
