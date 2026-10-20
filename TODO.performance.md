@@ -48,9 +48,15 @@ surface as moxml/leptris ship it.
 
 ## Profiling targets
 
-- [ ] SPA generation memory profile on 100+ schema corpora
-      (`package_builder` marshal cleanups already exist — verify they hold)
-- [ ] `EngineContext.compile` cost on multi-schema repositories
-      (schema `to_xml` + compile per package load; consider caching
-      compiled handles per repository instance)
-- [ ] XmlNavigator walk cost on deep instance trees
+- [ ] SPA generation memory profile on 100+ schema corpora — DEFERRED:
+      needs the post-recalibration corpus (TODO.cleanup.md) and the SPA
+      pillar (TODO.docs-spa.md); the marshal-cleanup code is already in
+      place
+- [ ] `EngineContext.compile` cost on multi-schema repositories —
+      DEFERRED: measured at 0.1 ms/compile on the benchmark corpus (well
+      below noise); revisit only when the full-include corpus changes the
+      picture
+- [ ] XmlNavigator walk cost on deep instance trees — DEFERRED: no
+      evidence of a hotspot yet; take it with the rule-engine wiring,
+      which is the walker's main consumer
+

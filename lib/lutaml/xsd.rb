@@ -60,3 +60,17 @@ require_relative "xsd/schema_dependency_analyzer"
 require_relative "xsd/type_hierarchy_analyzer"
 require_relative "xsd/xsd_spec_validator"
 require_relative "xsd/cli"
+
+module Lutaml
+  module Xsd
+    # Public parsing entry point, as documented across docs/*.adoc.
+    # Delegates to lutaml-model's XML Schema parser.
+    #
+    # @param xsd [String] XSD content
+    # @param location [String, nil] base location for import/include paths
+    # @return [Lutaml::Xml::Schema::Xsd::Schema]
+    def self.parse(xsd, **)
+      Xml::Schema::Xsd.parse(xsd, **)
+    end
+  end
+end

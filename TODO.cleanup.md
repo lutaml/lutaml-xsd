@@ -2,35 +2,43 @@
 
 Goal: zero known debt; every flagged item resolved or explicitly archived.
 
+Status 2026-10-20: in-repo hygiene is clean; remaining items are
+release-gated or need owner confirmation.
+
 ## In-repo (lutaml-xsd)
 
-- [ ] rng 0.3.8 baseline recalibration (cross-listed in TODO.interop):
-      full review of RngToXsdConverter output under rng 0.3.8 on
-      bsi.rnc (complex types 20→134, elements 23→164, groups 13→110,
-      attribute_groups 1→31); then update gemspec pin to `~> 0.3.8` and
-      the spec expectations in one reviewed commit
-- [ ] `Lutaml::Xsd.parse` references: sweep docs (CLAUDE.md fixed
-      2026-10-20; check docs/*.adoc) for the outdated entry point —
-      real entry is `Lutaml::Xml::Schema::Xsd.parse`
-- [ ] `lib/lutaml/xsd/schema_query_service.rb.bak` (untracked): owner to
-      confirm — archive under `docs/archive/` or delete (agent must NOT
-      delete without explicit confirmation)
-- [ ] Prunable stale worktrees (`/private/tmp/fix/xsd` on
-      `fix/rubyzip-3-align-lutaml-model`, `/private/tmp/xsd-main`): owner
-      to run `git worktree prune` after confirming the branches hold
-      nothing needed
-- [ ] Dead-code sweep: unused modules surfaced by coverage (careful —
-      owner confirmation per file; nothing auto-deleted)
-- [ ] `Gemfile.lock` divergence guard: CI job step (or rake task) that
-      fails loudly when a fresh resolution differs from the documented
-      lock state in a way that changes spec outcomes (lesson from the
-      rng 0.3.8 incident, 2026-10-20)
+- [x] Lockfile divergence guard: committed Gemfile.lock with all CI
+      platforms + `deps:lockfile_check` in the default rake task (PR #109)
+- [x] `Lutaml::Xsd.parse` restored as the documented public entry point
+      (delegates to `Lutaml::Xml::Schema::Xsd.parse`); docs/*.adoc
+      references are true again (this PR)
+- [x] `XmlElement#namespace_uri` uses the Moxml namespace API (PR #108)
+- [ ] rng 0.3.8 baseline recalibration — DEFERRED, release-gated: the
+      converter expectations are precomputed against the fixed rng
+      (complex types 170, simple types 13, elements 203, groups 237,
+      attribute_groups 44; sections sequence: 7 choices / 1 group /
+      1 element) and the spec + `rng ~> <released>` pin land together
+      once the rng release with the include fixes exists (version is the
+      owner's to state)
+- [ ] `lib/lutaml/xsd/schema_query_service.rb.bak` (untracked) — DEFERRED,
+      owner confirmation required: archive under `docs/archive/` or delete
+- [ ] Prunable stale worktrees (`/private/tmp/fix/xsd`, `/private/tmp/xsd-main`)
+      — DEFERRED, owner to run `git worktree prune` after confirming the
+      branches hold nothing needed
+- [ ] Dead-code sweep — DEFERRED, owner confirmation per file (nothing is
+      auto-deleted); the first candidate found in this run is
+      `RncToRngConverter#add_annotations` in rng (uncalled since 0.3.x)
+- [ ] `Gemfile.lock` divergence guard for other lutaml gems — not needed
+      yet; adopt the same pattern when those repos start hitting the
+      fresh-resolve class of failure
 
 ## Cross-repo (each in its own repo, own PR, house rules)
 
-- [ ] rng gem → Moxml migration (detailed in TODO.interop)
-- [ ] moxml#410 follow-through (detailed in TODO.performance)
-- [ ] lutaml-model: `Schema.reset_processed_schemas` global mutable state
-      — evaluate a per-parse-context option for consumers like the
-      EngineContext root-matching (file on lutaml-model if the owner
-      agrees it's a real footgun)
+- [x] rng gem → Moxml migration (rng PR #35): converter, validator,
+      test-suite parser ported; nokogiri out of the runtime deps
+- [x] moxml#410 follow-through: fixed upstream (moxml PR #411); the
+      un-gating step is tracked in TODO.performance.md, release-gated on
+      the next moxml release (owner-stated version)
+- [ ] lutaml-model `Schema.reset_processed_schemas` global mutable state —
+      DEFERRED: file on lutaml-model only if the owner agrees it is worth
+      a public API change (per-parse context option)

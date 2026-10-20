@@ -61,3 +61,36 @@ pipeline** (LutaML/Metanorma), on the fastest XML engine available to Ruby
 Guidance for agents: work pillar by pillar, checkbox by checkbox; every
 item lands through a PR with real-object specs; keep this file's audit
 current as pillars complete.
+## Status 2026-10-20 — first full execution run
+
+Delivered, merged to main:
+
+- **Dependencies**: moxml `~> 0.5.147` pin; leptris in the dev bundle;
+  full Moxml migration with zero direct Nokogiri in `lib/` (PR #104, #107)
+- **Engine validation**: `EngineContext` + additive `engine_validation`
+  phase + lexical/content delegation (PR #107); moxml#410 fixed upstream
+  (moxml#411), release-gated for the un-gating step; moxml defect filed
+  as moxml#410
+- **Reproducibility**: committed Gemfile.lock with all CI platforms +
+  `deps:lockfile_check` guard (PR #109)
+- **Performance**: `benchmark/engines.rb` + `rake benchmark:engines` with
+  leptris/nokogiri baselines recorded (PR #110)
+- **Conformance**: corpus (12 classes / 25 checks), Runner, `rake
+  conformance`, baseline 80.0% both modes, gap register (PR #111)
+- **Ecosystem**: rng gem include-merge fixes (rng#34) and the rng gem's
+  Moxml migration (rng#35); `Lutaml::Xsd.parse` restored as the documented
+  public entry; XML_SCHEMA exporter (this PR)
+
+Release-gated / owner decisions outstanding:
+
+- moxml release containing #411 (version owner-stated) → un-gate the
+  content-seam specs
+- rng release containing include fixes + Moxml migration (version
+  owner-stated) → recalibrate `RngToXsdConverter` expectations against the
+  full-include corpus and bump the lutaml-xsd pin
+- A new lutaml-xsd release is the owner's call
+
+Deferred with reasons: see TODO.som.md (XSOM-parity work needs a spec
+design cycle), TODO.docs-spa.md (frontend dev loop), TODO.interop.md
+(LutaML cross-model contract), TODO.conformance.md rule-depth items
+(subsumed by rule-registry wiring, which is the headline rule-engine gap).

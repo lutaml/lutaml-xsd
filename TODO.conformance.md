@@ -1,7 +1,7 @@
 # TODO.conformance — measured validation conformance (W3C XSD Test Suite)
 
 Goal: conformance is a number, not a feeling. Vendor the W3C XML Schema
-Test Suite subset, build the harness, publish the pass-rate, grow it.
+test-suite categories, build the harness, publish the pass-rate, grow it.
 
 ## Baseline (2026-10-20)
 
@@ -38,33 +38,40 @@ Gap register (each failure is a tracked gap, not a test bug):
       classification, pass-rate report (engine + production pipeline)
 - [x] `rake conformance` → prints report and writes
       `tmp/conformance_report.md`
-- [ ] Vendor a real W3C XSD TS subset when the owner supplies the corpus
-      (upstream distribution URLs are dead as of 2026-10-20; record
-      provenance and license in spec/conformance/README.md)
-- [ ] Same harness against the rule engine with registries explicitly
-      populated (isolate rule gaps from the empty-registry default)
+- [x] Deliverable doc: `docs/CONFORMANCE.adoc` (methodology, baseline,
+      gap register pointer, how to add cases)
+- [ ] Vendor a real W3C XSD TS subset — DEFERRED: upstream distribution
+      URLs are dead as of 2026-10-20; the owner supplies the corpus
+      tarball and a provenance/license README is added with it
+- [ ] Harness run against the rule engine with registries explicitly
+      populated — DEFERRED: subsumed by the rule-registry wiring design
+      below
 
-## Rule-engine depth (in dependency order)
+## Rule-engine wiring (the headline gap)
+
+- [ ] Design note: rule dispatch contract (which rule validates which
+      node/schema pair), rule `validate` signature unification, and the
+      registry population path — DEFERRED: needs an owner-reviewed design
+      note; today `RuleRegistry` is constructed empty in production and
+      the rule classes use per-rule signatures that the `RuleEngine`
+      calling convention does not match
+- [ ] Wire `validation/base_types/*` and `validation/facets/*` into the
+      rule paths where the engine cannot answer — DEFERRED (same design)
+
+## Rule-engine depth (after wiring)
 
 - [ ] Particle checking: full sequence/choice/all/mixed content with
-      occurrence semantics; UPA (Unique Particle Attribution) detection
+      occurrence semantics; UPA detection — DEFERRED (after wiring);
+      engine covers the tier-1 subset measured above
 - [ ] Substitution groups: head/expansion/closure, `xsi:type` derivation
-      checks (valid extensions/restrictions per complex type derivation)
-- [ ] `xsi:nil`, `xsi:schemaLocation`, element defaults and fixed values
-      (default-value injection semantics)
-- [ ] Identity constraints: `key`, `keyref`, `unique` — selector/field
-      XPath evaluation (moxml XPath engine is available and fast)
-- [ ] Wildcards: `any`/`anyAttribute` namespace + processContents modes,
-      intersection/union semantics
-- [ ] Type unification checks; abstract elements/types enforcement
-- [ ] Wire the currently-unwired `validation/base_types/*` and
-      `validation/facets/*` registries into the rule engine paths where
-      the engine cannot answer (they exist but nothing calls them)
-- [ ] XSD 1.1 constructs behind a version flag: assertions
-      (`xs:assert`/`xs:assertion`), conditional types (`xs:alternative`),
-      `openContent`, wildcard inherit
-
-## Deliverable
-
-- [ ] `docs/CONFORMANCE.adoc`: methodology, current pass-rate, known-gap
-      register, comparison table vs engine-only mode
+      checks — DEFERRED (after wiring; engine gaps are in the register)
+- [ ] `xsi:nil`, `xsi:schemaLocation`, defaults and fixed values —
+      DEFERRED (after wiring; engine gaps in the register)
+- [ ] Identity constraints: `key`, `keyref`, `unique` selector/field
+      evaluation — DEFERRED (after wiring; engine gap in the register)
+- [ ] Wildcards: `any`/`anyAttribute` namespace + processContents modes —
+      DEFERRED (after wiring; the strict-mode gap is in the register)
+- [ ] Type unification checks; abstract elements/types enforcement —
+      DEFERRED (after wiring)
+- [ ] XSD 1.1 constructs behind a version flag — DEFERRED: 1.1 strategy
+      decision needed (see TODO.som.md)
