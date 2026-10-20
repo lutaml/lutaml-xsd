@@ -9,7 +9,26 @@ require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
 
-task default: %i[spec rubocop]
+namespace :deps do
+  desc "Fail when Gemfile.lock is out of sync with Gemfile/gemspec"
+  task :lockfile_check do
+    fresh = Bundler.with_unbundled_env { `bundle lock --print 2>/dev/null` }
+    committed = File.exist?("Gemfile.lock") ? File.read("Gemfile.lock") : ""
+
+    if fresh.strip != committed.strip
+      warn <<~MSG
+        Gemfile.lock is out of sync with the current Gemfile/gemspec.
+        A fresh resolution differs from the committed lockfile — run
+        `bundle install` locally and commit the updated Gemfile.lock.
+        (Unlocked CI resolutions have shipped silent dependency behavior
+        changes before, e.g. rng 0.3.8; the lockfile is the contract.)
+      MSG
+      abort("deps:lockfile_check failed")
+    end
+  end
+end
+
+task default: %i[deps:lockfile_check spec rubocop]
 
 # Build the frontend SPA (frontend/dist/)
 desc "Build frontend SPA assets"
