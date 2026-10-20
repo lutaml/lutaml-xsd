@@ -3,20 +3,47 @@
 Goal: conformance is a number, not a feeling. Vendor the W3C XML Schema
 Test Suite subset, build the harness, publish the pass-rate, grow it.
 
+## Baseline (2026-10-20)
+
+Corpus: 12 case classes under `spec/conformance/cases/` (25 checks),
+modelled on the W3C XML Schema Test Suite category taxonomy — self-authored
+because the canonical 2007 suite distribution is no longer served from
+w3.org (owner can vendor a tarball later; provenance README goes with it).
+
+| mode | pass-rate |
+|---|---|
+| engine (Moxml::XSD tier-1 on leptris) | 20/25 (80.0%) |
+| pipeline (ValidationJob, default registry) | 20/25 (80.0%) |
+
+Gap register (each failure is a tracked gap, not a test bug):
+
+- `identity-keykeyref` — dangling keyref not detected (engine tier-1 gap;
+  rule-engine identity rules unwired)
+- `wildcards-any` — FALSE POSITIVE: engine rejects a valid `xs:any
+  namespace="##other"` document (upstream tier-1 strictness bug; write up
+  for moxml/leptris owners)
+- `xsi-nil` — `xsi:nil` on a non-nillable element accepted
+- `xsi-type` — derived `xsi:type` rejected AND unknown `xsi:type`
+  accepted
+- Pipeline == engine because the rule engine's registries are still
+  unwired in production (`RuleRegistry` is registered empty and rule
+  `validate` signatures don't share the engine's calling convention) —
+  wiring it is the headline gap; every rule-engine gap below is
+  subsumed by it.
+
 ## Harness
 
-- [ ] Vendor a W3C XSD 1.0 test-suite subset under `spec/conformance/`
-      (xsdts 2007+ Microsoft/IBM/Sun collections; keep it lean —
-      representative classes, not the whole corpus; respect upstream
-      licenses, record provenance in a README)
-- [ ] `Lutaml::Xsd::Conformance::Runner`: iterate suite cases →
-      `Validator#validate` (engine + rule stack) → classify
-      valid/invalid/unsupported; emit a pass-rate report
-      (`conformance_report.md` + JSON)
-- [ ] Wire `rake conformance` to run it; record baseline pass-rate in this
-      file once measured
-- [ ] Same harness against the moxml/leptris engine alone (isolate engine
-      tier-1 gaps from Ruby rule gaps in the report)
+- [x] Conformance corpus under `spec/conformance/cases/` (directory
+      convention: schema.xsd + valid-*.xml + invalid-*.xml)
+- [x] `Lutaml::Xsd::Conformance::Runner`: discovery, per-mode
+      classification, pass-rate report (engine + production pipeline)
+- [x] `rake conformance` → prints report and writes
+      `tmp/conformance_report.md`
+- [ ] Vendor a real W3C XSD TS subset when the owner supplies the corpus
+      (upstream distribution URLs are dead as of 2026-10-20; record
+      provenance and license in spec/conformance/README.md)
+- [ ] Same harness against the rule engine with registries explicitly
+      populated (isolate rule gaps from the empty-registry default)
 
 ## Rule-engine depth (in dependency order)
 
