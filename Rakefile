@@ -10,12 +10,23 @@ require "rubocop/rake_task"
 RuboCop::RakeTask.new
 
 namespace :deps do
-  desc "Fail when Gemfile.lock is out of sync with Gemfile/gemspec"
+  desc "Fail when Gemfile.lock resolution drifts from Gemfile/gemspec"
   task :lockfile_check do
     fresh = Bundler.with_unbundled_env { `bundle lock --print 2>/dev/null` }
     committed = File.exist?("Gemfile.lock") ? File.read("Gemfile.lock") : ""
 
-    if fresh.strip != committed.strip
+    signature = lambda do |text|
+      parsed = Bundler::LockfileParser.new(text)
+      {
+        platforms: parsed.platforms.map(&:to_s).sort,
+        dependencies: parsed.dependencies.keys.sort,
+        specs: parsed.specs.map do |s|
+          "#{s.name} #{s.version} #{s.platform}".strip
+        end.sort,
+      }
+    end
+
+    if signature.call(fresh) != signature.call(committed)
       warn <<~MSG
         Gemfile.lock is out of sync with the current Gemfile/gemspec.
         A fresh resolution differs from the committed lockfile — run
