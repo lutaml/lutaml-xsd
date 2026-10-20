@@ -5,19 +5,20 @@ surface as moxml/leptris ship it.
 
 ## Engine integration maturation
 
-- [x] Track https://github.com/lutaml/moxml/issues/410 — FIXED upstream
-      (moxml PR #411, merged 2026-10-20; bridges content_valid? children
-      through to_binding). NOTE: the fix is merged but NOT yet in a
-      published moxml release (0.5.148 predates it) — the un-gating item
-      below is release-blocked, waiting on a moxml release version.
-- [ ] When the fixed moxml releases (user states version): bundle update
-      moxml/leptris, remove the `engine_content_capable` gates in
-      content_model_validation_rule_spec, verify content delegation runs
-      live
+- [x] Track https://github.com/lutaml/moxml/issues/410 — FIXED and
+      RELEASED (moxml 0.5.149, moxml PR #411). lutaml-xsd now locks
+      0.5.149: `Schema#content_valid?` answers correctly on leptris and
+      the engine content-seam specs run live.
+- [x] Content delegation verified live: engine answers true/false for
+      matching/mismatching child sequences (engine_context_spec + the
+      formerly gated content-model rule specs).
 - [ ] Adopt moxml `Plan`/`StructPlan` materialization for the hot
       parse path if lutaml-model exposes seams for it (profile first)
 - [ ] Engine error payload richness: once line/column/path are stable
       across adapters, surface them in CLI output and the SPA findings UI
+      — PARTIAL: CLI JSON already carries code/message/severity/
+      location/line_number/context (verified 2026-10-21); SPA wiring
+      rides TODO.docs-spa.md
 
 ## Benchmarks
 
@@ -59,4 +60,21 @@ surface as moxml/leptris ship it.
 - [ ] XmlNavigator walk cost on deep instance trees — DEFERRED: no
       evidence of a hotspot yet; take it with the rule-engine wiring,
       which is the walker's main consumer
+
+## moxml Builder DSL profile (2026-10-21, reported to moxml sota/04)
+
+rng's converter drives `Moxml::Builder`; the same 500-define synthetic
+tree through the same DSL:
+
+| path | time |
+|---|---|
+| Moxml Builder + nokogiri adapter | 0.059 s |
+| Moxml Builder + leptris adapter | 0.463 s |
+| direct `Leptris::XML::Builder` | 0.007 s |
+
+The ~8x gap is in moxml's leptris builder-face interaction (create_tag /
+method_missing / face flush), not the binding — the DSL through the
+nokogiri adapter is only ~2x native Nokogiri's builder. moxml's scoreboard
+covers the mutation API, not the Builder DSL; this is offered as a row +
+profile lead for the moxml perf branch. Work belongs in moxml, not here.
 

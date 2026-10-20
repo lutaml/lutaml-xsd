@@ -60,6 +60,7 @@ module Lutaml
           parse_xml
           return result_from_collector if should_stop_after_parse?
 
+          validate_root_declaration
           run_engine_validation if @config.feature_enabled?(:engine_validation)
           validate_structure if @config.feature_enabled?(:validate_types)
           return result_from_collector if should_stop_after_structure?
@@ -74,6 +75,36 @@ module Lutaml
         end
 
         private
+
+        # An instance whose root element is not declared by any schema in
+        # the package can never be valid; surface it explicitly (the
+        # engine's root-matching stays silent for unknown roots, and the
+        # rule engine skips unresolved declarations by design).
+        #
+        # @return [void]
+        def validate_root_declaration
+          root = @document&.root_element
+          return unless root
+
+          resolver = SchemaDefinitionResolver.new(@repository)
+          return if resolver.resolve(root.name, root.namespace_uri)
+
+          @result_collector.add_error(
+            ValidationError.new(
+              code: "element_not_allowed",
+              message: "Root element '#{root.name}' is not declared by any " \
+                       "schema in the package",
+              severity: :error,
+              location: root.xpath,
+              context: {
+                element: root.name,
+                namespace: root.namespace_uri,
+              },
+            ),
+          )
+        rescue ResultCollector::StopValidationError
+          # Stop validation if configured to stop on first error
+        end
 
         # Run engine-native XSD validation (Moxml::XSD) when the adapter
         # supports it. Findings are additive to rule findings.

@@ -355,6 +355,14 @@ module Lutaml
           #   Lutaml::Xsd::All]
           # @return [Array]
           def collect_particles(content_model)
+            # The model's collections lose interleaving; child_elements
+            # preserves the original declaration order (and flattens
+            # nested sequences).
+            if content_model.respond_to?(:child_elements)
+              ordered = Array(content_model.child_elements)
+              return ordered if ordered.any?
+            end
+
             particles = []
 
             # Collect elements
@@ -400,7 +408,8 @@ module Lutaml
           def element_matches?(xml_element, schema_element, repository = nil)
             if xml_element.name == schema_element.name
               return namespaces_match_instance?(
-                xml_element, resolve_target_namespace(schema_element)
+                xml_element,
+                resolve_target_namespace(schema_element, repository),
               )
             end
 
@@ -473,7 +482,12 @@ module Lutaml
           #
           # @param schema_element [Lutaml::Xsd::Element] Schema element
           # @return [String, nil]
-          def resolve_target_namespace(schema_element)
+          def resolve_target_namespace(schema_element, repository = nil)
+            # Inline declarations carry no namespace of their own; the
+            # resolver knows the owning schema's target namespace.
+            from_index = repository&.target_namespace_for(schema_element)
+            return from_index unless from_index.nil?
+
             schema_element.target_namespace
           end
 

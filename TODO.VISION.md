@@ -94,3 +94,22 @@ Deferred with reasons: see TODO.som.md (XSOM-parity work needs a spec
 design cycle), TODO.docs-spa.md (frontend dev loop), TODO.interop.md
 (LutaML cross-model contract), TODO.conformance.md rule-depth items
 (subsumed by rule-registry wiring, which is the headline rule-engine gap).
+
+## Status 2026-10-21 — rule engine wired, conformance up
+
+- Rule engine wired into production (`RuleRegistry.default`, element-scoped
+  dispatch, declaration resolver): pipeline conformance moved from an
+  inert copy of engine mode to **34/39 (87.2%)**, ahead of engine mode's
+  33/39 (84.6%) — the root-declaration check catches wrong-namespace
+  roots the engine skips, and substitution groups, nested sequences,
+  union/list, derivation and attribute typing now validate through rules
+  with zero false positives.
+- moxml 0.5.149 locked: `Schema#content_valid?` live on leptris; the
+  engine content-seam specs run un-gated.
+- Conformance corpus grew 12 → 19 cases (39 checks).
+- moxml Builder DSL profile delivered to the moxml perf workstream
+  (leptris face ~8x the nokogiri adapter through the same DSL; direct
+  binding builder 65x faster than the current face path).
+- CLI JSON validation (`lutaml-xsd xml validate ... --format json`) now
+  reports undeclared roots instead of silently passing them — the SPA
+  playground's backend seam is functionally complete.

@@ -73,4 +73,12 @@ RSpec.describe "rule engine wiring" do
 
     expect(result.valid?).to be(true)
   end
+
+  it "reports a root element no schema in the package declares" do
+    result = validator.validate("<unknown><x/></unknown>")
+
+    expect(result.valid?).to be(false)
+    codes = result.errors.map(&:code)
+    expect(codes).to include("element_not_allowed")
+  end
 end

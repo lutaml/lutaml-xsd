@@ -231,7 +231,7 @@ module Lutaml
                                         repository = nil)
             element_name = schema_element.name ||
               schema_element.ref.to_s.split(":").last
-            target_ns = resolve_target_namespace(schema_element)
+            target_ns = resolve_target_namespace(schema_element, repository)
 
             parent_element.children.count do |child|
               name_matches = child.name == element_name &&
@@ -358,7 +358,12 @@ module Lutaml
           #
           # @param schema_element [Lutaml::Xsd::Element] Schema element
           # @return [String, nil]
-          def resolve_target_namespace(schema_element)
+          def resolve_target_namespace(schema_element, repository = nil)
+            # Inline declarations carry no namespace of their own; the
+            # resolver knows the owning schema's target namespace.
+            from_index = repository&.target_namespace_for(schema_element)
+            return from_index unless from_index.nil?
+
             schema_element.target_namespace
           end
 
