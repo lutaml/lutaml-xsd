@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler/gem_tasks"
+require "open3"
 require "rspec/core/rake_task"
 
 RSpec::Core::RakeTask.new(:spec)
@@ -12,7 +13,12 @@ RuboCop::RakeTask.new
 namespace :deps do
   desc "Fail when Gemfile.lock resolution drifts from Gemfile/gemspec"
   task :lockfile_check do
-    fresh = Bundler.with_unbundled_env { `bundle lock --print 2>/dev/null` }
+    fresh, status = Bundler.with_unbundled_env do
+      Open3.capture2("bundle", "lock", "--print")
+    end
+    unless status.success? && !fresh.empty?
+      abort("deps:lockfile_check failed: could not resolve the Gemfile")
+    end
     committed = File.exist?("Gemfile.lock") ? File.read("Gemfile.lock") : ""
 
     signature = lambda do |text|
