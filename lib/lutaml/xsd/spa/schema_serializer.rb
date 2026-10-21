@@ -953,7 +953,9 @@ source = nil)
                       "//#{type}[@#{key}='#{escaped_value}']"
                     end
             node = doc.at_xpath(xpath)
-            node&.to_xml(indent: 2)
+            # Element-level indentation is rejected by the leptris adapter
+            # (moxml 0.5.150+); fragments keep their source whitespace.
+            node&.to_xml
           rescue StandardError
             nil
           end
