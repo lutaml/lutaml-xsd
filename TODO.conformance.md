@@ -12,34 +12,34 @@ can vendor a tarball later; provenance README goes with it).
 
 | mode | pass-rate |
 |---|---|
-| engine (Moxml::XSD tier-1, moxml 0.5.150) | 35/42 (83.3%) |
-| pipeline (ValidationJob + wired rule engine) | 40/42 (95.2%) |
+| engine (Moxml::XSD tier-1, moxml 0.5.150) | 36/42 (85.7%) |
+| pipeline (ValidationJob + wired rule engine) | 41/42 (97.6%) |
 
 The pipeline outperforms the engine by five checks: the root-declaration
 check catches a wrong-namespace root that engine root-matching silently
-skips; the identity-constraints rule catches duplicate keys the engine
-lacks; xsi:nil handling rejects non-nillable nils; strict wildcards
-(element and attribute) reject undeclared content. Zero false positives
-retained.
+skips; xsi:nil handling rejects non-nillable nils; strict wildcards
+(element and attribute) reject undeclared content; key/keyref identity
+constraints (activated by lutaml-model 0.8.121's `refer` mapping) catch
+dangling keyrefs. Zero false positives retained.
 
 Gap register (each failure is a tracked gap, not a test bug):
 
-- `attributes-any` valid-known — tier-1 engine reports a qualified
-  global attribute as "not declared" under strict anyAttribute (engine
-  limitation; pipeline accepts it correctly)
-- `identity-keykeyref` — dangling keyref not detected: implemented in
-  `IdentityConstraintsRule`, but activation needs lutaml-model to map the
-  `refer` attribute on `xs:keyref` (upstream fix in flight)
+- engine-only: `attributes-any` invalid-undeclared — the tier-1 engine
+  accepts an undeclared attribute under `processContents="strict"`
+  (under-detection; leptris 1.9.379.3 already fixed the inverse false
+  positive on qualified globals). Same lax posture as `wildcards-any`
+  invalid-undeclared and `xsi-nil`; the pipeline enforces all three
 - `xsi-type` — a VALID instance derived via `xsi:type` is rejected by the
   tier-1 engine (false positive, structural: engine scope is stricter than
-  derivation); the unknown-type half passes in pipeline mode
+  derivation); the unknown-type half passes in pipeline mode. Filed as
+  lutaml/moxml#433 with repro (resolve xsi:type — or validate laxly)
 - engine-only: `namespaces-qualified` wrong-namespace root accepted
   (EngineContext root-matching skips it; pipeline's root check catches it)
 
 History: 2026-10-20 baseline 20/25 (80.0%) with pipeline == engine
 (empty `RuleRegistry`, mismatched rule signatures); 2026-10-21 wiring
-baseline 34/39 (87.2%); gap rules 37/39 (94.9%); anyAttribute lifted the
-pipeline to 40/42 (95.2%).
+baseline 34/39 (87.2%); gap rules 37/39 (94.9%); anyAttribute 40/42
+(95.2%); keyref activation via lutaml-model 0.8.121 → 41/42 (97.6%).
 
 ## Harness
 
