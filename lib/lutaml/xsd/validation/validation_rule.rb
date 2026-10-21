@@ -82,6 +82,19 @@ module Lutaml
           false
         end
 
+        XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
+
+        # Find an xsi:-namespaced attribute on the instance element.
+        #
+        # @param xml_element [XmlElement]
+        # @param name [String] local name (e.g. "nil", "type")
+        # @return [XmlAttribute, nil]
+        def xsi_attribute(xml_element, name)
+          xml_element.attributes.find do |attr|
+            attr.name == name && attr.namespace_uri == XSI_NAMESPACE
+          end
+        end
+
         # Get the category of this validation rule
         #
         # Categories are used to group rules and execute them in phases:
