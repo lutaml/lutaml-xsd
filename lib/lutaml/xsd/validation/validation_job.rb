@@ -71,6 +71,8 @@ module Lutaml
           validate_constraints if @config.feature_enabled?(:validate_occurrences)
           return result_from_collector if should_stop_after_constraints?
 
+          validate_identity if @config.feature_enabled?(:validate_identity_constraints)
+
           result_from_collector
         end
 
@@ -102,6 +104,17 @@ module Lutaml
               },
             ),
           )
+        rescue ResultCollector::StopValidationError
+          # Stop validation if configured to stop on first error
+        end
+
+        # Validate identity constraints (key/keyref/unique)
+        #
+        # @return [void]
+        def validate_identity
+          return unless @document && @rule_engine
+
+          @rule_engine.execute_category(:identity, @document, @repository)
         rescue ResultCollector::StopValidationError
           # Stop validation if configured to stop on first error
         end

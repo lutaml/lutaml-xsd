@@ -3,7 +3,7 @@
 Goal: conformance is a number, not a feeling. Vendor the W3C XML Schema
 test-suite categories, build the harness, publish the pass-rate, grow it.
 
-## Baseline (2026-10-21, 19 cases / 39 checks)
+## Baseline (2026-10-21, 19 cases / 39 checks, after gap rules)
 
 Corpus: 19 case classes under `spec/conformance/cases/`, modelled on the
 W3C XML Schema Test Suite category taxonomy — self-authored because the
@@ -13,27 +13,28 @@ can vendor a tarball later; provenance README goes with it).
 | mode | pass-rate |
 |---|---|
 | engine (Moxml::XSD tier-1, moxml 0.5.149) | 33/39 (84.6%) |
-| pipeline (ValidationJob + wired rule engine) | 34/39 (87.2%) |
+| pipeline (ValidationJob + wired rule engine) | 37/39 (94.9%) |
 
-The pipeline now **outperforms** the engine: the root-declaration check
-catches a wrong-namespace root that engine root-matching silently skips.
-Pipeline added nested sequences, union/list types, derivation and attribute
-typing via the rule engine while keeping zero false positives.
+The pipeline outperforms the engine by four checks: the root-declaration
+check catches a wrong-namespace root that engine root-matching silently
+skips; the identity-constraints rule catches duplicate keys the engine
+lacks; xsi:nil handling rejects non-nillable nils; strict wildcards reject
+undeclared elements. Zero false positives retained.
 
-Gap register (each failure is a tracked gap, not a test bug; identical in
-both modes):
+Gap register (each failure is a tracked gap, not a test bug):
 
-- `identity-keykeyref` — dangling keyref not detected (no identity rule)
-- `wildcards-any` — `xs:any processContents="strict"` not enforced
-- `xsi-nil` — `xsi:nil` on a non-nillable element accepted
-- `xsi-type` — derived `xsi:type` rejected AND unknown `xsi:type`
-  accepted (needs dynamic type resolution/derivation closure)
+- `identity-keykeyref` — dangling keyref not detected: implemented in
+  `IdentityConstraintsRule`, but activation needs lutaml-model to map the
+  `refer` attribute on `xs:keyref` (upstream fix in flight)
+- `xsi-type` — a VALID instance derived via `xsi:type` is rejected by the
+  tier-1 engine (false positive, structural: engine scope is stricter than
+  derivation); the unknown-type half passes in pipeline mode
 - engine-only: `namespaces-qualified` wrong-namespace root accepted
   (EngineContext root-matching skips it; pipeline's root check catches it)
 
-History: the 2026-10-20 baseline was 20/25 (80.0%) with pipeline ==
-engine because `RuleRegistry` was empty and rule signatures did not match
-the engine's calling convention.
+History: 2026-10-20 baseline 20/25 (80.0%) with pipeline == engine
+(empty `RuleRegistry`, mismatched rule signatures); 2026-10-21 wiring
+baseline 34/39 (87.2%); gap rules lifted the pipeline to 37/39 (94.9%).
 
 ## Harness
 
@@ -72,12 +73,16 @@ the engine's calling convention.
 
 ## Rule-engine depth (remaining)
 
-- [ ] Identity constraints: `key`, `keyref`, `unique` — DEFERRED: needs a
-      new rule (selector/field XPath evaluation); engine lacks them
-- [ ] Wildcards: `any`/`anyAttribute` namespace + processContents modes —
-      DEFERRED: needs a wildcard rule; strict-mode gap in the register
-- [ ] `xsi:nil` and dynamic `xsi:type` resolution — DEFERRED: needs
-      attribute-aware rules plus derivation closure in the resolver
+- [x] Identity constraints: `key`, `keyref`, `unique` —
+      `IdentityConstraintsRule` (selector/field XPath evaluation,
+      duplicate detection, keyref resolution); dangling-keyref activation
+      waits on lutaml-model `refer` mapping
+- [x] Wildcards: `any` namespace constraints (##any/##other/##local/
+      ##targetNamespace/lists) + `processContents` strict declaration
+      checking in the content-model walk; `anyAttribute` still open
+- [x] `xsi:nil` (nillable + empty-content checks) and `xsi:type`
+      resolution (unknown-type rejection; content walk follows the
+      override); valid-derived acceptance needs engine-scope rework
 - [ ] Particle checking: UPA detection — DEFERRED (engine covers the
       tier-1 subset; UPA is schema-side checking)
 - [ ] XSD 1.1 constructs behind a version flag — DEFERRED: 1.1 strategy

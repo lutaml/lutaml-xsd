@@ -62,12 +62,21 @@ module Lutaml
           reference = schema_element.type
           return nil if reference.nil? || reference.to_s.empty?
 
-          local = reference.to_s.split(":").last
+          resolve_named_type(reference.to_s.split(":").last)
+        end
+
+        # Named complex or simple type by local name.
+        #
+        # @param local_name [String]
+        # @return [Object, nil]
+        def resolve_named_type(local_name)
+          return nil if local_name.nil? || local_name.empty?
+
           schemas.each do |schema|
-            found = Array(schema.complex_type).find { |ct| ct.name == local }
+            found = Array(schema.complex_type).find { |ct| ct.name == local_name }
             return found if found
 
-            found = Array(schema.simple_type).find { |st| st.name == local }
+            found = Array(schema.simple_type).find { |st| st.name == local_name }
             return found if found
           end
           nil
@@ -80,12 +89,36 @@ module Lutaml
         # @return [Object, nil]
         def content_model_for(schema_element)
           type = schema_element.complex_type || resolve_type(schema_element)
-          return nil unless type.respond_to?(:sequence) || type.respond_to?(:choice) || type.respond_to?(:all)
+          particle_for_type(type)
+        end
 
-          type.sequence || type.choice || type.all
+        # Content-model particle of a NAMED type (for xsi:type overrides).
+        #
+        # @param local_name [String]
+        # @return [Object, nil]
+        def content_model_for_named(local_name)
+          particle_for_type(resolve_named_type(local_name))
         end
 
         private
+
+        def particle_for_type(type)
+          return nil unless type.respond_to?(:sequence) || type.respond_to?(:choice) || type.respond_to?(:all)
+
+          direct = Array(type.sequence).first ||
+            Array(type.choice).first || Array(type.all).first
+          return direct if direct
+
+          # Derived types keep their particles under complex_content.
+          if type.respond_to?(:complex_content) && type.complex_content
+            content = type.complex_content
+            part = Array(content.extension).first ||
+              Array(content.restriction).first
+            return particle_for_type(part) if part
+          end
+
+          nil
+        end
 
         def schemas
           @schemas ||= @repository.all_schemas.values

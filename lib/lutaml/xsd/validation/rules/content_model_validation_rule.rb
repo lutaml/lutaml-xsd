@@ -52,25 +52,225 @@ module Lutaml
 
             return if engine_content_check(xml_element, collector) == :handled
 
-            # Resolve content model
-            content_model = resolve_content_model(schema_def, repository)
-            return unless content_model
+            particles = effective_particles(
+              xml_element, schema_def, repository
+            )
+            # nil: an xsi:type override that does not resolve — the type
+            # rule already reports it, so no content walk runs here.
+            return if particles.nil? || particles.empty?
 
-            # Validate based on content model type
-            case content_model
-            when Lutaml::Xsd::Sequence
-              validate_sequence(xml_element, content_model, collector,
-                                repository: repository)
-            when Lutaml::Xsd::Choice
-              validate_choice(xml_element, content_model, collector,
-                              repository: repository)
-            when Lutaml::Xsd::All
-              validate_all(xml_element, content_model, collector,
-                           repository: repository)
-            end
+            validate_particle_sequence(xml_element, particles, collector,
+                                       repository)
           end
 
           private
+
+          # Particles of the effective type: an xsi:type override wins over
+          # the declared type; the walk then consumes the list in order.
+          #
+          # @return [Array, nil] nil when an xsi:type override does not
+          #   resolve to a known type
+          def effective_particles(xml_element, schema_def, repository)
+            xsi = repository && xsi_attribute(xml_element, "type")
+            if xsi&.value.to_s.match?(/\S/)
+              local = xsi.value.to_s.split(":").last
+              named = repository.resolve_named_type(local)
+              return nil unless named
+
+              return type_particles(named, repository, {}.compare_by_identity)
+            end
+
+            case schema_def
+            when Lutaml::Xml::Schema::Xsd::Element
+              type_def = resolve_type(schema_def, repository)
+              return [] unless type_def
+
+              type_particles(type_def, repository, {}.compare_by_identity)
+            when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice, Lutaml::Xsd::All
+              # A rooted group walks as a single particle: the sequence
+              # walk's container handling then matches any leaf in any
+              # consecutive run, which is permissive-correct for choice
+              # and all without the old ambiguity false positive.
+              [schema_def]
+            else
+              type_particles(schema_def, repository, {}.compare_by_identity)
+            end
+          end
+
+          # Ordered particles of a type: own sequence/choice/all/element/
+          # any/group particles plus, for extensions, the base type's
+          # particles first. Cycle-guarded. Particles are kept whole —
+          # nested containers are expanded by the walk's matching, which
+          # preserves their own occurrence constraints.
+          #
+          # @return [Array]
+          def type_particles(type, repository, seen)
+            return [] if type.nil? || seen.key?(type)
+
+            seen[type] = true
+            particles = []
+
+            %i[sequence choice all element any group].each do |kind|
+              next unless type.respond_to?(kind)
+
+              Array(type.public_send(kind)).each do |particle|
+                next unless particle
+
+                # A sequence's direct particles join the walk in order;
+                # choice/all/any/element/group stay whole so their own
+                # occurrence constraints survive the walk.
+                if particle.is_a?(Lutaml::Xsd::Sequence)
+                  particles.concat(collect_particles(particle))
+                else
+                  particles << particle
+                end
+              end
+            end
+
+            if type.respond_to?(:complex_content) && type.complex_content
+              content = type.complex_content
+              extension = Array(content.extension).first
+              if extension
+                base_local = extension.base.to_s.split(":").last
+                base_type = base_local && repository&.resolve_named_type(base_local)
+                particles = type_particles(base_type, repository, seen) +
+                  particles
+              end
+              %i[sequence choice all element any group].each do |kind|
+                next unless extension.respond_to?(kind)
+
+                Array(extension.public_send(kind)).each do |particle|
+                  next unless particle
+
+                  if particle.is_a?(Lutaml::Xsd::Sequence)
+                    particles.concat(collect_particles(particle))
+                  else
+                    particles << particle
+                  end
+                end
+              end
+            end
+
+            particles
+          end
+
+          # Sequential walk over a particle list (min/max per particle,
+          # recursive matching, wildcard permission for unmatched tails).
+          #
+          # @return [void]
+          def validate_particle_sequence(xml_element, particles, collector,
+                                         repository)
+            return if particles.empty?
+
+            children = xml_element.children
+            child_index = 0
+
+            particles.each do |particle|
+              min_occurs = parse_occurs(particle.min_occurs, 1)
+              # Container particles (nested sequence/choice/all) consume
+              # their whole consecutive run: the walk counts individual
+              # children, so a default max of 1 would truncate the group
+              # after its first child. Explicit caps on containers are
+              # enforced loosely for the same reason.
+              container = particle.is_a?(Lutaml::Xsd::Sequence) ||
+                particle.is_a?(Lutaml::Xsd::Choice) ||
+                particle.is_a?(Lutaml::Xsd::All)
+              max_occurs = parse_max_occurs(
+                particle.max_occurs, container ? :unbounded : 1
+              )
+              matched_count = 0
+
+              # Try to match children against this particle
+              while child_index < children.size
+                child = children[child_index]
+
+                break unless particle_matches?(child, particle, repository,
+                                               parent: xml_element)
+
+                if particle.is_a?(Lutaml::Xsd::Any)
+                  check_strict_wildcard_child(child, particle, collector,
+                                              repository)
+                end
+
+                matched_count += 1
+                child_index += 1
+
+                # Stop if we've reached max occurrences
+                break if max_occurs != :unbounded &&
+                  matched_count >= max_occurs
+
+                # Child doesn't match, move to next particle
+              end
+
+              # Check minimum occurrence
+              next unless matched_count < min_occurs
+              next if particle.is_a?(Lutaml::Xsd::Any) && min_occurs.zero?
+
+              report_min_occurs_violation(particle, xml_element, collector,
+                                          min_occurs, matched_count)
+            end
+
+            # Check for unexpected children after sequence
+            return unless child_index < children.size
+
+            wildcard = particles.find { |p| p.is_a?(Lutaml::Xsd::Any) }
+            unexpected = children[child_index..]
+            unexpected.each do |child|
+              if wildcard && wildcard_permits?(wildcard, xml_element, child,
+                                               repository)
+                check_strict_wildcard_child(child, wildcard, collector,
+                                            repository)
+                next
+              end
+
+              report_error(
+                collector,
+                code: "unexpected_element_in_sequence",
+                message: "Unexpected element '#{child.qualified_name}' " \
+                         "in sequence",
+                location: child.xpath,
+                context: {
+                  element: child.qualified_name,
+                },
+                suggestion: "Remove this element or check sequence order",
+              )
+            end
+          end
+
+          # Report an unsatisfied minimum occurrence: a choice container
+          # names its alternatives, anything else reports generically.
+          #
+          # @return [void]
+          def report_min_occurs_violation(particle, xml_element, collector,
+                                          min_occurs, matched_count)
+            if particle.is_a?(Lutaml::Xsd::Choice)
+              alternatives = collect_particles(particle).map do |p|
+                particle_name(p)
+              end
+              report_error(
+                collector,
+                code: "choice_not_satisfied",
+                message: "One of the following elements must be present: " \
+                         "#{alternatives.join(', ')}",
+                location: xml_element.xpath,
+                context: { choices: alternatives },
+                suggestion: "Add one of: #{alternatives.join(', ')}",
+              )
+            else
+              report_error(
+                collector,
+                code: "sequence_min_occurs_violation",
+                message: "Element '#{particle_name(particle)}' must occur " \
+                         "at least #{min_occurs} time(s)",
+                location: xml_element.xpath,
+                context: {
+                  particle: particle_name(particle),
+                  min_occurs: min_occurs,
+                  actual: matched_count,
+                },
+              )
+            end
+          end
 
           # Engine-first content-model check for this element.
           #
@@ -99,31 +299,6 @@ module Lutaml
             :handled
           end
 
-          # Resolve content model from schema definition
-          #
-          # @param schema_def [Lutaml::Xsd::ComplexType, Lutaml::Xsd::Element]
-          # @return [Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice,
-          #   Lutaml::Xsd::All, nil]
-          def resolve_content_model(schema_def, repository = nil)
-            # For elements, get type first
-            if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
-              type_def = resolve_type(schema_def, repository)
-              return resolve_content_model(type_def, repository) if type_def
-            end
-
-            # For complex types, check content model
-            return schema_def.sequence if schema_def.sequence
-            return schema_def.choice if schema_def.choice
-            return schema_def.all if schema_def.all
-
-            # Check complex content
-            if schema_def.complex_content
-              return resolve_from_complex_content(schema_def.complex_content)
-            end
-
-            nil
-          end
-
           # Resolve type from element
           #
           # @param element [Lutaml::Xsd::Element] Schema element
@@ -136,217 +311,69 @@ module Lutaml
             resolved if resolved.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
           end
 
-          # Resolve content model from complex content
+          # Whether a wildcard's namespace constraint admits the child.
           #
-          # @param complex_content [Lutaml::Xsd::ComplexContent]
-          # @return [Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice,
-          #   Lutaml::Xsd::All, nil]
-          def resolve_from_complex_content(complex_content)
-            if complex_content.extension
-              ext = complex_content.extension
-              return ext.sequence if ext.sequence
-              return ext.choice if ext.choice
-              return ext.all if ext.all
-            end
-
-            if complex_content.restriction
-              restr = complex_content.restriction
-              return restr.sequence if restr.sequence
-              return restr.choice if restr.choice
-              return restr.all if restr.all
-            end
-
-            nil
-          end
-
-          # Validate sequence content model
-          #
-          # Elements must appear in the order defined by the sequence.
-          #
-          # @param xml_element [XmlElement] The XML element
-          # @param sequence [Lutaml::Xsd::Sequence] The sequence definition
-          # @param collector [ResultCollector] Result collector
-          # @return [void]
-          def validate_sequence(xml_element, sequence, collector,
-                                repository: nil)
-            particles = collect_particles(sequence)
-            return if particles.empty?
-
-            children = xml_element.children
-            child_index = 0
-
-            particles.each do |particle|
-              min_occurs = parse_occurs(particle.min_occurs, 1)
-              max_occurs = parse_max_occurs(particle.max_occurs, 1)
-              matched_count = 0
-
-              # Try to match children against this particle
-              while child_index < children.size
-                child = children[child_index]
-
-                break unless particle_matches?(child, particle, repository)
-
-                matched_count += 1
-                child_index += 1
-
-                # Stop if we've reached max occurrences
-                break if max_occurs != :unbounded &&
-                  matched_count >= max_occurs
-
-                # Child doesn't match, move to next particle
-
+          # @param wildcard [Lutaml::Xsd::Any]
+          # @param parent [XmlElement] Content-model owner
+          # @param child [XmlElement]
+          # @param repository [SchemaDefinitionResolver, nil]
+          # @return [Boolean]
+          def wildcard_permits?(wildcard, parent, child, repository)
+            child_ns = child.namespace_uri.to_s
+            case wildcard.namespace.to_s
+            when "##any", ""
+              true
+            when "##other"
+              target = content_model_target_namespace(parent, repository)
+              !child_ns.empty? && child_ns != target.to_s
+            when "##local"
+              child_ns.empty?
+            when "##targetNamespace"
+              child_ns == content_model_target_namespace(parent, repository).to_s
+            else
+              # space-separated namespace list (##targetNamespace ##local allowed)
+              wildcard.namespace.to_s.split(/\s+/).any? do |entry|
+                entry == "##local" ? child_ns.empty? : entry == child_ns
               end
-
-              # Check minimum occurrences
-              next unless matched_count < min_occurs
-
-              report_error(
-                collector,
-                code: "sequence_min_occurs_violation",
-                message: "Element '#{particle_name(particle)}' must occur " \
-                         "at least #{min_occurs} time(s) in sequence, " \
-                         "found #{matched_count}",
-                location: xml_element.xpath,
-                context: {
-                  particle: particle_name(particle),
-                  min_occurs: min_occurs,
-                  actual: matched_count,
-                },
-              )
-            end
-
-            # Check for unexpected children after sequence
-            return unless child_index < children.size
-
-            unexpected = children[child_index..]
-            unexpected.each do |child|
-              report_error(
-                collector,
-                code: "unexpected_element_in_sequence",
-                message: "Unexpected element '#{child.qualified_name}' " \
-                         "in sequence",
-                location: child.xpath,
-                context: {
-                  element: child.qualified_name,
-                },
-                suggestion: "Remove this element or check sequence order",
-              )
             end
           end
 
-          # Validate choice content model
-          #
-          # One (and only one) of the alternatives must be present.
-          #
-          # @param xml_element [XmlElement] The XML element
-          # @param choice [Lutaml::Xsd::Choice] The choice definition
-          # @param collector [ResultCollector] Result collector
-          # @return [void]
-          def validate_choice(xml_element, choice, collector,
-                              repository: nil)
-            particles = collect_particles(choice)
-            return if particles.empty?
+          # @return [Boolean]
+          def wildcard_child_declared?(child, repository)
+            return true if repository.nil?
 
-            children = xml_element.children
-            matched_particles = []
-
-            # Find which particles match
-            particles.each do |particle|
-              matches = children.select do |child|
-                particle_matches?(child, particle, repository)
-              end
-              matched_particles << particle if matches.any?
-            end
-
-            min_occurs = parse_occurs(choice.min_occurs, 1)
-
-            # Check if at least one alternative is present
-            if matched_particles.empty? && min_occurs.positive?
-              particle_names = particles.map { |p| particle_name(p) }
-              report_error(
-                collector,
-                code: "choice_not_satisfied",
-                message: "One of the following elements must be present: " \
-                         "#{particle_names.join(', ')}",
-                location: xml_element.xpath,
-                context: {
-                  choices: particle_names,
-                },
-                suggestion: "Add one of: #{particle_names.join(', ')}",
-              )
-            elsif matched_particles.size > 1
-              # Multiple alternatives present (ambiguous choice)
-              report_error(
-                collector,
-                code: "choice_ambiguous",
-                message: "Only one choice alternative should be present, " \
-                         "found #{matched_particles.size}",
-                location: xml_element.xpath,
-                context: {
-                  matched: matched_particles.map { |p| particle_name(p) },
-                },
-                suggestion: "Use only one of the choice alternatives",
-              )
-            end
+            !repository.resolve(child.name, child.namespace_uri).nil?
           end
 
-          # Validate all content model
+          # processContents="strict" on a wildcard demands the matched
+          # child be declared; lax/skip place no declaration requirement.
           #
-          # All elements must appear, but order doesn't matter.
-          #
-          # @param xml_element [XmlElement] The XML element
-          # @param all [Lutaml::Xsd::All] The all definition
-          # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_all(xml_element, all, collector, repository: nil)
-            particles = collect_particles(all)
-            return if particles.empty?
+          def check_strict_wildcard_child(child, wildcard, collector,
+                                          repository)
+            return unless wildcard.process_contents.to_s == "strict"
+            return if wildcard_child_declared?(child, repository)
 
-            children = xml_element.children
+            report_error(
+              collector,
+              code: "wildcard_undeclared_element",
+              message: "Element '#{child.qualified_name}' matches " \
+                       "xs:any with processContents=strict but is not " \
+                       "declared",
+              location: child.xpath,
+              context: { element: child.qualified_name },
+            )
+          end
 
-            particles.each do |particle|
-              min_occurs = parse_occurs(particle.min_occurs, 1)
-              max_occurs = parse_max_occurs(particle.max_occurs, 1)
+          # Best-effort target namespace of the schema owning the parent's
+          # declaration (via the resolver index).
+          #
+          # @return [String, nil]
+          def content_model_target_namespace(parent, repository)
+            return nil unless repository
 
-              # Count matches
-              matched_count = children.count do |child|
-                particle_matches?(child, particle, repository)
-              end
-
-              # Check minimum occurrence
-              if matched_count < min_occurs
-                report_error(
-                  collector,
-                  code: "all_min_occurs_violation",
-                  message: "Element '#{particle_name(particle)}' must occur " \
-                           "at least #{min_occurs} time(s), found " \
-                           "#{matched_count}",
-                  location: xml_element.xpath,
-                  context: {
-                    element: particle_name(particle),
-                    min_occurs: min_occurs,
-                    actual: matched_count,
-                  },
-                )
-              end
-
-              # Check maximum occurrence (in xs:all, max is usually 1)
-              next unless max_occurs != :unbounded && matched_count > max_occurs
-
-              report_error(
-                collector,
-                code: "all_max_occurs_violation",
-                message: "Element '#{particle_name(particle)}' must occur " \
-                         "at most #{max_occurs} time(s), found " \
-                         "#{matched_count}",
-                location: xml_element.xpath,
-                context: {
-                  element: particle_name(particle),
-                  max_occurs: max_occurs,
-                  actual: matched_count,
-                },
-              )
-            end
+            declaration = repository.resolve(parent.name, parent.namespace_uri)
+            repository.target_namespace_for(declaration) if declaration
           end
 
           # Collect particles from content model
@@ -355,18 +382,20 @@ module Lutaml
           #   Lutaml::Xsd::All]
           # @return [Array]
           def collect_particles(content_model)
-            # The model's collections lose interleaving; child_elements
-            # preserves the original declaration order (and flattens
-            # nested sequences).
-            if content_model.respond_to?(:child_elements)
-              ordered = Array(content_model.child_elements)
-              return ordered if ordered.any?
+            # resolved_element_order preserves declaration order including
+            # xs:any particles (which child_elements drops).
+            if content_model.respond_to?(:resolved_element_order) &&
+                content_model.resolved_element_order.to_a.any?
+              return content_model.resolved_element_order.to_a
             end
 
             particles = []
 
             # Collect elements
             particles.concat(Array(content_model.element)) if content_model.element.any?
+
+            # Collect wildcards
+            particles.concat(Array(content_model.any)) if content_model.any
 
             # Collect nested sequences
             particles.concat(Array(content_model.sequence)) if content_model.sequence
@@ -384,14 +413,26 @@ module Lutaml
           #
           # @param xml_element [XmlElement] The XML element
           # @param particle [Object] The schema particle
+          # @param repository [SchemaDefinitionResolver, nil]
+          # @param parent [XmlElement, nil] Content-model owner, for
+          #   wildcard namespace constraints scoped to the target namespace
           # @return [Boolean]
-          def particle_matches?(xml_element, particle, repository = nil)
+          def particle_matches?(xml_element, particle, repository = nil,
+                                parent: nil)
             case particle
             when Lutaml::Xsd::Element
               element_matches?(xml_element, particle, repository)
+            when Lutaml::Xsd::Any
+              wildcard_permits?(particle, parent || xml_element,
+                                xml_element, repository)
             when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice, Lutaml::Xsd::All
-              # Nested content model - would need recursive validation
-              false
+              # Nested content model: a child matches the container when it
+              # matches any leaf particle inside it. Inner ordering is
+              # permissive; the outer walk stays sequential.
+              collect_particles(particle).any? do |leaf|
+                particle_matches?(xml_element, leaf, repository,
+                                  parent: parent)
+              end
             else
               false
             end
@@ -489,19 +530,6 @@ module Lutaml
             return from_index unless from_index.nil?
 
             schema_element.target_namespace
-          end
-
-          # Check if namespaces match
-          #
-          # @param ns1 [String, nil] First namespace
-          # @param ns2 [String, nil] Second namespace
-          # @return [Boolean]
-          def namespaces_match?(ns1, ns2)
-            # Normalize empty strings to nil
-            normalized_ns1 = ns1.to_s.empty? ? nil : ns1
-            normalized_ns2 = ns2.to_s.empty? ? nil : ns2
-
-            normalized_ns1 == normalized_ns2
           end
         end
       end

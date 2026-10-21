@@ -50,7 +50,24 @@ module Lutaml
                        repository: nil)
             return unless schema_element
 
+            return if xsi_nil_handled?(xml_element, schema_element, collector)
+
             type_def = resolve_element_type(schema_element, repository)
+            if xsi_type_name(xml_element)
+              type_def = resolve_xsi_type(xsi_type_name(xml_element),
+                                          repository)
+              unless type_def
+                report_error(
+                  collector,
+                  code: "xsi_type_unknown",
+                  message: "xsi:type '#{xsi_type_name(xml_element)}' does " \
+                           "not resolve to a known type definition",
+                  location: xml_element.xpath,
+                  context: { xsi_type: xsi_type_name(xml_element) },
+                )
+                return
+              end
+            end
             return unless type_def
 
             case type_def
@@ -65,6 +82,62 @@ module Lutaml
           end
 
           private
+
+          # xsi:nil handling: allowed only on nillable declarations, and a
+          # nil element must be empty. Returns true when the element is nil
+          # (nothing further to validate).
+          #
+          # @return [Boolean]
+          def xsi_nil_handled?(xml_element, schema_element, collector)
+            nil_attr = xsi_attribute(xml_element, "nil")
+            return false unless nil_attr&.value.to_s.match?(/\A(true|1)\z/)
+
+            unless schema_element.nillable.to_s.match?(/\A(true|1)\z/)
+              report_error(
+                collector,
+                code: "xsi_nil_not_allowed",
+                message: "Element '#{xml_element.name}' is not nillable " \
+                         "but carries xsi:nil",
+                location: xml_element.xpath,
+                context: { element: xml_element.name },
+              )
+              return true
+            end
+
+            return true if xml_element.children.empty?
+
+            report_error(
+              collector,
+              code: "xsi_nil_with_content",
+              message: "Element '#{xml_element.name}' has xsi:nil but " \
+                       "carries content",
+              location: xml_element.xpath,
+              context: { element: xml_element.name },
+            )
+            true
+          end
+
+          # The xsi:type attribute value (local part), or nil.
+          #
+          # @param xml_element [XmlElement]
+          # @return [String, nil]
+          def xsi_type_name(xml_element)
+            attr = xsi_attribute(xml_element, "type")
+            return nil unless attr&.value.to_s.match?(/\S/)
+
+            attr.value.to_s.split(":").last
+          end
+
+          # Resolve an xsi:type local name to a named type definition.
+          #
+          # @param local_name [String]
+          # @param repository [SchemaDefinitionResolver, nil]
+          # @return [Object, nil]
+          def resolve_xsi_type(local_name, repository)
+            return nil unless repository
+
+            repository.resolve_named_type(local_name)
+          end
 
           # Resolve the type definition for an element
           #
