@@ -171,3 +171,96 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule do
     end
   end
 end
+
+RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
+               "xs:anyAttribute wildcard handling" do
+  let(:config) { Lutaml::Xsd::Validation::ValidationConfiguration.new }
+  let(:collector) { Lutaml::Xsd::Validation::ResultCollector.new(config) }
+  let(:rule) { described_class.new }
+  let(:xsd_xml) do
+    <<~XSD
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                 targetNamespace="http://example.com/w"
+                 elementFormDefault="qualified">
+        <xs:element name="settings">
+          <xs:complexType>
+            <xs:complexContent>
+              <xs:restriction base="xs:anyType">
+                <xs:attribute name="lang"/>
+                <xs:anyAttribute namespace="##targetNamespace ##local"
+                                 processContents="strict"/>
+              </xs:restriction>
+            </xs:complexContent>
+          </xs:complexType>
+        </xs:element>
+        <xs:attribute name="known" type="xs:string"/>
+      </xs:schema>
+    XSD
+  end
+  let(:schema) { Lutaml::Xml::Schema::Xsd.parse(xsd_xml) }
+  let(:repository) do
+    Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ "http://example.com/w" => schema })
+  end
+  let(:resolver) do
+    Lutaml::Xsd::Validation::SchemaDefinitionResolver.new(repository)
+  end
+  let(:schema_def) { resolver.resolve("settings", "http://example.com/w") }
+  let(:navigator) do
+    Object.new.tap do |nav|
+      nav.define_singleton_method(:current_xpath) { "/settings" }
+    end
+  end
+
+  def validate_xml(xml)
+    root = Moxml::Context.new.parse(xml).root
+    xml_element = Lutaml::Xsd::Validation::XmlElement.new(root, navigator)
+    rule.validate(xml_element, schema_def, collector, repository: resolver)
+    collector
+  end
+
+  it "accepts a wildcard-permitted declared attribute" do
+    collector = validate_xml(
+      '<settings xmlns="http://example.com/w" ' \
+      'xmlns:w="http://example.com/w" lang="en" w:known="x"/>',
+    )
+
+    expect(collector.errors).to be_empty
+  end
+
+  it "reports an undeclared attribute under strict processing" do
+    collector = validate_xml(
+      '<settings xmlns="http://example.com/w" lang="en" bogus="1"/>',
+    )
+
+    codes = collector.errors.map(&:code)
+    expect(codes).to include("wildcard_undeclared_attribute")
+    expect(codes).not_to include("unexpected_attribute")
+  end
+
+  it "reports unexpected for a namespace outside the wildcard list" do
+    collector = validate_xml(
+      '<settings xmlns="http://example.com/w" ' \
+      'xmlns:o="http://other.example" o:x="1"/>',
+    )
+
+    expect(collector.errors.map(&:code)).to include("unexpected_attribute")
+  end
+
+  it "keeps the wildcard from bypassing namespace violations" do
+    collector = validate_xml(
+      '<settings xmlns="http://example.com/w" ' \
+      'xmlns:o="http://other.example" lang="en" o:y="2"/>',
+    )
+
+    expect(collector.errors.map(&:code)).to include("unexpected_attribute")
+  end
+end
