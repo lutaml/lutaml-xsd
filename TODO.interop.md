@@ -16,13 +16,12 @@ delivered; remaining items deferred with reasons below.
       spec-test suites pass on the Moxml converter (1056 examples; two
       environmental timing guards were widened to pathological-regression
       budgets — they also failed on pre-migration main on loaded machines)
-- [ ] rng 0.3.8+ baseline recalibration — DEFERRED, release-gated on the
-      rng release containing the include fixes + Moxml migration (version
-      is the owner's to state); numbers precomputed (complex types 170,
-      simple types 13, elements 203, groups 237, attribute_groups 44;
-      sections: 7 choices / 1 group / 1 element)
-- [ ] Re-pin `rng` in lutaml-xsd once that release exists — DEFERRED with
-      the same gate (lands with the recalibration commit)
+- [x] rng 0.3.9 baseline recalibration (2026-10-21): converter expectations
+      re-baselined against the fixed include processor — complex types
+      170, simple types 13, elements 203, groups 237, attribute_groups
+      44; sections sequence: 7 choices / 1 group / 1 element (`sections`
+      present via bsi's override, trace in rng PR #34)
+- [x] `rng ~> 0.3.9` pinned in lutaml-xsd (2026-10-21)
 
 ## JSON Schema bridge
 

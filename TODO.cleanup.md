@@ -13,13 +13,12 @@ release-gated or need owner confirmation.
       (delegates to `Lutaml::Xml::Schema::Xsd.parse`); docs/*.adoc
       references are true again (this PR)
 - [x] `XmlElement#namespace_uri` uses the Moxml namespace API (PR #108)
-- [ ] rng 0.3.8 baseline recalibration — DEFERRED, release-gated: the
-      converter expectations are precomputed against the fixed rng
-      (complex types 170, simple types 13, elements 203, groups 237,
-      attribute_groups 44; sections sequence: 7 choices / 1 group /
-      1 element) and the spec + `rng ~> <released>` pin land together
-      once the rng release with the include fixes exists (version is the
-      owner's to state)
+- [x] rng 0.3.9 baseline recalibration (2026-10-21): converter expectations
+      updated for the full-include corpus (complex types 170, simple types
+      13, elements 203, groups 237, attribute_groups 44; sections
+      sequence: 7 choices / 1 group / 1 element — `sections` present via
+      bsi's override); gemspec pins `rng ~> 0.3.9` (released with the
+      include fixes + Moxml migration)
 - [ ] `lib/lutaml/xsd/schema_query_service.rb.bak` (untracked) — DEFERRED,
       owner confirmation required: archive under `docs/archive/` or delete
 - [ ] Prunable stale worktrees (`/private/tmp/fix/xsd`, `/private/tmp/xsd-main`)
