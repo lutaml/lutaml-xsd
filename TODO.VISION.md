@@ -113,3 +113,11 @@ design cycle), TODO.docs-spa.md (frontend dev loop), TODO.interop.md
 - CLI JSON validation (`lutaml-xsd xml validate ... --format json`) now
   reports undeclared roots instead of silently passing them — the SPA
   playground's backend seam is functionally complete.
+
+## Status 2026-10-21 (later) — rng 0.3.9 recalibration landed
+
+- rng 0.3.9 released (include fixes + Moxml migration); lutaml-xsd pins
+  `rng ~> 0.3.9` and the converter corpus is re-baselined on the full
+  include tree (170/13/203/237/44; sections 7/1/1 — `sections` restored
+  via bsi's override). The last release gate is closed; remaining items
+  in the pillar files are design/owner decisions.

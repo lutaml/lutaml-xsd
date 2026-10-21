@@ -19,7 +19,7 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
     end
 
     it "produces complex types" do
-      expect(schema.complex_type.length).to eq(20)
+      expect(schema.complex_type.length).to eq(170)
     end
 
     it "includes complex types in the included paths" do
@@ -51,30 +51,33 @@ RSpec.describe Lutaml::Xsd::RngToXsdConverter do
     end
 
     it "produces simple types" do
-      expect(schema.simple_type.length).to eq(2)
+      expect(schema.simple_type.length).to eq(13)
     end
 
     it "produces elements" do
-      expect(schema.element.length).to eq(23)
+      expect(schema.element.length).to eq(203)
     end
 
     it "produces groups (including groups in the included paths)" do
-      expect(schema.group.length).to eq(13)
+      expect(schema.group.length).to eq(237)
     end
 
-    it "produces 1 attribute_group (including groups in the included paths)" do
-      expect(schema.attribute_group.length).to eq(1)
-      expect(schema.attribute_group.first.name).to eq("AdmonitionAttributes")
-      expect(schema.attribute_group.first.attribute.length).to eq(1)
-      expect(schema.attribute_group.first.attribute.first.name).to eq("target")
+    it "produces attribute_groups (including groups in the included paths)" do
+      expect(schema.attribute_group.length).to eq(44)
+      admonition = schema.attribute_group.find do |ag|
+        ag.name == "AdmonitionAttributes"
+      end
+      expect(admonition).not_to be_nil
+      expect(admonition.attribute.length).to eq(1)
+      expect(admonition.attribute.first.name).to eq("target")
     end
 
-    it "includes 7 choices" do
+    it "includes 7 choices in the sections content model" do
       sections_el = schema.element.find { |el| el.name == "sections" }
       sections_ct = schema.complex_type.find { |ct| ct.name == sections_el.type }
       expect(sections_ct.sequence.choice.length).to eq(7)
-      expect(sections_ct.sequence.group.length).to eq(2)
-      expect(sections_ct.sequence.element.length).to eq(0)
+      expect(sections_ct.sequence.group.length).to eq(1)
+      expect(sections_ct.sequence.element.length).to eq(1)
     end
   end
 
