@@ -3,26 +3,30 @@
 Goal: conformance is a number, not a feeling. Vendor the W3C XML Schema
 test-suite categories, build the harness, publish the pass-rate, grow it.
 
-## Baseline (2026-10-21, 19 cases / 39 checks, after gap rules)
+## Baseline (2026-10-22, 20 cases / 42 checks)
 
-Corpus: 19 case classes under `spec/conformance/cases/`, modelled on the
+Corpus: 20 case classes under `spec/conformance/cases/`, modelled on the
 W3C XML Schema Test Suite category taxonomy — self-authored because the
 canonical 2007 suite distribution is no longer served from w3.org (owner
 can vendor a tarball later; provenance README goes with it).
 
 | mode | pass-rate |
 |---|---|
-| engine (Moxml::XSD tier-1, moxml 0.5.149) | 33/39 (84.6%) |
-| pipeline (ValidationJob + wired rule engine) | 37/39 (94.9%) |
+| engine (Moxml::XSD tier-1, moxml 0.5.150) | 35/42 (83.3%) |
+| pipeline (ValidationJob + wired rule engine) | 40/42 (95.2%) |
 
-The pipeline outperforms the engine by four checks: the root-declaration
+The pipeline outperforms the engine by five checks: the root-declaration
 check catches a wrong-namespace root that engine root-matching silently
 skips; the identity-constraints rule catches duplicate keys the engine
-lacks; xsi:nil handling rejects non-nillable nils; strict wildcards reject
-undeclared elements. Zero false positives retained.
+lacks; xsi:nil handling rejects non-nillable nils; strict wildcards
+(element and attribute) reject undeclared content. Zero false positives
+retained.
 
 Gap register (each failure is a tracked gap, not a test bug):
 
+- `attributes-any` valid-known — tier-1 engine reports a qualified
+  global attribute as "not declared" under strict anyAttribute (engine
+  limitation; pipeline accepts it correctly)
 - `identity-keykeyref` — dangling keyref not detected: implemented in
   `IdentityConstraintsRule`, but activation needs lutaml-model to map the
   `refer` attribute on `xs:keyref` (upstream fix in flight)
@@ -34,7 +38,8 @@ Gap register (each failure is a tracked gap, not a test bug):
 
 History: 2026-10-20 baseline 20/25 (80.0%) with pipeline == engine
 (empty `RuleRegistry`, mismatched rule signatures); 2026-10-21 wiring
-baseline 34/39 (87.2%); gap rules lifted the pipeline to 37/39 (94.9%).
+baseline 34/39 (87.2%); gap rules 37/39 (94.9%); anyAttribute lifted the
+pipeline to 40/42 (95.2%).
 
 ## Harness
 
@@ -79,7 +84,12 @@ baseline 34/39 (87.2%); gap rules lifted the pipeline to 37/39 (94.9%).
       waits on lutaml-model `refer` mapping
 - [x] Wildcards: `any` namespace constraints (##any/##other/##local/
       ##targetNamespace/lists) + `processContents` strict declaration
-      checking in the content-model walk; `anyAttribute` still open
+      checking in the content-model walk; `anyAttribute` honors namespace
+      constraints and strict checking where the parse layer exposes the
+      declaration (attributeGroup, content-model restriction) —
+      complexType-level and extension-shape anyAttribute mappings are
+      missing upstream (lutaml-model), keeping those on pre-wildcard
+      behavior until mapped
 - [x] `xsi:nil` (nillable + empty-content checks) and `xsi:type`
       resolution (unknown-type rejection; content walk follows the
       override); valid-derived acceptance needs engine-scope rework

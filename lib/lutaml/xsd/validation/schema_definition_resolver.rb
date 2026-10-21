@@ -20,6 +20,7 @@ module Lutaml
         def initialize(repository)
           @repository = repository
           @namespaces = {}.compare_by_identity
+          @attributes = Hash.new { |hash, key| hash[key] = [] }
           @elements = index_elements
         end
 
@@ -80,6 +81,28 @@ module Lutaml
             return found if found
           end
           nil
+        end
+
+        # Global attribute declaration by name (for strict xs:anyAttribute
+        # checks).
+        #
+        # @param name [String] local attribute name
+        # @param namespace_uri [String, nil] instance attribute namespace
+        # @return [Lutaml::Xml::Schema::Xsd::Attribute, nil]
+        def resolve_attribute(name, namespace_uri)
+          return nil if name.nil? || name.empty?
+
+          candidates = @attributes[name]
+          return nil if candidates.empty?
+
+          exact = candidates.find do |_attribute, namespace|
+            namespace_matches?(namespace, namespace_uri)
+          end
+          return exact&.first if exact
+
+          return nil unless namespace_uri.to_s.empty?
+
+          candidates.length == 1 ? candidates.first.first : nil
         end
 
         # Content-model particle of the element's type, for occurrence
@@ -153,6 +176,17 @@ module Lutaml
           Array(schema.complex_type).each do |complex_type|
             index_type(index, complex_type, namespace)
           end
+          Array(schema.attribute).each do |attribute|
+            index_attribute(attribute, namespace)
+          end
+        end
+
+        def index_attribute(attribute, namespace)
+          return unless attribute
+          return if attribute.name.nil? || attribute.name.empty?
+
+          @namespaces[attribute] = namespace
+          @attributes[attribute.name] << [attribute, namespace]
         end
 
         def index_element(index, element, namespace, kind)

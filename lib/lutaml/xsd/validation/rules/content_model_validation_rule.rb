@@ -333,7 +333,13 @@ module Lutaml
             else
               # space-separated namespace list (##targetNamespace ##local allowed)
               wildcard.namespace.to_s.split(/\s+/).any? do |entry|
-                entry == "##local" ? child_ns.empty? : entry == child_ns
+                case entry
+                when "##local" then child_ns.empty?
+                when "##targetNamespace"
+                  child_ns == content_model_target_namespace(parent,
+                                                             repository).to_s
+                else entry == child_ns
+                end
               end
             end
           end

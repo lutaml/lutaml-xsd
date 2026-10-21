@@ -22,6 +22,9 @@ module Lutaml
         #
         # @see docs/JING_ALGORITHM_PORTING_GUIDE.md Attribute Validation
         class AttributeValidationRule < ValidationRule
+          CONTENT_KINDS = %i[complex_content simple_content].freeze
+          CONTENT_PART_KINDS = %i[extension restriction].freeze
+
           # Rule category
           #
           # @return [Symbol] :constraint
@@ -54,6 +57,7 @@ module Lutaml
             schema_attributes =
               collect_schema_attributes(schema_element, repository)
             xml_attributes = xml_element.attributes
+            wildcard = collect_any_attribute(schema_element, repository)
 
             # Step 1: Check required attributes are present
             validate_required_attributes(xml_element, schema_attributes,
@@ -65,7 +69,9 @@ module Lutaml
 
             # Step 3: Check for unexpected attributes
             validate_no_unexpected_attributes(xml_element, schema_attributes,
-                                              xml_attributes, collector)
+                                              xml_attributes, collector,
+                                              wildcard: wildcard,
+                                              repository: repository)
           end
 
           private
@@ -304,9 +310,12 @@ module Lutaml
           # @param schema_attrs [Array<Lutaml::Xsd::Attribute>] Schema attrs
           # @param xml_attrs [Array<XmlAttribute>] XML attributes
           # @param collector [ResultCollector] Result collector
+          # @param wildcard [AnyAttribute, nil] xs:anyAttribute declaration
+          # @param repository [SchemaDefinitionResolver, nil]
           # @return [void]
           def validate_no_unexpected_attributes(xml_element, schema_attrs,
-                                                xml_attrs, collector)
+                                                xml_attrs, collector,
+                                                wildcard: nil, repository: nil)
             xml_attrs.each do |xml_attr|
               # Skip xmlns attributes
               next if xml_attr.name == "xmlns" ||
@@ -319,8 +328,23 @@ module Lutaml
               schema_attr = find_schema_attribute(schema_attrs, xml_attr)
               next if schema_attr
 
-              # Check for wildcard (anyAttribute)
-              next if has_any_attribute?(schema_attrs)
+              if wildcard &&
+                  wildcard_permits_attribute?(wildcard, xml_element,
+                                              xml_attr, repository)
+                if wildcard.process_contents.to_s == "strict" &&
+                    !attribute_declared?(xml_attr, repository)
+                  report_error(
+                    collector,
+                    code: "wildcard_undeclared_attribute",
+                    message: "Attribute '#{xml_attr.qualified_name}' " \
+                             "matches xs:anyAttribute with " \
+                             "processContents=strict but is not declared",
+                    location: xml_element.xpath,
+                    context: { attribute: xml_attr.qualified_name },
+                  )
+                end
+                next
+              end
 
               report_error(
                 collector,
@@ -337,13 +361,95 @@ module Lutaml
             end
           end
 
-          # Check if schema allows any attribute (wildcard)
+          # The xs:anyAttribute wildcard declared on this type, where the
+          # parse layer exposes one (attribute groups and content-model
+          # extension/restriction do). complexType-level wildcards are not
+          # mapped upstream yet, so types carrying one keep the
+          # pre-wildcard behavior for undeclared attributes.
           #
-          # @param schema_attrs [Array<Lutaml::Xsd::Attribute>] Schema attrs
+          # @param schema_def [Lutaml::Xml::Schema::Xsd::Element,
+          #   Lutaml::Xsd::ComplexType, nil]
+          # @param repository [SchemaDefinitionResolver, nil]
+          # @return [AnyAttribute, nil]
+          def collect_any_attribute(schema_def, repository = nil)
+            if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+              type_def = resolve_type(schema_def, repository)
+              return collect_any_attribute(type_def, repository) if type_def
+            end
+            return nil unless schema_def
+
+            Array(schema_def.attribute_group).each do |group|
+              wildcard = Array(group.any_attribute).first
+              return wildcard if wildcard
+            end
+
+            CONTENT_KINDS.each do |content_kind|
+              content = schema_def.public_send(content_kind)
+              next unless content
+
+              CONTENT_PART_KINDS.each do |part_kind|
+                part = Array(content.public_send(part_kind)).first
+                next unless part.respond_to?(:any_attribute)
+
+                wildcard = Array(part.any_attribute).first
+                return wildcard if wildcard
+              end
+            end
+
+            nil
+          end
+
+          # Whether an xs:anyAttribute wildcard's namespace constraint
+          # admits the attribute (attributes default to unqualified, so
+          # ##local is the common admission).
+          #
           # @return [Boolean]
-          def has_any_attribute?(_schema_attrs)
-            # TODO: Check for anyAttribute in schema
-            false
+          def wildcard_permits_attribute?(wildcard, parent, xml_attr,
+                                          repository)
+            ns = xml_attr.namespace_uri.to_s
+            target = content_target_namespace(parent, repository).to_s
+            case wildcard.namespace.to_s
+            when "##any", ""
+              true
+            when "##other"
+              !ns.empty? && ns != target
+            when "##local"
+              ns.empty?
+            when "##targetNamespace"
+              ns == target
+            else
+              # space-separated namespace list (##targetNamespace ##local
+              # allowed)
+              wildcard.namespace.to_s.split(/\s+/).any? do |entry|
+                case entry
+                when "##local" then ns.empty?
+                when "##targetNamespace" then ns == target
+                else entry == ns
+                end
+              end
+            end
+          end
+
+          # Whether a strict-wildcard attribute resolves to a global
+          # declaration in the repository.
+          #
+          # @return [Boolean]
+          def attribute_declared?(xml_attr, repository)
+            return true if repository.nil?
+
+            !repository.resolve_attribute(xml_attr.name,
+                                          xml_attr.namespace_uri).nil?
+          end
+
+          # Target namespace of the schema owning the parent's declaration.
+          #
+          # @return [String, nil]
+          def content_target_namespace(parent, repository)
+            return nil unless repository
+
+            declaration = repository.resolve(parent.name,
+                                             parent.namespace_uri)
+            repository.target_namespace_for(declaration) if declaration
           end
 
           # Suggest similar attribute name
