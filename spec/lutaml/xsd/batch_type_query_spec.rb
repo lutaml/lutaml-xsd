@@ -26,7 +26,8 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
         qname: qname1,
         namespace: "http://example.com/ns",
         definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
-                                    class: Lutaml::Xml::Schema::Xsd::ComplexType),
+                                    class: Lutaml::Xml::Schema::Xsd::ComplexType,
+                                    any_attribute: nil),
       )
     end
 
@@ -106,7 +107,8 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
         qname: qname1,
         namespace: "http://example.com/ns",
         definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
-                                    class: Lutaml::Xml::Schema::Xsd::ComplexType),
+                                    class: Lutaml::Xml::Schema::Xsd::ComplexType,
+                                    any_attribute: nil),
       )
     end
 
@@ -165,7 +167,8 @@ RSpec.describe Lutaml::Xsd::BatchTypeQuery do
         qname: qname1,
         namespace: "http://example.com/ns",
         definition: instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
-                                    class: Lutaml::Xml::Schema::Xsd::ComplexType),
+                                    class: Lutaml::Xml::Schema::Xsd::ComplexType,
+                                    any_attribute: nil),
       )
     end
 
@@ -211,7 +214,8 @@ RSpec.describe Lutaml::Xsd::BatchQueryResult do
   let(:resolved) { true }
   let(:definition) do
     instance_double(Lutaml::Xml::Schema::Xsd::ComplexType,
-                    class: Lutaml::Xml::Schema::Xsd::ComplexType)
+                    class: Lutaml::Xml::Schema::Xsd::ComplexType,
+                    any_attribute: nil)
   end
   let(:result) do
     instance_double(
