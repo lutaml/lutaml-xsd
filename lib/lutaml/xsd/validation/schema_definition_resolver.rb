@@ -15,7 +15,25 @@ module Lutaml
       # Deliberately not resolved here (rule-engine backlog): dynamic
       # typing via xsi:type and derivation closure.
       class SchemaDefinitionResolver
-        PARTICLE_KINDS = %i[sequence choice all].freeze
+        # Nested particle accessors per container class — all are declared
+        # model attributes (lutaml-model 0.8.114+), so dispatch is by
+        # class rather than duck-typed probing. Sequence/Choice cannot
+        # nest xs:all, and only xs:all carries bare elements.
+        CONTAINER_NESTED_KINDS = {
+          Lutaml::Xml::Schema::Xsd::ComplexType => %i[sequence choice all],
+          Lutaml::Xml::Schema::Xsd::ExtensionComplexContent =>
+            %i[sequence choice all],
+          Lutaml::Xml::Schema::Xsd::RestrictionComplexContent =>
+            %i[sequence choice all],
+          Lutaml::Xml::Schema::Xsd::Sequence => %i[sequence choice],
+          Lutaml::Xml::Schema::Xsd::Choice => %i[sequence choice],
+          Lutaml::Xml::Schema::Xsd::All => [].freeze,
+        }.freeze
+        CONTAINER_LEAF_KINDS = {
+          Lutaml::Xml::Schema::Xsd::Sequence => %i[element any group],
+          Lutaml::Xml::Schema::Xsd::Choice => %i[element any group],
+          Lutaml::Xml::Schema::Xsd::All => %i[element].freeze,
+        }.freeze
 
         def initialize(repository)
           @repository = repository
@@ -126,21 +144,26 @@ module Lutaml
         private
 
         def particle_for_type(type)
-          return nil unless type.respond_to?(:sequence) || type.respond_to?(:choice) || type.respond_to?(:all)
+          case type
+          when Lutaml::Xml::Schema::Xsd::ComplexType
+            direct = Array(type.sequence).first ||
+              Array(type.choice).first || Array(type.all).first
+            return direct if direct
 
-          direct = Array(type.sequence).first ||
-            Array(type.choice).first || Array(type.all).first
-          return direct if direct
+            # Derived types keep their particles under complex_content.
+            if type.complex_content
+              content = type.complex_content
+              part = Array(content.extension).first ||
+                Array(content.restriction).first
+              return particle_for_type(part) if part
+            end
 
-          # Derived types keep their particles under complex_content.
-          if type.respond_to?(:complex_content) && type.complex_content
-            content = type.complex_content
-            part = Array(content.extension).first ||
-              Array(content.restriction).first
-            return particle_for_type(part) if part
+            nil
+          when Lutaml::Xml::Schema::Xsd::ExtensionComplexContent,
+               Lutaml::Xml::Schema::Xsd::RestrictionComplexContent
+            Array(type.sequence).first ||
+              Array(type.choice).first || Array(type.all).first
           end
-
-          nil
         end
 
         def schemas
@@ -216,25 +239,32 @@ module Lutaml
           end
           return if visited_particle?(node)
 
-          PARTICLE_KINDS.each do |kind|
-            next unless node.respond_to?(kind) # optional particle collections
+          nested = CONTAINER_NESTED_KINDS[node.class]
+          return unless nested
 
+          nested.each do |kind|
             Array(node.public_send(kind)).each do |particle|
-              next unless particle
-
-              Array(particle.element).each(&)
-              PARTICLE_KINDS.each do |nested|
-                next unless particle.respond_to?(nested)
-
-                each_particle_element(particle.public_send(nested), &)
-              end
+              each_particle_element(particle, &) if particle
+            end
+          end
+          (CONTAINER_LEAF_KINDS[node.class] || []).each do |kind|
+            Array(node.public_send(kind)).each do |leaf|
+              # xs:any wildcards and xs:group references are not element
+              # declarations; the index holds Element models only.
+              yield leaf if leaf.is_a?(Lutaml::Xml::Schema::Xsd::Element)
             end
           end
 
-          return unless node.respond_to?(:complex_content) && node.complex_content
+          walk_complex_content(node, &) if
+            node.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+        end
+
+        def walk_complex_content(node, &)
+          content = node.complex_content
+          return unless content
 
           %i[extension restriction].each do |kind|
-            part = node.complex_content.public_send(kind)
+            part = content.public_send(kind)
             each_particle_element(part, &) if part
           end
         end

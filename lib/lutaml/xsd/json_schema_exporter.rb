@@ -13,6 +13,21 @@ module Lutaml
     class JsonSchemaExporter
       DRAFT = "https://json-schema.org/draft/2020-12/schema"
 
+      # Nested particle accessors per container class — declared model
+      # attributes on lutaml-model 0.8.114+ (xs:all cannot nest, and
+      # only complexType/extension/restriction carry one level of
+      # sequence/choice/all).
+      PARTICLE_KINDS_BY_CLASS = {
+        Lutaml::Xml::Schema::Xsd::ComplexType => %i[sequence choice all],
+        Lutaml::Xml::Schema::Xsd::ExtensionComplexContent =>
+          %i[sequence choice all],
+        Lutaml::Xml::Schema::Xsd::RestrictionComplexContent =>
+          %i[sequence choice all],
+        Lutaml::Xml::Schema::Xsd::Sequence => %i[sequence choice],
+        Lutaml::Xml::Schema::Xsd::Choice => %i[sequence choice],
+        Lutaml::Xml::Schema::Xsd::All => [].freeze,
+      }.freeze
+
       BUILTIN_TYPES = {
         "string" => { "type" => "string" },
         "normalizedString" => { "type" => "string" },
@@ -157,18 +172,30 @@ module Lutaml
       def each_element_particle(node, &)
         return unless node
 
-        %i[sequence choice all].each do |kind|
-          particle = node.public_send(kind) if node.respond_to?(kind)
-          next unless particle
+        kinds = PARTICLE_KINDS_BY_CLASS[node.class]
+        return unless kinds
 
-          Array(particle.element).each(&)
-          Array(particle.choice).each { |choice| each_element_particle(choice, &) }
-          Array(particle.sequence).each { |seq| each_element_particle(seq, &) }
+        kinds.each do |kind|
+          Array(node.public_send(kind)).each do |particle|
+            next unless particle
+
+            Array(particle.element).each(&)
+            Array(particle.choice).each do |choice|
+              each_element_particle(choice, &)
+            end
+            Array(particle.sequence).each do |seq|
+              each_element_particle(seq, &)
+            end
+          end
         end
-        return unless node.complex_content
+
+        return unless node.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
+        content = node.complex_content
+        return unless content
 
         %i[extension restriction].each do |kind|
-          part = node.complex_content.public_send(kind)
+          part = content.public_send(kind)
           each_element_particle(part, &) if part
         end
       end

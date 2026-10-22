@@ -575,9 +575,9 @@ module Lutaml
         # @return [Array<Hash>] Serialized complex types (sorted alphabetically by name)
         def serialize_complex_types(schema, prefix = nil, schema_source = nil,
 file_path = nil)
-          return [] unless schema.respond_to?(:complex_types) || schema.respond_to?(:complex_type)
+          return [] unless schema.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
 
-          types = schema.respond_to?(:complex_types) ? schema.complex_types : schema.complex_type
+          types = schema.complex_types
           serialized = types.map.with_index do |type, index|
             serialize_complex_type(
               type, index, prefix, schema_source, file_path
@@ -598,13 +598,13 @@ file_path = nil)
         # @param file_path [String, nil] Optional file path for diagram generation
         # @return [Array<Hash>] Serialized inline complex types
         def serialize_inline_complex_types(schema, prefix = nil, _schema_source = nil, _file_path = nil)
-          return [] unless schema.respond_to?(:element) && schema.element
+          return [] unless schema.element
 
           elements = schema.element.is_a?(Array) ? schema.element : [schema.element]
           inline_types = []
 
           elements.compact.each do |element|
-            next unless element.respond_to?(:complex_type) && element.complex_type
+            next unless element.complex_type
             next if element.complex_type.name # Skip if already named (top-level)
 
             # Generate a synthetic name for the inline type
@@ -615,8 +615,8 @@ file_path = nil)
               name: inline_name,
               base: nil,
               content_model: extract_content_model(element.complex_type),
-              abstract: element.complex_type.respond_to?(:abstract) ? element.complex_type.abstract : false,
-              mixed: element.complex_type.respond_to?(:mixed) ? element.complex_type.mixed : false,
+              abstract: element.complex_type.abstract || false,
+              mixed: element.complex_type.mixed || false,
               attributes: serialize_type_attributes(element.complex_type),
               elements: serialize_type_elements(element.complex_type),
               choice: serialize_choice(element.complex_type.choice),
@@ -705,7 +705,7 @@ schema_source = nil, file_path = nil)
         # @param model [Object] Model that may contain choice
         # @return [Array<Hash>] Serialized choices
         def serialize_choices(model)
-          return [] if !model.respond_to?(:choice) || !model.choice
+          return [] unless model.choice
 
           model_choices = if model.choice.is_a?(Array)
                             model.choice
@@ -743,7 +743,7 @@ schema_source = nil, file_path = nil)
         # @param model [Object] Model that may contain sequence
         # @return [Array<Hash>] Serialized sequences
         def serialize_sequences(model)
-          return [] if !model.respond_to?(:sequence) || !model.sequence
+          return [] unless model.sequence
 
           model_sequences = if model.sequence.is_a?(Array)
                               model.sequence
@@ -880,9 +880,9 @@ schema_source = nil, file_path = nil)
         # @param schema [Schema] Schema object
         # @return [Array<Hash>] Serialized groups
         def serialize_groups(schema, prefix = nil)
-          return [] unless schema.respond_to?(:groups) || schema.respond_to?(:group)
+          return [] unless schema.groups
 
-          grps = schema.respond_to?(:groups) ? schema.groups : schema.group
+          grps = schema.groups
           grps.map.with_index do |group, index|
             # serialize_group(group, index, prefix)
             serialize_type_group(group, index, prefix)
@@ -1081,8 +1081,8 @@ source = nil)
 
           {
             id: group_id(index, model, prefix),
-            ref: model.respond_to?(:ref) ? model.ref : nil,
-            name: model.respond_to?(:name) ? model.name : nil,
+            ref: model.ref,
+            name: model.name,
             occurs: {
               min: model.min_occurs || 1,
               max: model.max_occurs || 1,
@@ -1098,7 +1098,7 @@ source = nil)
         # @param model [Object] Model that may contain group
         # @return [Array<Hash>] Serialized groups
         def serialize_type_groups(model)
-          return [] if !model.respond_to?(:group) || !model.group
+          return [] unless model.group
 
           model_groups = if model.group.is_a?(Array)
                            model.group
@@ -1110,22 +1110,18 @@ source = nil)
           end
         end
 
-        # Collect attribute group references from a model (handles extension nesting)
+        # Collect attribute group references from a content wrapper
+        # (simpleContent/complexContent — both declare extension and
+        # restriction); the extensions carry the attribute groups.
         #
-        # Used for both direct attribute groups and those inside content model extensions.
-        #
-        # @param model [Object] Any object that may have attribute_group or extension
+        # @param model [SimpleContent, ComplexContent] Content wrapper
         # @return [Array<Object>] Collected attribute group reference objects
         def collect_attribute_group_refs(model)
           refs = []
 
-          if model.respond_to?(:attribute_group) && model.attribute_group && !model.attribute_group.empty?
-            groups = model.attribute_group.is_a?(Array) ? model.attribute_group : [model.attribute_group]
-            refs.concat(groups)
-          end
-
-          if model.respond_to?(:extension) && model.extension
-            refs.concat(collect_extension_attribute_group_refs(model.extension))
+          %i[extension restriction].each do |kind|
+            part = model.public_send(kind)
+            refs.concat(collect_extension_attribute_group_refs(part)) if part
           end
 
           refs
@@ -1385,7 +1381,8 @@ source = nil)
         # @param type [ComplexType] Complex type
         # @return [Array<Hash>] Serialized elements
         def serialize_type_elements(type)
-          return [] unless type.respond_to?(:element)
+          return [] unless type.is_a?(Lutaml::Xml::Schema::Xsd::Sequence) ||
+            type.is_a?(Lutaml::Xml::Schema::Xsd::Choice)
 
           type.element.map do |elem|
             {
