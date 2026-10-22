@@ -3,7 +3,7 @@
 Goal: conformance is a number, not a feeling. Vendor the W3C XML Schema
 test-suite categories, build the harness, publish the pass-rate, grow it.
 
-## Baseline (2026-10-22, 20 cases / 42 checks)
+## Baseline (2026-10-22, 20 cases / 42 checks, full pass)
 
 Corpus: 20 case classes under `spec/conformance/cases/`, modelled on the
 W3C XML Schema Test Suite category taxonomy — self-authored because the
@@ -12,34 +12,30 @@ can vendor a tarball later; provenance README goes with it).
 
 | mode | pass-rate |
 |---|---|
-| engine (Moxml::XSD tier-1, moxml 0.5.150) | 36/42 (85.7%) |
-| pipeline (ValidationJob + wired rule engine) | 41/42 (97.6%) |
+| engine (Moxml::XSD tier-1, leptris 1.9.380.2) | 38/42 (90.5%) |
+| pipeline (ValidationJob + wired rule engine) | 42/42 (100.0%) |
 
-The pipeline outperforms the engine by five checks: the root-declaration
-check catches a wrong-namespace root that engine root-matching silently
-skips; xsi:nil handling rejects non-nillable nils; strict wildcards
-(element and attribute) reject undeclared content; key/keyref identity
-constraints (activated by lutaml-model 0.8.121's `refer` mapping) catch
-dangling keyrefs. Zero false positives retained.
-
-Gap register (each failure is a tracked gap, not a test bug):
-
-- engine-only: `attributes-any` invalid-undeclared — the tier-1 engine
-  accepts an undeclared attribute under `processContents="strict"`
-  (under-detection; leptris 1.9.379.3 already fixed the inverse false
-  positive on qualified globals). Same lax posture as `wildcards-any`
-  invalid-undeclared and `xsi-nil`; the pipeline enforces all three
-- `xsi-type` — a VALID instance derived via `xsi:type` is rejected by the
-  tier-1 engine (false positive, structural: engine scope is stricter than
-  derivation); the unknown-type half passes in pipeline mode. Filed as
-  lutaml/moxml#433 with repro (resolve xsi:type — or validate laxly)
-- engine-only: `namespaces-qualified` wrong-namespace root accepted
-  (EngineContext root-matching skips it; pipeline's root check catches it)
+The pipeline now passes every check in the corpus. The engine trails on
+four: strict wildcard/anyAttribute under-detection, xsi:nil on
+non-nillable elements, and the wrong-namespace root (root-matching
+skips it) — all documented tier-1 laxness; the pipeline enforces them.
+The engine's former xsi:type derivation FALSE POSITIVE is fixed in
+leptris 1.9.380.2 (moxml#433 closed).
 
 History: 2026-10-20 baseline 20/25 (80.0%) with pipeline == engine
 (empty `RuleRegistry`, mismatched rule signatures); 2026-10-21 wiring
 baseline 34/39 (87.2%); gap rules 37/39 (94.9%); anyAttribute 40/42
-(95.2%); keyref activation via lutaml-model 0.8.121 → 41/42 (97.6%).
+(95.2%); keyref activation via lutaml-model 0.8.121 → 41/42 (97.6%);
+lutaml-model 0.8.123 (complexType/extension anyAttribute mappings) +
+leptris 1.9.380.2 → 42/42 (100.0%).
+
+Remaining engine-mode gaps (tracked, moxml/leptris-side):
+
+- strict `xs:any` and `xs:anyAttribute` under-detection
+  (`invalid-undeclared` instances validate) — documented lax posture
+- `xsi:nil` on non-nillable elements accepted
+- `namespaces-qualified`: wrong-namespace root accepted (engine
+  root-matching skips it; the pipeline's root check catches it)
 
 ## Harness
 
@@ -80,19 +76,19 @@ baseline 34/39 (87.2%); gap rules 37/39 (94.9%); anyAttribute 40/42
 
 - [x] Identity constraints: `key`, `keyref`, `unique` —
       `IdentityConstraintsRule` (selector/field XPath evaluation,
-      duplicate detection, keyref resolution); dangling-keyref activation
-      waits on lutaml-model `refer` mapping
+      duplicate detection, keyref resolution); dangling-keyref detection
+      active since lutaml-model 0.8.121 (lutaml-model#990)
 - [x] Wildcards: `any` namespace constraints (##any/##other/##local/
       ##targetNamespace/lists) + `processContents` strict declaration
       checking in the content-model walk; `anyAttribute` honors namespace
-      constraints and strict checking where the parse layer exposes the
-      declaration (attributeGroup, content-model restriction) —
-      complexType-level and extension-shape anyAttribute mappings are
-      missing upstream (lutaml-model), keeping those on pre-wildcard
-      behavior until mapped
+      constraints and strict checking on every shape — attributeGroup and
+      restriction always, complexType-level and extension shapes since
+      lutaml-model 0.8.123 maps them (lutaml-model#995); the capability
+      probe keeps older models on pre-wildcard behavior
 - [x] `xsi:nil` (nillable + empty-content checks) and `xsi:type`
       resolution (unknown-type rejection; content walk follows the
-      override); valid-derived acceptance needs engine-scope rework
+      override); the engine's valid-derived false positive is fixed in
+      leptris 1.9.380.2 (moxml#433)
 - [ ] Particle checking: UPA detection — DEFERRED (engine covers the
       tier-1 subset; UPA is schema-side checking)
 - [ ] XSD 1.1 constructs behind a version flag — DEFERRED: 1.1 strategy
