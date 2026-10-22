@@ -157,15 +157,15 @@ module Lutaml
 
         # Check if rule should run for given configuration
         #
+        # Category filtering is not implemented in the configuration yet;
+        # only the enable flag applies.
+        #
         # @param config [ValidationConfiguration] The configuration
         # @return [Boolean]
-        def applicable?(config)
+        def applicable?(_config)
           return false unless enabled?
 
-          # Check if category is enabled in config
-          return true unless config.respond_to?(:category_enabled?)
-
-          config.category_enabled?(category)
+          true
         end
 
         # Get option value

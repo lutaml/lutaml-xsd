@@ -27,6 +27,12 @@ release-gated or need owner confirmation.
 - [ ] Dead-code sweep — DEFERRED, owner confirmation per file (nothing is
       auto-deleted); the first candidate found in this run is
       `RncToRngConverter#add_annotations` in rng (uncalled since 0.3.x)
+- [x] respond_to? sweep of the validation stack, SPA serializer, JSON
+      Schema exporter and type index (2026-10-22): replaced duck-typed
+      probes with class-keyed accessor maps and is_a? dispatch, verified
+      against lutaml-model 0.8.114–0.8.121 declarations. The remaining
+      11 sites are in `rng_to_xsd_converter.rb` (rng-domain, see
+      Cross-repo below)
 - [ ] `Gemfile.lock` divergence guard for other lutaml gems — not needed
       yet; adopt the same pattern when those repos start hitting the
       fresh-resolve class of failure
@@ -41,3 +47,9 @@ release-gated or need owner confirmation.
 - [ ] lutaml-model `Schema.reset_processed_schemas` global mutable state —
       DEFERRED: file on lutaml-model only if the owner agrees it is worth
       a public API change (per-parse context option)
+- [ ] `rng_to_xsd_converter.rb` respond_to? sweep — DEFERRED: 11 sites
+      probe rng-gem model attributes dynamically (loops over attribute
+      name lists); needs the rng model accessor matrices per class to
+      convert to typed dispatch like the validation-stack sweep
+      (2026-10-22). The converter's own spec corpus (170 complex types)
+      gates the conversion.

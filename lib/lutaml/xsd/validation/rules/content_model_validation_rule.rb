@@ -22,6 +22,15 @@ module Lutaml
         #
         # @see docs/JING_ALGORITHM_PORTING_GUIDE.md Content Model Validation
         class ContentModelValidationRule < ValidationRule
+          # Types whose particle accessors type_particles reads — all are
+          # declared model attributes (lutaml-model 0.8.114+).
+          COMPLEX_PARTICLE_TYPES = [
+            Lutaml::Xml::Schema::Xsd::ComplexType,
+            Lutaml::Xml::Schema::Xsd::ExtensionComplexContent,
+            Lutaml::Xml::Schema::Xsd::RestrictionComplexContent,
+          ].freeze
+          COMPLEX_PARTICLE_KINDS = %i[sequence choice all group].freeze
+
           # Rule category
           #
           # @return [Symbol] :structure
@@ -97,22 +106,21 @@ module Lutaml
             end
           end
 
-          # Ordered particles of a type: own sequence/choice/all/element/
-          # any/group particles plus, for extensions, the base type's
-          # particles first. Cycle-guarded. Particles are kept whole —
-          # nested containers are expanded by the walk's matching, which
+          # Ordered particles of a type: own sequence/choice/all/group
+          # particles plus, for extensions, the base type's particles
+          # first. Cycle-guarded. Particles are kept whole — nested
+          # containers are expanded by the walk's matching, which
           # preserves their own occurrence constraints.
           #
           # @return [Array]
           def type_particles(type, repository, seen)
             return [] if type.nil? || seen.key?(type)
+            return [] unless COMPLEX_PARTICLE_TYPES.any? { |k| type.is_a?(k) }
 
             seen[type] = true
             particles = []
 
-            %i[sequence choice all element any group].each do |kind|
-              next unless type.respond_to?(kind)
-
+            COMPLEX_PARTICLE_KINDS.each do |kind|
               Array(type.public_send(kind)).each do |particle|
                 next unless particle
 
@@ -127,7 +135,8 @@ module Lutaml
               end
             end
 
-            if type.respond_to?(:complex_content) && type.complex_content
+            if type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType) &&
+                type.complex_content
               content = type.complex_content
               extension = Array(content.extension).first
               if extension
@@ -135,17 +144,15 @@ module Lutaml
                 base_type = base_local && repository&.resolve_named_type(base_local)
                 particles = type_particles(base_type, repository, seen) +
                   particles
-              end
-              %i[sequence choice all element any group].each do |kind|
-                next unless extension.respond_to?(kind)
+                COMPLEX_PARTICLE_KINDS.each do |kind|
+                  Array(extension.public_send(kind)).each do |particle|
+                    next unless particle
 
-                Array(extension.public_send(kind)).each do |particle|
-                  next unless particle
-
-                  if particle.is_a?(Lutaml::Xsd::Sequence)
-                    particles.concat(collect_particles(particle))
-                  else
-                    particles << particle
+                    if particle.is_a?(Lutaml::Xsd::Sequence)
+                      particles.concat(collect_particles(particle))
+                    else
+                      particles << particle
+                    end
                   end
                 end
               end
@@ -390,10 +397,8 @@ module Lutaml
           def collect_particles(content_model)
             # resolved_element_order preserves declaration order including
             # xs:any particles (which child_elements drops).
-            if content_model.respond_to?(:resolved_element_order) &&
-                content_model.resolved_element_order.to_a.any?
-              return content_model.resolved_element_order.to_a
-            end
+            ordered = content_model.resolved_element_order
+            return ordered.to_a if ordered.to_a.any?
 
             particles = []
 

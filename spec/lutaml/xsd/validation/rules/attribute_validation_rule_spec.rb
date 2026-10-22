@@ -264,3 +264,97 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
     expect(collector.errors.map(&:code)).to include("unexpected_attribute")
   end
 end
+
+# Whether lutaml-model maps the complexType-level anyAttribute; older
+# parses expose no accessor and types carrying the wildcard keep the
+# pre-wildcard behavior.
+COMPLEX_WILDCARD_MAPPED = begin
+  probe = Lutaml::Xml::Schema::Xsd.parse(
+    '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">' \
+    '<xs:complexType name="t"><xs:anyAttribute namespace="##local"/>' \
+    "</xs:complexType></xs:schema>",
+  )
+  !probe.complex_type.first.any_attribute.nil?
+rescue StandardError
+  false
+end
+
+RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
+               "complexType-level anyAttribute" do
+  let(:config) { Lutaml::Xsd::Validation::ValidationConfiguration.new }
+  let(:collector) { Lutaml::Xsd::Validation::ResultCollector.new(config) }
+  let(:rule) { described_class.new }
+  let(:xsd_xml) do
+    <<~XSD
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                 targetNamespace="http://example.com/c"
+                 elementFormDefault="qualified">
+        <xs:element name="item">
+          <xs:complexType>
+            <xs:attribute name="id"/>
+            <xs:anyAttribute namespace="##local"
+                             processContents="strict"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:attribute name="known" type="xs:string"/>
+      </xs:schema>
+    XSD
+  end
+  let(:schema) { Lutaml::Xml::Schema::Xsd.parse(xsd_xml) }
+  let(:repository) do
+    Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ "http://example.com/c" => schema })
+  end
+  let(:resolver) do
+    Lutaml::Xsd::Validation::SchemaDefinitionResolver.new(repository)
+  end
+  let(:schema_def) { resolver.resolve("item", "http://example.com/c") }
+  let(:navigator) do
+    Object.new.tap do |nav|
+      nav.define_singleton_method(:current_xpath) { "/item" }
+    end
+  end
+
+  def validate_xml(xml)
+    root = Moxml::Context.new.parse(xml).root
+    xml_element = Lutaml::Xsd::Validation::XmlElement.new(root, navigator)
+    rule.validate(xml_element, schema_def, collector, repository: resolver)
+    collector
+  end
+
+  it "accepts a declared attribute beside a complexType wildcard",
+     if: COMPLEX_WILDCARD_MAPPED do
+    collector = validate_xml(
+      '<item xmlns="http://example.com/c" id="1" known="x"/>',
+    )
+
+    expect(collector.errors).to be_empty
+  end
+
+  it "rejects an undeclared attribute under strict processing",
+     if: COMPLEX_WILDCARD_MAPPED do
+    collector = validate_xml(
+      '<item xmlns="http://example.com/c" id="1" bogus="1"/>',
+    )
+
+    expect(collector.errors.map(&:code))
+      .to include("wildcard_undeclared_attribute")
+  end
+
+  it "degrades to unexpected_attribute while the mapping is absent",
+     unless: COMPLEX_WILDCARD_MAPPED do
+    collector = validate_xml(
+      '<item xmlns="http://example.com/c" id="1" known="x"/>',
+    )
+
+    expect(collector.errors.map(&:code)).to include("unexpected_attribute")
+  end
+end

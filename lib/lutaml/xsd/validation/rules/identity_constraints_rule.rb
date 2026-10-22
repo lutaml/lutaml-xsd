@@ -100,13 +100,33 @@ module Lutaml
           def selector_xpaths(constraint)
             return [] unless constraint.selector
 
-            xpaths = constraint.selector.respond_to?(:xpath) ? constraint.selector.xpath : constraint.selector
-            Array(xpaths).map { |x| x.respond_to?(:xpath) ? x.xpath : x.to_s }
+            selector = constraint.selector
+            if selector.is_a?(Lutaml::Xml::Schema::Xsd::Selector)
+              xpath_strings(selector.xpath)
+            else
+              xpath_strings(selector)
+            end
           end
 
           def field_xpaths(constraint)
-            Array(constraint.field).map do |field|
-              field.respond_to?(:xpath) ? field.xpath : field.to_s
+            Array(constraint.field).flat_map do |field|
+              if field.is_a?(Lutaml::Xml::Schema::Xsd::Field)
+                xpath_strings(field.xpath)
+              else
+                xpath_strings(field)
+              end
+            end
+          end
+
+          # Selector/field values are either the raw XPath string or the
+          # parsed xs:selector/xs:field model whose xpath attribute holds
+          # it; whitespace-separated lists yield one entry each.
+          def xpath_strings(value)
+            case value
+            when String
+              value.split(/\s+/).reject(&:empty?)
+            else
+              []
             end
           end
 
@@ -114,7 +134,10 @@ module Lutaml
             first = Array(node.xpath(field_xpath)).first
             return nil unless first
 
-            first.respond_to?(:value) && first.value ? first.value : first.text
+            case first
+            when Moxml::Attribute then first.value
+            else first.text
+            end
           end
 
           # Keyref `refer` as a string; nil when the model left it

@@ -22,6 +22,14 @@ module Lutaml
         #
         # @see docs/JING_ALGORITHM_PORTING_GUIDE.md Attribute Validation
         class AttributeValidationRule < ValidationRule
+          PROBE_SCHEMA = <<~XSD
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+              <xs:complexType name="probe">
+                <xs:anyAttribute namespace="##local"/>
+              </xs:complexType>
+            </xs:schema>
+          XSD
+
           CONTENT_KINDS = %i[complex_content simple_content].freeze
           CONTENT_PART_KINDS = %i[extension restriction].freeze
 
@@ -371,12 +379,30 @@ module Lutaml
           #   Lutaml::Xsd::ComplexType, nil]
           # @param repository [SchemaDefinitionResolver, nil]
           # @return [AnyAttribute, nil]
+          # Whether the loaded lutaml-model parses xs:anyAttribute on
+          # complexType (the mapping landed after 0.8.121); probed once
+          # with a minimal schema.
+          def complex_type_wildcard_support?
+            @complex_type_wildcard_support ||= begin
+              probe = Lutaml::Xml::Schema::Xsd.parse(PROBE_SCHEMA)
+              !probe.complex_type.first.any_attribute.nil?
+            rescue StandardError
+              false
+            end
+          end
+
           def collect_any_attribute(schema_def, repository = nil)
             if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
               type_def = resolve_type(schema_def, repository)
               return collect_any_attribute(type_def, repository) if type_def
             end
             return nil unless schema_def
+
+            if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType) &&
+                complex_type_wildcard_support?
+              wildcard = schema_def.any_attribute
+              return wildcard if wildcard
+            end
 
             Array(schema_def.attribute_group).each do |group|
               wildcard = Array(group.any_attribute).first
@@ -389,7 +415,7 @@ module Lutaml
 
               CONTENT_PART_KINDS.each do |part_kind|
                 part = Array(content.public_send(part_kind)).first
-                next unless part.respond_to?(:any_attribute)
+                next unless part
 
                 wildcard = Array(part.any_attribute).first
                 return wildcard if wildcard
