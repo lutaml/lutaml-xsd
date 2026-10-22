@@ -19,8 +19,10 @@ release-gated or need owner confirmation.
       sequence: 7 choices / 1 group / 1 element — `sections` present via
       bsi's override); gemspec pins `rng ~> 0.3.9` (released with the
       include fixes + Moxml migration)
-- [ ] `lib/lutaml/xsd/schema_query_service.rb.bak` (untracked) — DEFERRED,
-      owner confirmation required: archive under `docs/archive/` or delete
+- [x] `lib/lutaml/xsd/schema_query_service.rb.bak` (untracked) — REMOVED
+      2026-10-22 with owner confirmation: byte-identical to commit
+      be55f18 on the apply-lutaml-store branch, which has since moved the
+      file forward; nothing unique was lost
 - [ ] Prunable stale worktrees (`/private/tmp/fix/xsd`, `/private/tmp/xsd-main`)
       — DEFERRED, owner to run `git worktree prune` after confirming the
       branches hold nothing needed
