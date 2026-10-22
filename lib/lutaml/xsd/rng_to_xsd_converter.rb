@@ -51,7 +51,43 @@ module Lutaml
         schema
       end
 
+      # Nested pattern accessors per container class — declared model
+      # attributes on rng 0.3.9 (Grammar carries only element; Start/List
+      # and Attribute omit one kind each; the other containers declare
+      # the full set).
+      FULL_PATTERN_KINDS = %w[element ref choice group interleave mixed
+                              optional zeroOrMore oneOrMore text empty
+                              value data list notAllowed attribute].freeze
+      PATTERN_KINDS_BY_CLASS = {
+        "Rng::Element" => FULL_PATTERN_KINDS,
+        "Rng::Choice" => FULL_PATTERN_KINDS,
+        "Rng::Group" => FULL_PATTERN_KINDS,
+        "Rng::Interleave" => FULL_PATTERN_KINDS,
+        "Rng::Mixed" => FULL_PATTERN_KINDS,
+        "Rng::Optional" => FULL_PATTERN_KINDS,
+        "Rng::ZeroOrMore" => FULL_PATTERN_KINDS,
+        "Rng::OneOrMore" => FULL_PATTERN_KINDS,
+        "Rng::Define" => FULL_PATTERN_KINDS,
+        "Rng::Attribute" =>
+          %w[ref choice group interleave mixed optional zeroOrMore
+             oneOrMore text empty value data list notAllowed attribute],
+        "Rng::Start" =>
+          %w[element ref choice group interleave mixed optional zeroOrMore
+             oneOrMore text empty value data list notAllowed],
+        "Rng::List" =>
+          %w[element ref choice group interleave mixed optional zeroOrMore
+             oneOrMore text empty value data notAllowed],
+        "Rng::Grammar" => %w[element],
+      }.freeze
+
       private
+
+      # Occurrence attributes exist on particle models (element,
+      # containers); attribute declarations and attribute groups carry none.
+      def occurrence_assignable?(node)
+        !node.is_a?(Lutaml::Xml::Schema::Xsd::Attribute) &&
+          !node.is_a?(Lutaml::Xml::Schema::Xsd::AttributeGroup)
+      end
 
       # Resolve a value that might be Lutaml::Model::UninitializedClass to nil or a string
       def resolve_string(value)
@@ -63,27 +99,20 @@ module Lutaml
       # Collect all pattern children from an RNG container node
       # Returns an array of non-nil pattern objects
       def get_all_patterns(container)
-        patterns = []
-        pattern_types.each do |attr|
-          next unless container.respond_to?(attr)
-
-          children = container.send(attr)
-          next if children.nil?
-          next if children.is_a?(Lutaml::Model::UninitializedClass)
-
-          if children.is_a?(Array)
-            patterns.concat(children.compact)
-          else
-            patterns << children
-          end
-        end
-        patterns
+        kinds = PATTERN_KINDS_BY_CLASS[container.class.name] || []
+        kinds.flat_map { |attr| Array(container.public_send(attr)) }
+          .compact
+          .reject { |child| child.is_a?(Lutaml::Model::UninitializedClass) }
       end
 
-      # The attribute names that hold pattern children
-      def pattern_types
-        %w[element ref choice group interleave mixed optional zeroOrMore
-           oneOrMore text empty value data list notAllowed attribute]
+      # Get the single pattern child from a Start
+      def get_start_pattern(start)
+        kinds = PATTERN_KINDS_BY_CLASS[start.class.name] || []
+        kinds.map { |attr| start.public_send(attr) }
+          .find do |child|
+            child && !child.is_a?(Array) &&
+              !child.is_a?(Lutaml::Model::UninitializedClass)
+          end
       end
 
       # Build define name -> Define lookup from grammar (including divs)
@@ -925,17 +954,6 @@ module Lutaml
         end
       end
 
-      # Get the single pattern child from a Start
-      def get_start_pattern(start)
-        pattern_types.each do |attr|
-          next unless start.respond_to?(attr)
-
-          child = start.send(attr)
-          return child if child && !child.is_a?(Array) && !child.is_a?(Lutaml::Model::UninitializedClass)
-        end
-        nil
-      end
-
       # Phase 2b: Convert top-level elements from grammar
       def convert_grammar_elements(schema)
         (@grammar.element || []).each do |rng_elem|
@@ -1034,7 +1052,7 @@ module Lutaml
         xsd_elem = Lutaml::Xml::Schema::Xsd::Element.new(name: name)
 
         # Add documentation if present
-        if rng_elem.respond_to?(:documentation) && rng_elem.documentation
+        if rng_elem.documentation
           xsd_elem.annotation = Lutaml::Xml::Schema::Xsd::Annotation.new(
             documentation: [
               Lutaml::Xml::Schema::Xsd::Documentation.new(
@@ -1134,7 +1152,7 @@ module Lutaml
           xsd_attr.type = "xs:string"
         end
 
-        if rng_attr.respond_to?(:documentation) && rng_attr.documentation
+        if rng_attr.documentation
           xsd_attr.annotation = Lutaml::Xml::Schema::Xsd::Annotation.new(
             documentation: [
               Lutaml::Xml::Schema::Xsd::Documentation.new(
@@ -1149,21 +1167,23 @@ module Lutaml
 
       # Get the single pattern child from an Attribute
       def get_attribute_child(attr)
-        pattern_types.each do |type_name|
-          next unless attr.respond_to?(type_name)
-
-          child = attr.send(type_name)
-          return child if child && !child.is_a?(Array) && !child.is_a?(Lutaml::Model::UninitializedClass)
-        end
-        nil
+        kinds = PATTERN_KINDS_BY_CLASS[attr.class.name] || []
+        kinds.map { |type_name| attr.public_send(type_name) }
+          .find do |child|
+            child && !child.is_a?(Array) &&
+              !child.is_a?(Lutaml::Model::UninitializedClass)
+          end
       end
 
-      # Extract element/attribute name from attr_name or name.value
+      # Extract element/attribute name from attr_name or name.value;
+      # only Rng::Element and Rng::Attribute carry these accessors.
       def element_name(node)
-        name = node.respond_to?(:attr_name) ? node.attr_name : nil
-        if (name.nil? || name.empty?) && node.respond_to?(:name)
+        return nil unless node.is_a?(Rng::Element) || node.is_a?(Rng::Attribute)
+
+        name = node.attr_name
+        if name.nil? || name.empty?
           name_val = node.name
-          name = name_val.value if name_val.respond_to?(:value)
+          name = name_val.value if name_val.is_a?(Rng::Name)
         end
         name
       end
@@ -1226,7 +1246,8 @@ module Lutaml
           end
 
           # Per jing-trang: if any non-element child, wrap in optional
-          if has_non_element && result.respond_to?(:min_occurs=)
+          # (attribute groups carry no occurrence attributes)
+          if has_non_element && occurrence_assignable?(result)
             result.min_occurs = "0"
             result.max_occurs = "1"
           end
@@ -1279,7 +1300,7 @@ module Lutaml
 
         if xsd_children.size == 1
           child = xsd_children.first
-          if child.respond_to?(:min_occurs=)
+          if occurrence_assignable?(child)
             child.min_occurs = min
             child.max_occurs = max
           end
@@ -1329,7 +1350,7 @@ module Lutaml
           # Reference to a define promoted to top-level element -> element ref
           # Use the element's actual name (not the define name) as the ref target,
           # since they may differ (e.g., define "ext_toc" wraps element "name").
-          elem_name = result[:element].respond_to?(:name) ? result[:element].name : name
+          elem_name = result[:element].name
           Lutaml::Xml::Schema::Xsd::Element.new(ref: elem_name)
         elsif result[:group]
           Lutaml::Xml::Schema::Xsd::Group.new(ref: name)
