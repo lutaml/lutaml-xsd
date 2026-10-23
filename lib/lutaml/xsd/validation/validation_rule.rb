@@ -210,6 +210,23 @@ module Lutaml
 
         protected
 
+        # The container an xs:group reference expands to (the declaration's
+        # sequence/choice/all), kept whole — matching descends into it.
+        # XSD 1.0 forbids recursive groups; the depth guard only defends
+        # against malformed schemas.
+        def expand_group_container(group, repository, depth = 0)
+          return [] unless repository
+          return [] if depth > 5
+
+          local = (group.ref || group.name).to_s.split(":").last
+          declaration = repository.resolve_group(local)
+          return [] unless declaration
+
+          container = Array(declaration.sequence).first ||
+            Array(declaration.choice).first || Array(declaration.all).first
+          container ? [container] : []
+        end
+
         # Helper method to create validation errors
         #
         # @param collector [ResultCollector] The result collector

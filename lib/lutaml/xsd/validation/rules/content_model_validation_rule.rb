@@ -129,6 +129,10 @@ module Lutaml
                 # occurrence constraints survive the walk.
                 if particle.is_a?(Lutaml::Xsd::Sequence)
                   particles.concat(collect_particles(particle))
+                elsif particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+                  particles.concat(
+                    expand_group_container(particle, repository),
+                  )
                 else
                   particles << particle
                 end
@@ -181,7 +185,8 @@ module Lutaml
               # enforced loosely for the same reason.
               container = particle.is_a?(Lutaml::Xsd::Sequence) ||
                 particle.is_a?(Lutaml::Xsd::Choice) ||
-                particle.is_a?(Lutaml::Xsd::All)
+                particle.is_a?(Lutaml::Xsd::All) ||
+                particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
               max_occurs = parse_max_occurs(
                 particle.max_occurs, container ? :unbounded : 1
               )
@@ -429,20 +434,28 @@ module Lutaml
           #   wildcard namespace constraints scoped to the target namespace
           # @return [Boolean]
           def particle_matches?(xml_element, particle, repository = nil,
-                                parent: nil)
+                                parent: nil, group_depth: 0)
             case particle
             when Lutaml::Xsd::Element
               element_matches?(xml_element, particle, repository)
             when Lutaml::Xsd::Any
               wildcard_permits?(particle, parent || xml_element,
                                 xml_element, repository)
+            when Lutaml::Xml::Schema::Xsd::Group
+              expand_group_container(particle, repository,
+                                     group_depth).any? do |container|
+                particle_matches?(xml_element, container, repository,
+                                  parent: parent,
+                                  group_depth: group_depth + 1)
+              end
             when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice, Lutaml::Xsd::All
               # Nested content model: a child matches the container when it
               # matches any leaf particle inside it. Inner ordering is
               # permissive; the outer walk stays sequential.
               collect_particles(particle).any? do |leaf|
                 particle_matches?(xml_element, leaf, repository,
-                                  parent: parent)
+                                  parent: parent,
+                                  group_depth: group_depth)
               end
             else
               false

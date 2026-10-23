@@ -25,6 +25,7 @@ module Lutaml
             %i[sequence choice all],
           Lutaml::Xml::Schema::Xsd::RestrictionComplexContent =>
             %i[sequence choice all],
+          Lutaml::Xml::Schema::Xsd::Group => %i[sequence choice all],
           Lutaml::Xml::Schema::Xsd::Sequence => %i[sequence choice],
           Lutaml::Xml::Schema::Xsd::Choice => %i[sequence choice],
           Lutaml::Xml::Schema::Xsd::All => [].freeze,
@@ -123,6 +124,21 @@ module Lutaml
           candidates.length == 1 ? candidates.first.first : nil
         end
 
+        # Named group declaration by local name (for xs:group reference
+        # expansion in the content and occurrence walks).
+        #
+        # @param local_name [String]
+        # @return [Lutaml::Xml::Schema::Xsd::Group, nil]
+        def resolve_group(local_name)
+          return nil if local_name.nil? || local_name.empty?
+
+          schemas.each do |schema|
+            found = Array(schema.group).find { |g| g.name == local_name }
+            return found if found
+          end
+          nil
+        end
+
         # Content-model particle of the element's type, for occurrence
         # and content-model rules.
         #
@@ -147,7 +163,8 @@ module Lutaml
           case type
           when Lutaml::Xml::Schema::Xsd::ComplexType
             direct = Array(type.sequence).first ||
-              Array(type.choice).first || Array(type.all).first
+              Array(type.choice).first || Array(type.all).first ||
+              Array(type.group).first
             return direct if direct
 
             # Derived types keep their particles under complex_content.
@@ -201,6 +218,11 @@ module Lutaml
           end
           Array(schema.attribute).each do |attribute|
             index_attribute(attribute, namespace)
+          end
+          Array(schema.group).each do |group|
+            each_particle_element(group) do |element|
+              index_element(index, element, namespace, :inline)
+            end
           end
         end
 
