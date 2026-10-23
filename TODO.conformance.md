@@ -95,7 +95,10 @@ Remaining engine-mode gaps (tracked, moxml/leptris-side):
       overlap, choice-alternative and sequence-junction conflict rules,
       container occurrence folding. Standalone API
       (`findings` → upa_violation findings); zero findings on the
-      conformance corpus schemas (no false positives). Deferred depth:
-      xs:group expansion, substitution-group-aware first-sets
+      conformance corpus schemas (no false positives). Depth (2026-10-22):
+      xs:group references expand to the referenced declaration
+      (cycle-guarded), and element first-sets include substitution-group
+      members — head/member junctions report per XSD 1.0 while required
+      head/member sequences stay deterministic
 - [ ] XSD 1.1 constructs behind a version flag — DEFERRED: 1.1 strategy
       decision needed (see TODO.som.md)

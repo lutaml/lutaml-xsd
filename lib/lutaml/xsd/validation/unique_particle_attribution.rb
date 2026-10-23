@@ -65,6 +65,17 @@ module Lutaml
         def initialize(schema)
           @schema = schema
           @seen = {}.compare_by_identity
+          @groups = {}
+          Array(@schema.group).each do |group|
+            @groups[group.name.to_s] = group if group.name
+          end
+          @substitutes = {}
+          Array(@schema.element).each do |element|
+            next unless element.name && element.substitution_group.to_s.match?(/\S/)
+
+            head = element.substitution_group.to_s.split(":").last
+            (@substitutes[head] ||= []) << element
+          end
         end
 
         # @return [Array<Finding>] UPA violations, empty when deterministic
@@ -167,7 +178,7 @@ module Lutaml
         def first_set(particle)
           case particle
           when Lutaml::Xml::Schema::Xsd::Element
-            FirstSet.new([element_key(particle)].compact, [].freeze,
+            FirstSet.new(element_keys(particle), [].freeze,
                          parse_min(particle).zero?).tap do |first|
               first.repeatable = parse_max(particle) != 1
             end
@@ -234,21 +245,53 @@ module Lutaml
 
         # Particles in declaration order — resolved_element_order preserves
         # the source sequence including xs:any, which attribute-style
-        # accessor reads would reorder.
-        def ordered_particles(container)
+        # accessor reads would reorder. xs:group references expand to the
+        # referenced declaration's particles (cycle-guarded per chain).
+        def ordered_particles(container, group_chain = {})
           ordered = container.resolved_element_order
-          return ordered.to_a if ordered.to_a.any?
+          raw = if ordered.to_a.any?
+                  ordered.to_a
+                else
+                  case container
+                  when Lutaml::Xml::Schema::Xsd::Sequence,
+                       Lutaml::Xml::Schema::Xsd::Choice
+                    %i[element any sequence choice].flat_map do |kind|
+                      Array(container.public_send(kind))
+                    end.compact
+                  when Lutaml::Xml::Schema::Xsd::All
+                    Array(container.element).compact
+                  else
+                    []
+                  end
+                end
+          raw.flat_map do |particle|
+            if particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+              expand_group(particle, group_chain)
+            else
+              [particle]
+            end
+          end
+        end
 
-          case container
-          when Lutaml::Xml::Schema::Xsd::Sequence,
-               Lutaml::Xml::Schema::Xsd::Choice
-            %i[element any sequence choice].flat_map do |kind|
-              Array(container.public_send(kind))
-            end.compact
-          when Lutaml::Xml::Schema::Xsd::All
-            Array(container.element).compact
-          else
-            []
+        def expand_group(group_ref, chain)
+          local = (group_ref.ref || group_ref.name).to_s.split(":").last
+          declaration = @groups[local]
+          return [] unless declaration
+          return [] if chain[local]
+
+          chain[local] = true
+          ordered_particles(declaration, chain)
+        end
+
+        # An element particle matches its own name plus every member of
+        # the substitution group headed by it.
+        def element_keys(element)
+          own = element_key(element)
+          return [] unless own
+
+          members = @substitutes.fetch(own[1], [])
+          [own] + members.filter_map do |member|
+            member.name ? [@schema.target_namespace.to_s, member.name] : nil
           end
         end
 
