@@ -339,6 +339,28 @@ automatic detection of version-specific features. Validation is automatically
 enabled when parsing schemas via [`Lutaml::Xsd.parse()`](lib/lutaml/xsd.rb:47) but can be disabled
 if needed.
 
+=== Instance validation
+
+Beyond schema-document checks, the `Lutaml::Xsd::Validation` module validates
+XML *instances* against parsed schemas: element structure and content models
+(sequences, choices, nested groups, `xs:any` wildcards with namespace
+constraints and `processContents` enforcement), attribute presence, typing and
+`xs:anyAttribute` on every shape, builtin/simple-type facets, `xsi:nil`
+handling, `xsi:type` dynamic resolution, key/keyref/unique identity
+constraints, and schema-side Unique Particle Attribution checking via
+`Lutaml::Xsd::Validation::UniqueParticleAttribution`.
+
+The pipeline passes 42/42 checks of its conformance corpus
+(`rake conformance`); measured results live in `docs/CONFORMANCE.adoc` and
+`TODO.conformance.md`.
+
+[NOTE]
+====
+Guaranteed feature set requires `lutaml-model >= 0.8.123` (the gemspec
+floor). Keyref resolution and complexType/extension `xs:anyAttribute`
+checking depend on model mappings introduced there.
+====
+
 === Validation checks
 
 The schema validator performs these checks:
