@@ -291,7 +291,7 @@ RSpec.describe "UPA validation wiring" do
 
   def run_job
     Lutaml::Xsd::Validation::ValidationJob.new(
-      xml_content: '<r><a/></r>',
+      xml_content: "<r><a/></r>",
       repository: repository,
       rule_registry: Lutaml::Xsd::Validation::RuleRegistry.default(config),
       config: config,
