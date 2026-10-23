@@ -5,6 +5,7 @@ require_relative "validation_error"
 require_relative "xml_navigator"
 require_relative "result_collector"
 require_relative "rule_engine"
+require_relative "unique_particle_attribution"
 
 module Lutaml
   module Xsd
@@ -62,6 +63,7 @@ module Lutaml
 
           validate_root_declaration
           run_engine_validation if @config.feature_enabled?(:engine_validation)
+          run_upa_validation if @config.feature_enabled?(:validate_upa)
           validate_structure if @config.feature_enabled?(:validate_types)
           return result_from_collector if should_stop_after_structure?
 
@@ -117,6 +119,33 @@ module Lutaml
           @rule_engine.execute_category(:identity, @document, @repository)
         rescue ResultCollector::StopValidationError
           # Stop validation if configured to stop on first error
+        end
+
+        # Schema-side UPA checking (XSD 1.0 3.8.6). Findings describe the
+        # schema rather than the instance, so they surface as warnings.
+        #
+        # @return [void]
+        def run_upa_validation
+          @repository.all_schemas.each_value do |schema|
+            UniqueParticleAttribution.new(schema).findings.each do |finding|
+              @result_collector.add_warning(
+                ValidationError.new(
+                  code: finding.code,
+                  message: finding.message,
+                  severity: :warning,
+                  context: { schema_path: finding.path },
+                ),
+              )
+            end
+          end
+        rescue StandardError => e
+          @result_collector.add_warning(
+            ValidationError.new(
+              code: "upa_validation_unavailable",
+              message: "UPA validation skipped: #{e.message}",
+              severity: :warning,
+            ),
+          )
         end
 
         # Run engine-native XSD validation (Moxml::XSD) when the adapter
