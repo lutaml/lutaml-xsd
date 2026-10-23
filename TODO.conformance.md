@@ -3,17 +3,17 @@
 Goal: conformance is a number, not a feeling. Vendor the W3C XML Schema
 test-suite categories, build the harness, publish the pass-rate, grow it.
 
-## Baseline (2026-10-23, 21 cases / 45 checks, full pass)
+## Baseline (2026-10-23, 22 cases / 47 checks, full pass)
 
-Corpus: 21 case classes under `spec/conformance/cases/`, modelled on the
+Corpus: 22 case classes under `spec/conformance/cases/`, modelled on the
 W3C XML Schema Test Suite category taxonomy — self-authored because the
 canonical 2007 suite distribution is no longer served from w3.org (owner
 can vendor a tarball later; provenance README goes with it).
 
 | mode | pass-rate |
 |---|---|
-| engine (Moxml::XSD tier-1, leptris 1.9.380.2) | 38/42 (90.5%, 1 case unsupported) |
-| pipeline (ValidationJob + wired rule engine) | 45/45 (100.0%) |
+| engine (Moxml::XSD tier-1, leptris 1.9.380.2) | 38/42 (90.5%, 2 cases unsupported) |
+| pipeline (ValidationJob + wired rule engine) | 47/47 (100.0%) |
 
 The pipeline now passes every check in the corpus. The engine trails on
 four: strict wildcard/anyAttribute under-detection, xsi:nil on
@@ -28,7 +28,8 @@ baseline 34/39 (87.2%); gap rules 37/39 (94.9%); anyAttribute 40/42
 (95.2%); keyref activation via lutaml-model 0.8.121 → 41/42 (97.6%);
 lutaml-model 0.8.123 (complexType/extension anyAttribute mappings) +
 leptris 1.9.380.2 → 42/42 (100.0%); xs:group expansion in the content
-and occurrence walks grew the corpus to 45 checks → 45/45 (100.0%).
+and occurrence walks grew the corpus to 45 checks → 45/45 (100.0%);
+abstract-element usage checking → 47/47 (100.0%).
 
 Remaining engine-mode gaps (tracked, moxml/leptris-side):
 

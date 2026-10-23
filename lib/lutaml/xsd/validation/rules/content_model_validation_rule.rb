@@ -59,7 +59,7 @@ module Lutaml
           def validate(xml_element, schema_def, collector, repository: nil)
             return unless schema_def
 
-            return if engine_content_check(xml_element, collector) == :handled
+            handled = engine_content_check(xml_element, collector) == :handled
 
             particles = effective_particles(
               xml_element, schema_def, repository
@@ -67,6 +67,12 @@ module Lutaml
             # nil: an xsi:type override that does not resolve — the type
             # rule already reports it, so no content walk runs here.
             return if particles.nil? || particles.empty?
+
+            # The engine does not check abstract-element usage; scan for
+            # it regardless of whether the engine answered.
+            scan_abstract_usage(xml_element, particles, collector,
+                                repository)
+            return if handled
 
             validate_particle_sequence(xml_element, particles, collector,
                                        repository)
@@ -165,6 +171,48 @@ module Lutaml
             particles
           end
 
+          # Engine-accepted content still needs the checks the engine
+          # lacks: abstract element declarations cannot appear in
+          # instances. Containers flatten to their leaf declarations —
+          # the walk keeps them whole, the scan needs the leaves.
+          def scan_abstract_usage(xml_element, particles, collector,
+                                  repository)
+            leaves = leaf_particles(particles, repository)
+            xml_element.children.each do |child|
+              leaves.each do |particle|
+                next unless particle.is_a?(Lutaml::Xsd::Element)
+                next unless particle_matches?(child, particle, repository,
+                                              parent: xml_element)
+                next unless element_declaration_abstract?(particle, child,
+                                                          repository)
+
+                report_error(
+                  collector,
+                  code: "abstract_element_used",
+                  message: "Element '#{child.qualified_name}' is " \
+                           "abstract and cannot appear in the instance",
+                  location: child.xpath,
+                  context: { element: child.qualified_name },
+                )
+                break
+              end
+            end
+          end
+
+          def leaf_particles(particles, repository)
+            particles.flat_map do |particle|
+              case particle
+              when Lutaml::Xml::Schema::Xsd::Group
+                leaf_particles(expand_group_container(particle, repository),
+                               repository)
+              when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice, Lutaml::Xsd::All
+                leaf_particles(collect_particles(particle), repository)
+              else
+                [particle]
+              end
+            end
+          end
+
           # Sequential walk over a particle list (min/max per particle,
           # recursive matching, wildcard permission for unmatched tails).
           #
@@ -202,6 +250,16 @@ module Lutaml
                 if particle.is_a?(Lutaml::Xsd::Any)
                   check_strict_wildcard_child(child, particle, collector,
                                               repository)
+                elsif particle.is_a?(Lutaml::Xsd::Element) &&
+                    element_declaration_abstract?(particle, child, repository)
+                  report_error(
+                    collector,
+                    code: "abstract_element_used",
+                    message: "Element '#{child.qualified_name}' is " \
+                             "abstract and cannot appear in the instance",
+                    location: child.xpath,
+                    context: { element: child.qualified_name },
+                  )
                 end
 
                 matched_count += 1
@@ -247,6 +305,30 @@ module Lutaml
                 suggestion: "Remove this element or check sequence order",
               )
             end
+          end
+
+          # Whether the matched declaration is abstract: abstract element
+          # declarations cannot appear directly in instances (substitution
+          # members remain legal). Direct declarations carry their own
+          # abstract flag; references resolve to the global declaration.
+          def element_declaration_abstract?(particle, child, repository)
+            declaration = declaration_for(particle, child, repository)
+            return false unless declaration
+
+            truthy?(declaration.abstract) && child.name == declaration.name
+          end
+
+          def declaration_for(particle, child, repository)
+            return particle if particle.name.to_s.match?(/\S/)
+            return nil unless repository
+
+            local = particle.ref.to_s.split(":").last
+            repository.resolve(local, child.namespace_uri) ||
+              repository.resolve(local, nil)
+          end
+
+          def truthy?(value)
+            value.to_s == "true"
           end
 
           # Report an unsatisfied minimum occurrence: a choice container
@@ -471,12 +553,37 @@ module Lutaml
           # @param repository [SchemaDefinitionResolver, nil]
           # @return [Boolean]
           def element_matches?(xml_element, schema_element, repository = nil)
+            local_ref = schema_element.name.to_s.empty? && schema_element.ref
+            if local_ref && repository
+              return ref_element_matches?(xml_element, schema_element,
+                                          local_ref.to_s.split(":").last,
+                                          repository)
+            end
+
             if xml_element.name == schema_element.name
               return namespaces_match_instance?(
                 xml_element,
                 resolve_target_namespace(schema_element, repository),
               )
             end
+
+            substitution_member?(xml_element, schema_element, repository)
+          end
+
+          # An xs:ref particle takes the name and target namespace of the
+          # global declaration it references; substitution members of that
+          # declaration match too.
+          def ref_element_matches?(xml_element, schema_element, local,
+                                   repository)
+            declaration = repository.resolve(local,
+                                             xml_element.namespace_uri) ||
+              repository.resolve(local, nil)
+            return false unless declaration
+
+            return true if xml_element.name == declaration.name &&
+              namespaces_match_instance?(
+                xml_element, repository.target_namespace_for(declaration)
+              )
 
             substitution_member?(xml_element, schema_element, repository)
           end
