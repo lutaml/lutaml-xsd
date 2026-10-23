@@ -89,7 +89,13 @@ Remaining engine-mode gaps (tracked, moxml/leptris-side):
       resolution (unknown-type rejection; content walk follows the
       override); the engine's valid-derived false positive is fixed in
       leptris 1.9.380.2 (moxml#433)
-- [ ] Particle checking: UPA detection — DEFERRED (engine covers the
-      tier-1 subset; UPA is schema-side checking)
+- [x] Particle checking: UPA detection (2026-10-22) —
+      `UniqueParticleAttribution` schema-side checker: first-set
+      computation over sequence/choice/all with wildcard/element
+      overlap, choice-alternative and sequence-junction conflict rules,
+      container occurrence folding. Standalone API
+      (`findings` → upa_violation findings); zero findings on the
+      conformance corpus schemas (no false positives). Deferred depth:
+      xs:group expansion, substitution-group-aware first-sets
 - [ ] XSD 1.1 constructs behind a version flag — DEFERRED: 1.1 strategy
       decision needed (see TODO.som.md)
