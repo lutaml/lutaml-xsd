@@ -99,6 +99,11 @@ Remaining engine-mode gaps (tracked, moxml/leptris-side):
       xs:group references expand to the referenced declaration
       (cycle-guarded), and element first-sets include substitution-group
       members — head/member junctions report per XSD 1.0 while required
-      head/member sequences stay deterministic
+      head/member sequences stay deterministic. Wired into
+      `ValidationJob` as an opt-out `validate_upa` phase: schema
+      findings surface as warnings and never flip instance validity.
+      Also fixed the occurrence rule's choice counting: one instance
+      element matching duplicate alternatives counts once, not once
+      per alternative
 - [ ] XSD 1.1 constructs behind a version flag — DEFERRED: 1.1 strategy
       decision needed (see TODO.som.md)

@@ -265,13 +265,31 @@ module Lutaml
           # @return [Integer]
           def count_choice_alternatives(parent_element, choice,
                                         repository = nil)
-            return 0 if choice.element.empty?
+            return 0 if choice.element.empty? || parent_element.children.empty?
 
             alternatives = Array(choice.element)
-            alternatives.count do |alt_element|
-              count_element_occurrences(parent_element, alt_element,
-                                        repository).positive?
+            # Count instance elements that matched the choice — a single
+            # child matching several identical alternatives counts once.
+            parent_element.children.count do |child|
+              alternatives.any? do |alt_element|
+                count_element_occurrences_for_child(child, alt_element,
+                                                    parent_element,
+                                                    repository)
+              end
             end
+          end
+
+          # Whether one instance child matches one alternative declaration.
+          def count_element_occurrences_for_child(child, schema_element,
+                                                  _parent_element,
+                                                  repository)
+            element_name = schema_element.name ||
+              schema_element.ref.to_s.split(":").last
+            target_ns = resolve_target_namespace(schema_element, repository)
+
+            (child.name == element_name &&
+              namespaces_match?(child.namespace_uri, target_ns)) ||
+              substitution_member?(child, schema_element, repository)
           end
 
           # Validate minimum occurrence constraint
