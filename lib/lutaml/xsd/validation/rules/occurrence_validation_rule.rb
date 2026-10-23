@@ -65,6 +65,11 @@ module Lutaml
             when Lutaml::Xsd::All
               validate_all_occurrences(parent_element, schema_particle,
                                        collector, repository: repository)
+            when Lutaml::Xml::Schema::Xsd::Group
+              expand_group_container(schema_particle, repository).each do |container|
+                validate(parent_element, container, collector,
+                         repository: repository)
+              end
             end
           end
 
