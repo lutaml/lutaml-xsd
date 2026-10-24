@@ -78,6 +78,50 @@ end
 desc "Run the conformance suite"
 task conformance: "conformance:run"
 
+namespace :conformance do
+  desc "Run the pipeline over the official W3C suite instance tests"
+  task w3c: "conformance:w3c:run"
+
+  namespace :w3c do
+    desc "Clone the official W3C XML Schema Test Suite into vendor/xsdtests"
+    task :setup do
+      require "lutaml/xsd"
+      require_relative "lib/lutaml/xsd/conformance/w3c_suite"
+      Lutaml::Xsd::Conformance::W3CSuite.set_up!
+      puts "vendored #{Lutaml::Xsd::Conformance::W3CSuite.vendor_dir}"
+    end
+
+    desc "Run the pipeline over the official W3C suite instance tests"
+    task run: "conformance:w3c:setup" do
+      # One process per batch: lutaml-model's global schema cache grows
+      # per parse and the full suite OOMs a single invocation.
+      require "lutaml/xsd"
+      require "json"
+      require_relative "lib/lutaml/xsd/conformance/w3c_suite"
+      total = Lutaml::Xsd::Conformance::W3CSuite.cases.size
+      batch = 50
+      status = []
+      (0...total).step(batch) do |offset|
+        ok = system(
+          RbConfig.ruby, "-Ilib", "-e",
+          "require 'lutaml/xsd'; " \
+          "require 'lutaml/xsd/conformance/w3c_suite'; " \
+          "require 'json'; " \
+          "r = Lutaml::Xsd::Conformance::W3CSuite.measure(" \
+          "offset: #{offset}, limit: #{batch}); " \
+          "r[:failures] = r[:failures].map { |f| " \
+          "{ name: f.name, expected: f.expected, " \
+          "contributor: f.contributor } }; " \
+          "File.write(File.join('tmp', " \
+          "'w3c_batch_#{format('%05d', offset)}.json'), JSON.generate(r))",
+        )
+        status << "#{offset}: #{ok ? 'ok' : 'CRASHED'}"
+      end
+      puts "batches: #{status.join(', ')}"
+    end
+  end
+end
+
 namespace :benchmark do
   desc "Benchmark leptris vs nokogiri through Moxml on a real corpus"
   task :engines do
