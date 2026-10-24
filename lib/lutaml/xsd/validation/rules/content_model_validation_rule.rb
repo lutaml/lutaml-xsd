@@ -31,6 +31,18 @@ module Lutaml
           ].freeze
           COMPLEX_PARTICLE_KINDS = %i[sequence choice all group].freeze
 
+          # Objects that can appear in a particle list. Annotation (and
+          # other mapped children) leak into resolved_element_order and
+          # must not reach the walk.
+          PARTICLE_TYPES = [
+            Lutaml::Xsd::Element,
+            Lutaml::Xsd::Any,
+            Lutaml::Xsd::Sequence,
+            Lutaml::Xsd::Choice,
+            Lutaml::Xsd::All,
+            Lutaml::Xml::Schema::Xsd::Group,
+          ].freeze
+
           # Rule category
           #
           # @return [Symbol] :structure
@@ -441,12 +453,13 @@ module Lutaml
           #
           # @param content_model [Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice,
           #   Lutaml::Xsd::All]
-          # @return [Array]
           def collect_particles(content_model)
             # resolved_element_order preserves declaration order including
             # xs:any particles (which child_elements drops).
-            ordered = content_model.resolved_element_order
-            return ordered.to_a if ordered.to_a.any?
+            ordered = content_model.resolved_element_order.to_a.select do |particle|
+              PARTICLE_TYPES.any? { |t| particle.is_a?(t) }
+            end
+            return ordered if ordered.any?
 
             case content_model
             when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice
