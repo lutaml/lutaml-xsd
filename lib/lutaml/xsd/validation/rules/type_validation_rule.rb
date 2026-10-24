@@ -23,6 +23,16 @@ module Lutaml
         #
         # @see docs/JING_ALGORITHM_PORTING_GUIDE.md Type Validation
         class TypeValidationRule < ValidationRule
+          # Lexicographic (months, seconds) ordering per XSD 1.0
+          # Appendix E; Comparable gives the range facets >= > <= <.
+          DurationKey = Struct.new(:months, :seconds) do
+            include Comparable
+
+            def <=>(other)
+              [months, seconds] <=> [other.months, other.seconds]
+            end
+          end
+
           RANGE_FACETS = {
             "min_inclusive" => ->(value, bound) { value >= bound },
             "min_exclusive" => ->(value, bound) { value > bound },
@@ -391,14 +401,16 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_range_facets(value, restriction, xml_element, collector)
+            domain = range_domain(restriction.base)
             RANGE_FACETS.each do |facet, compare|
               facet_values = Array(restriction.public_send(facet))
               next if facet_values.empty?
 
               bound = facet_values.first.value
-              pair = numeric_pair(value, bound)
-              next unless pair
-              next if compare.call(pair[0], pair[1])
+              value_key = facet_key(value, domain)
+              bound_key = facet_key(bound, domain)
+              next unless value_key && bound_key
+              next if compare.call(value_key, bound_key)
 
               report_error(
                 collector,
@@ -410,20 +422,60 @@ module Lutaml
             end
           end
 
-          # Compares the value and bound as integers, then floats; facets
-          # on non-numeric types (dates, strings) are not checked here.
-          def numeric_pair(value, bound)
-            int_value = Integer(value, 10)
-            int_bound = Integer(bound, 10)
-            [int_value, int_bound]
-          rescue ArgumentError, TypeError
-            begin
-              [Float(value), Float(bound)]
-            rescue ArgumentError, TypeError
-              nil
+          # Range comparisons run in the lexical space of the base type:
+          # numeric types compare numerically, durations order by
+          # (months, seconds) per XSD 1.0 Appendix E, and the date/time
+          # family compares temporally. Derived types whose base is not
+          # a built-in name are not range-checked here.
+          def range_domain(base)
+            case base.to_s.split(":").last
+            when "duration" then :duration
+            when "date", "dateTime", "time", "gYear", "gYearMonth"
+              :temporal
             end
           end
 
+          def facet_key(value, domain)
+            case domain
+            when :duration then duration_key(value)
+            when :temporal then temporal_key(value)
+            else numeric_key(value)
+            end
+          end
+
+          def numeric_key(value)
+            Integer(value, 10)
+          rescue ArgumentError, TypeError
+            Float(value, exception: false)
+          end
+
+          # XSD 1.0 Appendix E ordering: durations order by total months,
+          # then by total seconds (days count as 24 hours).
+          def duration_key(value)
+            match = value.to_s.match(
+              /\A(-)?P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?((?:\d+(?:\.\d*)?|\.\d+)S)?)?\z/,
+            )
+            return nil unless match
+            return nil unless match[2] || match[3] || match[4] ||
+              match[5] || match[6] || match[7]
+
+            sign = match[1] ? -1 : 1
+            months = sign * ((match[2].to_i * 12) + match[3].to_i)
+            seconds = sign * ((match[4].to_i * 86_400) +
+              (match[5].to_i * 3600) + (match[6].to_i * 60) +
+              match[7].to_f)
+            DurationKey.new(months, seconds)
+          end
+
+          def temporal_key(value)
+            require "date"
+            DateTime.parse(value.to_s)
+          rescue StandardError
+            nil
+          end
+
+          # Compares the value and bound as integers, then floats; facets
+          # on non-numeric types (dates, strings) are not checked here.
           # Validate enumeration facets
           #
           # @param value [String] The value
