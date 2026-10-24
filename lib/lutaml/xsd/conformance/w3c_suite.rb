@@ -22,8 +22,8 @@ module Lutaml
       #     rake conformance:w3c:setup
       #     rake conformance:w3c
       module W3CSuite
-        PINNED_SHA = "7bc3365".freeze
-        REPO_URL = "https://github.com/w3c/xsdtests.git".freeze
+        PINNED_SHA = "7bc3365"
+        REPO_URL = "https://github.com/w3c/xsdtests.git"
         VENDOR_DIR = File.expand_path("../../../../vendor/xsdtests", __dir__)
         SUITE_NS_TEST_GROUP = "//*[local-name()='testGroup']"
 
@@ -75,10 +75,10 @@ module Lutaml
 
         def group_cases(group, base, contributor)
           group_name = group.attribute("name")&.value.to_s
-          schema_paths = group.xpath("./*[local-name()='schemaTest']/*[local-name()='schemaDocument']").map do |doc|
+          schema_paths = group.xpath("./*[local-name()='schemaTest']/*[local-name()='schemaDocument']").filter_map do |doc|
             resolve_href(doc, base)
-          end.compact
-          return [] if schema_paths.empty? || schema_paths.any? { |p| p.nil? }
+          end
+          return [] if schema_paths.empty? || schema_paths.any?(&:nil?)
 
           group.xpath("./*[local-name()='instanceTest']").filter_map do |instance_test|
             instance_case(instance_test, group_name, schema_paths, base,
@@ -123,7 +123,7 @@ module Lutaml
         #
         # @return [Hash] report with :passed, :failures, :total
         def measure(offset: 0, limit: nil)
-          cases_list = cases[offset, limit || cases.size].to_a || []
+          cases_list = cases[offset, limit || cases.size].to_a
           failures = []
           passed = 0
 
