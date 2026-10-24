@@ -179,6 +179,56 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::OccurrenceValidationRule do
           expect(max_errors).to be_empty
         end
       end
+
+      context "when a choice's only alternative is a wildcard" do
+        let(:xsd_xml) do
+          <<~XSD
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                       targetNamespace="urn:t" elementFormDefault="qualified"
+                       xmlns:t="urn:t">
+              <xs:element name="doc">
+                <xs:complexType>
+                  <xs:choice>
+                    <xs:any processContents="lax"/>
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+          XSD
+        end
+
+        let(:schema) { Lutaml::Xml::Schema::Xsd.parse(xsd_xml) }
+        let(:choice) do
+          schema.element.first.complex_type.choice
+        end
+
+        it "counts a child admitted by the wildcard as present" do
+          child = create_moxml_child("note")
+          parent = Lutaml::Xsd::Validation::XmlElement.new(
+            create_moxml_element("doc", [child]), navigator
+          )
+
+          rule.validate(parent, choice, collector)
+
+          min_errors = collector.errors.select do |e|
+            e.code == "choice_min_occurs_violation"
+          end
+          expect(min_errors).to be_empty
+        end
+
+        it "reports the min violation when no child is present" do
+          parent = Lutaml::Xsd::Validation::XmlElement.new(
+            create_moxml_element("doc", []), navigator
+          )
+
+          rule.validate(parent, choice, collector)
+
+          min_errors = collector.errors.select do |e|
+            e.code == "choice_min_occurs_violation"
+          end
+          expect(min_errors).not_to be_empty
+        end
+      end
     end
   end
 end
