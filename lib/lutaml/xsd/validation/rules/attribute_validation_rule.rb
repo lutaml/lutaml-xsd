@@ -64,6 +64,12 @@ module Lutaml
 
             schema_attributes =
               collect_schema_attributes(schema_element, repository)
+            # Ref attributes resolve to the global declaration they
+            # reference — the particle carries no name of its own.
+            # The raw list stays for the required check (use lives on
+            # the particle, not the declaration).
+            resolved_attributes =
+              resolve_schema_attributes(schema_attributes, repository)
             xml_attributes = xml_element.attributes
             wildcard = collect_any_attribute(schema_element, repository)
 
@@ -72,17 +78,32 @@ module Lutaml
                                          xml_attributes, collector)
 
             # Step 2: Validate attribute values
-            validate_attribute_values(xml_element, schema_attributes,
-                                      xml_attributes, collector)
+            validate_attribute_values(xml_element, resolved_attributes,
+                                      xml_attributes, collector,
+                                      repository: repository)
 
             # Step 3: Check for unexpected attributes
-            validate_no_unexpected_attributes(xml_element, schema_attributes,
+            validate_no_unexpected_attributes(xml_element,
+                                              resolved_attributes,
                                               xml_attributes, collector,
                                               wildcard: wildcard,
                                               repository: repository)
           end
 
           private
+
+          # @return [Array<Lutaml::Xml::Schema::Xsd::Attribute>] the
+          #   declarations ref particles point at (unresolvable refs and
+          #   direct declarations pass through).
+          def resolve_schema_attributes(schema_attrs, repository)
+            schema_attrs.map do |attr|
+              ref = attr.ref.to_s
+              next attr if ref.empty?
+
+              local = ref.split(":").last
+              repository&.resolve_attribute(local, nil) || attr
+            end
+          end
 
           # Collect all schema attributes from element or type definition
           #
@@ -104,7 +125,7 @@ module Lutaml
             # Handle attribute groups
             if schema_def.attribute_group
               Array(schema_def.attribute_group).each do |group|
-                attributes.concat(expand_attribute_group(group))
+                attributes.concat(expand_attribute_group(group, repository))
               end
             end
 
@@ -141,10 +162,17 @@ module Lutaml
           #
           # @param group [Lutaml::Xsd::AttributeGroup] Attribute group
           # @return [Array<Lutaml::Xsd::Attribute>]
-          def expand_attribute_group(group)
-            return [] unless group.attribute
+          def expand_attribute_group(group, repository = nil, depth = 0)
+            return [] if depth > 5
 
-            Array(group.attribute)
+            attrs = Array(group.attribute)
+            return attrs unless attrs.empty?
+
+            local = (group.ref || group.name).to_s.split(":").last
+            declaration = repository&.resolve_attribute_group(local)
+            return [] unless declaration
+
+            expand_attribute_group(declaration, repository, depth + 1)
           end
 
           # Collect attributes from complex content
@@ -240,9 +268,10 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_attribute_values(xml_element, schema_attrs, xml_attrs,
-                                        collector)
+                                        collector, repository: nil)
             xml_attrs.each do |xml_attr|
-              schema_attr = find_schema_attribute(schema_attrs, xml_attr)
+              schema_attr = find_schema_attribute(schema_attrs, xml_attr,
+                                                  repository)
               next unless schema_attr
 
               validate_attribute_value(xml_element, xml_attr, schema_attr,
@@ -254,12 +283,16 @@ module Lutaml
           #
           # @param schema_attrs [Array<Lutaml::Xsd::Attribute>] Schema attrs
           # @param xml_attr [XmlAttribute] XML attribute
+          # @param repository [SchemaDefinitionResolver, nil]
           # @return [Lutaml::Xsd::Attribute, nil]
-          def find_schema_attribute(schema_attrs, xml_attr)
+          def find_schema_attribute(schema_attrs, xml_attr, repository = nil)
             schema_attrs.find do |sa|
-              sa.name == xml_attr.name &&
-                (xml_attr.namespace_uri.nil? ||
-                 sa.target_namespace == xml_attr.namespace_uri)
+              next false unless sa.name == xml_attr.name
+
+              # Owner schema's target namespace for indexed (global)
+              # declarations; nil reads as unqualified for locals.
+              expected = repository&.target_namespace_for(sa)
+              xml_attr.namespace_uri.nil? || expected == xml_attr.namespace_uri
             end
           end
 
@@ -333,7 +366,8 @@ module Lutaml
               next if xml_attr.namespace_uri ==
                 "http://www.w3.org/2001/XMLSchema-instance"
 
-              schema_attr = find_schema_attribute(schema_attrs, xml_attr)
+              schema_attr = find_schema_attribute(schema_attrs, xml_attr,
+                                                  repository)
               next if schema_attr
 
               if wildcard &&
