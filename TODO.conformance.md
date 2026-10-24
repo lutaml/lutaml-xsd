@@ -120,30 +120,32 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3334/4646 (71.8%) |
+| pipeline | 3413/4646 (73.5%) |
 
-One batch (cases 3000-3049) crashed and is unmeasured. Failure
-concentration (the work queue, largest first):
+One batch (cases 3000-3049) crashed and is unmeasured (same batch as
+the 71.8% baseline, so counts stay comparable). Small per-category
+jitter (±3) between runs is batching noise. Failure concentration
+(the work queue, largest first):
 
-- `Regex_w3c` (360) — ADDRESSED: `XsdRegex` translates XSD patterns to
+- `Regex_w3c` (355) — ADDRESSED: `XsdRegex` translates XSD patterns to
   Ruby (implicit anchoring, literal `^`/`$`, dot-matches-newline, `\i`
   `\c`, `\p{Is...}` blocks, class subtraction). First pass measures
   Regex_w3c at 1075/1432 (75.1%); remaining corners: unescaped `-` runs
   inside classes, exotic `\p` category sets, surrogate-pair ranges
-- `Particles_w3c` (275), `ComplexType_w3c` (81), `Element_w3c` (75) —
-  content-model depth beyond the current walk. First cut (2026-10-25):
-  the occurrence rule counts wildcard alternatives in choices
-  (`xs:any` namespace admission), removing the
+- `Particles_w3c` (261, was 275), `ComplexType_w3c` (80), `Element_w3c`
+  (77) — content-model depth beyond the current walk. First cut
+  (2026-10-25): the occurrence rule counts wildcard alternatives in
+  choices (`xs:any` namespace admission), removing the
   `choice_min_occurs_violation` false positive on choice-of-wildcard
-  models; Particles delta measured with the next suite run
-- `DataTypes_w3c` + `SimpleType_w3c` — list/union/range facets
-  IMPLEMENTED (2026-10-24): in-category 1110/1289 (86.1%).
-  Temporal facet comparisons ALSO implemented: duration orders by
+  models (-14 Particles)
+- `DataTypes_w3c` (82, was 135) + `SimpleType_w3c` (33, was 36) —
+  list/union/range facets IMPLEMENTED (2026-10-24); temporal facet
+  comparisons IMPLEMENTED (2026-10-25, PR #139): duration orders by
   (months, seconds) per Appendix E, date/time family via DateTime —
   temporal cases 231/270 (85.6%). Remaining corners: typed enumeration
   comparison, gYearMonth edge parsing, duration+pattern combinations
 - `IdentityConstraint_w3c` (82) — selector/field depth, cross-element
   scopes
-- remaining: Attribute (56), ModelGroups (53), Additional (48),
-  Group (32), AttributeGroup (26), Wildcards (20), Errata10 (3),
-  Schema (30)
+- remaining: Attribute (56), ModelGroups (50), Additional (51),
+  Group (32), AttributeGroup (26), Wildcards (18), Errata10 (4),
+  Schema (26)
