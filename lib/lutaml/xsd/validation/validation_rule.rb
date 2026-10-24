@@ -277,6 +277,44 @@ module Lutaml
           repository.expected_namespace_for(schema_element)
         end
 
+        # Whether an instance child matches a content-model particle.
+        # Direct declarations compare name and expected namespace; ref
+        # particles take the name and namespace of the global declaration
+        # they reference, resolved against the child's namespace.
+        #
+        # @param child [XmlElement]
+        # @param particle [Lutaml::Xsd::Element]
+        # @param repository [SchemaDefinitionResolver, nil]
+        # @return [Boolean]
+        def particle_matches_declaration?(child, particle, repository)
+          ref = particle.ref.to_s
+          if ref.empty?
+            name = particle.name.to_s
+            return false unless name.match?(/\S/) && child.name == name
+
+            namespaces_match?(child.namespace_uri,
+                              resolve_expected_namespace(particle,
+                                                         repository))
+          else
+            local = ref.split(":").last
+            declaration = repository&.resolve(local, child.namespace_uri) ||
+              repository&.resolve(local, nil)
+            return false unless declaration
+
+            child.name == declaration.name &&
+              namespaces_match?(child.namespace_uri,
+                                repository.expected_namespace_for(declaration))
+          end
+        end
+
+        # @return [Boolean]
+        def namespaces_match?(instance_ns, expected_ns)
+          instance_ns = nil if instance_ns.to_s.empty?
+          expected_ns = nil if expected_ns.to_s.empty?
+
+          instance_ns == expected_ns
+        end
+
         # Helper method to create validation errors
         #
         # @param collector [ResultCollector] The result collector

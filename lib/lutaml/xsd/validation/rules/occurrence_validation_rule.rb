@@ -254,14 +254,9 @@ module Lutaml
           # @return [Integer]
           def count_element_occurrences(parent_element, schema_element,
                                         repository = nil)
-            element_name = schema_element.name ||
-              schema_element.ref.to_s.split(":").last
-            target_ns = resolve_expected_namespace(schema_element, repository)
-
             parent_element.children.count do |child|
-              name_matches = child.name == element_name &&
-                namespaces_match?(child.namespace_uri, target_ns)
-              name_matches ||
+              particle_matches_declaration?(child, schema_element,
+                                            repository) ||
                 substitution_member?(child, schema_element, repository)
             end
           end
@@ -301,24 +296,20 @@ module Lutaml
                   wildcard_permits?(alt_element, parent_element, child,
                                     repository)
                 else
-                  count_element_occurrences_for_child(child, alt_element,
-                                                      parent_element,
-                                                      repository)
+                  child_matches_alternative?(child, alt_element,
+                                             parent_element,
+                                             repository)
                 end
               end
             end
           end
 
           # Whether one instance child matches one alternative declaration.
-          def count_element_occurrences_for_child(child, schema_element,
-                                                  _parent_element,
-                                                  repository)
-            element_name = schema_element.name ||
-              schema_element.ref.to_s.split(":").last
-            target_ns = resolve_expected_namespace(schema_element, repository)
-
-            (child.name == element_name &&
-              namespaces_match?(child.namespace_uri, target_ns)) ||
+          def child_matches_alternative?(child, schema_element,
+                                         _parent_element,
+                                         repository)
+            particle_matches_declaration?(child, schema_element,
+                                          repository) ||
               substitution_member?(child, schema_element, repository)
           end
 
@@ -334,14 +325,20 @@ module Lutaml
                                   min_occurs, collector)
             return if actual_count >= min_occurs
 
+            name = schema_element.name.to_s
+            display_name = if name.match?(/\S/)
+                             name
+                           else
+                             "ref:#{schema_element.ref}"
+                           end
             report_error(
               collector,
               code: "min_occurs_violation",
-              message: "Element '#{schema_element.name}' must occur at " \
+              message: "Element '#{display_name}' must occur at " \
                        "least #{min_occurs} time(s), found #{actual_count}",
               location: parent_element.xpath,
               context: {
-                element: schema_element.name,
+                element: display_name,
                 min_occurs: min_occurs,
                 actual: actual_count,
               },
@@ -400,19 +397,6 @@ module Lutaml
             return :unbounded if value.to_s == "unbounded"
 
             value.to_i
-          end
-
-          # Check if namespaces match
-          #
-          # @param ns1 [String, nil] First namespace
-          # @param ns2 [String, nil] Second namespace
-          # @return [Boolean]
-          def namespaces_match?(ns1, ns2)
-            # Normalize empty strings to nil
-            normalized_ns1 = ns1.to_s.empty? ? nil : ns1
-            normalized_ns2 = ns2.to_s.empty? ? nil : ns2
-
-            normalized_ns1 == normalized_ns2
           end
 
           # Build suggestion for min occurs violation

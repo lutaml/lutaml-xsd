@@ -19,8 +19,8 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::OccurrenceValidationRule do
   end
 
   # Helper to create a moxml child element
-  def create_moxml_child(name)
-    child = Struct.new(:name, :namespace).new(name, nil)
+  def create_moxml_child(name, namespace = nil)
+    child = Struct.new(:name, :namespace).new(name, namespace)
     child.define_singleton_method(:element?) { true }
     child
   end
@@ -263,6 +263,58 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::OccurrenceValidationRule do
             e.code == "choice_max_occurs_violation"
           end
           expect(max_errors).to be_empty
+        end
+      end
+
+      context "when a sequence contains an xs:ref particle" do
+        let(:xsd_xml) do
+          <<~XSD
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                       targetNamespace="urn:t" elementFormDefault="qualified"
+                       xmlns:t="urn:t">
+              <xs:element name="item"/>
+              <xs:element name="doc">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="t:item" minOccurs="1" maxOccurs="1"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+          XSD
+        end
+
+        let(:schema) { Lutaml::Xml::Schema::Xsd.parse(xsd_xml) }
+        let(:sequence) do
+          schema.element.last.complex_type.sequence
+        end
+        let(:repository) do
+          repo_class = Class.new do
+            def initialize(schemas)
+              @schemas = schemas
+            end
+
+            def all_schemas
+              @schemas
+            end
+          end
+          Lutaml::Xsd::Validation::SchemaDefinitionResolver.new(
+            repo_class.new({ "urn:t" => schema }),
+          )
+        end
+
+        it "counts the referenced declaration's instance element" do
+          child = create_moxml_child("item", Struct.new(:uri).new("urn:t"))
+          parent = Lutaml::Xsd::Validation::XmlElement.new(
+            create_moxml_element("doc", [child]), navigator
+          )
+
+          rule.validate(parent, sequence, collector, repository: repository)
+
+          min_errors = collector.errors.select do |e|
+            e.code == "min_occurs_violation"
+          end
+          expect(min_errors).to be_empty
         end
       end
     end
