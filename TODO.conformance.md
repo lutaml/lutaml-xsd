@@ -120,37 +120,37 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3413/4646 (73.5%) |
+| pipeline | 3549/4646 (76.4%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Small per-category
 jitter (±3) between runs is batching noise. Failure concentration
 (the work queue, largest first):
 
-- `Regex_w3c` (355) — decomposed by error source (2026-10-25): 330
-  failures carry the ENGINE's rejection (leptris XSD-regex dialect
-  lacks `\p{Is...}` block escapes and friends, so valid documents are
-  false-positived engine-only 312 + both 18) — moxml/leptris-side,
-  registered upstream; 36 are pipeline-side corners (rules-only 18 +
-  both 18): unescaped `-` runs inside classes, exotic `\p` category
-  sets, surrogate-pair ranges. `XsdRegex` itself now translates
-  top-level block escapes and normalizes block names (hyphen/digit
-  boundaries, upper-run splits, Unicode-renamed blocks) — prerequisite
-  for the pipeline-side corners
-- `Particles_w3c` (261, was 275), `ComplexType_w3c` (80), `Element_w3c`
-  (77) — content-model depth beyond the current walk. First cut
-  (2026-10-25): the occurrence rule counts wildcard alternatives in
-  choices (`xs:any` namespace admission), removing the
-  `choice_min_occurs_violation` false positive on choice-of-wildcard
-  models (-14 Particles)
+- `Particles_w3c` (124, was 261) — element form defaults were ignored
+  (every local element was expected qualified), false-positiving
+  namespace_mismatch on correct unqualified instances across the
+  derivation families; form/elementFormDefault are now honored and
+  choice occurrence counting follows the alternative branch's own
+  bounds. Remaining: deeper content-model composition depth
+- `ComplexType_w3c` (80), `Element_w3c` (75) — same depth class
 - `DataTypes_w3c` (82, was 135) + `SimpleType_w3c` (33, was 36) —
   list/union/range facets IMPLEMENTED (2026-10-24); temporal facet
   comparisons IMPLEMENTED (2026-10-25, PR #139): duration orders by
   (months, seconds) per Appendix E, date/time family via DateTime —
   temporal cases 231/270 (85.6%). Remaining corners: typed enumeration
   comparison, gYearMonth edge parsing, duration+pattern combinations
-- `IdentityConstraint_w3c` (82) — selector/field depth, cross-element
+- `Regex_w3c` (354) — decomposed by error source (2026-10-25): 330
+  failures carry the ENGINE's rejection (leptris XSD-regex dialect
+  lacks `\p{Is...}` block escapes and friends, so valid documents are
+  false-positived engine-only 312 + both 18) — moxml/leptris-side,
+  registered upstream (moxml#464); 36 are pipeline-side corners
+  (rules-only 18 + both 18): unescaped `-` runs inside classes, exotic
+  `\p` category sets, surrogate-pair ranges. `XsdRegex` itself now
+  translates top-level block escapes and normalizes block names
+  (hyphen/digit boundaries, upper-run splits, Unicode-renamed blocks)
+- `IdentityConstraint_w3c` (84) — selector/field depth, cross-element
   scopes
 - remaining: Attribute (56), ModelGroups (50), Additional (51),
-  Group (32), AttributeGroup (26), Wildcards (18), Errata10 (4),
+  Group (32), AttributeGroup (26), Wildcards (17), Errata10 (7),
   Schema (26)
