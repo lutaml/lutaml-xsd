@@ -136,6 +136,12 @@ module Lutaml
                   schema_def.complex_content, repository
                 ),
               )
+              part = Array(schema_def.complex_content.extension).first ||
+                Array(schema_def.complex_content.restriction).first
+              # Base attributes flow through both derivations — a
+              # restriction narrows them but cannot drop them (XSD 1.0
+              # §3.4.2).
+              attributes.concat(inherited_attributes(part.base, repository)) if part
             end
 
             # Handle simple content
@@ -145,9 +151,26 @@ module Lutaml
                   schema_def.simple_content, repository
                 ),
               )
+              part = Array(schema_def.simple_content.extension).first ||
+                Array(schema_def.simple_content.restriction).first
+              attributes.concat(inherited_attributes(part.base, repository)) if part
             end
 
             attributes
+          end
+
+          # The base type's attribute set flows into the derived type
+          # through extension and restriction alike.
+          #
+          # @return [Array<Lutaml::Xml::Schema::Xsd::Attribute>]
+          def inherited_attributes(base_name, repository)
+            local = base_name.to_s.split(":").last
+            return [] if local.to_s.empty?
+
+            base = repository&.resolve_named_type(local)
+            return [] unless base.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
+            collect_schema_attributes(base, repository)
           end
 
           # Resolve type from element
