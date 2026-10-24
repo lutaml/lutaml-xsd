@@ -154,6 +154,9 @@ module Lutaml
         # @return [void]
         def run_engine_validation
           @engine_context ||= EngineContext.compile(@repository)
+          @rule_registry.all_rules(enabled_only: false).each do |rule|
+            rule.engine_context = @engine_context if rule.is_a?(EngineBacked)
+          end
           return unless @engine_context&.supported?
 
           @engine_context.findings_for(@xml_content).each do |finding|

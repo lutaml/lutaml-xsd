@@ -130,14 +130,14 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::TypeValidationRule,
   let(:collector) { Lutaml::Xsd::Validation::ResultCollector.new(config) }
   let(:rule) { described_class.new }
 
-  def validate_value(schema_xml, value)
+  def validate_value(schema_xml, value, validating_rule: rule)
     schema = Lutaml::Xml::Schema::Xsd.parse(schema_xml)
     root = Moxml::Context.new.parse("<r>#{value}</r>").root
     navigator = Object.new.tap do |nav|
       nav.define_singleton_method(:current_xpath) { "/r" }
     end
     xml_element = Lutaml::Xsd::Validation::XmlElement.new(root, navigator)
-    rule.validate(xml_element, schema.element.first, collector)
+    validating_rule.validate(xml_element, schema.element.first, collector)
     collector
   end
 
@@ -245,6 +245,52 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::TypeValidationRule,
 
     it "reports a value matching no member" do
       collector = validate_value(schema_xml, "z")
+
+      expect(collector.errors.map(&:code)).to include("union_violation")
+    end
+  end
+
+  context "with a union of builtin memberTypes", if: ENGINE_SUPPORTED do
+    let(:schema_xml) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="value">
+            <xs:simpleType>
+              <xs:union memberTypes="xs:int xs:date"/>
+            </xs:simpleType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    let(:engine) do
+      repo = Class.new do
+        def initialize(schemas)
+          @schemas = schemas
+        end
+
+        def all_schemas
+          @schemas
+        end
+      end.new({ nil => Lutaml::Xml::Schema::Xsd.parse(schema_xml) })
+      Lutaml::Xsd::Validation::EngineContext.compile(
+        repo, context: Moxml::Context.new
+      )
+    end
+
+    it "accepts a value matching a builtin member via a wired context" do
+      rule = described_class.new
+      rule.engine_context = engine
+      collector = validate_value(schema_xml, "42", validating_rule: rule)
+
+      expect(collector.errors).to be_empty
+    end
+
+    it "reports a value matching no builtin member" do
+      rule = described_class.new
+      rule.engine_context = engine
+      collector = validate_value(schema_xml, "not-an-int-or-date",
+                                 validating_rule: rule)
 
       expect(collector.errors.map(&:code)).to include("union_violation")
     end

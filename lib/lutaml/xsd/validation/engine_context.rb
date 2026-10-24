@@ -105,6 +105,18 @@ module Lutaml
           !@schemas.empty?
         end
 
+        # Free the engine-side schema handles. Document pools otherwise
+        # accumulate across batched suite runs (moxml#350). Builtin
+        # lexical checks are adapter-level and stay usable afterwards.
+        #
+        # @return [void]
+        def release
+          @schemas.each do |compiled|
+            handle = compiled.handle
+            handle.release if handle.is_a?(Moxml::XSD::Schema)
+          end
+        end
+
         # Validate raw XML against the compiled schemas that declare the
         # document's root element.
         #

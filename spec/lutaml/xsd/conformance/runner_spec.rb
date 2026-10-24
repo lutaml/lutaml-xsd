@@ -46,6 +46,18 @@ RSpec.describe Lutaml::Xsd::Conformance::Runner do
       expect(result.failures).to be_empty
       expect(result.passed).to eq(result.total)
     end
+
+    it "passes every case in pipeline mode" do
+      results = runner.run.select { |r| r.mode == :pipeline }
+
+      failures = results.filter_map do |r|
+        next if r.failures.empty?
+
+        "#{r.case_name}: #{r.failures.join(', ')}"
+      end
+
+      expect(failures).to be_empty
+    end
   end
 
   describe "#report" do

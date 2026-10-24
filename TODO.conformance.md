@@ -10,16 +10,16 @@ W3C XML Schema Test Suite category taxonomy — self-authored because the
 canonical 2007 suite distribution is no longer served from w3.org (owner
 can vendor a tarball later; provenance README goes with it).
 
+Current (2026-10-25): 23 cases / 49 checks —
+
 | mode | pass-rate |
 |---|---|
-| engine (Moxml::XSD tier-1, leptris 1.9.380.2) | 38/42 (90.5%, 2 cases unsupported) |
-| pipeline (ValidationJob + wired rule engine) | 47/47 (100.0%) |
+| engine (Moxml::XSD tier-1, leptris 1.9.380.2) | 39/44 (88.6%, 2 cases unsupported) |
+| pipeline (ValidationJob + wired rule engine) | 49/49 (100.0%) |
 
-The pipeline now passes every check in the corpus. The engine trails on
-four: strict wildcard/anyAttribute under-detection, xsi:nil on
-non-nillable elements, and the wrong-namespace root (root-matching
-skips it) — all documented tier-1 laxness; the pipeline enforces them.
-The engine's former xsi:type derivation FALSE POSITIVE is fixed in
+The pipeline now passes every check in the corpus (locked in by a
+runner spec). The engine trails on the four documented below. The
+engine's former xsi:type derivation FALSE POSITIVE is fixed in
 leptris 1.9.380.2 (moxml#433 closed).
 
 History: 2026-10-20 baseline 20/25 (80.0%) with pipeline == engine
@@ -29,7 +29,10 @@ baseline 34/39 (87.2%); gap rules 37/39 (94.9%); anyAttribute 40/42
 lutaml-model 0.8.123 (complexType/extension anyAttribute mappings) +
 leptris 1.9.380.2 → 42/42 (100.0%); xs:group expansion in the content
 and occurrence walks grew the corpus to 45 checks → 45/45 (100.0%);
-abstract-element usage checking → 47/47 (100.0%).
+abstract-element usage checking → 47/47 (100.0%); wildcard-alternative
+choice counting + builtin-memberType union answers via engine-context
+wiring (union-simple had regressed to a false positive on main) →
+49/49 (100.0%).
 
 Remaining engine-mode gaps (tracked, moxml/leptris-side):
 
@@ -128,7 +131,11 @@ concentration (the work queue, largest first):
   Regex_w3c at 1075/1432 (75.1%); remaining corners: unescaped `-` runs
   inside classes, exotic `\p` category sets, surrogate-pair ranges
 - `Particles_w3c` (275), `ComplexType_w3c` (81), `Element_w3c` (75) —
-  content-model depth beyond the current walk
+  content-model depth beyond the current walk. First cut (2026-10-25):
+  the occurrence rule counts wildcard alternatives in choices
+  (`xs:any` namespace admission), removing the
+  `choice_min_occurs_violation` false positive on choice-of-wildcard
+  models; Particles delta measured with the next suite run
 - `DataTypes_w3c` + `SimpleType_w3c` — list/union/range facets
   IMPLEMENTED (2026-10-24): in-category 1110/1289 (86.1%).
   Temporal facet comparisons ALSO implemented: duration orders by
