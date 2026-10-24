@@ -21,6 +21,16 @@ module Lutaml
         NAME_CHAR_CLASS =
           "[A-Z_a-z0-9:\\-.\\u00B7\\u00C0-\\uD7FF\\uE000-\\uFFFD]"
 
+        # Blocks Unicode renamed after the Unicode 3.1 names XSD 1.0
+        # cites; Ruby only knows the modern names (separators are
+        # ignored by Ruby's property lookup, word differences are not).
+        BLOCK_RENAMES = {
+          "Greek" => "Greek_And_Coptic",
+          "CombiningMarksforSymbols" =>
+            "Combining_Diacritical_Marks_For_Symbols",
+          "PrivateUse" => "Private_Use_Area",
+        }.freeze
+
         # @param pattern [String] an XSD regular expression
         # @return [Regexp] whole-string, multiline Ruby regexp
         def self.to_regexp(pattern)
@@ -68,15 +78,19 @@ module Lutaml
           case rest[0]
           when "i" then NAME_START_CLASS
           when "c" then NAME_CHAR_CLASS
+          when "p", "P"
+            close = rest.index("}")
+            inner = rest[2...close].to_s
+            "\\#{rest[0]}{#{block_name(inner)}}"
           else source[pos, escape_length(source, pos)]
           end
         end
 
-        # \i \c consume two characters; \p{...} spans to its closing
-        # brace; every other escape is backslash + one character.
+        # \i \c consume two characters; \p{...}/\P{...} span to their
+        # closing brace; every other escape is backslash + one character.
         def escape_length(source, pos)
           rest = source[(pos + 1)..].to_s
-          if rest.start_with?("p{") && (close = rest.index("}"))
+          if rest.match?(/\A[pP]\{/) && (close = rest.index("}"))
             close + 2
           else
             2
@@ -145,17 +159,29 @@ module Lutaml
         end
 
         def rewrite_escapes(body)
-          body.gsub(/\\p\{Is([^}]*)\}/) do
-            "\\p{#{block_name(Regexp.last_match(1))}}"
+          body.gsub(/\\([pP])\{([^}]*)\}/) do
+            "\\#{Regexp.last_match(1)}{#{block_name(Regexp.last_match(2))}}"
           end
             .gsub("\\i") { NAME_START_CLASS }
             .gsub("\\c") { NAME_CHAR_CLASS }
         end
 
-        # XSD writes blocks as \p{IsBasicLatin}; Ruby as \p{In_Basic_Latin}.
+        # XSD writes blocks as \p{IsBasicLatin} (hyphenated, camel-cased);
+        # Ruby as \p{In_Basic_Latin} (underscore-separated). General
+        # categories (L, Lu, Nd, ...) pass through unchanged.
         def block_name(xsd_name)
+          return xsd_name unless xsd_name.start_with?("Is")
+
           stripped = xsd_name.delete_prefix("Is")
-          "In_#{stripped.gsub(/([a-z])([A-Z])/, '\1_\2')}"
+          return "In_#{BLOCK_RENAMES[stripped]}" if BLOCK_RENAMES.key?(stripped)
+
+          words = stripped
+            .gsub("-", "_")
+            .gsub(/(?<=[A-Z])(?=[A-Z][a-z])/, "_")
+            .gsub(/(?<=[a-z0-9])(?=[A-Z])/, "_")
+            .split("_")
+            .reject(&:empty?)
+          "In_#{words.join('_')}"
         end
       end
     end
