@@ -41,7 +41,17 @@ module Lutaml
           @namespaces = {}.compare_by_identity
           @expected_namespaces = {}.compare_by_identity
           @attributes = Hash.new { |hash, key| hash[key] = [] }
+          @attribute_groups = {}
           @elements = index_elements
+        end
+
+        # Named attribute-group declaration by local name (for
+        # xs:attributeGroup ref expansion in the attribute walk).
+        #
+        # @param local_name [String]
+        # @return [Lutaml::Xml::Schema::Xsd::AttributeGroup, nil]
+        def resolve_attribute_group(local_name)
+          @attribute_groups[local_name]
         end
 
         # Owner schema's target namespace for a resolved declaration
@@ -233,6 +243,10 @@ module Lutaml
           end
           Array(schema.attribute).each do |attribute|
             index_attribute(attribute, namespace)
+          end
+          Array(schema.attribute_group).each do |group|
+            name = group.name.to_s
+            @attribute_groups[name] = group unless name.empty?
           end
           Array(schema.group).each do |group|
             each_particle_element(group, schema) do |element|
