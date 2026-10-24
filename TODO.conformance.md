@@ -120,20 +120,22 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3549/4646 (76.4%) |
+| pipeline | 3626/4646 (78.1%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Small per-category
-jitter (±3) between runs is batching noise. Failure concentration
+jitter (±4) between runs is batching noise. Failure concentration
 (the work queue, largest first):
 
-- `Particles_w3c` (124, was 261) — element form defaults were ignored
-  (every local element was expected qualified), false-positiving
-  namespace_mismatch on correct unqualified instances across the
-  derivation families; form/elementFormDefault are now honored and
-  choice occurrence counting follows the alternative branch's own
-  bounds. Remaining: deeper content-model composition depth
+- `Particles_w3c` (72, was 261 at the 76.4% cut) — ref particles now
+  match through the referenced global declaration (name AND namespace;
+  the empty-string name and owner-schema namespace bugs false-positived
+  the whole Je family) and the resolver indexes nested xs:import/
+  xs:include targets (lutaml-model parses them as child Schema
+  objects; the index never descended). Remaining: composition depth
 - `ComplexType_w3c` (80), `Element_w3c` (75) — same depth class
+- `IdentityConstraint_w3c` (72) — selector/field depth, cross-element
+  scopes
 - `DataTypes_w3c` (82, was 135) + `SimpleType_w3c` (33, was 36) —
   list/union/range facets IMPLEMENTED (2026-10-24); temporal facet
   comparisons IMPLEMENTED (2026-10-25, PR #139): duration orders by
@@ -149,8 +151,6 @@ jitter (±3) between runs is batching noise. Failure concentration
   `\p` category sets, surrogate-pair ranges. `XsdRegex` itself now
   translates top-level block escapes and normalizes block names
   (hyphen/digit boundaries, upper-run splits, Unicode-renamed blocks)
-- `IdentityConstraint_w3c` (84) — selector/field depth, cross-element
-  scopes
-- remaining: Attribute (56), ModelGroups (50), Additional (51),
-  Group (32), AttributeGroup (26), Wildcards (17), Errata10 (7),
-  Schema (26)
+- remaining: Attribute (56), ModelGroups (50), Additional (48),
+  Group (32), AttributeGroup (26), Schema (20), Wildcards (17),
+  Errata10 (3)
