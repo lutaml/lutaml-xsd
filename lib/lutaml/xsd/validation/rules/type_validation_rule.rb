@@ -23,6 +23,8 @@ module Lutaml
         #
         # @see docs/JING_ALGORITHM_PORTING_GUIDE.md Type Validation
         class TypeValidationRule < ValidationRule
+          include EngineBacked
+
           # Lexicographic (months, seconds) ordering per XSD 1.0
           # Appendix E; Comparable gives the range facets >= > <= <.
           DurationKey = Struct.new(:months, :seconds) do
@@ -672,7 +674,7 @@ module Lutaml
           # @param value [String, nil] The lexical value
           # @return [Boolean, nil]
           def engine_builtin_answer(type_name, value)
-            engine = @options[:engine_context]
+            engine = validation_engine
             return unless engine&.supported?
 
             engine.builtin_valid?(
