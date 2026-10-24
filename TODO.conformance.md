@@ -109,3 +109,27 @@ Remaining engine-mode gaps (tracked, moxml/leptris-side):
       per alternative
 - [ ] XSD 1.1 constructs behind a version flag — DEFERRED: 1.1 strategy
       decision needed (see TODO.som.md)
+
+## Official W3C suite (2026-10-23)
+
+The official suite (w3c/xsdtests, W3C Document License, fetched at a
+pinned commit) is measured via `rake conformance:w3c`:
+
+| mode | pass-rate |
+|---|---|
+| pipeline | 3334/4646 (71.8%) |
+
+One batch (cases 3000-3049) crashed and is unmeasured. Failure
+concentration (the work queue, largest first):
+
+- `Regex_w3c` (360) — XSD regular expressions are not Ruby/ECMA
+  patterns; the pattern facet needs an XSD→Ruby regex translator
+- `Particles_w3c` (275), `ComplexType_w3c` (81), `Element_w3c` (75) —
+  content-model depth beyond the current walk
+- `DataTypes_w3c` (135) + `SimpleType_w3c` (36) — list/union/range
+  facets (registered TODOs in the type rule)
+- `IdentityConstraint_w3c` (82) — selector/field depth, cross-element
+  scopes
+- remaining: Attribute (56), ModelGroups (53), Additional (48),
+  Group (32), AttributeGroup (26), Wildcards (20), Errata10 (3),
+  Schema (30)
