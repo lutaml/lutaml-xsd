@@ -187,7 +187,7 @@ module Lutaml
           def choice_occurrence_count(present_count, choice)
             return present_count if present_count.zero?
 
-            capacities = (Array(choice.element) + Array(choice.any)).map do |alt|
+            capacities = choice_alternatives(choice).map do |alt|
               parse_max_occurs(alt.max_occurs, 1)
             end
             return 1 if capacities.empty?
@@ -195,6 +195,15 @@ module Lutaml
             return 1 if capacities.max >= present_count
 
             present_count
+          end
+
+          # Choice alternatives are particles of any kind.
+          #
+          # @return [Array]
+          def choice_alternatives(choice)
+            Array(choice.element) + Array(choice.any) +
+              Array(choice.sequence) + Array(choice.choice) +
+              Array(choice.group)
           end
 
           # Validate all particle occurrences
@@ -288,7 +297,7 @@ module Lutaml
           # @return [Integer]
           def count_choice_alternatives(parent_element, choice,
                                         repository = nil)
-            alternatives = Array(choice.element) + Array(choice.any)
+            alternatives = choice_alternatives(choice)
             return 0 if alternatives.empty? || parent_element.children.empty?
 
             # Count instance elements that matched the choice — a single
@@ -299,23 +308,14 @@ module Lutaml
                   wildcard_permits?(alt_element, parent_element, child,
                                     repository)
                 else
-                  child_matches_alternative?(child, alt_element,
-                                             parent_element,
-                                             repository)
+                  particle_matches_child?(child, alt_element, repository,
+                                          parent: parent_element)
                 end
               end
             end
           end
 
           # Whether one instance child matches one alternative declaration.
-          def child_matches_alternative?(child, schema_element,
-                                         _parent_element,
-                                         repository)
-            particle_matches_declaration?(child, schema_element,
-                                          repository) ||
-              substitution_member?(child, schema_element, repository)
-          end
-
           # Validate minimum occurrence constraint
           #
           # @param parent_element [XmlElement] Parent element

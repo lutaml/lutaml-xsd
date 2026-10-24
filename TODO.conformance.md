@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3714/4646 (79.9%) |
+| pipeline | 3718/4646 (80.0%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Run-to-run Particles
@@ -146,12 +146,14 @@ Failure concentration (the work queue, largest first):
 - `IdentityConstraint_w3c` (72) — selector/field depth, cross-element
   scopes
 - `Particles_w3c` (68, was 261 at the 76.4% cut) + `Element_w3c` (60)
-  + `ComplexType_w3c` (39) — element form defaults, ref particles,
-  nested imports, choice occurrence bounds and block= enforcement are
-  in; remaining is composition depth. Rule crashes on xs:all
-  containers fixed (typed collect_particles, empty-all semantics,
-  particle_name dispatch) — these had been poisoning run-to-run
-  measurements
+  + `ComplexType_w3c` (35) — element form defaults, ref particles,
+  nested imports, choice occurrence bounds, block= enforcement
+  (element- AND type-level block against direct-derivation overrides)
+  and choice alternatives of any particle kind (choice(sequence(a))
+  no longer counts zero alternatives) are in; remaining is
+  composition depth. Rule crashes on xs:all containers fixed (typed
+  collect_particles, empty-all semantics, particle_name dispatch) —
+  these had been poisoning run-to-run measurements
 - `ModelGroups_w3c` (39) — choice/sequence depth; the mgB/mgF
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed

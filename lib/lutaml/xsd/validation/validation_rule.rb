@@ -329,6 +329,63 @@ module Lutaml
           tokens.include?("substitution") || tokens.include?("#all")
         end
 
+        # Whether an instance child matches a content-model particle of
+        # any kind. Containers match when the child matches any leaf
+        # inside them (inner ordering permissive; the outer walk stays
+        # sequential). Groups expand to their declaration's container.
+        #
+        # @param child [XmlElement]
+        # @param particle [Object]
+        # @param repository [SchemaDefinitionResolver, nil]
+        # @param parent [XmlElement, nil] content-model owner, for
+        #   wildcard target-namespace resolution
+        # @param group_depth [Integer] recursion guard for group refs
+        # @return [Boolean]
+        def particle_matches_child?(child, particle, repository,
+                                    parent: nil, group_depth: 0)
+          case particle
+          when Lutaml::Xsd::Element
+            particle_matches_declaration?(child, particle, repository) ||
+              substitution_member?(child, particle, repository)
+          when Lutaml::Xsd::Any
+            wildcard_permits?(particle, parent || child, child, repository)
+          when Lutaml::Xml::Schema::Xsd::Group
+            expand_group_container(particle, repository,
+                                   group_depth).any? do |container|
+              particle_matches_child?(child, container, repository,
+                                      parent: parent,
+                                      group_depth: group_depth + 1)
+            end
+          when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice, Lutaml::Xsd::All
+            collect_content_particles(particle).any? do |leaf|
+              particle_matches_child?(child, leaf, repository,
+                                      parent: parent,
+                                      group_depth: group_depth)
+            end
+          else
+            false
+          end
+        end
+
+        # Particles declared inside a container, by container kind.
+        #
+        # @return [Array]
+        def collect_content_particles(container)
+          case container
+          when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice
+            Array(container.element) +
+              Array(container.any) +
+              Array(container.sequence) +
+              Array(container.choice) +
+              Array(container.group)
+          when Lutaml::Xsd::All
+            # xs:all holds bare elements only.
+            Array(container.element)
+          else
+            []
+          end
+        end
+
         # Helper method to create validation errors
         #
         # @param collector [ResultCollector] The result collector
