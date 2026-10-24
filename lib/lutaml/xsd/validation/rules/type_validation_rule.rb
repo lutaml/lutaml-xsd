@@ -103,38 +103,60 @@ module Lutaml
 
           private
 
-          # xsi:nil handling: allowed only on nillable declarations, and a
-          # nil element must be empty. Returns true when the element is nil
-          # (nothing further to validate).
+          # xsi:nil handling: the attribute may appear only on nillable
+          # declarations (regardless of its value), and a nilled element
+          # must have no content — character or element. Returns true
+          # when the element is nilled (nothing further to validate).
           #
           # @return [Boolean]
           def xsi_nil_handled?(xml_element, schema_element, collector)
             nil_attr = xsi_attribute(xml_element, "nil")
-            return false unless nil_attr&.value.to_s.match?(/\A(true|1)\z/)
+            return false unless nil_attr
 
-            unless schema_element.nillable.to_s.match?(/\A(true|1)\z/)
+            nillable = schema_element.nillable.to_s.match?(/\A(true|1)\z/)
+
+            if nil_attr.value.to_s.match?(/\A(true|1)\z/)
+              unless nillable
+                report_error(
+                  collector,
+                  code: "xsi_nil_not_allowed",
+                  message: "Element '#{xml_element.name}' is not " \
+                           "nillable but carries xsi:nil",
+                  location: xml_element.xpath,
+                  context: { element: xml_element.name },
+                )
+                return true
+              end
+
+              if xml_element.children.empty? &&
+                  xml_element.text_content.to_s.strip.empty?
+                return true
+              end
+
               report_error(
                 collector,
-                code: "xsi_nil_not_allowed",
-                message: "Element '#{xml_element.name}' is not nillable " \
-                         "but carries xsi:nil",
+                code: "xsi_nil_with_content",
+                message: "Element '#{xml_element.name}' has xsi:nil but " \
+                         "carries content",
                 location: xml_element.xpath,
                 context: { element: xml_element.name },
               )
               return true
             end
 
-            return true if xml_element.children.empty?
-
-            report_error(
-              collector,
-              code: "xsi_nil_with_content",
-              message: "Element '#{xml_element.name}' has xsi:nil but " \
-                       "carries content",
-              location: xml_element.xpath,
-              context: { element: xml_element.name },
-            )
-            true
+            # xsi:nil="false" still advertises nil handling the
+            # declaration forbids; content validates normally.
+            unless nillable
+              report_error(
+                collector,
+                code: "xsi_nil_not_allowed",
+                message: "Element '#{xml_element.name}' is not " \
+                         "nillable but carries xsi:nil",
+                location: xml_element.xpath,
+                context: { element: xml_element.name },
+              )
+            end
+            false
           end
 
           # The xsi:type attribute value (local part), or nil.
