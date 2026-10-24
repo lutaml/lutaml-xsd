@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3706/4646 (79.8%) |
+| pipeline | 3714/4646 (79.9%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Run-to-run Particles
@@ -152,7 +152,8 @@ Failure concentration (the work queue, largest first):
   containers fixed (typed collect_particles, empty-all semantics,
   particle_name dispatch) — these had been poisoning run-to-run
   measurements
-- `ModelGroups_w3c` (47) — choice/sequence depth; rule_execution
-  crashes remain (mgB family)
+- `ModelGroups_w3c` (39) — choice/sequence depth; the mgB/mgF
+  rule_execution crashes (xs:annotation leaking into particle lists
+  via resolved_element_order) are fixed
 - remaining: Attribute (46), Additional (47), Group (32),
   AttributeGroup (21), Schema (20), Wildcards (17), Errata10 (3)
