@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3655/4646 (78.7%) |
+| pipeline | 3683/4646 (79.3%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Small per-category
@@ -136,12 +136,15 @@ jitter (±4) between runs is batching noise. Failure concentration
   `\p` category sets, surrogate-pair ranges. `XsdRegex` itself now
   translates top-level block escapes and normalizes block names
   (hyphen/digit boundaries, upper-run splits, Unicode-renamed blocks)
-- `ComplexType_w3c` (64, was 80) + `Attribute_w3c` (47, was 56) +
-  `AttributeGroup_w3c` (23, was 26) — attribute refs resolve to the
-  global declaration they reference and xs:attributeGroup refs expand
-  through the resolver (previously ref particles matched an empty
-  name → unexpected_attribute). Remaining: composition depth
-- `Element_w3c` (75), `Particles_w3c` (72) — content-model
+- `ComplexType_w3c` (39, was 80 at the 78.7% cut) + `Attribute_w3c`
+  (46) + `AttributeGroup_w3c` (21) — attribute refs resolve to the
+  global declaration they reference, xs:attributeGroup refs expand
+  through the resolver, and extension/restriction shapes now collect
+  their attribute + attributeGroup collections (previously ref
+  particles matched an empty name → unexpected_attribute). Remaining:
+  composition depth
+- `Element_w3c` (75; 50 of them under-detection — pipeline accepts
+  what the suite expects invalid, elemO family) — content-model
   composition depth
 - `IdentityConstraint_w3c` (72) — selector/field depth, cross-element
   scopes
@@ -160,5 +163,5 @@ jitter (±4) between runs is batching noise. Failure concentration
   `\p` category sets, surrogate-pair ranges. `XsdRegex` itself now
   translates top-level block escapes and normalizes block names
   (hyphen/digit boundaries, upper-run splits, Unicode-renamed blocks)
-- remaining: ModelGroups (50), Group (32), Schema (20), Wildcards (17),
-  Errata10 (3)
+- remaining: ModelGroups (50), Particles (72), Group (32), Schema (20),
+  Wildcards (17), Errata10 (3)
