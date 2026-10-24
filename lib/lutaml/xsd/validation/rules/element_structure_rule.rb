@@ -166,19 +166,6 @@ module Lutaml
             xml_element.name == schema_element.name
           end
 
-          # Resolve expected namespace for a schema declaration via the
-          # resolver's index (parsed declarations carry no owner-schema
-          # link).
-          #
-          # @param schema_element [Lutaml::Xsd::Element] Schema element
-          # @param repository [SchemaDefinitionResolver, nil]
-          # @return [String, nil]
-          def resolve_expected_namespace(schema_element, repository)
-            return nil unless repository
-
-            repository.target_namespace_for(schema_element)
-          end
-
           # Normalize namespace (treat empty string as nil)
           #
           # @param namespace [String, nil] Namespace URI

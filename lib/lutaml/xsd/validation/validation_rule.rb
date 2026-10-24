@@ -264,6 +264,19 @@ module Lutaml
           repository.target_namespace_for(declaration) if declaration
         end
 
+        # The instance namespace a declaration expects: qualified forms
+        # map to the owner schema's target namespace, unqualified forms
+        # to none (form / elementFormDefault honored by the resolver).
+        #
+        # @param schema_element [Object]
+        # @param repository [SchemaDefinitionResolver, nil]
+        # @return [String, nil]
+        def resolve_expected_namespace(schema_element, repository)
+          return nil unless repository
+
+          repository.expected_namespace_for(schema_element)
+        end
+
         # Helper method to create validation errors
         #
         # @param collector [ResultCollector] The result collector

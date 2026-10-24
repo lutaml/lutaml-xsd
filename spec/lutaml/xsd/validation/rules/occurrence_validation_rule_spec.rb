@@ -229,6 +229,42 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::OccurrenceValidationRule do
           expect(min_errors).not_to be_empty
         end
       end
+
+      context "when a repeating wildcard alternative absorbs children" do
+        let(:xsd_xml) do
+          <<~XSD
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                       targetNamespace="urn:t" elementFormDefault="qualified">
+              <xs:element name="doc">
+                <xs:complexType>
+                  <xs:choice>
+                    <xs:any namespace="##other" minOccurs="4" maxOccurs="6"/>
+                  </xs:choice>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>
+          XSD
+        end
+
+        let(:schema) { Lutaml::Xml::Schema::Xsd.parse(xsd_xml) }
+        let(:choice) do
+          schema.element.first.complex_type.choice
+        end
+
+        it "counts one choice occurrence for one wildcard occurrence" do
+          children = Array.new(4) { create_moxml_child("other") }
+          parent = Lutaml::Xsd::Validation::XmlElement.new(
+            create_moxml_element("doc", children), navigator
+          )
+
+          rule.validate(parent, choice, collector)
+
+          max_errors = collector.errors.select do |e|
+            e.code == "choice_max_occurs_violation"
+          end
+          expect(max_errors).to be_empty
+        end
+      end
     end
   end
 end

@@ -39,6 +39,7 @@ module Lutaml
         def initialize(repository)
           @repository = repository
           @namespaces = {}.compare_by_identity
+          @expected_namespaces = {}.compare_by_identity
           @attributes = Hash.new { |hash, key| hash[key] = [] }
           @elements = index_elements
         end
@@ -50,6 +51,20 @@ module Lutaml
         # @return [String, nil]
         def target_namespace_for(schema_element)
           @namespaces[schema_element]
+        end
+
+        # The namespace a conforming instance element carries for this
+        # declaration: the owner schema's target namespace for qualified
+        # forms, none for unqualified ones. Global declarations are
+        # always qualified; local declarations follow form, defaulting
+        # to the schema's elementFormDefault.
+        #
+        # @param element [Object]
+        # @return [String, nil]
+        def expected_namespace_for(element)
+          return @namespaces[element] unless @expected_namespaces.key?(element)
+
+          @expected_namespaces[element]
         end
 
         # @param name [String] local element name
@@ -211,17 +226,17 @@ module Lutaml
         def index_schema(index, schema)
           namespace = schema.target_namespace
           Array(schema.element).each do |element|
-            index_element(index, element, namespace, :top)
+            index_element(index, element, namespace, :top, schema)
           end
           Array(schema.complex_type).each do |complex_type|
-            index_type(index, complex_type, namespace)
+            index_type(index, complex_type, namespace, schema)
           end
           Array(schema.attribute).each do |attribute|
             index_attribute(attribute, namespace)
           end
           Array(schema.group).each do |group|
-            each_particle_element(group) do |element|
-              index_element(index, element, namespace, :inline)
+            each_particle_element(group, schema) do |element|
+              index_element(index, element, namespace, :inline, schema)
             end
           end
         end
@@ -234,29 +249,45 @@ module Lutaml
           @attributes[attribute.name] << [attribute, namespace]
         end
 
-        def index_element(index, element, namespace, kind)
+        def index_element(index, element, namespace, kind, schema)
           return unless element
 
           @namespaces[element] = namespace
+          @expected_namespaces[element] =
+            effective_element_namespace(element, namespace, kind, schema)
           unless element.name.nil? || element.name.empty?
             index[element.name] << [element, namespace, kind]
           end
-          index_type(index, element.complex_type, namespace) if element.complex_type
-        end
-
-        def index_type(index, complex_type, namespace)
-          return unless complex_type
-
-          each_particle_element(complex_type) do |element|
-            index_element(index, element, namespace, :inline)
+          if element.complex_type
+            index_type(index, element.complex_type, namespace, schema)
           end
         end
 
-        def each_particle_element(node, &)
+        # Form-aware expected namespace (XSD 1.0 §3.3.2): explicit form
+        # wins, absent form follows elementFormDefault, and top-level
+        # declarations are always qualified.
+        def effective_element_namespace(element, namespace, kind, schema)
+          form = element.form.to_s
+          return nil if form == "unqualified"
+          return namespace if form == "qualified"
+          return namespace if kind == :top
+
+          schema.element_form_default.to_s == "qualified" ? namespace : nil
+        end
+
+        def index_type(index, complex_type, namespace, schema)
+          return unless complex_type
+
+          each_particle_element(complex_type, schema) do |element|
+            index_element(index, element, namespace, :inline, schema)
+          end
+        end
+
+        def each_particle_element(node, schema, &)
           return unless node
 
           if node.is_a?(Array)
-            node.each { |child| each_particle_element(child, &) }
+            node.each { |child| each_particle_element(child, schema, &) }
             return
           end
           return if visited_particle?(node)
@@ -266,7 +297,7 @@ module Lutaml
 
           nested.each do |kind|
             Array(node.public_send(kind)).each do |particle|
-              each_particle_element(particle, &) if particle
+              each_particle_element(particle, schema, &) if particle
             end
           end
           (CONTAINER_LEAF_KINDS[node.class] || []).each do |kind|
@@ -277,17 +308,18 @@ module Lutaml
             end
           end
 
-          walk_complex_content(node, &) if
-            node.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+          if node.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+            walk_complex_content(node, schema, &)
+          end
         end
 
-        def walk_complex_content(node, &)
+        def walk_complex_content(node, schema, &)
           content = node.complex_content
           return unless content
 
           %i[extension restriction].each do |kind|
             part = content.public_send(kind)
-            each_particle_element(part, &) if part
+            each_particle_element(part, schema, &) if part
           end
         end
 
