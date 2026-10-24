@@ -509,39 +509,9 @@ module Lutaml
           # @param repository [SchemaDefinitionResolver, nil]
           # @return [Boolean]
           def element_matches?(xml_element, schema_element, repository = nil)
-            local_ref = schema_element.name.to_s.empty? && schema_element.ref
-            if local_ref && repository
-              return ref_element_matches?(xml_element, schema_element,
-                                          local_ref.to_s.split(":").last,
-                                          repository)
-            end
-
-            if xml_element.name == schema_element.name
-              return namespaces_match_instance?(
-                xml_element,
-                resolve_expected_namespace(schema_element, repository),
-              )
-            end
-
-            substitution_member?(xml_element, schema_element, repository)
-          end
-
-          # An xs:ref particle takes the name and target namespace of the
-          # global declaration it references; substitution members of that
-          # declaration match too.
-          def ref_element_matches?(xml_element, schema_element, local,
-                                   repository)
-            declaration = repository.resolve(local,
-                                             xml_element.namespace_uri) ||
-              repository.resolve(local, nil)
-            return false unless declaration
-
-            return true if xml_element.name == declaration.name &&
-              namespaces_match_instance?(
-                xml_element, repository.target_namespace_for(declaration)
-              )
-
-            substitution_member?(xml_element, schema_element, repository)
+            particle_matches_declaration?(xml_element, schema_element,
+                                          repository) ||
+              substitution_member?(xml_element, schema_element, repository)
           end
 
           # Whether the instance element's declaration is in the
@@ -564,15 +534,6 @@ module Lutaml
 
             declaration.substitution_group.to_s.split(":").last ==
               expected.to_s.split(":").last
-          end
-
-          # @return [Boolean]
-          def namespaces_match_instance?(xml_element, target_ns)
-            xml_ns = xml_element.namespace_uri
-            xml_ns = nil if xml_ns.to_s.empty?
-            target_ns = nil if target_ns.to_s.empty?
-
-            xml_ns == target_ns
           end
 
           # Get particle name for error messages

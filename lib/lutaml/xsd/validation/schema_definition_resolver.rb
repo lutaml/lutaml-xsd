@@ -239,6 +239,13 @@ module Lutaml
               index_element(index, element, namespace, :inline, schema)
             end
           end
+          # lutaml-model nests resolved xs:import / xs:include targets
+          # as child Schema objects (raw Import models stay for
+          # unresolvable locations); their declarations validate too.
+          (Array(schema.import) + Array(schema.include)).each do |nested|
+            index_schema(index, nested) if
+              nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
+          end
         end
 
         def index_attribute(attribute, namespace)
