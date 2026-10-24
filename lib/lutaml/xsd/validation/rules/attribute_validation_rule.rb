@@ -132,14 +132,18 @@ module Lutaml
             # Handle complex content
             if schema_def.complex_content
               attributes.concat(
-                collect_from_complex_content(schema_def.complex_content),
+                collect_from_complex_content(
+                  schema_def.complex_content, repository
+                ),
               )
             end
 
             # Handle simple content
             if schema_def.simple_content
               attributes.concat(
-                collect_from_simple_content(schema_def.simple_content),
+                collect_from_simple_content(
+                  schema_def.simple_content, repository
+                ),
               )
             end
 
@@ -178,42 +182,38 @@ module Lutaml
           # Collect attributes from complex content
           #
           # @param complex_content [Lutaml::Xsd::ComplexContent]
+          # @param repository [SchemaDefinitionResolver, nil]
           # @return [Array<Lutaml::Xsd::Attribute>]
-          def collect_from_complex_content(complex_content)
-            attributes = []
-
-            if complex_content.extension
-              ext = complex_content.extension
-              attributes.concat(Array(ext.attribute)) if
-                ext.attribute
-            end
-
-            if complex_content.restriction
-              restr = complex_content.restriction
-              attributes.concat(Array(restr.attribute)) if
-                restr.attribute
-            end
-
-            attributes
+          def collect_from_complex_content(complex_content, repository = nil)
+            collect_from_content(complex_content, repository)
           end
 
           # Collect attributes from simple content
           #
           # @param simple_content [Lutaml::Xsd::SimpleContent]
+          # @param repository [SchemaDefinitionResolver, nil]
           # @return [Array<Lutaml::Xsd::Attribute>]
-          def collect_from_simple_content(simple_content)
+          def collect_from_simple_content(simple_content, repository = nil)
+            collect_from_content(simple_content, repository)
+          end
+
+          # Extension and restriction shapes carry both attribute and
+          # attributeGroup collections.
+          #
+          # @param content [Object]
+          # @param repository [SchemaDefinitionResolver, nil]
+          # @return [Array<Lutaml::Xsd::Attribute>]
+          def collect_from_content(content, repository)
             attributes = []
 
-            if simple_content.extension
-              ext = simple_content.extension
-              attributes.concat(Array(ext.attribute)) if
-                ext.attribute
-            end
+            %i[extension restriction].each do |shape|
+              part = content.public_send(shape)
+              next unless part
 
-            if simple_content.restriction
-              restr = simple_content.restriction
-              attributes.concat(Array(restr.attribute)) if
-                restr.attribute
+              attributes.concat(Array(part.attribute))
+              Array(part.attribute_group).each do |group|
+                attributes.concat(expand_attribute_group(group, repository))
+              end
             end
 
             attributes
