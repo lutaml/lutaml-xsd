@@ -122,8 +122,11 @@ pinned commit) is measured via `rake conformance:w3c`:
 One batch (cases 3000-3049) crashed and is unmeasured. Failure
 concentration (the work queue, largest first):
 
-- `Regex_w3c` (360) — XSD regular expressions are not Ruby/ECMA
-  patterns; the pattern facet needs an XSD→Ruby regex translator
+- `Regex_w3c` (360) — ADDRESSED: `XsdRegex` translates XSD patterns to
+  Ruby (implicit anchoring, literal `^`/`$`, dot-matches-newline, `\i`
+  `\c`, `\p{Is...}` blocks, class subtraction). First pass measures
+  Regex_w3c at 1075/1432 (75.1%); remaining corners: unescaped `-` runs
+  inside classes, exotic `\p` category sets, surrogate-pair ranges
 - `Particles_w3c` (275), `ComplexType_w3c` (81), `Element_w3c` (75) —
   content-model depth beyond the current walk
 - `DataTypes_w3c` (135) + `SimpleType_w3c` (36) — list/union/range

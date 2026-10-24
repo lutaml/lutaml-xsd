@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../validation_rule"
+require_relative "../xsd_regex"
 
 module Lutaml
   module Xsd
@@ -275,7 +276,7 @@ module Lutaml
               pattern_value = pattern.value || pattern.to_s
 
               begin
-                regex = Regexp.new(pattern_value)
+                regex = XsdRegex.to_regexp(pattern_value)
                 next if value.match?(regex)
 
                 report_error(
