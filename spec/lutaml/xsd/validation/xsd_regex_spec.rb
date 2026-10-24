@@ -39,6 +39,34 @@ RSpec.describe Lutaml::Xsd::Validation::XsdRegex do
     expect(match?("[\\p{IsBasicLatin}]+", "абв")).to be(false)
   end
 
+  it "normalizes top-level \\p{Is...} block escapes" do
+    expect(match?("\\p{IsBasicLatin}+", "abc")).to be(true)
+    expect(match?("\\p{IsBasicLatin}+", "абв")).to be(false)
+  end
+
+  it "splits hyphenated and digit-bounded block names" do
+    expect(match?("\\p{IsLatin-1Supplement}+", "é")).to be(true)
+    expect(match?("\\p{IsLatin-1Supplement}+", "a")).to be(false)
+    expect(match?("\\p{IsLatinExtended-A}+", "đ")).to be(true)
+    expect(match?("\\p{IsIPAExtensions}+", "ɑ")).to be(true)
+  end
+
+  it "maps blocks Unicode renamed since XSD 1.0" do
+    expect(match?("\\p{IsGreek}", "α")).to be(true)
+    expect(match?("\\p{IsPrivateUse}", "")).to be(true)
+  end
+
+  it "negates block escapes with \\P" do
+    expect(match?("\\P{IsBasicLatin}", "é")).to be(true)
+    expect(match?("\\P{IsBasicLatin}", "a")).to be(false)
+  end
+
+  it "keeps general categories working" do
+    expect(match?("\\P{L}*", "123")).to be(true)
+    expect(match?("\\p{Lu}", "A")).to be(true)
+    expect(match?("\\p{Lu}", "a")).to be(false)
+  end
+
   it "keeps standard escapes working" do
     expect(match?("\\d{4}-\\d{2}", "2024-01")).to be(true)
     expect(match?("\\d{4}", "20x4")).to be(false)
