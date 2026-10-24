@@ -405,39 +405,6 @@ module Lutaml
             resolved if resolved.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
           end
 
-          # Whether a wildcard's namespace constraint admits the child.
-          #
-          # @param wildcard [Lutaml::Xsd::Any]
-          # @param parent [XmlElement] Content-model owner
-          # @param child [XmlElement]
-          # @param repository [SchemaDefinitionResolver, nil]
-          # @return [Boolean]
-          def wildcard_permits?(wildcard, parent, child, repository)
-            child_ns = child.namespace_uri.to_s
-            case wildcard.namespace.to_s
-            when "##any", ""
-              true
-            when "##other"
-              target = content_model_target_namespace(parent, repository)
-              !child_ns.empty? && child_ns != target.to_s
-            when "##local"
-              child_ns.empty?
-            when "##targetNamespace"
-              child_ns == content_model_target_namespace(parent, repository).to_s
-            else
-              # space-separated namespace list (##targetNamespace ##local allowed)
-              wildcard.namespace.to_s.split(/\s+/).any? do |entry|
-                case entry
-                when "##local" then child_ns.empty?
-                when "##targetNamespace"
-                  child_ns == content_model_target_namespace(parent,
-                                                             repository).to_s
-                else entry == child_ns
-                end
-              end
-            end
-          end
-
           # @return [Boolean]
           def wildcard_child_declared?(child, repository)
             return true if repository.nil?
@@ -463,17 +430,6 @@ module Lutaml
               location: child.xpath,
               context: { element: child.qualified_name },
             )
-          end
-
-          # Best-effort target namespace of the schema owning the parent's
-          # declaration (via the resolver index).
-          #
-          # @return [String, nil]
-          def content_model_target_namespace(parent, repository)
-            return nil unless repository
-
-            declaration = repository.resolve(parent.name, parent.namespace_uri)
-            repository.target_namespace_for(declaration) if declaration
           end
 
           # Collect particles from content model

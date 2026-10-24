@@ -227,6 +227,43 @@ module Lutaml
           container ? [container] : []
         end
 
+        # Whether a wildcard's namespace constraint admits the child.
+        def wildcard_permits?(wildcard, parent, child, repository)
+          child_ns = child.namespace_uri.to_s
+          case wildcard.namespace.to_s
+          when "##any", ""
+            true
+          when "##other"
+            target = content_model_target_namespace(parent, repository)
+            !child_ns.empty? && child_ns != target.to_s
+          when "##local"
+            child_ns.empty?
+          when "##targetNamespace"
+            child_ns == content_model_target_namespace(parent,
+                                                       repository).to_s
+          else
+            # space-separated namespace list (##targetNamespace ##local allowed)
+            wildcard.namespace.to_s.split(/\s+/).any? do |entry|
+              case entry
+              when "##local" then child_ns.empty?
+              when "##targetNamespace"
+                child_ns == content_model_target_namespace(parent,
+                                                           repository).to_s
+              else entry == child_ns
+              end
+            end
+          end
+        end
+
+        # @return [String, nil] The target namespace of the declaration the
+        #   content model belongs to.
+        def content_model_target_namespace(parent, repository)
+          return nil unless repository
+
+          declaration = repository.resolve(parent.name, parent.namespace_uri)
+          repository.target_namespace_for(declaration) if declaration
+        end
+
         # Helper method to create validation errors
         #
         # @param collector [ResultCollector] The result collector

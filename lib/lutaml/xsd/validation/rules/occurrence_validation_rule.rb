@@ -270,16 +270,21 @@ module Lutaml
           # @return [Integer]
           def count_choice_alternatives(parent_element, choice,
                                         repository = nil)
-            return 0 if choice.element.empty? || parent_element.children.empty?
+            alternatives = Array(choice.element) + Array(choice.any)
+            return 0 if alternatives.empty? || parent_element.children.empty?
 
-            alternatives = Array(choice.element)
             # Count instance elements that matched the choice — a single
             # child matching several identical alternatives counts once.
             parent_element.children.count do |child|
               alternatives.any? do |alt_element|
-                count_element_occurrences_for_child(child, alt_element,
-                                                    parent_element,
-                                                    repository)
+                if alt_element.is_a?(Lutaml::Xml::Schema::Xsd::Any)
+                  wildcard_permits?(alt_element, parent_element, child,
+                                    repository)
+                else
+                  count_element_occurrences_for_child(child, alt_element,
+                                                      parent_element,
+                                                      repository)
+                end
               end
             end
           end
