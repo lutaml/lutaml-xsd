@@ -120,12 +120,13 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3683/4646 (79.3%) |
+| pipeline | 3706/4646 (79.8%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
-the 71.8% baseline, so counts stay comparable). Small per-category
-jitter (±4) between runs is batching noise. Failure concentration
-(the work queue, largest first):
+the 71.8% baseline, so counts stay comparable). Run-to-run Particles
+variance in earlier runs came from pre-existing rule crashes on
+xs:all containers (fixed); residual jitter (±4) is batching noise.
+Failure concentration (the work queue, largest first):
 
 - `Regex_w3c` (354) — decomposed by error source (2026-10-25): 330
   failures carry the ENGINE's rejection (leptris XSD-regex dialect
@@ -136,32 +137,22 @@ jitter (±4) between runs is batching noise. Failure concentration
   `\p` category sets, surrogate-pair ranges. `XsdRegex` itself now
   translates top-level block escapes and normalizes block names
   (hyphen/digit boundaries, upper-run splits, Unicode-renamed blocks)
-- `ComplexType_w3c` (39, was 80 at the 78.7% cut) + `Attribute_w3c`
-  (46) + `AttributeGroup_w3c` (21) — attribute refs resolve to the
-  global declaration they reference, xs:attributeGroup refs expand
-  through the resolver, and extension/restriction shapes now collect
-  their attribute + attributeGroup collections (previously ref
-  particles matched an empty name → unexpected_attribute). Remaining:
-  composition depth
-- `Element_w3c` (75; 50 of them under-detection — pipeline accepts
-  what the suite expects invalid, elemO family) — content-model
-  composition depth
-- `IdentityConstraint_w3c` (72) — selector/field depth, cross-element
-  scopes
-- `DataTypes_w3c` (82, was 135) + `SimpleType_w3c` (33, was 36) —
+- `DataTypes_w3c` (82, was 135) + `SimpleType_w3c` (32, was 36) —
   list/union/range facets IMPLEMENTED (2026-10-24); temporal facet
   comparisons IMPLEMENTED (2026-10-25, PR #139): duration orders by
   (months, seconds) per Appendix E, date/time family via DateTime —
   temporal cases 231/270 (85.6%). Remaining corners: typed enumeration
   comparison, gYearMonth edge parsing, duration+pattern combinations
-- `Regex_w3c` (354) — decomposed by error source (2026-10-25): 330
-  failures carry the ENGINE's rejection (leptris XSD-regex dialect
-  lacks `\p{Is...}` block escapes and friends, so valid documents are
-  false-positived engine-only 312 + both 18) — moxml/leptris-side,
-  registered upstream (moxml#464); 36 are pipeline-side corners
-  (rules-only 18 + both 18): unescaped `-` runs inside classes, exotic
-  `\p` category sets, surrogate-pair ranges. `XsdRegex` itself now
-  translates top-level block escapes and normalizes block names
-  (hyphen/digit boundaries, upper-run splits, Unicode-renamed blocks)
-- remaining: ModelGroups (50), Particles (72), Group (32), Schema (20),
-  Wildcards (17), Errata10 (3)
+- `IdentityConstraint_w3c` (72) — selector/field depth, cross-element
+  scopes
+- `Particles_w3c` (68, was 261 at the 76.4% cut) + `Element_w3c` (60)
+  + `ComplexType_w3c` (39) — element form defaults, ref particles,
+  nested imports, choice occurrence bounds and block= enforcement are
+  in; remaining is composition depth. Rule crashes on xs:all
+  containers fixed (typed collect_particles, empty-all semantics,
+  particle_name dispatch) — these had been poisoning run-to-run
+  measurements
+- `ModelGroups_w3c` (47) — choice/sequence depth; rule_execution
+  crashes remain (mgB family)
+- remaining: Attribute (46), Additional (47), Group (32),
+  AttributeGroup (21), Schema (20), Wildcards (17), Errata10 (3)
