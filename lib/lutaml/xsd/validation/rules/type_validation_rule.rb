@@ -23,6 +23,12 @@ module Lutaml
         #
         # @see docs/JING_ALGORITHM_PORTING_GUIDE.md Type Validation
         class TypeValidationRule < ValidationRule
+          RANGE_FACETS = {
+            "min_inclusive" => ->(value, bound) { value >= bound },
+            "min_exclusive" => ->(value, bound) { value > bound },
+            "max_inclusive" => ->(value, bound) { value <= bound },
+            "max_exclusive" => ->(value, bound) { value < bound },
+          }.freeze
           # Rule category
           #
           # @return [Symbol] :type
@@ -73,7 +79,8 @@ module Lutaml
 
             case type_def
             when Lutaml::Xsd::SimpleType
-              validate_simple_type_content(xml_element, type_def, collector)
+              validate_simple_type_content(xml_element, type_def, collector,
+                                           repository: repository)
             when Lutaml::Xsd::ComplexType
               validate_complex_type_content(xml_element, type_def, collector)
             else
@@ -170,7 +177,7 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_simple_type_content(xml_element, simple_type,
-                                           collector)
+                                           collector, repository: nil)
             value = xml_element.text_content
 
             # Validate base type if present
@@ -178,9 +185,11 @@ module Lutaml
               validate_restriction(value, simple_type.restriction,
                                    xml_element, collector)
             elsif simple_type.list
-              validate_list(value, simple_type.list, xml_element, collector)
+              validate_list(value, simple_type.list, xml_element, collector,
+                            repository: repository)
             elsif simple_type.union
-              validate_union(value, simple_type.union, xml_element, collector)
+              validate_union(value, simple_type.union, xml_element, collector,
+                             repository: repository)
             end
           end
 
@@ -382,8 +391,37 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_range_facets(value, restriction, xml_element, collector)
-            # TODO: Implement min/max inclusive/exclusive validation
-            # This requires parsing the value as the appropriate numeric type
+            RANGE_FACETS.each do |facet, compare|
+              facet_values = Array(restriction.public_send(facet))
+              next if facet_values.empty?
+
+              bound = facet_values.first.value
+              pair = numeric_pair(value, bound)
+              next unless pair
+              next if compare.call(pair[0], pair[1])
+
+              report_error(
+                collector,
+                code: "#{facet}_violation",
+                message: "Value '#{value}' violates #{facet}='#{bound}'",
+                location: xml_element.xpath,
+                context: { value: value, bound: bound, facet: facet },
+              )
+            end
+          end
+
+          # Compares the value and bound as integers, then floats; facets
+          # on non-numeric types (dates, strings) are not checked here.
+          def numeric_pair(value, bound)
+            int_value = Integer(value, 10)
+            int_bound = Integer(bound, 10)
+            [int_value, int_bound]
+          rescue ArgumentError, TypeError
+            begin
+              [Float(value), Float(bound)]
+            rescue ArgumentError, TypeError
+              nil
+            end
           end
 
           # Validate enumeration facets
@@ -426,9 +464,45 @@ module Lutaml
           # @param xml_element [XmlElement] The element
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_list(value, list, xml_element, collector)
-            # TODO: Implement list validation
-            # Lists are space-separated values of the item type
+          def validate_list(value, list, xml_element, collector,
+                            repository: nil)
+            items = value.split(/\s+/).reject(&:empty?)
+            return if items.empty?
+
+            inline = Array(list.simple_type).first
+            if inline.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType) &&
+                inline.restriction
+              items.each do |item|
+                validate_facets(item, inline.restriction, xml_element,
+                                collector)
+              end
+              return
+            end
+
+            local = list.item_type.to_s.split(":").last
+            return if local.to_s.empty?
+
+            named = repository&.resolve_named_type(local)
+            if named.is_a?(Lutaml::Xsd::SimpleType) && named.restriction
+              items.each do |item|
+                validate_facets(item, named.restriction, xml_element,
+                                collector)
+              end
+              return
+            end
+
+            items.each do |item|
+              answer = engine_builtin_answer(local, item)
+              next if answer.nil? || answer
+
+              report_error(
+                collector,
+                code: "list_item_violation",
+                message: "List item '#{item}' is not a valid #{local}",
+                location: xml_element.xpath,
+                context: { item: item, item_type: local },
+              )
+            end
           end
 
           # Validate union type
@@ -438,9 +512,58 @@ module Lutaml
           # @param xml_element [XmlElement] The element
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_union(value, union, xml_element, collector)
-            # TODO: Implement union validation
-            # Value must match one of the member types
+          def validate_union(value, union, xml_element, collector,
+                             repository: nil)
+            return if union_accepts?(value, union, xml_element, collector,
+                                     repository)
+
+            report_error(
+              collector,
+              code: "union_violation",
+              message: "Value '#{value}' does not match any member type " \
+                       "of the union",
+              location: xml_element.xpath,
+              context: { value: value },
+            )
+          end
+
+          # A value is valid when any member of the union accepts it.
+          # Members are inline simple types or whitespace-separated
+          # type references; dry runs collect into a throwaway collector.
+          def union_accepts?(value, union, xml_element, _collector,
+                             repository)
+            Array(union.simple_type).each do |member|
+              dry = ResultCollector.new(ValidationConfiguration.new)
+              if member.restriction
+                validate_facets(value, member.restriction, xml_element, dry)
+                return true if dry.errors.empty? && dry.warnings.empty?
+              else
+                return true
+              end
+            end
+
+            union.member_types.to_s.split(/\s+/).any? do |ref|
+              ref_accepts?(value, ref, xml_element, repository)
+            end
+          end
+
+          def ref_accepts?(value, ref, xml_element, repository)
+            local = ref.to_s.split(":").last
+            return false if local.to_s.empty?
+
+            answer = engine_builtin_answer(local, value)
+            return answer if [true, false].include?(answer)
+
+            named = repository&.resolve_named_type(local)
+            return false unless named.is_a?(Lutaml::Xsd::SimpleType)
+
+            dry = ResultCollector.new(ValidationConfiguration.new)
+            if named.restriction
+              validate_facets(value, named.restriction, xml_element, dry)
+              dry.errors.empty? && dry.warnings.empty?
+            else
+              true
+            end
           end
 
           # Validate simple content
