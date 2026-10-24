@@ -275,6 +275,11 @@ module Lutaml
               # Check minimum occurrence
               next unless matched_count < min_occurs
               next if particle.is_a?(Lutaml::Xsd::Any) && min_occurs.zero?
+              # A container whose content can match the empty sequence
+              # occurs trivially (all-of with every child optional).
+              if container && container_matches_empty?(particle, repository)
+                next
+              end
 
               report_min_occurs_violation(particle, xml_element, collector,
                                           min_occurs, matched_count)
@@ -443,24 +448,19 @@ module Lutaml
             ordered = content_model.resolved_element_order
             return ordered.to_a if ordered.to_a.any?
 
-            particles = []
-
-            # Collect elements
-            particles.concat(Array(content_model.element)) if content_model.element.any?
-
-            # Collect wildcards
-            particles.concat(Array(content_model.any)) if content_model.any
-
-            # Collect nested sequences
-            particles.concat(Array(content_model.sequence)) if content_model.sequence
-
-            # Collect nested choices
-            particles.concat(Array(content_model.choice)) if content_model.choice
-
-            # Collect groups
-            particles.concat(Array(content_model.group)) if content_model.group
-
-            particles
+            case content_model
+            when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice
+              Array(content_model.element) +
+                Array(content_model.any) +
+                Array(content_model.sequence) +
+                Array(content_model.choice) +
+                Array(content_model.group)
+            when Lutaml::Xsd::All
+              # xs:all holds bare elements only.
+              Array(content_model.element)
+            else
+              []
+            end
           end
 
           # Check if XML element matches schema particle
@@ -527,13 +527,16 @@ module Lutaml
             expected = particle.name || particle.ref
             return false if expected.to_s.empty?
 
+            head_local = expected.to_s.split(":").last
             declaration = repository.resolve(
               xml_element.name, xml_element.namespace_uri
             )
             return false unless declaration
 
-            declaration.substitution_group.to_s.split(":").last ==
-              expected.to_s.split(":").last
+            return false if substitution_blocked?(declaration, head_local,
+                                                  repository)
+
+            declaration.substitution_group.to_s.split(":").last == head_local
           end
 
           # Get particle name for error messages
@@ -541,7 +544,21 @@ module Lutaml
           # @param particle [Object] The particle
           # @return [String]
           def particle_name(particle)
-            particle.name || particle.class.name.split("::").last
+            if particle.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+              particle.name || particle.ref
+            else
+              particle.class.name.split("::").last
+            end
+          end
+
+          # Whether the container's whole content can match the empty
+          # sequence — every leaf particle optional.
+          #
+          # @return [Boolean]
+          def container_matches_empty?(particle, repository)
+            leaf_particles([particle], repository).all? do |leaf|
+              parse_occurs(leaf.min_occurs, 1).zero?
+            end
           end
 
           # Parse occurrence value

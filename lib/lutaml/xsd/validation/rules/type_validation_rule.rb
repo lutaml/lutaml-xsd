@@ -86,6 +86,19 @@ module Lutaml
                 )
                 return
               end
+
+              if override_blocked?(schema_element, type_def)
+                report_error(
+                  collector,
+                  code: "xsi_type_blocked",
+                  message: "xsi:type override on element " \
+                           "'#{xml_element.name}' is forbidden by its " \
+                           "block facet",
+                  location: xml_element.xpath,
+                  context: { element: xml_element.name },
+                )
+                return
+              end
             end
             return unless type_def
 
@@ -98,6 +111,57 @@ module Lutaml
             else
               # Handle built-in types
               validate_builtin_type(xml_element, type_def, collector)
+            end
+          end
+
+          # XSD 1.0 §3.3.4: block on the element declaration forbids
+          # replacing the declared type with a type derived by the
+          # blocked kind. Direct derivation from the declared base is
+          # checked; deeper chains need the derivation-closure backlog.
+          #
+          # @return [Boolean]
+          def override_blocked?(schema_element, override_type)
+            tokens = schema_element.block.to_s.split(/\s+/)
+            return false if tokens.empty?
+            return false unless tokens.include?("#all") ||
+              tokens.intersect?(%w[extension restriction])
+
+            kind = derivation_kind_from(override_type,
+                                        schema_element.type.to_s.split(":").last)
+            return false unless kind
+
+            blocked = tokens.include?("#all") ? %w[extension restriction] : tokens
+            blocked.include?(kind)
+          end
+
+          # The derivation kind of the override type when it directly
+          # derives from the declared base; nil otherwise.
+          #
+          # @return [String, nil]
+          def derivation_kind_from(override_type, declared_local)
+            return nil if declared_local.to_s.empty?
+
+            case override_type
+            when Lutaml::Xml::Schema::Xsd::ComplexType
+              content = override_type.complex_content
+              return nil unless content
+
+              %i[extension restriction].each do |kind|
+                part = content.public_send(kind)
+                next unless part
+
+                return kind.to_s if
+                  part.base.to_s.split(":").last == declared_local
+              end
+              nil
+            when Lutaml::Xml::Schema::Xsd::SimpleType
+              restriction = override_type.restriction
+              if restriction &&
+                  restriction.base.to_s.split(":").last == declared_local
+                return "restriction"
+              end
+
+              nil
             end
           end
 

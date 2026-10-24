@@ -268,14 +268,17 @@ module Lutaml
           def substitution_member?(child, schema_element, repository)
             return false unless repository
 
-            head = schema_element.ref
+            head = schema_element.ref || schema_element.name
             return false if head.to_s.empty?
 
+            head_local = head.to_s.split(":").last
             declaration = repository.resolve(child.name, child.namespace_uri)
             return false unless declaration
 
-            declaration.substitution_group.to_s.split(":").last ==
-              head.to_s.split(":").last
+            return false if substitution_blocked?(declaration, head_local,
+                                                  repository)
+
+            declaration.substitution_group.to_s.split(":").last == head_local
           end
 
           # Count how many choice alternatives are present

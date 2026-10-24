@@ -315,6 +315,20 @@ module Lutaml
           instance_ns == expected_ns
         end
 
+        # XSD 1.0 §3.3.4: a block containing "substitution" (or #all)
+        # on the head declaration forbids replacing it with
+        # substitution-group members. The head resolves by local name;
+        # parsed particles carry no prefix-to-namespace mapping.
+        #
+        # @return [Boolean]
+        def substitution_blocked?(_member, head_local, repository)
+          head = repository&.resolve(head_local, nil)
+          return false unless head
+
+          tokens = head.block.to_s.split(/\s+/)
+          tokens.include?("substitution") || tokens.include?("#all")
+        end
+
         # Helper method to create validation errors
         #
         # @param collector [ResultCollector] The result collector
