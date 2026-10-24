@@ -130,9 +130,11 @@ concentration (the work queue, largest first):
 - `Particles_w3c` (275), `ComplexType_w3c` (81), `Element_w3c` (75) —
   content-model depth beyond the current walk
 - `DataTypes_w3c` + `SimpleType_w3c` — list/union/range facets
-  IMPLEMENTED (2026-10-24): in-category 1110/1289 (86.1%). Remaining:
-  duration/date-aware facet comparisons (non-numeric values are
-  deliberately skipped by the numeric comparison)
+  IMPLEMENTED (2026-10-24): in-category 1110/1289 (86.1%).
+  Temporal facet comparisons ALSO implemented: duration orders by
+  (months, seconds) per Appendix E, date/time family via DateTime —
+  temporal cases 231/270 (85.6%). Remaining corners: typed enumeration
+  comparison, gYearMonth edge parsing, duration+pattern combinations
 - `IdentityConstraint_w3c` (82) — selector/field depth, cross-element
   scopes
 - remaining: Attribute (56), ModelGroups (53), Additional (48),
