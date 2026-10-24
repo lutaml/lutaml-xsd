@@ -519,7 +519,7 @@ module Lutaml
             if xml_element.name == schema_element.name
               return namespaces_match_instance?(
                 xml_element,
-                resolve_target_namespace(schema_element, repository),
+                resolve_expected_namespace(schema_element, repository),
               )
             end
 
@@ -604,19 +604,6 @@ module Lutaml
             return :unbounded if value.to_s == "unbounded"
 
             value.to_i
-          end
-
-          # Resolve target namespace for element
-          #
-          # @param schema_element [Lutaml::Xsd::Element] Schema element
-          # @return [String, nil]
-          def resolve_target_namespace(schema_element, repository = nil)
-            # Inline declarations carry no namespace of their own; the
-            # resolver knows the owning schema's target namespace.
-            from_index = repository&.target_namespace_for(schema_element)
-            return from_index unless from_index.nil?
-
-            schema_element.target_namespace
           end
         end
       end

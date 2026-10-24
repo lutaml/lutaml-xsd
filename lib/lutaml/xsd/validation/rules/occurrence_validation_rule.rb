@@ -143,38 +143,58 @@ module Lutaml
             min_occurs = parse_occurs(choice.min_occurs, 1)
             max_occurs = parse_max_occurs(choice.max_occurs, 1)
 
-            # For choice, at least one alternative should be present
-            # Count how many alternatives are present
             present_count = count_choice_alternatives(parent_element, choice,
                                                       repository)
+            occurrence_count = choice_occurrence_count(present_count, choice)
 
-            if present_count < min_occurs
+            if occurrence_count < min_occurs
               report_error(
                 collector,
                 code: "choice_min_occurs_violation",
                 message: "Choice must have at least #{min_occurs} " \
-                         "alternative(s), found #{present_count}",
+                         "alternative(s), found #{occurrence_count}",
                 location: parent_element.xpath,
                 context: {
                   min_occurs: min_occurs,
-                  actual: present_count,
+                  actual: occurrence_count,
                 },
               )
             end
 
-            return unless max_occurs != :unbounded && present_count > max_occurs
+            return unless max_occurs != :unbounded &&
+              occurrence_count > max_occurs
 
             report_error(
               collector,
               code: "choice_max_occurs_violation",
               message: "Choice must have at most #{max_occurs} " \
-                       "alternative(s), found #{present_count}",
+                       "alternative(s), found #{occurrence_count}",
               location: parent_element.xpath,
               context: {
                 max_occurs: max_occurs,
-                actual: present_count,
+                actual: occurrence_count,
               },
             )
+          end
+
+          # One choice occurrence consumes one alternative branch, where
+          # the branch particle repeats per its own occurrence bounds —
+          # a wildcard with 4..6 absorbs four children in a single
+          # choice occurrence. Matched children beyond one branch's
+          # capacity imply repeated choice occurrences.
+          #
+          # @return [Integer]
+          def choice_occurrence_count(present_count, choice)
+            return present_count if present_count.zero?
+
+            capacities = (Array(choice.element) + Array(choice.any)).map do |alt|
+              parse_max_occurs(alt.max_occurs, 1)
+            end
+            return 1 if capacities.empty?
+            return 1 if capacities.include?(:unbounded)
+            return 1 if capacities.max >= present_count
+
+            present_count
           end
 
           # Validate all particle occurrences
@@ -236,7 +256,7 @@ module Lutaml
                                         repository = nil)
             element_name = schema_element.name ||
               schema_element.ref.to_s.split(":").last
-            target_ns = resolve_target_namespace(schema_element, repository)
+            target_ns = resolve_expected_namespace(schema_element, repository)
 
             parent_element.children.count do |child|
               name_matches = child.name == element_name &&
@@ -295,7 +315,7 @@ module Lutaml
                                                   repository)
             element_name = schema_element.name ||
               schema_element.ref.to_s.split(":").last
-            target_ns = resolve_target_namespace(schema_element, repository)
+            target_ns = resolve_expected_namespace(schema_element, repository)
 
             (child.name == element_name &&
               namespaces_match?(child.namespace_uri, target_ns)) ||
@@ -380,19 +400,6 @@ module Lutaml
             return :unbounded if value.to_s == "unbounded"
 
             value.to_i
-          end
-
-          # Resolve target namespace for element
-          #
-          # @param schema_element [Lutaml::Xsd::Element] Schema element
-          # @return [String, nil]
-          def resolve_target_namespace(schema_element, repository = nil)
-            # Inline declarations carry no namespace of their own; the
-            # resolver knows the owning schema's target namespace.
-            from_index = repository&.target_namespace_for(schema_element)
-            return from_index unless from_index.nil?
-
-            schema_element.target_namespace
           end
 
           # Check if namespaces match
