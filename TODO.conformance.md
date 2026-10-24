@@ -127,11 +127,16 @@ the 71.8% baseline, so counts stay comparable). Small per-category
 jitter (±3) between runs is batching noise. Failure concentration
 (the work queue, largest first):
 
-- `Regex_w3c` (355) — ADDRESSED: `XsdRegex` translates XSD patterns to
-  Ruby (implicit anchoring, literal `^`/`$`, dot-matches-newline, `\i`
-  `\c`, `\p{Is...}` blocks, class subtraction). First pass measures
-  Regex_w3c at 1075/1432 (75.1%); remaining corners: unescaped `-` runs
-  inside classes, exotic `\p` category sets, surrogate-pair ranges
+- `Regex_w3c` (355) — decomposed by error source (2026-10-25): 330
+  failures carry the ENGINE's rejection (leptris XSD-regex dialect
+  lacks `\p{Is...}` block escapes and friends, so valid documents are
+  false-positived engine-only 312 + both 18) — moxml/leptris-side,
+  registered upstream; 36 are pipeline-side corners (rules-only 18 +
+  both 18): unescaped `-` runs inside classes, exotic `\p` category
+  sets, surrogate-pair ranges. `XsdRegex` itself now translates
+  top-level block escapes and normalizes block names (hyphen/digit
+  boundaries, upper-run splits, Unicode-renamed blocks) — prerequisite
+  for the pipeline-side corners
 - `Particles_w3c` (261, was 275), `ComplexType_w3c` (80), `Element_w3c`
   (77) — content-model depth beyond the current walk. First cut
   (2026-10-25): the occurrence rule counts wildcard alternatives in
