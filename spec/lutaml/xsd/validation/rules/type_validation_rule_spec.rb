@@ -108,3 +108,145 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::TypeValidationRule do
     end
   end
 end
+
+# Whether lutaml-model maps the nested xs:simpleType inside xs:list;
+# unmapped models keep inline item types unchecked.
+LIST_SIMPLETYPE_MAPPED = begin
+  probe = Lutaml::Xml::Schema::Xsd.parse(
+    '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">' \
+    "<xs:element name=\"r\"><xs:simpleType><xs:list><xs:simpleType>" \
+    '<xs:restriction base="xs:string"/>' \
+    "</xs:simpleType></xs:list></xs:simpleType></xs:element></xs:schema>",
+  )
+  Lutaml::Xml::Schema::Xsd::SimpleType === probe.element.first
+    .simple_type.list.simple_type
+rescue StandardError
+  false
+end
+
+RSpec.describe Lutaml::Xsd::Validation::Rules::TypeValidationRule,
+               "range, list and union facets" do
+  let(:config) { Lutaml::Xsd::Validation::ValidationConfiguration.new }
+  let(:collector) { Lutaml::Xsd::Validation::ResultCollector.new(config) }
+  let(:rule) { described_class.new }
+
+  def validate_value(schema_xml, value)
+    schema = Lutaml::Xml::Schema::Xsd.parse(schema_xml)
+    root = Moxml::Context.new.parse("<r>#{value}</r>").root
+    navigator = Object.new.tap do |nav|
+      nav.define_singleton_method(:current_xpath) { "/r" }
+    end
+    xml_element = Lutaml::Xsd::Validation::XmlElement.new(root, navigator)
+    rule.validate(xml_element, schema.element.first, collector)
+    collector
+  end
+
+  context "with numeric range facets" do
+    let(:schema_xml) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="r">
+            <xs:simpleType>
+              <xs:restriction base="xs:integer">
+                <xs:minInclusive value="1"/>
+                <xs:maxExclusive value="10"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "accepts a value inside the range" do
+      collector = validate_value(schema_xml, "5")
+
+      expect(collector.errors).to be_empty
+    end
+
+    it "reports a value below minInclusive" do
+      collector = validate_value(schema_xml, "0")
+
+      expect(collector.errors.map(&:code))
+        .to include("min_inclusive_violation")
+    end
+
+    it "reports a value equal to maxExclusive" do
+      collector = validate_value(schema_xml, "10")
+
+      expect(collector.errors.map(&:code))
+        .to include("max_exclusive_violation")
+    end
+  end
+
+  context "with a list type" do
+    let(:schema_xml) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="r">
+            <xs:simpleType>
+              <xs:list>
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:enumeration value="a"/>
+                    <xs:enumeration value="b"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:list>
+            </xs:simpleType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "accepts a space-separated list of valid items",
+       if: LIST_SIMPLETYPE_MAPPED do
+      collector = validate_value(schema_xml, "a b")
+
+      expect(collector.errors).to be_empty
+    end
+
+    it "reports an invalid list item",
+       if: LIST_SIMPLETYPE_MAPPED do
+      collector = validate_value(schema_xml, "a z")
+
+      expect(collector.errors.map(&:code)).to include("enumeration_violation")
+    end
+  end
+
+  context "with a union type" do
+    let(:schema_xml) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="r">
+            <xs:simpleType>
+              <xs:union>
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:enumeration value="x"/>
+                  </xs:restriction>
+                </xs:simpleType>
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:enumeration value="y"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:union>
+            </xs:simpleType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "accepts a value matching any member" do
+      collector = validate_value(schema_xml, "y")
+
+      expect(collector.errors).to be_empty
+    end
+
+    it "reports a value matching no member" do
+      collector = validate_value(schema_xml, "z")
+
+      expect(collector.errors.map(&:code)).to include("union_violation")
+    end
+  end
+end
