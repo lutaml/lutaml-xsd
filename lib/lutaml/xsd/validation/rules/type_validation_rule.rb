@@ -87,7 +87,7 @@ module Lutaml
                 return
               end
 
-              if override_blocked?(schema_element, type_def)
+              if override_blocked?(schema_element, type_def, repository)
                 report_error(
                   collector,
                   code: "xsi_type_blocked",
@@ -114,21 +114,28 @@ module Lutaml
             end
           end
 
-          # XSD 1.0 §3.3.4: block on the element declaration forbids
-          # replacing the declared type with a type derived by the
-          # blocked kind. Direct derivation from the declared base is
-          # checked; deeper chains need the derivation-closure backlog.
+          # XSD 1.0 §3.3.4 / §3.4.6: block on the element declaration
+          # AND on the declared complexType forbids replacing the type
+          # with one derived by the blocked kind. Direct derivation from
+          # the declared base is checked; deeper chains need the
+          # derivation-closure backlog.
           #
           # @return [Boolean]
-          def override_blocked?(schema_element, override_type)
+          def override_blocked?(schema_element, override_type, repository)
+            declared_local = schema_element.type.to_s.split(":").last
+            return false if declared_local.to_s.empty?
+
+            kind = derivation_kind_from(override_type, declared_local)
+            return false unless kind
+
             tokens = schema_element.block.to_s.split(/\s+/)
+            declared = repository&.resolve_named_type(declared_local)
+            if declared.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+              tokens += declared.block.to_s.split(/\s+/)
+            end
             return false if tokens.empty?
             return false unless tokens.include?("#all") ||
               tokens.intersect?(%w[extension restriction])
-
-            kind = derivation_kind_from(override_type,
-                                        schema_element.type.to_s.split(":").last)
-            return false unless kind
 
             blocked = tokens.include?("#all") ? %w[extension restriction] : tokens
             blocked.include?(kind)
