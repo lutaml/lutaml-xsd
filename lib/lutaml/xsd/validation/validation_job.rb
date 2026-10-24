@@ -159,6 +159,10 @@ module Lutaml
           @engine_context.findings_for(@xml_content).each do |finding|
             @result_collector.add_error(finding)
           end
+          # One-shot job: free the engine-side schema now — native
+          # document pools otherwise accumulate across batched suite runs
+          # (moxml#350).
+          @engine_context.release
         rescue StandardError => e
           @result_collector.add_warning(
             ValidationError.new(

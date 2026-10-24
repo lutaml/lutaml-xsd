@@ -113,7 +113,7 @@ namespace :conformance do
           "{ name: f.name, expected: f.expected, " \
           "contributor: f.contributor } }; " \
           "File.write(File.join('tmp', " \
-          "'w3c_batch_#{format('%05d', offset)}.json'), JSON.generate(r))",
+          "'w3c_batch_#{format('%05d', offset)}.json'), JSON.generate(r))"
         )
         status << "#{offset}: #{ok ? 'ok' : 'CRASHED'}"
       end
