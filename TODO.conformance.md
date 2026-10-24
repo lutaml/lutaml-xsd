@@ -120,20 +120,29 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3626/4646 (78.1%) |
+| pipeline | 3655/4646 (78.7%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Small per-category
 jitter (±4) between runs is batching noise. Failure concentration
 (the work queue, largest first):
 
-- `Particles_w3c` (72, was 261 at the 76.4% cut) — ref particles now
-  match through the referenced global declaration (name AND namespace;
-  the empty-string name and owner-schema namespace bugs false-positived
-  the whole Je family) and the resolver indexes nested xs:import/
-  xs:include targets (lutaml-model parses them as child Schema
-  objects; the index never descended). Remaining: composition depth
-- `ComplexType_w3c` (80), `Element_w3c` (75) — same depth class
+- `Regex_w3c` (354) — decomposed by error source (2026-10-25): 330
+  failures carry the ENGINE's rejection (leptris XSD-regex dialect
+  lacks `\p{Is...}` block escapes and friends, so valid documents are
+  false-positived engine-only 312 + both 18) — moxml/leptris-side,
+  registered upstream (moxml#464); 36 are pipeline-side corners
+  (rules-only 18 + both 18): unescaped `-` runs inside classes, exotic
+  `\p` category sets, surrogate-pair ranges. `XsdRegex` itself now
+  translates top-level block escapes and normalizes block names
+  (hyphen/digit boundaries, upper-run splits, Unicode-renamed blocks)
+- `ComplexType_w3c` (64, was 80) + `Attribute_w3c` (47, was 56) +
+  `AttributeGroup_w3c` (23, was 26) — attribute refs resolve to the
+  global declaration they reference and xs:attributeGroup refs expand
+  through the resolver (previously ref particles matched an empty
+  name → unexpected_attribute). Remaining: composition depth
+- `Element_w3c` (75), `Particles_w3c` (72) — content-model
+  composition depth
 - `IdentityConstraint_w3c` (72) — selector/field depth, cross-element
   scopes
 - `DataTypes_w3c` (82, was 135) + `SimpleType_w3c` (33, was 36) —
@@ -151,6 +160,5 @@ jitter (±4) between runs is batching noise. Failure concentration
   `\p` category sets, surrogate-pair ranges. `XsdRegex` itself now
   translates top-level block escapes and normalizes block names
   (hyphen/digit boundaries, upper-run splits, Unicode-renamed blocks)
-- remaining: Attribute (56), ModelGroups (50), Additional (48),
-  Group (32), AttributeGroup (26), Schema (20), Wildcards (17),
+- remaining: ModelGroups (50), Group (32), Schema (20), Wildcards (17),
   Errata10 (3)
