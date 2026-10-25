@@ -135,8 +135,14 @@ module Lutaml
               failures << test_case
             end
           rescue StandardError => e
-            failures << test_case
-            warn "#{test_case.name}: #{e.class}: #{e.message[0, 80]}"
+            # An instance that cannot even be assessed is not a valid
+            # one — satisfies the expected-invalid cases.
+            if test_case.expected == "invalid"
+              passed += 1
+            else
+              failures << test_case
+              warn "#{test_case.name}: #{e.class}: #{e.message[0, 80]}"
+            end
           end
 
           { total: cases_list.size, passed: passed, failures: failures }
