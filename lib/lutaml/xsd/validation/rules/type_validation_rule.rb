@@ -503,7 +503,7 @@ module Lutaml
           # @return [void]
           def validate_length_facets(value, restriction, xml_element,
                                      collector)
-            value_length = value.length
+            value_length = measured_length(value, restriction)
 
             # Facet collections are arrays; an empty array must not be
             # treated as a present facet.
@@ -565,6 +565,25 @@ module Lutaml
                 actual_length: value_length,
               },
             )
+          end
+
+          # Length-family facets on binary varieties measure OCTETS,
+          # not characters (XSD 1.0 §2.6): hexBinary encodes two
+          # characters per octet, base64Binary decodes with padding.
+          #
+          # @return [Integer]
+          def measured_length(value, restriction)
+            base = restriction.base.to_s.split(":").last
+            text = value.to_s
+            case base
+            when "hexBinary"
+              text.length / 2
+            when "base64Binary"
+              cleaned = text.gsub(/\s+/, "")
+              (cleaned.length * 3 / 4) - cleaned.count("=")
+            else
+              text.length
+            end
           end
 
           # Validate range facets
