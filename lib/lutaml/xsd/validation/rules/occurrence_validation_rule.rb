@@ -283,7 +283,15 @@ module Lutaml
           #
           # @return [Integer]
           def choice_occurrence_count(present_count, choice)
-            return present_count if present_count.zero?
+            if present_count.zero?
+              # A choice whose every alternative is optional matches the
+              # empty sequence and occurs trivially.
+              return 1 if choice_alternatives(choice).all? do |alt|
+                parse_occurs(alt.min_occurs, 1).zero?
+              end
+
+              return 0
+            end
 
             capacities = choice_alternatives(choice).map do |alt|
               parse_max_occurs(alt.max_occurs, 1)
