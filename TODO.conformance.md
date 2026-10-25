@@ -143,7 +143,8 @@ Failure concentration (the work queue, largest first):
   (months, seconds) per Appendix E, date/time family via DateTime —
   temporal cases 231/270 (85.6%). Remaining corners: typed enumeration
   comparison, gYearMonth edge parsing, duration+pattern combinations
-- `IdentityConstraint_w3c` (72) — selector/field depth, cross-element
+- `IdentityConstraint_w3c` (36) — selector/field depth; multi-field
+tuple keys, node-set field violations and absent-field rows handled, cross-element
   scopes
 - `Particles_w3c` (50, was 261 at the 76.4% cut) + `Element_w3c` (36)
   + `ComplexType_w3c` (26) — element form defaults, ref particles,

@@ -33,14 +33,14 @@ module Lutaml
             collected = {}
 
             Array(schema_element.key).each do |constraint|
-              values = collect_values(xml_element, constraint)
+              values = collect_values(xml_element, constraint, collector)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_key_violation")
               collected[constraint.name] = values if constraint.name
             end
 
             Array(schema_element.unique).each do |constraint|
-              values = collect_values(xml_element, constraint)
+              values = collect_values(xml_element, constraint, collector)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_unique_violation")
               collected[constraint.name] = values if constraint.name
@@ -50,7 +50,7 @@ module Lutaml
               referred = refer_name(constraint) && collected[refer_name(constraint)]
               next if referred.nil?
 
-              collect_values(xml_element, constraint).each do |value|
+              collect_values(xml_element, constraint, collector).each do |value|
                 next if referred.include?(value)
 
                 report_error(
@@ -67,23 +67,48 @@ module Lutaml
 
           private
 
-          def collect_values(xml_element, constraint)
+          def collect_values(xml_element, constraint, collector)
             fields = field_xpaths(constraint)
             selector_xpaths(constraint).flat_map do |selector|
               Array(xml_element.moxml_element.xpath(selector)).map do |node|
-                values = fields.filter_map do |field|
-                  field_value(node, field)
+                values = []
+                ambiguous = false
+                fields.each do |field|
+                  matched = Array(node.xpath(field))
+                  # A field evaluating to a node-set with more than one
+                  # member violates the constraint (XSD 1.0 §3.11.4).
+                  ambiguous = true if matched.size > 1
+                  values << (matched.first ? field_node_value(matched.first) : nil)
                 end
-                # A multi-field constraint identifies by the TUPLE of its
-                # field values; flattening would check each field for
-                # uniqueness independently.
-                if values.empty?
-                  nil
-                else
-                  (values.length == 1 ? values.first : values)
+
+                if ambiguous
+                  report_error(
+                    collector,
+                    code: "field_node_set_violation",
+                    message: "Field #{fields.join(', ')} evaluates to " \
+                             "more than one node in '#{node.name}'",
+                    location: xml_element.xpath,
+                    context: { constraint: constraint.name },
+                  )
+                  next
                 end
+
+                # A qualified node has every field present; an absent
+                # field means the node does not contribute a row.
+                next nil if values.any?(&:nil?)
+
+                values.length == 1 ? values.first : values
               end
             end.compact
+          end
+
+          # @param node [Moxml::Node] attribute or element node
+          # @return [String, nil]
+          def field_node_value(node)
+            case node
+            when Moxml::Attribute then node.value
+            else node.text
+            end
           end
 
           def report_duplicates(collector, xml_element, constraint, values,
@@ -136,16 +161,6 @@ module Lutaml
               value.split(/\s+/).reject(&:empty?)
             else
               []
-            end
-          end
-
-          def field_value(node, field_xpath)
-            first = Array(node.xpath(field_xpath)).first
-            return nil unless first
-
-            case first
-            when Moxml::Attribute then first.value
-            else first.text
             end
           end
 
