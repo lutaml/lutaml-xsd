@@ -142,6 +142,11 @@ module Lutaml
             return if normalize_namespace(expected_ns) ==
               normalize_namespace(actual_ns)
 
+            # A global declaration governs qualified use only — an
+            # instance element in another namespace is not this
+            # declaration (the content model's wildcards decide).
+            return if repository&.top_level_declaration?(schema_element)
+
             report_error(
               collector,
               code: "namespace_mismatch",

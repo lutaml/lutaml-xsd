@@ -41,9 +41,19 @@ module Lutaml
           @namespaces = {}.compare_by_identity
           @expected_namespaces = {}.compare_by_identity
           @block_defaults = {}.compare_by_identity
+          @declaration_kinds = {}.compare_by_identity
           @attributes = Hash.new { |hash, key| hash[key] = [] }
           @attribute_groups = {}
           @elements = index_elements
+        end
+
+        # Whether the declaration is a top-level (global) element —
+        # global declarations govern qualified use only.
+        #
+        # @param element [Object]
+        # @return [Boolean]
+        def top_level_declaration?(element)
+          @declaration_kinds[element] == :top
         end
 
         # The owning schema's blockDefault for a declaration — the
@@ -288,6 +298,7 @@ module Lutaml
           @expected_namespaces[element] =
             effective_element_namespace(element, namespace, kind, schema)
           @block_defaults[element] = schema.block_default
+          @declaration_kinds[element] = kind
           unless element.name.nil? || element.name.empty?
             index[element.name] << [element, namespace, kind]
           end
