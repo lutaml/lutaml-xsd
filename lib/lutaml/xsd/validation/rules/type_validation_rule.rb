@@ -623,7 +623,8 @@ module Lutaml
           def range_domain(base)
             case base.to_s.split(":").last
             when "duration" then :duration
-            when "date", "dateTime", "time", "gYear", "gYearMonth"
+            when "date", "dateTime", "time", "gYear", "gYearMonth",
+                 "gMonth", "gMonthDay", "gDay"
               :temporal
             end
           end
@@ -660,10 +661,34 @@ module Lutaml
             DurationKey.new(months, seconds)
           end
 
+          # Calendar-derived types order by their fields; each XSD
+          # lexical form maps to a comparable numeric tuple. Timezones
+          # are stripped (the suite's range facets compare naive
+          # values); unparseable forms fall back to DateTime.
           def temporal_key(value)
-            require "date"
-            DateTime.parse(value.to_s)
+            text = value.to_s.strip.sub(/\s/, "").delete_suffix("Z")
+              .sub(/[+-]\d{2}:\d{2}\z/, "")
+
+            calendar_key(text) || begin
+              require "date"
+              DateTime.parse(value.to_s)
+            end
           rescue StandardError
+            nil
+          end
+
+          # @return [Array<Integer>, nil] the calendar fields of an XSD
+          #   lexical form, or nil when the text is not one
+          def calendar_key(text)
+            year_month = text.match(/\A(-?\d{4,})-(\d{2})\z/)
+            return [year_month[1].to_i, year_month[2].to_i] if year_month
+
+            g_month_day = text.match(/\A--(\d{2})-(\d{2})\z/)
+            return [g_month_day[1].to_i, g_month_day[2].to_i] if g_month_day
+
+            single = text.match(/\A(-?\d{4,}|--\d{2}|---\d{2})\z/)
+            return [single[1].to_i] if single
+
             nil
           end
 
