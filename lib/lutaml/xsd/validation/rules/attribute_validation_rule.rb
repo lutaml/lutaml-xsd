@@ -80,14 +80,16 @@ module Lutaml
             # Step 2: Validate attribute values
             validate_attribute_values(xml_element, resolved_attributes,
                                       xml_attributes, collector,
-                                      repository: repository)
+                                      repository: repository,
+                                      schema_element: schema_element)
 
             # Step 3: Check for unexpected attributes
             validate_no_unexpected_attributes(xml_element,
                                               resolved_attributes,
                                               xml_attributes, collector,
                                               wildcard: wildcard,
-                                              repository: repository)
+                                              repository: repository,
+                                              schema_element: schema_element)
           end
 
           private
@@ -291,10 +293,11 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_attribute_values(xml_element, schema_attrs, xml_attrs,
-                                        collector, repository: nil)
+                                        collector, repository: nil,
+                                        schema_element: nil)
             xml_attrs.each do |xml_attr|
               schema_attr = find_schema_attribute(schema_attrs, xml_attr,
-                                                  repository)
+                                                  repository, schema_element)
               next unless schema_attr
 
               validate_attribute_value(xml_element, xml_attr, schema_attr,
@@ -308,15 +311,33 @@ module Lutaml
           # @param xml_attr [XmlAttribute] XML attribute
           # @param repository [SchemaDefinitionResolver, nil]
           # @return [Lutaml::Xsd::Attribute, nil]
-          def find_schema_attribute(schema_attrs, xml_attr, repository = nil)
-            schema_attrs.find do |sa|
-              next false unless sa.name == xml_attr.name
+          def find_schema_attribute(schema_attrs, xml_attr, repository = nil,
+                                    schema_element = nil)
+            matches = schema_attrs.select { |sa| sa.name == xml_attr.name }
+            return nil if matches.empty?
 
-              # Owner schema's target namespace for indexed (global)
-              # declarations; nil reads as unqualified for locals.
-              expected = repository&.target_namespace_for(sa)
-              xml_attr.namespace_uri.nil? || expected == xml_attr.namespace_uri
+            exact = matches.find do |sa|
+              expected = repository&.target_namespace_for(sa).to_s
+              expected == xml_attr.namespace_uri.to_s
             end
+            return exact if exact
+
+            unqualified = matches.find do |sa|
+              xml_attr.namespace_uri.to_s.empty? &&
+                repository&.target_namespace_for(sa).to_s.empty?
+            end
+            return unqualified if unqualified
+
+            # attributeFormDefault="qualified": local attributes expect
+            # the owner schema's target namespace even unindexed.
+            afq = repository&.attribute_form_default_for(schema_element)
+              .to_s == "qualified"
+            if afq && xml_attr.namespace_uri.to_s.match?(/\S/)
+              tns = repository&.target_namespace_for(schema_element).to_s
+              return matches.first if tns == xml_attr.namespace_uri.to_s
+            end
+
+            nil
           end
 
           # Validate single attribute value
@@ -379,7 +400,8 @@ module Lutaml
           # @return [void]
           def validate_no_unexpected_attributes(xml_element, schema_attrs,
                                                 xml_attrs, collector,
-                                                wildcard: nil, repository: nil)
+                                                wildcard: nil, repository: nil,
+                                                schema_element: nil)
             xml_attrs.each do |xml_attr|
               # Skip xmlns attributes
               next if xml_attr.name == "xmlns" ||
@@ -390,7 +412,7 @@ module Lutaml
                 "http://www.w3.org/2001/XMLSchema-instance"
 
               schema_attr = find_schema_attribute(schema_attrs, xml_attr,
-                                                  repository)
+                                                  repository, schema_element)
               next if schema_attr
 
               if wildcard &&

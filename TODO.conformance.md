@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3839/4646 (82.6%) |
+| pipeline | 3877/4646 (83.5%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Run-to-run Particles
