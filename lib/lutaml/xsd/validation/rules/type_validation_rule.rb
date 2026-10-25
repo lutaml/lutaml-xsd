@@ -87,7 +87,7 @@ module Lutaml
                 return
               end
 
-              declared_local = schema_element.type.to_s.split(":").last
+              declared_local = schema_element.type.to_s.split(":").last.to_s
               if declared_local.match?(/\S/)
                 override_local = type_def.name.to_s.split(":").last
                 unless override_local == declared_local ||
