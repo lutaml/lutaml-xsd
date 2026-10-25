@@ -42,6 +42,7 @@ module Lutaml
           @expected_namespaces = {}.compare_by_identity
           @block_defaults = {}.compare_by_identity
           @declaration_kinds = {}.compare_by_identity
+          @attribute_form_defaults = {}.compare_by_identity
           @attributes = Hash.new { |hash, key| hash[key] = [] }
           @attribute_groups = {}
           @elements = index_elements
@@ -64,6 +65,16 @@ module Lutaml
         # @return [String, nil]
         def block_default_for(element)
           @block_defaults[element]
+        end
+
+        # The owning schema's attributeFormDefault for a declaration —
+        # local attributes expect the schema's target namespace when it
+        # is "qualified" (XSD 1.0 §3.2.2).
+        #
+        # @param element [Object]
+        # @return [String, nil]
+        def attribute_form_default_for(element)
+          @attribute_form_defaults[element]
         end
 
         # Named attribute-group declaration by local name (for
@@ -299,6 +310,7 @@ module Lutaml
             effective_element_namespace(element, namespace, kind, schema)
           @block_defaults[element] = schema.block_default
           @declaration_kinds[element] = kind
+          @attribute_form_defaults[element] = schema.attribute_form_default
           unless element.name.nil? || element.name.empty?
             index[element.name] << [element, namespace, kind]
           end
