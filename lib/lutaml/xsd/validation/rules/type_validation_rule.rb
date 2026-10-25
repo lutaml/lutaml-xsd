@@ -105,6 +105,8 @@ module Lutaml
                 end
               end
 
+              return if abstract_type_used?(type_def, xml_element, collector)
+
               if override_blocked?(schema_element, type_def, repository)
                 report_error(
                   collector,
@@ -125,11 +127,33 @@ module Lutaml
               validate_simple_type_content(xml_element, type_def, collector,
                                            repository: repository)
             when Lutaml::Xsd::ComplexType
+              return if abstract_type_used?(type_def, xml_element, collector)
+
               validate_complex_type_content(xml_element, type_def, collector)
             else
               # Handle built-in types
               validate_builtin_type(xml_element, type_def, collector)
             end
+          end
+
+          # An abstract complex type can only be used through an
+          # xsi:type override naming a DERIVED type — the override
+          # itself may not be abstract either (XSD 1.0 §3.4.3).
+          #
+          # @return [Boolean] true when the error was reported
+          def abstract_type_used?(type_def, xml_element, collector)
+            return false unless type_def.is_a?(Lutaml::Xsd::ComplexType)
+            return false unless type_def.abstract.to_s.match?(/\A(true|1)\z/)
+
+            report_error(
+              collector,
+              code: "abstract_type_used",
+              message: "Type '#{type_def.name}' is abstract and cannot " \
+                       "be used as an element's type",
+              location: xml_element.xpath,
+              context: { element: xml_element.name },
+            )
+            true
           end
 
           # XSD 1.0 §3.3.4: an xsi:type override must be validly derived
