@@ -479,6 +479,34 @@ module Lutaml
               end
             end
 
+            # The base type's wildcard flows into the derived type
+            # through extension and restriction alike.
+            base = derivation_base(schema_def, repository)
+            return collect_any_attribute(base, repository) if base
+
+            nil
+          end
+
+          # The named base type of the derivation shape, when present.
+          #
+          # @return [Lutaml::Xml::Schema::Xsd::ComplexType, nil]
+          def derivation_base(schema_def, repository)
+            CONTENT_KINDS.each do |content_kind|
+              content = schema_def.public_send(content_kind)
+              next unless content
+
+              CONTENT_PART_KINDS.each do |part_kind|
+                part = Array(content.public_send(part_kind)).first
+                next unless part
+
+                local = part.base.to_s.split(":").last
+                next if local.to_s.empty?
+
+                base = repository&.resolve_named_type(local)
+                return base if base.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+              end
+            end
+
             nil
           end
 
