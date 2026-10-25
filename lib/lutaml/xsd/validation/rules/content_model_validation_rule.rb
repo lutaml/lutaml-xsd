@@ -524,8 +524,11 @@ module Lutaml
             )
             return false unless declaration
 
-            return false if substitution_blocked?(declaration, head_local,
-                                                  repository)
+            head = repository.resolve(head_local, nil)
+            return false unless head
+
+            return false if substitution_blocked?(declaration, head,
+                                                  head_local, repository)
 
             declaration.substitution_group.to_s.split(":").last == head_local
           end

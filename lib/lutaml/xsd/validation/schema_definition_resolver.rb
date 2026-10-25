@@ -40,9 +40,20 @@ module Lutaml
           @repository = repository
           @namespaces = {}.compare_by_identity
           @expected_namespaces = {}.compare_by_identity
+          @block_defaults = {}.compare_by_identity
           @attributes = Hash.new { |hash, key| hash[key] = [] }
           @attribute_groups = {}
           @elements = index_elements
+        end
+
+        # The owning schema's blockDefault for a declaration — the
+        # schema-wide default when the element carries no explicit
+        # block (XSD 1.0 §3.3.2).
+        #
+        # @param element [Object]
+        # @return [String, nil]
+        def block_default_for(element)
+          @block_defaults[element]
         end
 
         # Named attribute-group declaration by local name (for
@@ -276,6 +287,7 @@ module Lutaml
           @namespaces[element] = namespace
           @expected_namespaces[element] =
             effective_element_namespace(element, namespace, kind, schema)
+          @block_defaults[element] = schema.block_default
           unless element.name.nil? || element.name.empty?
             index[element.name] << [element, namespace, kind]
           end

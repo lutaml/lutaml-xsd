@@ -315,18 +315,80 @@ module Lutaml
           instance_ns == expected_ns
         end
 
+        # The block tokens in force for an element declaration: its
+        # explicit block, else the owning schema's blockDefault.
+        #
+        # @return [Array<String>]
+        def effective_block_tokens(schema_element, repository)
+          explicit = schema_element.block.to_s
+          return explicit.split(/\s+/) if explicit.match?(/\S/)
+
+          default = repository&.block_default_for(schema_element).to_s
+          default.match?(/\S/) ? default.split(/\s+/) : []
+        end
+
         # XSD 1.0 §3.3.4: a block containing "substitution" (or #all)
         # on the head declaration forbids replacing it with
         # substitution-group members. The head resolves by local name;
         # parsed particles carry no prefix-to-namespace mapping.
         #
+        # @param member_declaration [Object] the resolved member
+        #   declaration
         # @return [Boolean]
-        def substitution_blocked?(_member, head_local, repository)
-          head = repository&.resolve(head_local, nil)
-          return false unless head
+        def substitution_blocked?(member_declaration, head, _head_local,
+                                  repository)
+          tokens = effective_block_tokens(head, repository)
+          return true if tokens.include?("substitution") ||
+            tokens.include?("#all")
+          return false unless tokens.intersect?(%w[extension restriction])
 
-          tokens = head.block.to_s.split(/\s+/)
-          tokens.include?("substitution") || tokens.include?("#all")
+          # A member whose own type derives from the head's type by a
+          # blocked kind is out too (XSD 1.0 §3.3.4 {disallowed
+          # substitutions}); direct derivation only.
+          member_local = member_declaration.type.to_s.split(":").last
+          head_type_local = head.type.to_s.split(":").last
+          return false if member_local.to_s.empty? || head_type_local.to_s.empty?
+          return false if member_local == head_type_local
+
+          member_type = repository.resolve_named_type(member_local)
+          return false unless member_type
+
+          kind = derivation_kind_from(member_type, head_type_local)
+          return false unless kind
+
+          blocked = tokens.include?("#all") ? %w[extension restriction] : tokens
+          blocked.include?(kind)
+        end
+
+        # The derivation kind of a type when it directly derives from
+        # the named base; nil when it does not derive from it.
+        #
+        # @return [String, nil]
+        def derivation_kind_from(type, declared_local)
+          return nil if declared_local.to_s.empty?
+
+          case type
+          when Lutaml::Xml::Schema::Xsd::ComplexType
+            content = type.complex_content
+            return nil unless content
+
+            %i[extension restriction].each do |kind|
+              part = content.public_send(kind)
+              next unless part
+
+              return kind.to_s if
+                part.base.to_s.split(":").last == declared_local
+            end
+            nil
+          when Lutaml::Xml::Schema::Xsd::SimpleType
+            restriction = type.restriction
+            if restriction &&
+                restriction.base.to_s.split(":").last == declared_local
+              return "restriction"
+            end
+
+            nil
+          end
         end
 
         # Whether an instance child matches a content-model particle of

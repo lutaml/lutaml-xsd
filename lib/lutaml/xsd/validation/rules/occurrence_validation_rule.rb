@@ -314,8 +314,11 @@ module Lutaml
             declaration = repository.resolve(child.name, child.namespace_uri)
             return false unless declaration
 
-            return false if substitution_blocked?(declaration, head_local,
-                                                  repository)
+            resolved_head = repository.resolve(head_local, nil)
+            return false unless resolved_head
+
+            return false if substitution_blocked?(declaration, resolved_head,
+                                                  head_local, repository)
 
             declaration.substitution_group.to_s.split(":").last == head_local
           end

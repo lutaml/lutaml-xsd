@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3772/4646 (81.2%) |
+| pipeline | 3796/4646 (81.7%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Run-to-run Particles
@@ -145,17 +145,20 @@ Failure concentration (the work queue, largest first):
   comparison, gYearMonth edge parsing, duration+pattern combinations
 - `IdentityConstraint_w3c` (72) — selector/field depth, cross-element
   scopes
-- `Particles_w3c` (51, was 261 at the 76.4% cut) + `Element_w3c` (60)
+- `Particles_w3c` (50, was 261 at the 76.4% cut) + `Element_w3c` (36)
   + `ComplexType_w3c` (28) — element form defaults, ref particles,
   nested imports, choice occurrence bounds, block= enforcement
   (element- AND type-level block against direct-derivation overrides),
   choice alternatives of any particle kind (choice(sequence(a)) no
-  longer counts zero alternatives) and group-ref occurrence bounds
-  (the ref's minOccurs/maxOccurs governs the expanded container) are
-  in; remaining is composition depth. Rule crashes on xs:all
-  containers fixed (typed collect_particles, empty-all semantics,
-  particle_name dispatch) — these had been poisoning run-to-run
-  measurements
+  longer counts zero alternatives), group-ref occurrence bounds (the
+  ref's minOccurs/maxOccurs governs the expanded container), xsi:type
+  derivation VALIDITY (an override must be validly derived from the
+  declared type — lists/unions derive from anySimpleType, not their
+  item types) and schema-level blockDefault (the schema-wide default
+  block applies to declarations without an explicit block) are in;
+  remaining is composition depth. Rule crashes on xs:all containers
+  fixed (typed collect_particles, empty-all semantics, particle_name
+  dispatch) — these had been poisoning run-to-run measurements
 - `ModelGroups_w3c` (21, was 47) — base-type attributes flow into
   derived types through extension AND restriction (a restriction
   narrows but cannot drop attributes, XSD 1.0 §3.4.2); the mgB/mgF
