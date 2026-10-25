@@ -316,12 +316,19 @@ module Lutaml
         end
 
         # The block tokens in force for an element declaration: its
-        # explicit block, else the owning schema's blockDefault.
+        # explicit block, else the owning schema's blockDefault. A
+        # PRESENT-but-empty block overrides the default with nothing —
+        # nil (absent) and "" (explicitly empty) are distinct
+        # (XSD 1.0 §3.3.2).
         #
         # @return [Array<String>]
         def effective_block_tokens(schema_element, repository)
-          explicit = schema_element.block.to_s
-          return explicit.split(/\s+/) if explicit.match?(/\S/)
+          explicit = schema_element.block
+          return [] if explicit == ""
+
+          if explicit&.match?(/\S/)
+            return explicit.to_s.split(/\s+/)
+          end
 
           default = repository&.block_default_for(schema_element).to_s
           default.match?(/\S/) ? default.split(/\s+/) : []

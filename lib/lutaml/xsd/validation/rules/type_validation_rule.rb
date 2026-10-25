@@ -135,11 +135,19 @@ module Lutaml
           # XSD 1.0 §3.3.4: an xsi:type override must be validly derived
           # from the declared type — the base chain must reach it. Lists
           # and unions derive from anySimpleType, not from their item or
-          # member types, so a pure list/union never qualifies.
+          # member types, so a pure list/union never qualifies. A union
+          # base admits overrides derived from (or naming) any member.
           #
           # @return [Boolean]
           def validly_derived?(type, base_local, repository, depth = 0)
             return false if type.nil? || base_local.to_s.empty? || depth > 10
+
+            if depth.zero?
+              base = repository&.resolve_named_type(base_local)
+              if base.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType) && base.union
+                return union_member_derived?(type, base, repository, depth)
+              end
+            end
 
             case type
             when Lutaml::Xml::Schema::Xsd::ComplexType
@@ -170,6 +178,22 @@ module Lutaml
               )
             else
               false
+            end
+          end
+
+          # Whether the override is, or derives from, any member of the
+          # declared union (member types nest through named references).
+          #
+          # @return [Boolean]
+          def union_member_derived?(override, union_base, repository, depth)
+            members = union_base.union.member_types.to_s.split(/\s+/)
+              .map { |m| m.split(":").last }.reject(&:empty?)
+            return false if depth > 10
+
+            members.any? do |member_local|
+              override.name.to_s.split(":").last == member_local ||
+                validly_derived?(override, member_local, repository,
+                                 depth + 1)
             end
           end
 
