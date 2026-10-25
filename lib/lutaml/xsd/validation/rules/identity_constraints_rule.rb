@@ -68,13 +68,22 @@ module Lutaml
           private
 
           def collect_values(xml_element, constraint)
+            fields = field_xpaths(constraint)
             selector_xpaths(constraint).flat_map do |selector|
               Array(xml_element.moxml_element.xpath(selector)).map do |node|
-                field_xpaths(constraint).filter_map do |field|
+                values = fields.filter_map do |field|
                   field_value(node, field)
                 end
+                # A multi-field constraint identifies by the TUPLE of its
+                # field values; flattening would check each field for
+                # uniqueness independently.
+                if values.empty?
+                  nil
+                else
+                  (values.length == 1 ? values.first : values)
+                end
               end
-            end.flatten.compact
+            end.compact
           end
 
           def report_duplicates(collector, xml_element, constraint, values,

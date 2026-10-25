@@ -63,7 +63,8 @@ module Lutaml
             return unless schema_element
 
             schema_attributes =
-              collect_schema_attributes(schema_element, repository)
+              collect_schema_attributes(schema_element, repository,
+                                        xml_element)
             # Ref attributes resolve to the global declaration they
             # reference — the particle carries no name of its own.
             # The raw list stays for the required check (use lives on
@@ -71,7 +72,8 @@ module Lutaml
             resolved_attributes =
               resolve_schema_attributes(schema_attributes, repository)
             xml_attributes = xml_element.attributes
-            wildcard = collect_any_attribute(schema_element, repository)
+            wildcard = collect_any_attribute(schema_element, repository,
+                                             xml_element)
 
             # Step 1: Check required attributes are present
             validate_required_attributes(xml_element, schema_attributes,
@@ -112,13 +114,25 @@ module Lutaml
           # @param schema_def [Lutaml::Xsd::Element, Lutaml::Xsd::ComplexType]
           #   Schema definition
           # @return [Array<Lutaml::Xsd::Attribute>]
-          def collect_schema_attributes(schema_def, repository = nil)
+          def collect_schema_attributes(schema_def, repository = nil,
+                                        xml_element = nil)
             attributes = []
 
-            # For elements, get attributes from type
+            # For elements, get attributes from type — an xsi:type
+            # override replaces the declared type.
             if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+              override = xsi_override_type(schema_def, repository,
+                                           xml_element)
+              if override
+                return collect_schema_attributes(override, repository,
+                                                 xml_element)
+              end
+
               type_def = resolve_type(schema_def, repository)
-              return collect_schema_attributes(type_def, repository) if type_def
+              if type_def
+                return collect_schema_attributes(type_def, repository,
+                                                 xml_element)
+              end
             end
 
             # For complex types, collect attributes
@@ -173,6 +187,19 @@ module Lutaml
             return [] unless base.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
 
             collect_schema_attributes(base, repository)
+          end
+
+          # The xsi:type override's type for an instance element, when
+          # the override resolves to a named type.
+          #
+          # @return [Object, nil]
+          def xsi_override_type(_schema_element, repository, xml_element)
+            return nil unless xml_element
+
+            xsi = xsi_attribute(xml_element, "type")
+            return nil unless xsi&.value.to_s.match?(/\S/)
+
+            repository&.resolve_named_type(xsi.value.to_s.split(":").last)
           end
 
           # Resolve type from element
@@ -470,8 +497,16 @@ module Lutaml
             end
           end
 
-          def collect_any_attribute(schema_def, repository = nil)
+          def collect_any_attribute(schema_def, repository = nil,
+                                    xml_element = nil)
             if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+              override = xsi_override_type(schema_def, repository,
+                                           xml_element)
+              if override
+                return collect_any_attribute(override, repository,
+                                             xml_element)
+              end
+
               type_def = resolve_type(schema_def, repository)
               return collect_any_attribute(type_def, repository) if type_def
             end
