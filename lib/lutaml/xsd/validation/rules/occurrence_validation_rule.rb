@@ -66,9 +66,15 @@ module Lutaml
               validate_all_occurrences(parent_element, schema_particle,
                                        collector, repository: repository)
             when Lutaml::Xml::Schema::Xsd::Group
+              # The group REF carries the occurrence bounds; the expanded
+              # declaration itself has none.
               expand_group_container(schema_particle, repository).each do |container|
-                validate(parent_element, container, collector,
-                         repository: repository)
+                validate_container_occurrences(
+                  parent_element, container, collector,
+                  repository: repository,
+                  min_occurs: parse_occurs(schema_particle.min_occurs, 1),
+                  max_occurs: parse_max_occurs(schema_particle.max_occurs, 1)
+                )
               end
             end
           end
@@ -118,8 +124,31 @@ module Lutaml
           # @param sequence [Lutaml::Xsd::Sequence] Schema sequence
           # @param collector [ResultCollector] Result collector
           # @return [void]
+          def validate_container_occurrences(parent_element, container,
+                                             collector, repository:,
+                                             min_occurs:, max_occurs:)
+            case container
+            when Lutaml::Xsd::Sequence
+              validate_sequence_occurrences(parent_element, container,
+                                            collector, repository: repository,
+                                                       min_occurs: min_occurs,
+                                                       max_occurs: max_occurs)
+            when Lutaml::Xsd::Choice
+              validate_choice_occurrences(parent_element, container,
+                                          collector, repository: repository,
+                                                     min_occurs: min_occurs,
+                                                     max_occurs: max_occurs)
+            when Lutaml::Xsd::All
+              validate_all_occurrences(parent_element, container, collector,
+                                       repository: repository,
+                                       min_occurs: min_occurs,
+                                       max_occurs: max_occurs)
+            end
+          end
+
           def validate_sequence_occurrences(parent_element, sequence,
-                                            collector, repository: nil)
+                                            collector, repository: nil,
+                                            **)
             return if sequence.element.empty?
 
             Array(sequence.element).each do |element|
@@ -139,9 +168,10 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_choice_occurrences(parent_element, choice, collector,
-                                          repository: nil)
-            min_occurs = parse_occurs(choice.min_occurs, 1)
-            max_occurs = parse_max_occurs(choice.max_occurs, 1)
+                                          repository: nil, min_occurs: nil,
+                                          max_occurs: nil)
+            min_occurs ||= parse_occurs(choice.min_occurs, 1)
+            max_occurs ||= parse_max_occurs(choice.max_occurs, 1)
 
             present_count = count_choice_alternatives(parent_element, choice,
                                                       repository)
@@ -213,7 +243,7 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_all_occurrences(parent_element, all, collector,
-                                       repository: nil)
+                                       repository: nil, **)
             return if all.element.empty?
 
             # In xs:all, each element can appear 0 or 1 times
