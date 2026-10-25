@@ -78,7 +78,15 @@ module Lutaml
             )
             # nil: an xsi:type override that does not resolve — the type
             # rule already reports it, so no content walk runs here.
-            return if particles.nil? || particles.empty?
+            return if particles.nil?
+
+            # A type with no particle model at all is EMPTY content:
+            # neither element children nor character data.
+            if particles.empty?
+              report_empty_content_violation(xml_element, schema_def,
+                                             collector, repository)
+              return
+            end
 
             # The engine does not check abstract-element usage; scan for
             # it regardless of whether the engine answered.
@@ -91,6 +99,45 @@ module Lutaml
           end
 
           private
+
+          # A type with no particle model at all is EMPTY content:
+          # neither element children nor character data.
+          #
+          # @return [void]
+          def report_empty_content_violation(xml_element, schema_def,
+                                             collector, repository)
+            type = if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+                     resolve_type(schema_def, repository)
+                   else
+                     schema_def
+                   end
+            return unless type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+            return unless empty_content_type?(type)
+            return if xml_element.children.empty? &&
+              xml_element.text_content.to_s.strip.empty?
+
+            report_error(
+              collector,
+              code: "empty_content_violation",
+              message: "Element '#{xml_element.name}' has an empty " \
+                       "content model but carries content",
+              location: xml_element.xpath,
+              context: { element: xml_element.name },
+            )
+          end
+
+          # Whether the complex type declares no content model of any
+          # kind (attribute-only declarations are empty content).
+          #
+          # @return [Boolean]
+          def empty_content_type?(type)
+            COMPLEX_PARTICLE_KINDS.each do |kind|
+              return false if Array(type.public_send(kind)).any?
+            end
+            return false if type.simple_content || type.complex_content
+
+            true
+          end
 
           # Particles of the effective type: an xsi:type override wins over
           # the declared type; the walk then consumes the list in order.
