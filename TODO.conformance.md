@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3757/4646 (80.9%) |
+| pipeline | 3772/4646 (81.2%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Run-to-run Particles
@@ -145,20 +145,22 @@ Failure concentration (the work queue, largest first):
   comparison, gYearMonth edge parsing, duration+pattern combinations
 - `IdentityConstraint_w3c` (72) — selector/field depth, cross-element
   scopes
-- `Particles_w3c` (68, was 261 at the 76.4% cut) + `Element_w3c` (60)
+- `Particles_w3c` (51, was 261 at the 76.4% cut) + `Element_w3c` (60)
   + `ComplexType_w3c` (28) — element form defaults, ref particles,
   nested imports, choice occurrence bounds, block= enforcement
-  (element- AND type-level block against direct-derivation overrides)
-  and choice alternatives of any particle kind (choice(sequence(a))
-  no longer counts zero alternatives) are in; remaining is
-  composition depth. Rule crashes on xs:all containers fixed (typed
-  collect_particles, empty-all semantics, particle_name dispatch) —
-  these had been poisoning run-to-run measurements
+  (element- AND type-level block against direct-derivation overrides),
+  choice alternatives of any particle kind (choice(sequence(a)) no
+  longer counts zero alternatives) and group-ref occurrence bounds
+  (the ref's minOccurs/maxOccurs governs the expanded container) are
+  in; remaining is composition depth. Rule crashes on xs:all
+  containers fixed (typed collect_particles, empty-all semantics,
+  particle_name dispatch) — these had been poisoning run-to-run
+  measurements
 - `ModelGroups_w3c` (21, was 47) — base-type attributes flow into
   derived types through extension AND restriction (a restriction
   narrows but cannot drop attributes, XSD 1.0 §3.4.2); the mgB/mgF
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
-- remaining: Attribute (46), Additional (47), Particles (64),
-  Group (23), AttributeGroup (21), Schema (20), Wildcards (17),
+- remaining: Attribute (46), Additional (47), Element (60),
+  Group (21), AttributeGroup (21), Schema (20), Wildcards (17),
   Errata10 (3)
