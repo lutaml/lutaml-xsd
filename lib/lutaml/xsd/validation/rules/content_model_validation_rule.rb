@@ -127,10 +127,13 @@ module Lutaml
           end
 
           # Whether the complex type declares no content model of any
-          # kind (attribute-only declarations are empty content).
+          # kind (attribute-only declarations are empty content). A
+          # MIXED type admits character data regardless.
           #
           # @return [Boolean]
           def empty_content_type?(type)
+            return false if type.mixed.to_s.match?(/\A(true|1)\z/)
+
             COMPLEX_PARTICLE_KINDS.each do |kind|
               return false if Array(type.public_send(kind)).any?
             end
