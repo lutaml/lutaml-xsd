@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3814/4646 (82.1%) |
+| pipeline | 3839/4646 (82.6%) |
 
 One batch (cases 3000-3049) crashed and is unmeasured (same batch as
 the 71.8% baseline, so counts stay comparable). Run-to-run Particles
@@ -150,7 +150,9 @@ Failure concentration (the work queue, largest first):
   nested imports, choice occurrence bounds, block= enforcement
   (element- AND type-level block against direct-derivation overrides),
   choice alternatives of any particle kind (choice(sequence(a)) no
-  longer counts zero alternatives), group-ref occurrence bounds (the
+  longer counts zero alternatives), global-declaration namespace
+  governance (a global element governs qualified use only — an
+  unqualified instance child is wildcard territory, not a mismatch),
   ref's minOccurs/maxOccurs governs the expanded container, and a bounded group SEQUENCE
   repeats as a unit), xsi:type
   derivation VALIDITY (an override must be validly derived from the
