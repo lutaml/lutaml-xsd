@@ -151,7 +151,8 @@ Failure concentration (the work queue, largest first):
   (element- AND type-level block against direct-derivation overrides),
   choice alternatives of any particle kind (choice(sequence(a)) no
   longer counts zero alternatives), group-ref occurrence bounds (the
-  ref's minOccurs/maxOccurs governs the expanded container), xsi:type
+  ref's minOccurs/maxOccurs governs the expanded container, and a bounded group SEQUENCE
+  repeats as a unit), xsi:type
   derivation VALIDITY (an override must be validly derived from the
   declared type — lists/unions derive from anySimpleType, not their
   item types) and schema-level blockDefault (the schema-wide default

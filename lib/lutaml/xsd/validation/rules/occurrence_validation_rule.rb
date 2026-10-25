@@ -148,8 +148,19 @@ module Lutaml
 
           def validate_sequence_occurrences(parent_element, sequence,
                                             collector, repository: nil,
-                                            **)
+                                            min_occurs: nil, max_occurs: nil)
             return if sequence.element.empty?
+
+            # Group-ref bounds: the sequence repeats as a UNIT, so the
+            # children are matched against the element list cyclically
+            # and the completed iteration count is checked against the
+            # ref's bounds.
+            if min_occurs || max_occurs
+              validate_sequence_unit_iterations(parent_element, sequence,
+                                                collector, repository,
+                                                min_occurs || 0, max_occurs)
+              return
+            end
 
             Array(sequence.element).each do |element|
               validate_element_occurrence(parent_element, element, collector,
@@ -159,6 +170,63 @@ module Lutaml
             # Also check nested sequences, choices, groups
             validate_nested_particles(parent_element, sequence, collector,
                                       repository: repository)
+          end
+
+          # Greedy cyclic scan of the children against the sequence's
+          # element list; returns the number of COMPLETED iterations.
+          # Optional elements complicate this — a mismatch simply ends
+          # the scan, which keeps the approximation conservative.
+          #
+          # @return [Integer]
+          def count_sequence_iterations(parent_element, sequence, repository)
+            elements = Array(sequence.element)
+            return 0 if elements.empty?
+
+            idx = 0
+            iterations = 0
+            parent_element.children.each do |child|
+              candidate = elements[idx]
+              next unless candidate
+
+              unless particle_matches_declaration?(child, candidate,
+                                                   repository)
+                return iterations
+              end
+
+              idx += 1
+              if idx == elements.size
+                iterations += 1
+                idx = 0
+              end
+            end
+            iterations
+          end
+
+          # @return [void]
+          def validate_sequence_unit_iterations(parent_element, sequence,
+                                                collector, repository,
+                                                min_occurs, max_occurs)
+            iterations = count_sequence_iterations(parent_element, sequence,
+                                                   repository)
+
+            return if iterations >= min_occurs &&
+              (max_occurs == :unbounded || iterations <= max_occurs)
+
+            report_error(
+              collector,
+              code: if iterations < min_occurs
+                      "min_occurs_violation"
+                    else
+                      "max_occurs_violation"
+                    end,
+              message: "The model group must occur " \
+                       "#{iterations < min_occurs ? 'at least' : 'at most'} " \
+                       "#{iterations < min_occurs ? min_occurs : max_occurs} " \
+                       "time(s), found #{iterations}",
+              location: parent_element.xpath,
+              context: { min_occurs: min_occurs, max_occurs: max_occurs,
+                         actual: iterations },
+            )
           end
 
           # Validate choice particle occurrences
