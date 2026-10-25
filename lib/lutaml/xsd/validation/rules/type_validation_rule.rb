@@ -87,6 +87,24 @@ module Lutaml
                 return
               end
 
+              declared_local = schema_element.type.to_s.split(":").last
+              if declared_local.match?(/\S/)
+                override_local = type_def.name.to_s.split(":").last
+                unless override_local == declared_local ||
+                    validly_derived?(type_def, declared_local, repository)
+                  report_error(
+                    collector,
+                    code: "xsi_type_not_derived",
+                    message: "xsi:type '#{xsi_type_name(xml_element)}' is " \
+                             "not validly derived from the declared type " \
+                             "'#{declared_local}'",
+                    location: xml_element.xpath,
+                    context: { xsi_type: xsi_type_name(xml_element) },
+                  )
+                  return
+                end
+              end
+
               if override_blocked?(schema_element, type_def, repository)
                 report_error(
                   collector,
@@ -114,6 +132,47 @@ module Lutaml
             end
           end
 
+          # XSD 1.0 §3.3.4: an xsi:type override must be validly derived
+          # from the declared type — the base chain must reach it. Lists
+          # and unions derive from anySimpleType, not from their item or
+          # member types, so a pure list/union never qualifies.
+          #
+          # @return [Boolean]
+          def validly_derived?(type, base_local, repository, depth = 0)
+            return false if type.nil? || base_local.to_s.empty? || depth > 10
+
+            case type
+            when Lutaml::Xml::Schema::Xsd::ComplexType
+              content = type.complex_content
+              return false unless content
+
+              part = Array(content.extension).first ||
+                Array(content.restriction).first
+              return false unless part
+
+              next_local = part.base.to_s.split(":").last
+              return true if next_local == base_local
+
+              validly_derived?(
+                repository&.resolve_named_type(next_local),
+                base_local, repository, depth + 1
+              )
+            when Lutaml::Xml::Schema::Xsd::SimpleType
+              restriction = type.restriction
+              return false unless restriction
+
+              next_local = restriction.base.to_s.split(":").last
+              return true if next_local == base_local
+
+              validly_derived?(
+                repository&.resolve_named_type(next_local),
+                base_local, repository, depth + 1
+              )
+            else
+              false
+            end
+          end
+
           # XSD 1.0 §3.3.4 / §3.4.6: block on the element declaration
           # AND on the declared complexType forbids replacing the type
           # with one derived by the blocked kind. Direct derivation from
@@ -128,7 +187,7 @@ module Lutaml
             kind = derivation_kind_from(override_type, declared_local)
             return false unless kind
 
-            tokens = schema_element.block.to_s.split(/\s+/)
+            tokens = effective_block_tokens(schema_element, repository)
             declared = repository&.resolve_named_type(declared_local)
             if declared.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
               tokens += declared.block.to_s.split(/\s+/)
@@ -144,34 +203,6 @@ module Lutaml
           # The derivation kind of the override type when it directly
           # derives from the declared base; nil otherwise.
           #
-          # @return [String, nil]
-          def derivation_kind_from(override_type, declared_local)
-            return nil if declared_local.to_s.empty?
-
-            case override_type
-            when Lutaml::Xml::Schema::Xsd::ComplexType
-              content = override_type.complex_content
-              return nil unless content
-
-              %i[extension restriction].each do |kind|
-                part = content.public_send(kind)
-                next unless part
-
-                return kind.to_s if
-                  part.base.to_s.split(":").last == declared_local
-              end
-              nil
-            when Lutaml::Xml::Schema::Xsd::SimpleType
-              restriction = override_type.restriction
-              if restriction &&
-                  restriction.base.to_s.split(":").last == declared_local
-                return "restriction"
-              end
-
-              nil
-            end
-          end
-
           private
 
           # xsi:nil handling: the attribute may appear only on nillable
