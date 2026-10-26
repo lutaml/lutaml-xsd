@@ -9,12 +9,12 @@ module Lutaml
         # Validates xs:key / xs:unique / xs:keyref identity constraints on
         # an instance element.
         #
-        # Selector and field XPaths evaluate against the instance subtree
-        # with unprefixed XPath semantics (no-namespace matching), which
-        # covers the common no-targetNamespace and local-name selector
-        # shapes. Scope: constraints declared on the element itself;
-        # cross-element keyref scopes and recursive selector Depth are
-        # backlog items (TODO.conformance.md).
+        # Selector and field XPaths evaluate against the instance subtree.
+        # Top-level unions split into one path each; namespace-prefixed
+        # steps rewrite to local-name() tests (the adapter resolves no
+        # namespace bindings). Scope: constraints declared on the element
+        # itself; cross-element keyref scopes and recursive selector depth
+        # are backlog items (TODO.conformance.md).
         class IdentityConstraintsRule < ValidationRule
           def category
             :identity
@@ -25,7 +25,7 @@ module Lutaml
           end
 
           def validate(xml_element, schema_element, collector,
-                       repository: nil) # rubocop:disable Lint/UnusedMethodArgument
+                       repository: nil)
             # `repository` is part of the element-scoped dispatch contract;
             # identity constraints resolve names against the declaration.
             return unless schema_element.is_a?(Lutaml::Xml::Schema::Xsd::Element)
@@ -33,14 +33,16 @@ module Lutaml
             collected = {}
 
             Array(schema_element.key).each do |constraint|
-              values = collect_values(xml_element, constraint, collector)
+              values = collect_values(xml_element, constraint, collector,
+                                      repository)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_key_violation")
               collected[constraint.name] = values if constraint.name
             end
 
             Array(schema_element.unique).each do |constraint|
-              values = collect_values(xml_element, constraint, collector)
+              values = collect_values(xml_element, constraint, collector,
+                                      repository)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_unique_violation")
               collected[constraint.name] = values if constraint.name
@@ -50,7 +52,8 @@ module Lutaml
               referred = refer_name(constraint) && collected[refer_name(constraint)]
               next if referred.nil?
 
-              collect_values(xml_element, constraint, collector).each do |value|
+              collect_values(xml_element, constraint, collector,
+                             repository).each do |value|
                 next if referred.include?(value)
 
                 report_error(
@@ -67,7 +70,7 @@ module Lutaml
 
           private
 
-          def collect_values(xml_element, constraint, collector)
+          def collect_values(xml_element, constraint, collector, repository)
             fields = field_xpaths(constraint)
             selector_xpaths(constraint).flat_map do |selector|
               Array(xml_element.moxml_element.xpath(selector)).map do |node|
@@ -97,9 +100,52 @@ module Lutaml
                 # field means the node does not contribute a row.
                 next nil if values.any?(&:nil?)
 
-                values.length == 1 ? values.first : values
+                canonical = fields.each_with_index.map do |field, index|
+                  declared = field_declared_type(node, field, repository)
+                  numeric = declared &&
+                    repository&.numeric_simple_type?(declared)
+                  numeric ? canonical_field_value(values[index]) : values[index]
+                end
+                canonical.length == 1 ? canonical.first : canonical
               end
             end.compact
+          end
+
+          # The declared type local name of the field's node: attribute
+          # fields resolve through the selector node's declaration's
+          # type; element fields through their own declaration.
+          #
+          # @return [String, nil]
+          def field_declared_type(node, field, repository)
+            if field.to_s.start_with?("@")
+              attr_local = field.sub(/\A@/, "").sub(/\A[\w.-]+:/, "")
+              parent_decl = repository&.resolve(node.name,
+                                                node.namespace_uri)
+              parent_type = parent_decl&.complex_type ||
+                repository&.resolve_type(parent_decl)
+              return nil unless parent_type
+
+              repository.declared_attribute_type(parent_type, attr_local)
+            else
+              repository&.resolve(node.name, node.namespace_uri)
+                &.type.to_s.split(":").last.then do |t|
+                  t.to_s.empty? ? nil : t
+                end
+            end
+          end
+
+          # Identity values compare in the field's VALUE space: numeric
+          # lexical forms compare numerically (3.0 == 3) and padding is
+          # insignificant — applied only when the declared type is
+          # numeric; string fields compare lexically.
+          #
+          # @return [String]
+          def canonical_field_value(raw)
+            s = raw.to_s.strip
+            return s unless s.match?(/\A-?\d+(\.\d+)?\z/)
+
+            f = s.to_f
+            f == f.to_i ? f.to_i.to_s : f.to_s
           end
 
           # @param node [Moxml::Node] attribute or element node

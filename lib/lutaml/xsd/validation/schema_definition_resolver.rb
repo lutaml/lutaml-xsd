@@ -159,6 +159,76 @@ module Lutaml
           nil
         end
 
+        # Builtin numeric types: values compare in the numeric value
+        # space (3.0 == 3), unlike strings.
+        NUMERIC_BUILTINS = %w[
+          decimal float double integer long int short byte
+          nonPositiveInteger negativeInteger nonNegativeInteger
+          positiveInteger unsignedLong unsignedInt unsignedShort
+          unsignedByte
+        ].freeze
+
+        # Whether a named simple type is numeric — builtin numerics
+        # directly, derived named types through their restriction base
+        # chains. Lists and unions are not numeric.
+        #
+        # @param local_name [String]
+        # @param depth [Integer] recursion guard
+        # @return [Boolean]
+        def numeric_simple_type?(local_name, depth = 0)
+          return false if depth > 10
+          return true if NUMERIC_BUILTINS.include?(local_name.to_s)
+
+          named = resolve_named_type(local_name)
+          return false unless named.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
+          return false unless named.restriction
+
+          numeric_simple_type?(
+            named.restriction.base.to_s.split(":").last, depth + 1
+          )
+        end
+
+        # The declared type local name of an attribute on a complex
+        # type: its own attribute list, then the derivation base chain
+        # (attributes flow through extension and restriction).
+        #
+        # @param type [Lutaml::Xml::Schema::Xsd::ComplexType]
+        # @param attr_local [String]
+        # @param depth [Integer] recursion guard
+        # @return [String, nil]
+        def declared_attribute_type(type, attr_local, depth = 0)
+          return nil if depth > 6
+          return nil unless type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
+          Array(type.attribute).each do |attr|
+            next unless attr.name == attr_local
+
+            return attr.type.to_s.split(":").last if attr.type
+
+            ref_local = attr.ref.to_s.split(":").last
+            ref_global = ref_local && resolve_attribute(ref_local, nil)
+            return ref_global&.type.to_s.split(":").last if ref_global
+          end
+
+          content = type.complex_content || type.simple_content
+          return nil unless content
+
+          part = Array(content.extension).first ||
+            Array(content.restriction).first
+          return nil unless part
+
+          Array(part.attribute).each do |attr|
+            next unless attr.name == attr_local
+
+            return attr.type.to_s.split(":").last if attr.type
+          end
+
+          declared_attribute_type(
+            resolve_named_type(part.base.to_s.split(":").last),
+            attr_local, depth + 1
+          )
+        end
+
         # Global attribute declaration by name (for strict xs:anyAttribute
         # checks).
         #
