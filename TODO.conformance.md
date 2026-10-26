@@ -120,33 +120,40 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3877/4646 (83.5%) |
+| pipeline | 4138/4676 (88.5%) |
 
-One batch (cases 3000-3049) crashed and is unmeasured (same batch as
-the 71.8% baseline, so counts stay comparable). Run-to-run Particles
-variance in earlier runs came from pre-existing rule crashes on
-xs:all containers (fixed); residual jitter (±4) is batching noise.
+(2026-10-27, NFA content-model matcher branch, suite @ 7bc3365.)
+Measured 4676 of 4696 cases: the 20 cases at offsets 3000-3019 kill a
+batch worker natively (no Ruby-level error; each case validates in
+0.4s when run alone — a batching-mode crash to investigate, not a
+per-case verdict). Suite history: 71.8% baseline → 83.5% (pre-NFA)
+→ 88.5%; +261 cases net over the pre-NFA pipeline. Composition
+families: Particles 42→24 fails, ModelGroups 21→18, in-scope A/B
+(old vs new code over the same 750 cases): 75→60. The remaining
+ModelGroups gap: xs:redefine schemas cannot PARSE (lutaml-model#1025,
+upstream) and several mgQ/mgA valid cases carry engine-side false
+rejections (moxml#466, upstream).
 Failure concentration (the work queue, largest first):
 
-- `Regex_w3c` (354) — decomposed by error source (2026-10-25): 330
-  failures carry the ENGINE's rejection (leptris XSD-regex dialect
-  lacks `\p{Is...}` block escapes and friends, so valid documents are
-  false-positived engine-only 312 + both 18) — moxml/leptris-side,
-  registered upstream (moxml#464); 36 are pipeline-side corners
-  (rules-only 18 + both 18): unescaped `-` runs inside classes, exotic
-  `\p` category sets, surrogate-pair ranges. `XsdRegex` itself now
-  translates top-level block escapes and normalizes block names
-  (hyphen/digit boundaries, upper-run splits, Unicode-renamed blocks)
-- `DataTypes_w3c` (82, was 135) + `SimpleType_w3c` (32, was 36) —
+- `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
+  bulk carry the ENGINE's rejection (leptris XSD-regex dialect lacks
+  `\p{Is...}` block escapes and friends, so valid documents are
+  false-positived engine-only) — moxml/leptris-side, tracked via the
+  moxml issue queue; a pipeline-side minority remains: unescaped `-`
+  runs inside classes, exotic `\p` category sets, surrogate-pair
+  ranges. `XsdRegex` itself now translates top-level block escapes and
+  normalizes block names (hyphen/digit boundaries, upper-run splits,
+  Unicode-renamed blocks)
+- `DataTypes_w3c` (84) + `SimpleType_w3c` (30) —
   list/union/range facets IMPLEMENTED (2026-10-24); temporal facet
   comparisons IMPLEMENTED (2026-10-25, PR #139): duration orders by
   (months, seconds) per Appendix E, date/time family via DateTime —
   temporal cases 231/270 (85.6%). Remaining corners: typed enumeration
   comparison, gYearMonth edge parsing, duration+pattern combinations
-- `IdentityConstraint_w3c` (36) — selector/field depth; multi-field
+- `IdentityConstraint_w3c` (38) — selector/field depth; multi-field
 tuple keys, node-set field violations and absent-field rows handled, cross-element
   scopes
-- `Particles_w3c` (50, was 261 at the 76.4% cut) + `Element_w3c` (36)
+- `Particles_w3c` (24, was 261 at the 76.4% cut) + `Element_w3c` (31)
   + `ComplexType_w3c` (26) — element form defaults, ref particles,
   nested imports, choice occurrence bounds, block= enforcement
   (element- AND type-level block against direct-derivation overrides),
@@ -163,11 +170,11 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   remaining is composition depth. Rule crashes on xs:all containers
   fixed (typed collect_particles, empty-all semantics, particle_name
   dispatch) — these had been poisoning run-to-run measurements
-- `ModelGroups_w3c` (21, was 47) — base-type attributes flow into
+- `ModelGroups_w3c` (18, was 47) — base-type attributes flow into
   derived types through extension AND restriction (a restriction
   narrows but cannot drop attributes, XSD 1.0 §3.4.2); the mgB/mgF
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
-- remaining: Attribute (46), Additional (47), Element (60),
-  Group (21), AttributeGroup (21), Schema (20), Wildcards (17),
-  Errata10 (3)
+- remaining (2026-10-27): Additional (46), Attribute (30), Element (31),
+  Schema (25), AttributeGroup (18), ComplexType (19), Group (9),
+  Errata10 (4), Notations (1)
