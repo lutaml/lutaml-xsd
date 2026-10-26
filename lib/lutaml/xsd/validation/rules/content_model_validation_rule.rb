@@ -243,9 +243,9 @@ module Lutaml
 
           # Ordered particles of a type: own sequence/choice/all/group
           # particles plus, for extensions, the base type's particles
-          # first. Cycle-guarded. Particles are kept whole — nested
-          # containers are expanded by the walk's matching, which
-          # preserves their own occurrence constraints.
+          # first. Cycle-guarded. Every container stays whole — the
+          # matcher applies its occurrence constraints; a flattened
+          # container would drop e.g. a maxOccurs="0" wrapper.
           #
           # @return [Array]
           def type_particles(type, repository, seen)
@@ -259,12 +259,7 @@ module Lutaml
               Array(type.public_send(kind)).each do |particle|
                 next unless particle
 
-                # A sequence's direct particles join the walk in order;
-                # choice/all/any/element/group stay whole so their own
-                # occurrence constraints survive the walk.
-                if particle.is_a?(Lutaml::Xsd::Sequence)
-                  particles.concat(collect_particles(particle))
-                elsif particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+                if particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
                   particles.concat(
                     expand_group_container(particle, repository),
                   )
@@ -287,11 +282,7 @@ module Lutaml
                   Array(extension.public_send(kind)).each do |particle|
                     next unless particle
 
-                    if particle.is_a?(Lutaml::Xsd::Sequence)
-                      particles.concat(collect_particles(particle))
-                    else
-                      particles << particle
-                    end
+                    particles << particle
                   end
                 end
               end
