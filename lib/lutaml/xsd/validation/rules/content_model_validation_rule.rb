@@ -100,6 +100,73 @@ module Lutaml
 
           private
 
+          # Exact structural membership via the NFA matcher. When the
+          # model accepts, the particle walk is skipped — it cannot add
+          # anything but noise. When it rejects, the walk supplies its
+          # targeted diagnostics; if the walk still finds nothing (its
+          # greedy runs can sail through a structure the automaton
+          # rejects), the matcher's failure position becomes the error.
+          #
+          # @return [void]
+          def validate_particle_sequence(xml_element, particles, collector,
+                                         repository)
+            return if particles.empty?
+
+            children = Array(xml_element.children)
+            matcher = ContentModelMatcher.new(
+              particles,
+              element_match: ->(child, particle) do
+                element_matches?(child, particle, repository)
+              end,
+              wildcard_match: ->(child, wildcard) do
+                wildcard_permits?(wildcard, xml_element, child, repository)
+              end,
+              container_particles: ->(container) do
+                collect_particles(container)
+              end,
+              group_particles: ->(group) do
+                expand_group_container(group, repository)
+              end,
+            )
+            result = matcher.match(children)
+            if result.matched
+              scan_wildcard_strict_usage(xml_element, particles, collector,
+                                         repository)
+              return
+            end
+
+            known = collector.errors.size
+            walk_sequence_diagnostics(xml_element, particles, collector,
+                                      repository)
+            return if collector.errors.size > known
+
+            report_matcher_failure(result, children, xml_element, collector)
+          end
+
+          def report_matcher_failure(result, children, xml_element, collector)
+            if result.fail_reason == :unexpected_child
+              child = children[result.fail_index]
+              report_error(
+                collector,
+                code: "unexpected_element_in_sequence",
+                message: "Unexpected element '#{child.qualified_name}' " \
+                         "in sequence",
+                location: child.xpath,
+                context: { element: child.qualified_name },
+                suggestion: "Remove this element or check sequence order",
+              )
+            else
+              report_error(
+                collector,
+                code: "incomplete_content_model",
+                message: "Element '#{xml_element.qualified_name}' is " \
+                         "missing required content",
+                location: xml_element.xpath,
+                context: { element: xml_element.qualified_name },
+              )
+            end
+          end
+
           # A type with no particle model at all is EMPTY content:
           # neither element children nor character data.
           #
@@ -275,11 +342,43 @@ module Lutaml
             end
           end
 
-          # Sequential walk over a particle list (min/max per particle,
-          # recursive matching, wildcard permission for unmatched tails).
+          # Wildcards consumed through the automaton bypass the walk's
+          # inline strict checks, so children that only a wildcard can
+          # cover are scanned here on the accept path.
           #
           # @return [void]
-          def validate_particle_sequence(xml_element, particles, collector,
+          def scan_wildcard_strict_usage(xml_element, particles, collector,
+                                         repository)
+            leaves = leaf_particles(particles, repository)
+            wildcards = leaves.select { |p| p.is_a?(Lutaml::Xsd::Any) }
+            return if wildcards.empty?
+
+            element_leaves = leaves.select do |p|
+              p.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+            end
+            xml_element.children.each do |child|
+              next if element_leaves.any? do |p|
+                element_matches?(child, p, repository)
+              end
+
+              wildcards.each do |wildcard|
+                next unless wildcard_permits?(wildcard, xml_element, child,
+                                              repository)
+
+                check_strict_wildcard_child(child, wildcard, collector,
+                                            repository)
+                break
+              end
+            end
+          end
+
+          # Sequential walk over a particle list (min/max per particle,
+          # recursive matching, wildcard permission for unmatched tails).
+          # Demoted to diagnostics: it runs only after the NFA matcher
+          # has already decided the instance is invalid.
+          #
+          # @return [void]
+          def walk_sequence_diagnostics(xml_element, particles, collector,
                                          repository)
             return if particles.empty?
 
