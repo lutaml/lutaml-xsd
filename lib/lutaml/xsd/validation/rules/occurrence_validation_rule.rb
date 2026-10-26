@@ -150,6 +150,11 @@ module Lutaml
                                             collector, repository: nil,
                                             min_occurs: nil, max_occurs: nil)
             return if sequence.element.empty?
+            # A container that may occur zero times voids its inner
+            # requirements (mgG012: sequence(e1) maxOccurs="0", empty doc
+            # is valid).
+            return if max_occurs.nil? &&
+              parse_max_occurs(sequence.max_occurs, 1).zero?
 
             # Group-ref bounds: the sequence repeats as a UNIT, so the
             # children are matched against the element list cyclically
@@ -240,6 +245,7 @@ module Lutaml
                                           max_occurs: nil)
             min_occurs ||= parse_occurs(choice.min_occurs, 1)
             max_occurs ||= parse_max_occurs(choice.max_occurs, 1)
+            return if max_occurs.zero?
 
             present_count = count_choice_alternatives(parent_element, choice,
                                                       repository)
@@ -318,17 +324,28 @@ module Lutaml
               particle.is_a?(Lutaml::Xsd::Choice)
 
             inner = if particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
-                      container = expand_group_container(particle, repository).first
-                      container ? choice_alternatives(container) : []
+                      container = expand_group_container(particle,
+                                                         repository).first
+                      if container
+                        choice_alternatives(container).map do |alt|
+                          branch_capacity(alt, repository, depth + 1)
+                        end
+                      else
+                        []
+                      end
                     elsif particle.is_a?(Lutaml::Xsd::Sequence)
                       # sequence branch: children run in order, capacities add
-                      cap = particle.element.to_a.map { |e| branch_capacity(e, repository, depth + 1) }
+                      cap = particle.element.to_a.map do |e|
+                        branch_capacity(e, repository, depth + 1)
+                      end
                       cap << :unbounded if cap.delete(:unbounded)
                       cap.sum + particle.choice.to_a.sum do |c|
                         branch_capacity(c, repository, depth + 1)
                       end
                     else
-                      particle.element.to_a.map { |e| branch_capacity(e, repository, depth + 1) }
+                      particle.element.to_a.map do |e|
+                        branch_capacity(e, repository, depth + 1)
+                      end
                     end
             return :unbounded if own == :unbounded
 
@@ -366,6 +383,7 @@ module Lutaml
           def validate_all_occurrences(parent_element, all, collector,
                                        repository: nil, **)
             return if all.element.empty?
+            return if parse_max_occurs(all.max_occurs, 1).zero?
 
             # In xs:all, each element can appear 0 or 1 times
             # (or based on its minOccurs/maxOccurs)
