@@ -159,11 +159,21 @@ module Lutaml
             # Group-ref bounds: the sequence repeats as a UNIT, so the
             # children are matched against the element list cyclically
             # and the completed iteration count is checked against the
-            # ref's bounds.
+            # ref's bounds. The sequence's OWN bounds get the same
+            # treatment when it repeats (V003: sequence{2,4}(e1,e2)
+            # legitimately carries two e1s).
             if min_occurs || max_occurs
               validate_sequence_unit_iterations(parent_element, sequence,
                                                 collector, repository,
                                                 min_occurs || 0, max_occurs)
+              return
+            end
+            if parse_max_occurs(sequence.max_occurs, 1) != 1
+              validate_sequence_unit_iterations(
+                parent_element, sequence, collector, repository,
+                parse_occurs(sequence.min_occurs, 1),
+                parse_max_occurs(sequence.max_occurs, 1)
+              )
               return
             end
 
@@ -172,9 +182,12 @@ module Lutaml
                                           repository: repository)
             end
 
-            # Also check nested sequences, choices, groups
-            validate_nested_particles(parent_element, sequence, collector,
-                                      repository: repository)
+            # Nested particles are deliberately not recursed into: their
+            # children interleave by position, which per-element counts
+            # cannot see — a repeated inner sequence's elements
+            # legitimately exceed their own maxOccurs across iterations
+            # (Q003/V003). Structural exactness for nested bounds is the
+            # content rule's NFA matcher verdict.
           end
 
           # Greedy cyclic scan of the children against the sequence's
@@ -390,38 +403,6 @@ module Lutaml
             Array(all.element).each do |element|
               validate_element_occurrence(parent_element, element, collector,
                                           repository: repository)
-            end
-          end
-
-          # Validate nested particles (sequences, choices within sequences)
-          #
-          # @param parent_element [XmlElement] Parent element
-          # @param particle [Object] Schema particle
-          # @param collector [ResultCollector] Result collector
-          # @return [void]
-          def validate_nested_particles(parent_element, particle, collector,
-                                        repository: nil)
-            # Check for nested sequences
-            if particle.sequence
-              Array(particle.sequence).each do |seq|
-                validate_sequence_occurrences(parent_element, seq, collector,
-                                              repository: repository)
-              end
-            end
-
-            # Check for nested choices
-            if particle.choice
-              Array(particle.choice).each do |choice|
-                validate_choice_occurrences(parent_element, choice, collector,
-                                            repository: repository)
-              end
-            end
-
-            # Check for groups
-            return unless particle.group
-
-            Array(particle.group).each do |group|
-              # TODO: Resolve and validate group reference
             end
           end
 
