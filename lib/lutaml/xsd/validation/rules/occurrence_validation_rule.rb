@@ -243,7 +243,7 @@ module Lutaml
 
             present_count = count_choice_alternatives(parent_element, choice,
                                                       repository)
-            occurrence_count = choice_occurrence_count(present_count, choice)
+            occurrence_count = choice_occurrence_count(present_count, choice, repository)
 
             if occurrence_count < min_occurs
               report_error(
@@ -282,7 +282,7 @@ module Lutaml
           # capacity imply repeated choice occurrences.
           #
           # @return [Integer]
-          def choice_occurrence_count(present_count, choice)
+          def choice_occurrence_count(present_count, choice, repository)
             if present_count.zero?
               # A choice whose every alternative is optional matches the
               # empty sequence and occurs trivially.
@@ -294,13 +294,58 @@ module Lutaml
             end
 
             capacities = choice_alternatives(choice).map do |alt|
-              parse_max_occurs(alt.max_occurs, 1)
+              branch_capacity(alt, repository, 0)
             end
             return 1 if capacities.empty?
             return 1 if capacities.include?(:unbounded)
             return 1 if capacities.max >= present_count
 
             present_count
+          end
+
+          # Children one branch iteration can absorb: a branch repeats
+          # per its own maxOccurs, and composite branches (group refs,
+          # sequences, nested choices) multiply or combine with their
+          # contents' capacities.
+          #
+          # @return [Integer, Symbol]
+          def branch_capacity(particle, repository, depth)
+            return :unbounded if depth > 5
+
+            own = parse_max_occurs(particle.max_occurs, 1)
+            return own unless particle.is_a?(Lutaml::Xml::Schema::Xsd::Group) ||
+              particle.is_a?(Lutaml::Xsd::Sequence) ||
+              particle.is_a?(Lutaml::Xsd::Choice)
+
+            inner = if particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+                      container = expand_group_container(particle, repository).first
+                      container ? choice_alternatives(container) : []
+                    elsif particle.is_a?(Lutaml::Xsd::Sequence)
+                      # sequence branch: children run in order, capacities add
+                      cap = particle.element.to_a.map { |e| branch_capacity(e, repository, depth + 1) }
+                      cap << :unbounded if cap.delete(:unbounded)
+                      cap.sum + particle.choice.to_a.sum do |c|
+                        branch_capacity(c, repository, depth + 1)
+                      end
+                    else
+                      particle.element.to_a.map { |e| branch_capacity(e, repository, depth + 1) }
+                    end
+            return :unbounded if own == :unbounded
+
+            inner_cap = if inner.include?(:unbounded)
+                          :unbounded
+                        else
+                          case particle
+                          when Lutaml::Xsd::Sequence
+                            inner.sum
+                          else
+                            inner.max || 0
+                          end
+                        end
+            return :unbounded if inner_cap == :unbounded
+
+            multiplier = own.zero? ? 1 : own
+            multiplier * [inner_cap, 1].max
           end
 
           # Choice alternatives are particles of any kind.
