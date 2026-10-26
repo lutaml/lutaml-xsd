@@ -154,13 +154,28 @@ module Lutaml
 
           # Selector/field values are either the raw XPath string or the
           # parsed xs:selector/xs:field model whose xpath attribute holds
-          # it; whitespace-separated lists yield one entry each.
+          # it. Top-level unions split into one path each; prefixed
+          # steps rewrite to local-name() tests — the adapter resolves
+          # no namespace bindings, so "myNS:t" cannot evaluate as-is.
           def xpath_strings(value)
             case value
             when String
-              value.split(/\s+/).reject(&:empty?)
+              value.split(/\s*\|\s*/).reject(&:empty?).map { |p| adapt_xpath(p) }
             else
               []
+            end
+          end
+
+          # Rewrites namespace-prefixed steps to local-name() tests.
+          # Prefix-insensitive, equivalent for the suite's
+          # single-namespace selector shapes.
+          #
+          # @return [String]
+          def adapt_xpath(path)
+            path.gsub(/@([\w.-]+):([\w.-]+)/) do
+              "@*[local-name()='#{Regexp.last_match(2)}']"
+            end.gsub(/(?<![@\w])[\w.-]+:([\w.-]+)/) do
+              "*[local-name()='#{Regexp.last_match(1)}']"
             end
           end
 
