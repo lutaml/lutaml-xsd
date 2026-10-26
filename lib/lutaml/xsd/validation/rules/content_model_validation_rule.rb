@@ -259,13 +259,10 @@ module Lutaml
               Array(type.public_send(kind)).each do |particle|
                 next unless particle
 
-                if particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
-                  particles.concat(
-                    expand_group_container(particle, repository),
-                  )
-                else
-                  particles << particle
-                end
+                # Group refs stay whole too: the matcher expands them
+                # under the REF's occurrence bounds — expanding here
+                # would drop e.g. a group ref's maxOccurs="2".
+                particles << particle
               end
             end
 
