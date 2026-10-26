@@ -325,57 +325,49 @@ module Lutaml
           # Children one branch iteration can absorb: a branch repeats
           # per its own maxOccurs, and composite branches (group refs,
           # sequences, nested choices) multiply or combine with their
-          # contents' capacities.
+          # contents' capacities — a sequence adds them, a choice takes
+          # the largest.
           #
           # @return [Integer, Symbol]
           def branch_capacity(particle, repository, depth)
             return :unbounded if depth > 5
 
             own = parse_max_occurs(particle.max_occurs, 1)
-            return own unless particle.is_a?(Lutaml::Xml::Schema::Xsd::Group) ||
-              particle.is_a?(Lutaml::Xsd::Sequence) ||
-              particle.is_a?(Lutaml::Xsd::Choice)
-
-            inner = if particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
-                      container = expand_group_container(particle,
-                                                         repository).first
-                      if container
-                        choice_alternatives(container).map do |alt|
-                          branch_capacity(alt, repository, depth + 1)
-                        end
-                      else
-                        []
-                      end
-                    elsif particle.is_a?(Lutaml::Xsd::Sequence)
-                      # sequence branch: children run in order, capacities add
-                      cap = particle.element.to_a.map do |e|
-                        branch_capacity(e, repository, depth + 1)
-                      end
-                      cap << :unbounded if cap.delete(:unbounded)
-                      cap.sum + particle.choice.to_a.sum do |c|
-                        branch_capacity(c, repository, depth + 1)
-                      end
-                    else
-                      particle.element.to_a.map do |e|
-                        branch_capacity(e, repository, depth + 1)
-                      end
-                    end
+            return own unless composite_particle?(particle)
             return :unbounded if own == :unbounded
 
-            inner_cap = if inner.include?(:unbounded)
-                          :unbounded
-                        else
-                          case particle
-                          when Lutaml::Xsd::Sequence
-                            inner.sum
-                          else
-                            inner.max || 0
-                          end
-                        end
+            inner_cap = composite_capacity(particle, repository, depth)
             return :unbounded if inner_cap == :unbounded
 
             multiplier = own.zero? ? 1 : own
             multiplier * [inner_cap, 1].max
+          end
+
+          def composite_particle?(particle)
+            particle.is_a?(Lutaml::Xml::Schema::Xsd::Group) ||
+              particle.is_a?(Lutaml::Xsd::Sequence) ||
+              particle.is_a?(Lutaml::Xsd::Choice)
+          end
+
+          def composite_capacity(particle, repository, depth)
+            children = if particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+                         container = expand_group_container(particle,
+                                                            repository).first
+                         container ? choice_alternatives(container) : []
+                       else
+                         # sequence: capacities add; choice: the largest
+                         choice_alternatives(particle)
+                       end
+            caps = children.map do |child|
+              branch_capacity(child, repository, depth + 1)
+            end
+            return :unbounded if caps.include?(:unbounded)
+
+            if particle.is_a?(Lutaml::Xsd::Sequence)
+              caps.sum
+            else
+              caps.max || 0
+            end
           end
 
           # Choice alternatives are particles of any kind.
