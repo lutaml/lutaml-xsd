@@ -36,7 +36,7 @@ module Lutaml
 
           if files.empty?
             error "No XML files found matching the specified patterns"
-            exit 1
+            raise CommandError
           end
 
           validator = create_validator
@@ -47,7 +47,7 @@ module Lutaml
         rescue StandardError => e
           error "Validation failed: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
-          exit 1
+          raise CommandError
         end
 
         private
@@ -59,13 +59,13 @@ module Lutaml
           if xml_files.empty?
             error "No XML files specified"
             error "Usage: lutaml-xsd validate FILES SCHEMA [options]"
-            exit 1
+            raise CommandError
           end
 
           return if File.exist?(schema_source)
 
           error "Schema source not found: #{schema_source}"
-          exit 1
+          raise CommandError
         end
 
         # Expand glob patterns to file list
@@ -106,7 +106,7 @@ module Lutaml
         def load_config(config_path)
           unless File.exist?(config_path)
             error "Configuration file not found: #{config_path}"
-            exit 1
+            raise CommandError
           end
 
           YAML.load_file(config_path)

@@ -284,12 +284,12 @@ module Lutaml
               error "Element not found: #{@element_name}"
               output ""
               output result.error_message if result.error_message
-              exit 1
+              raise CommandError
             end
 
             unless result.definition.is_a?(Lutaml::Xsd::Element)
               error "Type '#{@element_name}' is not an element (found: #{result.definition.class.name})"
-              exit 1
+              raise CommandError
             end
 
             element_info = build_element_info(result, repository)
@@ -417,12 +417,12 @@ module Lutaml
 
             unless result.resolved?
               error "Element not found: #{@element_name}"
-              exit 1
+              raise CommandError
             end
 
             unless result.definition.is_a?(Lutaml::Xsd::Element)
               error "Type '#{@element_name}' is not an element"
-              exit 1
+              raise CommandError
             end
 
             output "Element Structure: #{result.qname}"
@@ -534,7 +534,7 @@ repository)
 
             unless result.resolved?
               error "Element not found: #{@element_name}"
-              exit 1
+              raise CommandError
             end
 
             output "Element Usage: #{result.qname}"

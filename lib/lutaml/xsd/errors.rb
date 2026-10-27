@@ -5,6 +5,17 @@ module Lutaml
     # Base error class for lutaml-xsd errors
     class Error < StandardError; end
 
+    # Raised by the command classes in place of Kernel#exit: a real
+    # SystemExit (status 1) so the CLI binary and exit-code-pinning
+    # specs behave exactly as before, but one that in-process hosts
+    # exercising the command classes can rescue instead of being
+    # killed by it (#175).
+    class CommandError < SystemExit
+      def initialize(message = nil, status = 1)
+        super(status, message)
+      end
+    end
+
     # Schema not found with helpful context
     class SchemaNotFoundError < Error
       attr_reader :location, :searched_paths, :suggestions

@@ -389,7 +389,7 @@ module Lutaml
             display_type_definition(definition)
           else
             puts "Type '#{qname}' not found in package"
-            exit 1
+            raise CommandError
           end
         end
 
@@ -414,7 +414,7 @@ module Lutaml
             display_element_definition(definition)
           else
             puts "Element '#{qname}' not found in package"
-            exit 1
+            raise CommandError
           end
         end
 
@@ -439,7 +439,7 @@ module Lutaml
             display_attribute_definition(definition)
           else
             puts "Attribute '#{qname}' not found in package"
-            exit 1
+            raise CommandError
           end
         end
 

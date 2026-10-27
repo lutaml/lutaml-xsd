@@ -427,7 +427,7 @@ module Lutaml
             return if File.exist?(@config_file)
 
             error "Configuration file not found: #{@config_file}"
-            exit 1
+            raise CommandError
           end
 
           def build_package
@@ -476,7 +476,7 @@ module Lutaml
           rescue StandardError => e
             error "Failed to build package: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
 
           def determine_output_path(repository)
@@ -545,14 +545,14 @@ module Lutaml
             else
               error "Package validation failed"
               validation.errors.each { |err| error "  - #{err}" }
-              exit 1 if options[:strict]
+              raise CommandError if options[:strict]
             end
 
             return unless validation.warnings.any?
 
             output "Warnings:"
             validation.warnings.each { |warn| output "  - #{warn}" }
-            exit 1 if options[:strict]
+            raise CommandError if options[:strict]
           end
         end
 
@@ -574,7 +574,7 @@ module Lutaml
             return if File.exist?(@package_file)
 
             error "Package file not found: #{@package_file}"
-            exit 1
+            raise CommandError
           end
 
           def perform_validation
@@ -592,11 +592,11 @@ module Lutaml
               display_text_validation(validation)
             end
 
-            exit 1 if !validation.valid? || (options[:strict] && validation.warnings.any?)
+            raise CommandError if !validation.valid? || (options[:strict] && validation.warnings.any?)
           rescue StandardError => e
             error "Validation error: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
 
           def display_text_validation(validation)
@@ -646,7 +646,7 @@ module Lutaml
             return if File.exist?(@package_file)
 
             error "Package file not found: #{@package_file}"
-            exit 1
+            raise CommandError
           end
 
           def display_info
@@ -658,7 +658,7 @@ module Lutaml
             unless validation.valid?
               error "Cannot display info for invalid package"
               validation.errors.each { |err| error "  - #{err}" }
-              exit 1
+              raise CommandError
             end
 
             format = options[:format] || "text"
@@ -672,7 +672,7 @@ module Lutaml
           rescue StandardError => e
             error "Failed to read package info: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
 
           def display_text_info(metadata)
@@ -750,7 +750,7 @@ module Lutaml
           rescue StandardError => e
             error "Quick workflow failed: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
 
           private
@@ -795,7 +795,7 @@ module Lutaml
           rescue StandardError => e
             error "Auto-build failed: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
 
           private
@@ -804,7 +804,7 @@ module Lutaml
             return if File.exist?(@config_file)
 
             error "Configuration file not found: #{@config_file}"
-            exit 1
+            raise CommandError
           end
 
           def should_rebuild?(package_path)
@@ -884,7 +884,7 @@ module Lutaml
             return if File.exist?(@package_file)
 
             error "Package file not found: #{@package_file}"
-            exit 1
+            raise CommandError
           end
 
           def list_schemas
@@ -917,7 +917,7 @@ module Lutaml
           rescue StandardError => e
             error "Failed to list schemas: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
 
           def display_text_list(schemas_info)
@@ -976,7 +976,7 @@ module Lutaml
           rescue StandardError => e
             error "Failed to classify schemas: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
 
           def display_text_classification(classification)
@@ -1079,7 +1079,7 @@ module Lutaml
             return if File.exist?(@package_file)
 
             error "Package file not found: #{@package_file}"
-            exit 1
+            raise CommandError
           end
 
           def extract_schema
@@ -1105,7 +1105,7 @@ module Lutaml
 
                     error "  - #{File.basename(e.name)}"
                   end
-                  exit 1
+                  raise CommandError
                 end
 
                 content = entry.get_input_stream.read
@@ -1114,11 +1114,11 @@ module Lutaml
             rescue Zip::Error => e
               error "Failed to read package: #{e.message}"
               verbose_output e.backtrace.join("\n") if verbose?
-              exit 1
+              raise CommandError
             rescue StandardError => e
               error "Failed to extract schema: #{e.message}"
               verbose_output e.backtrace.join("\n") if verbose?
-              exit 1
+              raise CommandError
             end
 
             return unless found
@@ -1157,7 +1157,7 @@ module Lutaml
             return if File.exist?(@package_file)
 
             error "Package file not found: #{@package_file}"
-            exit 1
+            raise CommandError
           end
 
           def perform_resolution_validation
@@ -1194,7 +1194,7 @@ module Lutaml
           rescue StandardError => e
             error "Resolution validation failed: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
 
           def format_as_json(result)

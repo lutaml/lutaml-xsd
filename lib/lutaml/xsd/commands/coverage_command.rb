@@ -26,7 +26,7 @@ module Lutaml
           return if File.exist?(@package_path)
 
           error "Package file not found: #{@package_path}"
-          exit 1
+          raise CommandError
         end
 
         def parse_entry_types(entry_option)
@@ -44,7 +44,7 @@ module Lutaml
           if @entry_types.empty?
             error "No entry types specified. Use --entry to specify entry point types."
             error 'Example: --entry "gml:Point,gml:LineString"'
-            exit 1
+            raise CommandError
           end
 
           verbose_output "Analyzing coverage from #{@entry_types.size} entry type(s)..."
@@ -58,7 +58,7 @@ module Lutaml
         rescue StandardError => e
           error "Coverage analysis failed: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
-          exit 1
+          raise CommandError
         end
 
         def display_results(report)

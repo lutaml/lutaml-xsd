@@ -36,7 +36,7 @@ module Lutaml
         rescue StandardError => e
           error "SPA generation failed: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
-          exit 1
+          raise CommandError
         end
 
         private
@@ -48,17 +48,17 @@ module Lutaml
           unless package_path
             error "No package file specified"
             error "Usage: lutaml-xsd spa PACKAGE --output FILE [options]"
-            exit 1
+            raise CommandError
           end
 
           unless File.exist?(package_path)
             error "Package file not found: #{package_path}"
-            exit 1
+            raise CommandError
           end
 
           unless output_path
             error "No output file specified. Use --output option"
-            exit 1
+            raise CommandError
           end
         end
 

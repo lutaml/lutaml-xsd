@@ -267,7 +267,7 @@ module Lutaml
             unless repository.all_namespaces.include?(@namespace_uri)
               error "Namespace not found: #{@namespace_uri}"
               suggest_similar_namespaces(repository)
-              exit 1
+              raise CommandError
             end
 
             namespace_info = build_namespace_info(repository)
@@ -542,7 +542,7 @@ module Lutaml
             change_args.each do |arg|
               unless arg.include?("=")
                 error "Invalid change format: #{arg}. Expected format: old=new"
-                exit 1
+                raise CommandError
               end
 
               old_prefix, new_prefix = arg.split("=", 2)
@@ -562,7 +562,7 @@ module Lutaml
               repository.remap_namespace_prefixes(changes)
             rescue ArgumentError => e
               error "Remapping failed: #{e.message}"
-              exit 1
+              raise CommandError
             end
           end
 

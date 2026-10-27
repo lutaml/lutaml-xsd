@@ -72,7 +72,7 @@ module Lutaml
         def load_repository(package_path)
           unless File.exist?(package_path)
             error "Package file not found: #{package_path}"
-            exit 1
+            raise CommandError
           end
 
           verbose_output "Loading repository from: #{package_path}"
@@ -84,11 +84,11 @@ module Lutaml
         rescue PackageValidationError => e
           error "Package validation failed: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
-          exit 1
+          raise CommandError
         rescue StandardError => e
           error "Failed to load repository: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
-          exit 1
+          raise CommandError
         end
 
         # Parse and resolve repository if needed
@@ -126,21 +126,21 @@ module Lutaml
         rescue StandardError => e
           error "Failed to resolve repository: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
-          exit 1
+          raise CommandError
         end
 
         # Handle SchemaNotFoundError with helpful output
         # @param error [SchemaNotFoundError] The error to handle
         def handle_schema_not_found_error(error)
           warn "\n#{error.message}"
-          exit 1
+          raise CommandError
         end
 
         # Handle TypeNotFoundError with helpful output
         # @param error [TypeNotFoundError] The error to handle
         def handle_type_not_found_error(error)
           warn "\n#{error.message}"
-          exit 1
+          raise CommandError
         end
       end
     end

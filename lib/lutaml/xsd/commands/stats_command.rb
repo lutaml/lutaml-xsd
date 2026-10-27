@@ -63,7 +63,7 @@ module Lutaml
           rescue StandardError => e
             error("Failed to display statistics: #{e.message}")
             verbose_output(e.backtrace.join("\n")) if verbose?
-            exit 1
+            raise CommandError
           end
 
           private

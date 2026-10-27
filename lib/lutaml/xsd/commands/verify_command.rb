@@ -27,7 +27,7 @@ module Lutaml
           return if File.exist?(@package_path)
 
           error "Package file not found: #{@package_path}"
-          exit 1
+          raise CommandError
         end
 
         def perform_spec_verification
@@ -49,7 +49,7 @@ module Lutaml
         rescue StandardError => e
           error "Specification verification failed: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
-          exit 1
+          raise CommandError
         end
 
         def display_results(report)
