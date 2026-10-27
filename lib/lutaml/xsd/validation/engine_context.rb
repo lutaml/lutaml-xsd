@@ -38,9 +38,23 @@ module Lutaml
             return nil unless xsd_supported?(context)
 
             schemas = repository.all_schemas.values.filter_map do |schema|
+              # The engine's compiled automaton grows with the product
+              # of maxOccurs along particle paths; past the guard cap
+              # the compile has killed the process (particlesZ034_b) —
+              # such schemas stay Ruby-decided.
+              next nil unless schema_safe_for_engine?(schema)
+
               compile_schema(context, schema)
             end
             new(context, schemas)
+          end
+
+          # An unassessable schema (not a Schema object, malformed model)
+          # keeps the engine inert for it — never a warning.
+          def schema_safe_for_engine?(schema)
+            OccurrenceProductGuard.for_schema(schema).schema_safe?(schema)
+          rescue StandardError
+            false
           end
 
           # Whether the adapter ships an XSD validator.

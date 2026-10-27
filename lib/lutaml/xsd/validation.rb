@@ -6,6 +6,8 @@ module Lutaml
       autoload :ContentModelMatcher,
                "lutaml/xsd/validation/content_model_matcher"
       autoload :EngineBacked, "lutaml/xsd/validation/engine_backed"
+      autoload :OccurrenceProductGuard,
+               "lutaml/xsd/validation/occurrence_product_guard"
     end
   end
 end
