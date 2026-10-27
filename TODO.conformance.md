@@ -123,10 +123,16 @@ pinned commit) is measured via `rake conformance:w3c`:
 | pipeline | 4138/4676 (88.5%) |
 
 (2026-10-27, NFA content-model matcher branch, suite @ 7bc3365.)
-Measured 4676 of 4696 cases: the 20 cases at offsets 3000-3019 kill a
-batch worker natively (no Ruby-level error; each case validates in
-0.4s when run alone — a batching-mode crash to investigate, not a
-per-case verdict). Suite history: 71.8% baseline → 83.5% (pre-NFA)
+Measured 4676 of 4696 cases: batch offsets 3000-3019 were skipped
+because batch workers died natively (no Ruby error, low RSS). ROOT
+CAUSE (2026-10-27): the engine's compiled automaton for occurrence
+products like `element unbounded inside sequence{100}`
+(particlesZ034_b) grows until jetsam kills the process — each case
+runs in under 2s alone, the kill needs prior compiles to accumulate.
+Guarded by `OccurrenceProductGuard` (engine-inert above a 1e6
+particle-path product cap; engine-side explosion registered upstream
+moxml#473); the next full-suite measurement picks the 20 cases up.
+Suite history: 71.8% baseline → 83.5% (pre-NFA)
 → 88.5%; +261 cases net over the pre-NFA pipeline. Composition
 families: Particles 42→24 fails, ModelGroups 21→18, in-scope A/B
 (old vs new code over the same 750 cases): 75→60. The remaining
