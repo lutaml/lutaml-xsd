@@ -26,14 +26,14 @@ module Lutaml
           if entry_points.empty?
             error "No entry points specified"
             error "Usage: lutaml-xsd package init ENTRY_POINTS [options]"
-            exit 1
+            raise CommandError
           end
 
           entry_points.each do |entry_point|
             next if File.exist?(entry_point)
 
             error "Entry point not found: #{entry_point}"
-            exit 1
+            raise CommandError
           end
         end
 
@@ -43,7 +43,7 @@ module Lutaml
 
           unless success
             error "Interactive builder failed"
-            exit 1
+            raise CommandError
           end
 
           output ""
@@ -61,7 +61,7 @@ module Lutaml
         rescue StandardError => e
           error "Init command failed: #{e.message}"
           verbose_output e.backtrace.join("\n") if verbose?
-          exit 1
+          raise CommandError
         end
       end
     end

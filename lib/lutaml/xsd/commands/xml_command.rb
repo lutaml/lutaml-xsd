@@ -53,7 +53,7 @@ module Lutaml
         def validate(*args)
           if args.length < 2
             error "Usage: lutaml-xsd xml validate FILES SCHEMA [options]"
-            exit 1
+            raise CommandError
           end
 
           schema = args.pop

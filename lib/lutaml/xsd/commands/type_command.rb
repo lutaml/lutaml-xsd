@@ -237,7 +237,7 @@ module Lutaml
               display_text_result(result)
             end
 
-            exit 1 unless result.resolved?
+            raise CommandError unless result.resolved?
           end
 
           def result_to_hash(result)
@@ -1014,7 +1014,7 @@ indent: "")
               error "Failed to resolve type: #{@qname}"
               output ""
               output graph[:error]
-              exit 1
+              raise CommandError
             end
 
             format = options[:format] || "text"
@@ -1125,7 +1125,7 @@ indent: "")
               error "Failed to resolve type: #{@qname}"
               output ""
               output result[:error]
-              exit 1
+              raise CommandError
             end
 
             format = options[:format] || "text"
@@ -1215,7 +1215,7 @@ indent: "")
 
             unless hierarchy
               error "Failed to resolve type: #{@qname}"
-              exit 1
+              raise CommandError
             end
 
             format = options[:format] || "text"
@@ -1340,7 +1340,7 @@ indent: "")
           def run
             unless @package_file
               error "Package file path is required for batch mode"
-              exit 1
+              raise CommandError
             end
 
             @repository = load_repository(@package_file)
@@ -1361,7 +1361,7 @@ indent: "")
                         batch_query.execute_from_stdin
                       else
                         error "Either --batch or --batch-file must be specified"
-                        exit 1
+                        raise CommandError
                       end
 
             # Display results
@@ -1377,7 +1377,7 @@ indent: "")
             end
 
             # Exit with error if any query failed
-            exit 1 if results.any? { |r| !r.resolved }
+            raise CommandError if results.any? { |r| !r.resolved }
           end
 
           def display_text_results(results)

@@ -62,7 +62,7 @@ module Lutaml
               unless validation.valid?
                 error "Failed to load package metadata"
                 validation.errors.each { |err| error "  - #{err}" }
-                exit 1
+                raise CommandError
               end
               raw_metadata = validation.metadata
             end
@@ -77,7 +77,7 @@ module Lutaml
               value = metadata[@key.to_sym] || metadata[@key]
               if value.nil?
                 error "Metadata key '#{@key}' not found"
-                exit 1
+                raise CommandError
               end
               output value.to_s
             elsif options[:all]
@@ -94,12 +94,12 @@ module Lutaml
               end
             else
               error "Please specify a KEY or use --all"
-              exit 1
+              raise CommandError
             end
           rescue StandardError => e
             error "Failed to get metadata: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
 
           private
@@ -147,7 +147,7 @@ module Lutaml
             unless validation.valid?
               error "Cannot modify invalid package"
               validation.errors.each { |err| error "  - #{err}" }
-              exit 1
+              raise CommandError
             end
 
             # Get current metadata as a hash, excluding internal fields
@@ -161,7 +161,7 @@ module Lutaml
               unless value
                 error "Invalid setting format: #{setting}"
                 error "Expected format: key=value"
-                exit 1
+                raise CommandError
               end
               current_metadata[key] = value # Use string key, not symbol
             end
@@ -184,7 +184,7 @@ module Lutaml
           rescue StandardError => e
             error "Failed to set metadata: #{e.message}"
             verbose_output e.backtrace.join("\n") if verbose?
-            exit 1
+            raise CommandError
           end
         end
       end

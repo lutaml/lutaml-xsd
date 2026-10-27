@@ -57,8 +57,25 @@ module Lutaml
         return unless namespace_mappings && !namespace_mappings.empty?
 
         namespace_mappings.each do |mapping|
-          @namespace_registry.register(mapping.prefix, mapping.uri)
+          namespace_registry.register(mapping.prefix, mapping.uri)
         end
+      end
+
+      # Some lutaml-model deserialization paths construct instances
+      # without running the custom initialize, so every piece of
+      # internal state is nil-safe at the read boundary (#175: a
+      # dependent-lane bundle hit "undefined method 'exists?' for
+      # nil" from these being uninitialized).
+      def parsed_schemas
+        @parsed_schemas ||= Lutaml::Store::BasicStore.new(adapter_type: :memory)
+      end
+
+      def namespace_registry
+        @namespace_registry ||= NamespaceRegistry.new
+      end
+
+      def type_index
+        @type_index ||= TypeIndex.new
       end
 
       # Parse XSD schemas from configured files and base packages
@@ -73,7 +90,7 @@ module Lutaml
         # Register namespace mappings loaded from YAML with the namespace registry
         if namespace_mappings && !namespace_mappings.empty?
           namespace_mappings.each do |mapping|
-            @namespace_registry.register(mapping.prefix, mapping.uri)
+            namespace_registry.register(mapping.prefix, mapping.uri)
           end
         end
 
@@ -148,16 +165,16 @@ module Lutaml
 
         # Extract namespaces from parsed schemas if not configured
         if namespace_mappings.nil? || namespace_mappings.empty?
-          @namespace_registry.extract_from_schemas(all_schemas.values)
+          namespace_registry.extract_from_schemas(all_schemas.values)
         else
           # Register namespace mappings from configuration
           namespace_mappings.each do |mapping|
-            @namespace_registry.register(mapping.prefix, mapping.uri)
+            namespace_registry.register(mapping.prefix, mapping.uri)
           end
         end
 
         # Build type index from all parsed schemas (including imported/included)
-        @type_index.build_from_schemas(all_schemas)
+        type_index.build_from_schemas(all_schemas)
 
         @resolved = true
         self
@@ -179,7 +196,7 @@ module Lutaml
         end
 
         # Check that all schemas were parsed successfully
-        missing_schemas = (files || []).reject { |f| @parsed_schemas.exists?(f) }
+        missing_schemas = (files || []).reject { |f| parsed_schemas.exists?(f) }
         unless missing_schemas.empty?
           error = "Failed to parse schemas: #{missing_schemas.join(', ')}"
           errors << error
@@ -214,7 +231,7 @@ module Lutaml
       def configure_namespace(prefix:, uri:)
         @namespace_mappings ||= []
         @namespace_mappings << NamespaceMapping.new(prefix: prefix, uri: uri)
-        @namespace_registry.register(prefix, uri)
+        namespace_registry.register(prefix, uri)
         self
       end
 
@@ -248,7 +265,7 @@ module Lutaml
         resolution_path = [qname]
 
         # Parse the qualified name
-        parsed = QualifiedNameParser.parse(qname, @namespace_registry)
+        parsed = QualifiedNameParser.parse(qname, namespace_registry)
         unless parsed
           return TypeResolutionResult.failure(
             qname: qname,
@@ -276,8 +293,8 @@ module Lutaml
         end
 
         # Look up type in index
-        type_info = @type_index.find_by_namespace_and_name(namespace,
-                                                           local_name)
+        type_info = type_index.find_by_namespace_and_name(namespace,
+                                                          local_name)
 
         if type_info
           resolution_path << "#{type_info[:schema_file]}##{local_name}"
@@ -292,7 +309,7 @@ module Lutaml
           )
         else
           # Provide suggestions for similar types
-          suggestions = @type_index.suggest_similar(namespace, local_name)
+          suggestions = type_index.suggest_similar(namespace, local_name)
           suggestion_text = suggestions.empty? ? "" : " Did you mean: #{suggestions.join(', ')}?"
 
           TypeResolutionResult.failure(
@@ -311,15 +328,15 @@ module Lutaml
       # @return [Attribute, nil] The attribute definition or nil if not found
       def find_attribute(qualified_name)
         # Parse the qualified name
-        parsed = QualifiedNameParser.parse(qualified_name, @namespace_registry)
+        parsed = QualifiedNameParser.parse(qualified_name, namespace_registry)
         return nil unless parsed
 
         namespace_uri = parsed[:namespace]
         local_name = parsed[:local_name]
 
         # Look up attribute in the type index
-        attr_info = @type_index.find_by_namespace_and_name(namespace_uri,
-                                                           local_name)
+        attr_info = type_index.find_by_namespace_and_name(namespace_uri,
+                                                          local_name)
 
         # Return the definition if it's an attribute
         return unless attr_info && attr_info[:type] == :attribute
@@ -411,20 +428,20 @@ module Lutaml
       # @return [Hash, nil] Parsed components with :prefix, :namespace,
       #   :local_name
       def parse_qualified_name(qualified_name)
-        QualifiedNameParser.parse(qualified_name, @namespace_registry)
+        QualifiedNameParser.parse(qualified_name, namespace_registry)
       end
 
       # Get repository statistics
       # @return [Hash] Statistics about the repository
       def statistics
-        type_stats = @type_index.statistics
+        type_stats = type_index.statistics
 
         {
-          total_schemas: @parsed_schemas.size,
+          total_schemas: parsed_schemas.size,
           total_types: type_stats[:total_types],
           types_by_category: type_stats[:by_type],
           total_namespaces: type_stats[:namespaces],
-          namespace_prefixes: @namespace_registry.all_prefixes.size,
+          namespace_prefixes: namespace_registry.all_prefixes.size,
           resolved: @resolved,
           validated: @validated,
         }
@@ -441,7 +458,7 @@ module Lutaml
       # Get all registered namespace URIs
       # @return [Array<String>]
       def all_namespaces
-        @namespace_registry.all_uris
+        namespace_registry.all_uris
       end
 
       # Quick type existence check
@@ -458,7 +475,7 @@ module Lutaml
       def all_type_names(namespace: nil, category: nil)
         types = []
 
-        @type_index.all.each_value do |type_info|
+        type_index.all.each_value do |type_info|
           # Filter by namespace if specified
           next if namespace && type_info[:namespace] != namespace
 
@@ -516,7 +533,7 @@ module Lutaml
       def namespace_to_prefix(namespace_uri)
         return nil if namespace_uri.nil? || namespace_uri.empty?
 
-        @namespace_registry.get_primary_prefix(namespace_uri)
+        namespace_registry.get_primary_prefix(namespace_uri)
       end
 
       # Get detailed namespace prefix information
@@ -578,7 +595,7 @@ module Lutaml
       # @param namespace_uri [String] The namespace URI
       # @return [Array<Hash>] List of type information
       def types_in_namespace(namespace_uri)
-        @type_index.find_all_in_namespace(namespace_uri)
+        type_index.find_all_in_namespace(namespace_uri)
       end
 
       # Get all elements organized by namespace
@@ -890,7 +907,7 @@ module Lutaml
         repo = package_source.repository
 
         # Get all schemas from the package
-        store = repo.instance_variable_get(:@parsed_schemas)
+        store = repo.parsed_schemas
         all_schemas = store ? store.all : {}
 
         # Apply schema filtering from config
@@ -907,7 +924,7 @@ module Lutaml
         end
 
         # Merge filtered schemas into current repository
-        @parsed_schemas.bulk_set(filtered_schemas)
+        parsed_schemas.bulk_set(filtered_schemas)
 
         # Merge files list
         @files ||= []
@@ -1020,7 +1037,7 @@ module Lutaml
       # @param file_path [String] Path to schema file
       # @param glob_mappings [Array<Hash>] Schema location mappings
       def parse_schema_file(file_path, glob_mappings)
-        return if @parsed_schemas.exists?(file_path)
+        return if parsed_schemas.exists?(file_path)
         return unless File.exist?(file_path)
 
         ext = File.extname(file_path).downcase
@@ -1030,7 +1047,7 @@ module Lutaml
                           parse_xsd_schema(file_path, glob_mappings)
                         end
 
-        @parsed_schemas.set(file_path, parsed_schema)
+        parsed_schemas.set(file_path, parsed_schema)
 
         # Register in global cache for cross-repository access
         Lutaml::Xml::Schema::Xsd::Schema.schema_processed(file_path,
@@ -1105,10 +1122,10 @@ module Lutaml
           @files[idx] = new_path if idx
         end
 
-        # Update @parsed_schemas store
-        if @parsed_schemas.exists?(old_path)
-          @parsed_schemas.set(new_path, @parsed_schemas.get(old_path))
-          @parsed_schemas.delete(old_path)
+        # Update parsed_schemas store
+        if parsed_schemas.exists?(old_path)
+          parsed_schemas.set(new_path, parsed_schemas.get(old_path))
+          parsed_schemas.delete(old_path)
         end
 
         # Update global cache
@@ -1125,7 +1142,7 @@ module Lutaml
         # Track schema dependencies
         dependencies = {}
 
-        @parsed_schemas.all.each do |file_path, schema|
+        parsed_schemas.all.each do |file_path, schema|
           deps = (schema.imports || []).map(&:schema_path)
           (schema.includes || []).each do |include|
             deps << include.schema_path
