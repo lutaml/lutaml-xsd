@@ -8,6 +8,7 @@ module Lutaml
       autoload :EngineBacked, "lutaml/xsd/validation/engine_backed"
       autoload :OccurrenceProductGuard,
                "lutaml/xsd/validation/occurrence_product_guard"
+      autoload :ValueSpace, "lutaml/xsd/validation/value_space"
     end
   end
 end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../validation_rule"
+require_relative "../xsd_regex"
 
 module Lutaml
   module Xsd
@@ -22,6 +23,9 @@ module Lutaml
         #
         # @see docs/JING_ALGORITHM_PORTING_GUIDE.md Attribute Validation
         class AttributeValidationRule < ValidationRule
+          include EngineBacked
+          include ValueSpace
+
           PROBE_SCHEMA = <<~XSD
             <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
               <xs:complexType name="probe">
@@ -328,7 +332,7 @@ module Lutaml
               next unless schema_attr
 
               validate_attribute_value(xml_element, xml_attr, schema_attr,
-                                       collector)
+                                       collector, repository: repository)
             end
           end
 
@@ -375,7 +379,7 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_attribute_value(xml_element, xml_attr, schema_attr,
-                                       collector)
+                                       collector, repository: nil)
             value = xml_attr.value
 
             # Check fixed value constraint
@@ -399,21 +403,262 @@ module Lutaml
 
             # Validate against type definition
             validate_attribute_type(xml_element, xml_attr, schema_attr,
-                                    collector)
+                                    collector, repository: repository)
           end
 
           # Validate attribute type
+          #
+          # Resolves the attribute's declared type (built-in reference,
+          # named simpleType, or inline simpleType) and validates the
+          # lexical value against it.
           #
           # @param xml_element [XmlElement] The element
           # @param xml_attr [XmlAttribute] XML attribute
           # @param schema_attr [Lutaml::Xsd::Attribute] Schema attribute
           # @param collector [ResultCollector] Result collector
+          # @param repository [SchemaDefinitionResolver, nil]
           # @return [void]
           def validate_attribute_type(xml_element, xml_attr, schema_attr,
-                                      collector)
-            # TODO: Implement type validation for attributes
-            # This should use BaseTypeValidator for built-in types
-            # and SimpleTypeValidator for custom types
+                                      collector, repository: nil)
+            violation = attribute_type_violation(xml_attr.value, schema_attr,
+                                                 repository, 0)
+            return unless violation
+
+            report_error(
+              collector,
+              code: violation[:code],
+              message: "Attribute '#{xml_attr.name}' " \
+                       "#{violation[:message]}",
+              location: xml_element.xpath,
+              context: { attribute: xml_attr.name }.merge(
+                violation[:context] || {},
+              ),
+            )
+          end
+
+          # @return [Hash, nil] nil when the value is valid or the type
+          #   cannot be resolved
+          def attribute_type_violation(value, schema_attr, repository, depth)
+            return nil if depth > 6
+
+            if schema_attr.simple_type
+              return simple_type_violation(value, schema_attr.simple_type,
+                                           repository, depth + 1)
+            end
+            return nil unless schema_attr.type.to_s.match?(/\S/)
+
+            type_name = schema_attr.type.to_s
+            if builtin_type_name?(type_name)
+              return builtin_violation(type_name, value)
+            end
+
+            named = repository&.resolve_named_type(type_name.split(":").last)
+            return nil unless simple_type_model?(named)
+
+            simple_type_violation(value, named, repository, depth + 1)
+          end
+
+          def simple_type_model?(type)
+            type.is_a?(Lutaml::Xsd::SimpleType) ||
+              type.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
+          end
+
+          def builtin_type_name?(type_name)
+            type_name.split(":").first.to_s.match?(/xs|xsd\z/)
+          end
+
+          # @return [Hash, nil]
+          def builtin_violation(type_name, value)
+            engine = validation_engine
+            answer = engine&.builtin_valid?(type_name, value)
+            return nil if answer.nil? || answer
+
+            {
+              code: "attribute_lexical_violation",
+              message: "has value '#{value}' that is not a valid " \
+                       "#{type_name}",
+              context: { value: value, type: type_name },
+            }
+          end
+
+          # @return [Hash, nil]
+          def simple_type_violation(value, simple_type, repository, depth)
+            return nil if depth > 6
+
+            if simple_type.list
+              return list_violation(value, simple_type.list, repository,
+                                    depth)
+            end
+            if simple_type.union
+              return union_violation(value, simple_type.union, repository,
+                                     depth)
+            end
+
+            restriction = simple_type.restriction
+            return nil unless restriction
+
+            restriction_violation(value, restriction, repository, depth)
+          end
+
+          def list_violation(value, list, repository, depth)
+            local = list.item_type.to_s.split(":").last
+            item_type = if builtin_type_name?(list.item_type.to_s)
+                          nil
+                        else
+                          repository&.resolve_named_type(local)
+                        end
+            items = value.to_s.split(/\s+/).reject(&:empty?)
+            items.each do |item|
+              violation =
+                if item_type
+                  simple_type_violation(item, item_type, repository,
+                                        depth + 1)
+                elsif builtin_type_name?(list.item_type.to_s)
+                  builtin_violation(list.item_type.to_s, item)
+                end
+              next unless violation
+
+              return violation.merge(
+                message: "has list item '#{item}' that " \
+                         "#{violation[:message]}",
+              )
+            end
+            nil
+          end
+
+          def union_violation(value, union, repository, depth)
+            members = union.member_types.to_s.split(/\s+/)
+            violations = members.filter_map do |ref|
+              if builtin_type_name?(ref)
+                builtin_violation(ref, value)
+              else
+                member = repository&.resolve_named_type(ref.split(":").last)
+                next nil unless simple_type_model?(member)
+
+                simple_type_violation(value, member, repository, depth + 1)
+              end
+            end
+            return nil if violations.size < members.size
+
+            violations.first
+          end
+
+          def restriction_violation(value, restriction, repository, depth)
+            base_violation(value, restriction, repository, depth) ||
+              facet_violations(value, restriction).first
+          end
+
+          # The restriction's base chain is validated first: a built-in
+          # base lexically, a named simpleType base recursively.
+          def base_violation(value, restriction, repository, depth)
+            base = restriction.base.to_s
+            return nil unless base.match?(/\S/)
+
+            if builtin_type_name?(base)
+              builtin_violation(base, value)
+            else
+              named = repository&.resolve_named_type(base.split(":").last)
+              return nil unless simple_type_model?(named)
+
+              simple_type_violation(value, named, repository, depth + 1)
+            end
+          end
+
+          # @return [Array<Hash>] every violated facet (first wins)
+          def facet_violations(value, restriction)
+            violations = []
+            violations << enumeration_violation(value, restriction)
+            violations << pattern_violation(value, restriction)
+            violations << length_violation(value, restriction)
+            violations << range_violation(value, restriction)
+            violations.compact
+          end
+
+          def enumeration_violation(value, restriction)
+            allowed = Array(restriction.enumeration).map(&:value)
+            return nil if allowed.empty? || allowed.include?(value)
+
+            {
+              code: "attribute_enumeration_violation",
+              message: "has value '#{value}' that is not among " \
+                       "#{allowed.map { |v| "'#{v}'" }.join(', ')}",
+              context: { value: value, allowed: allowed },
+            }
+          end
+
+          def pattern_violation(value, restriction)
+            patterns = Array(restriction.pattern)
+            return nil if patterns.empty?
+
+            violated = patterns.find do |pattern|
+              pattern_value = pattern.value || pattern.to_s
+              begin
+                !value.match?(XsdRegex.to_regexp(pattern_value))
+              rescue RegexpError
+                false
+              end
+            end
+            return nil unless violated
+
+            pattern_value = violated.value || violated.to_s
+            {
+              code: "attribute_pattern_violation",
+              message: "has value '#{value}' that does not match " \
+                       "pattern '#{pattern_value}'",
+              context: { value: value, pattern: pattern_value },
+            }
+          end
+
+          def length_violation(value, restriction)
+            measured = measured_length(value, restriction)
+            length_facet = Array(restriction.length).first
+            if length_facet && measured != length_facet.value.to_i
+              return length_failure(value, "length", length_facet.value)
+            end
+
+            min_length = Array(restriction.min_length).first
+            if min_length && measured < min_length.value.to_i
+              return length_failure(value, "minLength", min_length.value)
+            end
+
+            max_length = Array(restriction.max_length).first
+            return nil unless max_length && measured > max_length.value.to_i
+
+            length_failure(value, "maxLength", max_length.value)
+          end
+
+          def length_failure(value, facet, bound)
+            {
+              code: "attribute_length_violation",
+              message: "has value '#{value}' whose length violates " \
+                       "#{facet}='#{bound}'",
+              context: { value: value, facet: facet, bound: bound },
+            }
+          end
+
+          def range_violation(value, restriction)
+            # nil domain (plain numeric/unknown bases) compares
+            # numerically via facet_key's fallback, mirroring the
+            # element-side range check.
+            domain = range_domain(restriction.base)
+            RANGE_FACETS.each do |facet, compare|
+              facet_values = Array(restriction.public_send(facet))
+              next if facet_values.empty?
+
+              bound = facet_values.first.value
+              value_key = facet_key(value, domain)
+              bound_key = facet_key(bound, domain)
+              next unless value_key && bound_key
+              next if compare.call(value_key, bound_key)
+
+              return {
+                code: "attribute_range_violation",
+                message: "has value '#{value}' that violates " \
+                         "#{facet}='#{bound}'",
+                context: { value: value, facet: facet, bound: bound },
+              }
+            end
+            nil
           end
 
           # Validate no unexpected attributes

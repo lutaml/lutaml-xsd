@@ -279,3 +279,149 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
     expect(collector.errors.map(&:code)).to include("unexpected_attribute")
   end
 end
+
+RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
+               "attribute type validation" do
+  let(:config) { Lutaml::Xsd::Validation::ValidationConfiguration.new }
+  let(:collector) { Lutaml::Xsd::Validation::ResultCollector.new(config) }
+  let(:rule) { described_class.new }
+  let(:xsd_xml) do
+    <<~XSD
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                 targetNamespace="http://example.com/t"
+                 elementFormDefault="qualified">
+        <xs:element name="doc">
+          <xs:complexType>
+            <xs:attribute name="color">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="red"/>
+                  <xs:enumeration value="green"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="code">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:pattern value="[A-Z]{3}"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="nick">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:maxLength value="4"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="level" type="levelType"/>
+            <xs:attribute name="count" type="xs:int"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:simpleType name="levelType">
+          <xs:restriction base="xs:int">
+            <xs:minInclusive value="1"/>
+            <xs:maxInclusive value="10"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:schema>
+    XSD
+  end
+  let(:schema) { Lutaml::Xml::Schema::Xsd.parse(xsd_xml) }
+  let(:repository) do
+    Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ "http://example.com/t" => schema })
+  end
+  let(:resolver) do
+    Lutaml::Xsd::Validation::SchemaDefinitionResolver.new(repository)
+  end
+  let(:schema_def) { resolver.resolve("doc", "http://example.com/t") }
+  let(:navigator) do
+    Object.new.tap do |nav|
+      nav.define_singleton_method(:current_xpath) { "/doc" }
+    end
+  end
+
+  def validate_xml(xml)
+    root = Moxml::Context.new.parse(xml).root
+    xml_element = Lutaml::Xsd::Validation::XmlElement.new(root, navigator)
+    rule.validate(xml_element, schema_def, collector, repository: resolver)
+    collector
+  end
+
+  it "accepts a value inside the enumeration" do
+    collector = validate_xml(
+      '<doc xmlns="http://example.com/t" color="red"/>',
+    )
+
+    expect(collector.errors).to be_empty
+  end
+
+  it "reports an enumeration violation" do
+    collector = validate_xml(
+      '<doc xmlns="http://example.com/t" color="blue"/>',
+    )
+
+    expect(collector.errors.map(&:code))
+      .to include("attribute_enumeration_violation")
+  end
+
+  it "reports a pattern violation" do
+    collector = validate_xml(
+      '<doc xmlns="http://example.com/t" code="ab"/>',
+    )
+
+    expect(collector.errors.map(&:code))
+      .to include("attribute_pattern_violation")
+  end
+
+  it "accepts a value matching the pattern" do
+    collector = validate_xml(
+      '<doc xmlns="http://example.com/t" code="ABC"/>',
+    )
+
+    expect(collector.errors).to be_empty
+  end
+
+  it "reports a length violation" do
+    collector = validate_xml(
+      '<doc xmlns="http://example.com/t" nick="toolong"/>',
+    )
+
+    expect(collector.errors.map(&:code))
+      .to include("attribute_length_violation")
+  end
+
+  it "reports a range violation on a named simpleType" do
+    collector = validate_xml(
+      '<doc xmlns="http://example.com/t" level="11"/>',
+    )
+
+    expect(collector.errors.map(&:code))
+      .to include("attribute_range_violation")
+  end
+
+  it "accepts a named-simpleType value inside the range" do
+    collector = validate_xml(
+      '<doc xmlns="http://example.com/t" level="7"/>',
+    )
+
+    expect(collector.errors).to be_empty
+  end
+
+  it "stays lax on builtin lexical values without an engine" do
+    collector = validate_xml(
+      '<doc xmlns="http://example.com/t" count="not-a-number"/>',
+    )
+
+    expect(collector.errors).to be_empty
+  end
+end
