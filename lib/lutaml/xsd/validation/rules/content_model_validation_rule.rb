@@ -71,14 +71,15 @@ module Lutaml
           def validate(xml_element, schema_def, collector, repository: nil)
             return unless schema_def
 
-            handled = engine_content_check(xml_element, collector) == :handled
-
             particles = effective_particles(
               xml_element, schema_def, repository
             )
             # nil: an xsi:type override that does not resolve — the type
             # rule already reports it, so no content walk runs here.
-            return if particles.nil?
+            if particles.nil?
+              engine_content_check(xml_element, collector)
+              return
+            end
 
             # A type with no particle model at all is EMPTY content:
             # neither element children nor character data.
@@ -92,6 +93,17 @@ module Lutaml
             # it regardless of whether the engine answered.
             scan_abstract_usage(xml_element, particles, collector,
                                 repository)
+
+            handled = if occurrence_guard(repository).particles_safe?(particles)
+                        engine_content_check(xml_element,
+                                             collector) == :handled
+                      else
+                        # The native engine compiles nested occurrence
+                        # products (a unbounded inside sequence{100}) into
+                        # automata large enough to have the process killed
+                        # (particlesZ034_b); the Ruby matcher decides those.
+                        false
+                      end
             return if handled
 
             validate_particle_sequence(xml_element, particles, collector,
@@ -99,6 +111,15 @@ module Lutaml
           end
 
           private
+
+          def occurrence_guard(repository)
+            OccurrenceProductGuard.new(
+              group_expander: ->(group) do
+                expand_group_container(group, repository)
+              end,
+              container_particles: ->(container) { collect_particles(container) },
+            )
+          end
 
           # Exact structural membership via the NFA matcher. When the
           # model accepts, the particle walk is skipped — it cannot add
