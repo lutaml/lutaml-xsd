@@ -181,6 +181,19 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   narrows but cannot drop attributes, XSD 1.0 §3.4.2); the mgB/mgF
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
-- remaining (2026-10-27): Additional (46), Attribute (30), Element (31),
-  Schema (25), AttributeGroup (18), ComplexType (19), Group (9),
-  Errata10 (4), Notations (1)
+- remaining (2026-10-28, complete-suite measurement 4162/4696 = 88.6%,
+  first run with all 4696 cases — the occurrence-product guard
+  recovered the last 20): Additional (41), Attribute (30), Element
+  (28), Regex (128, bulk engine-side), DataTypes (88),
+  IdentityConstraint (36), SimpleType (30), Wildcards (29), Schema
+  (25), AttributeGroup (18), ComplexType (19), Group (9), Errata10
+  (4), Notations (1)
+- ATTRIBUTE TYPE VALIDATION (2026-10-28): validate_attribute_type was
+  a stub — attribute values were never checked. Now: built-in lexical
+  via the engine table (lax without an engine), restriction facets
+  (enumeration, pattern, length family, ranges through the shared
+  ValueSpace keys — numeric/duration/temporal), list items, unions
+  (all-members-fail). +3 net suite (Additional 44→41). Remaining
+  Attribute classes: attributeGroup-in-restriction shapes (attLb —
+  aga1-style refs unreached), use=/default under-detections (attMb),
+  engine attribute-lexical false rejections (attO — moxml queue)
