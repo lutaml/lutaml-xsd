@@ -417,11 +417,12 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
     expect(collector.errors).to be_empty
   end
 
-  it "stays lax on builtin lexical values without an engine" do
+  it "checks builtin lexical values without an engine" do
     collector = validate_xml(
       '<doc xmlns="http://example.com/t" count="not-a-number"/>',
     )
 
-    expect(collector.errors).to be_empty
+    expect(collector.errors.map(&:code))
+      .to include("attribute_lexical_violation")
   end
 end
