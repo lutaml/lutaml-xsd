@@ -44,7 +44,14 @@ module Lutaml
               # such schemas stay Ruby-decided.
               next nil unless schema_safe_for_engine?(schema)
 
-              compile_schema(context, schema)
+              # Minimal repositories carry no source paths (spec'd
+              # shape) — the roundtrip compile covers them.
+              path = begin
+                repository.source_path_for(schema)
+              rescue NoMethodError
+                nil
+              end
+              compile_schema(context, schema, path)
             end
             new(context, schemas)
           end
@@ -84,9 +91,18 @@ module Lutaml
 
           private
 
-          def compile_schema(context, schema)
+          def compile_schema(context, schema, path = nil)
             source = schema.to_xml
-            compiled = context.xsd(source)
+            # Compiling from the source file lets the engine resolve the
+            # schema's relative imports (addD004); the roundtrip loses
+            # the location context. Files may be transient — fall back
+            # to the roundtrip when the path is gone.
+            compiled =
+              if path && File.exist?(path)
+                context.xsd_file(path)
+              else
+                context.xsd(source)
+              end
             return nil if compiled.compile_error
 
             info = inspect_schema(context, source)

@@ -585,6 +585,17 @@ module Lutaml
         Lutaml::Xml::Schema::Xsd::Schema.processed_schemas
       end
 
+      # The file a schema was parsed from (processed_schemas is keyed by
+      # source path); engines compile from the file so relative imports
+      # resolve.
+      #
+      # @param schema [Object] parsed Schema
+      # @return [String, nil]
+      def source_path_for(schema)
+        all_schemas.find { |_path, candidate| candidate.equal?(schema) }
+          &.first
+      end
+
       # Get all schemas (alias for compatibility)
       # @return [Hash] All schemas from the global processed_schemas cache
       def schemas

@@ -1,0 +1,284 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+require "lutaml/xsd"
+require "lutaml/xsd/validation"
+require "lutaml/xsd/conformance/runner"
+
+RSpec.describe "wildcard scoping, anyType and default content" do
+  def run_pipeline(schema_xml, instance_xml, extra_schemas = {})
+    schema = Lutaml::Xml::Schema::Xsd.parse(schema_xml)
+    schemas = { schema.target_namespace.to_s.match?(/\S/) ? schema.target_namespace : nil => schema }
+    schemas.merge!(extra_schemas)
+    config = Lutaml::Xsd::Validation::ValidationConfiguration.new
+    job = Lutaml::Xsd::Validation::ValidationJob.new(
+      xml_content: instance_xml,
+      repository: Lutaml::Xsd::Conformance::Runner::Repository.new(schemas),
+      rule_registry: Lutaml::Xsd::Validation::RuleRegistry.default(config),
+      config: config,
+    )
+    job.execute
+  end
+
+  def codes(result)
+    (result.errors + result.warnings).map(&:code)
+  end
+
+  describe "processContents=skip wildcards" do
+    it "suppresses all assessment of the matched subtree" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:any namespace="##any" processContents="skip"/>
+              </xs:choice>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="strict" type="strictType"/>
+          <xs:complexType name="strictType">
+            <xs:attribute name="att" type="xs:integer" use="required"/>
+          </xs:complexType>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<root><strict/></root>")
+
+      expect(codes(result)).not_to include("required_attribute_missing")
+      expect(codes(result)).not_to include("unexpected_element_in_sequence")
+      expect(codes(result)).not_to include("choice_min_occurs_violation")
+    end
+  end
+
+  describe "processContents=strict wildcards" do
+    it "accepts a matched child whose xsi:type supplies the definition" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:complexType name="foo">
+            <xs:sequence>
+              <xs:element name="a"/>
+              <xs:any namespace="##any" processContents="strict"
+                      minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:element name="foo" type="foo"/>
+        </xs:schema>
+      XSD
+
+      instance = <<~XML
+        <foo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <a/>
+          <b xsi:type="xs:string">abc</b>
+        </foo>
+      XML
+
+      result = run_pipeline(schema, instance)
+
+      expect(codes(result)).not_to include("wildcard_undeclared_element")
+    end
+  end
+
+  describe "xs:anyType elements" do
+    it "accepts any attributes" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="t" xmlns:t="t" elementFormDefault="qualified">
+          <xs:complexType name="array">
+            <xs:sequence minOccurs="0">
+              <xs:element name="item" type="xs:anyType" form="unqualified"/>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:element name="array" type="t:array"/>
+        </xs:schema>
+      XSD
+
+      instance = <<~XML
+        <t:Array xmlns:t="t">
+          <item foreign:att="1" xmlns:foreign="f"/>
+        </t:Array>
+      XML
+
+      result = run_pipeline(schema, instance)
+
+      expect(codes(result)).not_to include("unexpected_attribute")
+    end
+  end
+
+  describe "xml namespace attribute references" do
+    it "resolves xml:base and satisfies its required use" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   elementFormDefault="qualified">
+          <xs:import namespace="http://www.w3.org/XML/1998/namespace"/>
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:attribute ref="xml:base" use="required"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, '<root xml:base="a"/>')
+
+      expect(codes(result)).not_to include("required_attribute_missing")
+      expect(codes(result)).not_to include("unexpected_attribute")
+    end
+  end
+
+  describe "fixed and default content values" do
+    it "validates an empty element against its fixed value" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="number" type="xs:integer" fixed="123"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<root><number/></root>")
+
+      expect(codes(result)).not_to include("type_validation_error")
+    end
+
+    it "validates an empty element against its default value" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="employee" type="xs:int" default="1"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<root><employee/></root>")
+
+      expect(codes(result)).not_to include("type_validation_error")
+    end
+
+    it "compares fixed attribute values in the value space" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="doc">
+            <xs:complexType>
+              <xs:attribute name="att" type="xs:integer" fixed="  123  "/>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, '<doc att="123"/>')
+
+      expect(codes(result)).not_to include("fixed_attribute_value_mismatch")
+    end
+  end
+
+  describe "xsi:type overrides naming built-ins" do
+    it "resolves to the built-in type" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="uid" type="xs:anyType"/>
+        </xs:schema>
+      XSD
+
+      instance = <<~XML
+        <uid xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:type="xs:int">123</uid>
+      XML
+
+      result = run_pipeline(schema, instance)
+
+      expect(codes(result)).not_to include("xsi_type_unknown")
+      expect(codes(result)).not_to include("xsi_type_not_derived")
+    end
+  end
+
+  describe "occurrence counting abstentions" do
+    it "abstains when a wildcard can absorb the counted children" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="test">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:any namespace="##any" processContents="strict"/>
+                <xs:element name="element1"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema,
+                            "<test><element1/><element1/></test>")
+
+      expect(codes(result)).not_to include("max_occurs_violation")
+    end
+
+    it "abstains for same-named sibling declarations" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="e"/>
+                <xs:element name="e"/>
+                <xs:element name="e"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<root><e/><e/><e/></root>")
+
+      expect(codes(result)).not_to include("max_occurs_violation")
+    end
+
+    it "skips child minimums of an optional container" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence minOccurs="0">
+                <xs:element name="e1"/>
+                <xs:element name="e2"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<root/>")
+
+      expect(codes(result)).not_to include("min_occurs_violation")
+    end
+  end
+
+  describe "xs:all occurrence bounds" do
+    it "accepts the empty sequence for an optional xs:all" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="elt1">
+            <xs:complexType>
+              <xs:all minOccurs="0">
+                <xs:element name="elt2"/>
+                <xs:element name="elt3"/>
+              </xs:all>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<elt1/>")
+
+      expect(codes(result)).not_to include("sequence_min_occurs_violation")
+      expect(codes(result)).not_to include("min_occurs_violation")
+    end
+  end
+end

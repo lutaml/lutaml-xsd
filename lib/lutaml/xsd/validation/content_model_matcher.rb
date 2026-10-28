@@ -141,7 +141,10 @@ module Lutaml
               compile_choice_particles(@container_particles.call(particle))
             end
           when Lutaml::Xsd::All
-            compile_all(particle)
+            # The all's own bounds wrap the member bitmask: an optional
+            # all accepts the empty sequence even with mandatory
+            # members (addB31).
+            with_occurrence(particle) { compile_all(particle) }
           when Lutaml::Xml::Schema::Xsd::Group
             compile_group(particle)
           when Lutaml::Xsd::Any

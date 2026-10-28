@@ -21,6 +21,8 @@ module Lutaml
       # @example Execute all rules
       #   engine.execute_all(document, repository)
       class RuleEngine
+        include WildcardScope
+
         # @return [RuleRegistry] The rule registry
         attr_reader :registry
 
@@ -49,7 +51,11 @@ module Lutaml
           return if rules.empty?
 
           resolver = SchemaDefinitionResolver.new(repository)
-          each_element(document) do |xml_element|
+          each_element(document) do |xml_element, parent|
+            # A skip wildcard in the parent's content model forbids any
+            # assessment of the matched subtree (XSD 1.0 §3.9.4.2).
+            next if skip_wildcard_subtree?(parent, xml_element, resolver)
+
             schema_def = resolver.resolve(
               xml_element.name, xml_element.namespace_uri
             )
@@ -170,16 +176,38 @@ module Lutaml
 
         private
 
-        # Depth-first walk over instance elements.
+        # Depth-first walk over instance elements, passing the parent.
         #
         # @param node [XmlDocument, XmlElement] Start node
+        # @param parent [XmlElement, nil]
         # @yieldparam element [XmlElement]
-        def each_element(node, &)
+        # @yieldparam parent [XmlElement, nil]
+        def each_element(node, parent = nil, &)
           element = node.is_a?(XmlDocument) ? node.root_element : node
           return unless element
 
-          yield element
-          element.children.each { |child| each_element(child, &) }
+          yield element, parent
+          element.children.each { |child| each_element(child, element, &) }
+        end
+
+        # Whether the parent's content model holds a processContents
+        # skip wildcard whose namespace range admits the child — the
+        # child subtree then escapes assessment entirely (addB125).
+        #
+        # @return [Boolean]
+        def skip_wildcard_subtree?(parent, child, resolver)
+          return false unless parent
+
+          declaration = resolver.resolve(parent.name, parent.namespace_uri)
+          return false unless declaration
+
+          model = resolver.content_model_for(declaration)
+          return false unless model
+
+          collect_wildcards(model, resolver).any? do |wildcard|
+            wildcard.process_contents.to_s == "skip" &&
+              wildcard_permits?(wildcard, parent, child, resolver)
+          end
         end
 
         # Handle errors that occur during rule execution

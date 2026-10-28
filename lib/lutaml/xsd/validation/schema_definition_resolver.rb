@@ -238,6 +238,11 @@ module Lutaml
         def resolve_attribute(name, namespace_uri)
           return nil if name.nil? || name.empty?
 
+          # The xml namespace built-ins are declared by the spec, not by
+          # any schema document.
+          return XmlBuiltins.attribute(name) if
+            namespace_uri == XmlBuiltins::NAMESPACE
+
           candidates = @attributes[name]
           return nil if candidates.empty?
 
@@ -321,8 +326,18 @@ module Lutaml
 
         def index_elements
           index = Hash.new { |hash, key| hash[key] = [] }
+          # Schemas the repository holds directly must not be re-indexed
+          # through another schema's resolved import. Different documents
+          # can share a target namespace (schC3's no-namespace include
+          # set), so the duplicate key is the serialized document, not
+          # the namespace.
+          held_signatures = schemas.filter_map do |schema|
+            schema_signature(schema)
+          rescue StandardError
+            nil
+          end
           schemas.each do |schema|
-            index_schema(index, schema)
+            index_schema(index, schema, held_signatures)
           rescue StandardError
             # Repositories can carry unparsable entries (broken packages);
             # they contribute no declarations.
@@ -335,7 +350,17 @@ module Lutaml
           index
         end
 
-        def index_schema(index, schema)
+        # Document signature for duplicate detection; memoized per
+        # object (equal-valued models eql? together).
+        #
+        # @return [Array(String, String)]
+        def schema_signature(schema)
+          @signatures ||= {}.compare_by_identity
+          @signatures[schema] ||= [schema.target_namespace.to_s,
+                                   schema.to_xml]
+        end
+
+        def index_schema(index, schema, held_signatures = [])
           namespace = schema.target_namespace
           Array(schema.element).each do |element|
             index_element(index, element, namespace, :top, schema)
@@ -359,8 +384,10 @@ module Lutaml
           # as child Schema objects (raw Import models stay for
           # unresolvable locations); their declarations validate too.
           (Array(schema.import) + Array(schema.include)).each do |nested|
-            index_schema(index, nested) if
-              nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
+            next unless nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
+            next if held_signatures.include?(schema_signature(nested))
+
+            index_schema(index, nested)
           end
         end
 

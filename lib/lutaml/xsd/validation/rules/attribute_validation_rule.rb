@@ -66,6 +66,10 @@ module Lutaml
                        repository: nil)
             return unless schema_element
 
+            # An element whose type is xs:anyType — declared, defaulted
+            # (no type at all), or overridden — accepts any attributes.
+            return if any_type_attributes?(xml_element, schema_element)
+
             schema_attributes =
               collect_schema_attributes(schema_element, repository,
                                         xml_element)
@@ -81,6 +85,7 @@ module Lutaml
 
             # Step 1: Check required attributes are present
             validate_required_attributes(xml_element, schema_attributes,
+                                         resolved_attributes,
                                          xml_attributes, collector)
 
             # Step 2: Validate attribute values
@@ -108,9 +113,46 @@ module Lutaml
               ref = attr.ref.to_s
               next attr if ref.empty?
 
-              local = ref.split(":").last
-              repository&.resolve_attribute(local, nil) || attr
+              parts = ref.split(":")
+              local = parts.last
+              declaration =
+                if parts.size == 2 && parts.first == "xml"
+                  # xml:base and friends are declared by the spec itself.
+                  XmlBuiltins.attribute(local)
+                else
+                  repository&.resolve_attribute(local, nil)
+                end
+              declaration || attr
             end
+          end
+
+          # Whether the element's effective type is xs:anyType: the
+          # declared reference names it, the element declares no type at
+          # all (implicit anyType, XSD 1.0 §3.3.2), or xsi:type
+          # overrides to it (isDefault072).
+          #
+          # @return [Boolean]
+          def any_type_attributes?(xml_element, schema_element)
+            return false unless
+              schema_element.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+
+            xsi = xsi_attribute(xml_element, "type")
+            if xsi&.value.to_s.match?(/\S/)
+              return builtin_any_type?(xsi.value.to_s)
+            end
+
+            return true if builtin_any_type?(schema_element.type.to_s)
+
+            schema_element.type.to_s.empty? &&
+              schema_element.complex_type.nil? &&
+              schema_element.simple_type.nil?
+          end
+
+          # @return [Boolean]
+          def builtin_any_type?(reference)
+            parts = reference.to_s.split(":")
+            parts.size == 2 && %w[xs xsd].include?(parts.first) &&
+              parts.last == "anyType"
           end
 
           # Collect all schema attributes from element or type definition
@@ -283,13 +325,20 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_required_attributes(xml_element, schema_attrs,
-                                           xml_attrs, collector)
-            required = schema_attrs.select { |a| attribute_required?(a) }
+                                           resolved_attrs, xml_attrs,
+                                           collector)
+            schema_attrs.each_with_index do |schema_attr, index|
+              next unless attribute_required?(schema_attr)
 
-            required.each do |schema_attr|
-              attr_name = schema_attr.name
+              # Ref particles carry no name — the resolved declaration
+              # does (addC001: ref="xml:base" use="required").
+              attr_name = schema_attr.name.to_s
+              if attr_name.empty?
+                attr_name = resolved_attrs[index]&.name.to_s
+              end
+              next if attr_name.empty?
+
               found = xml_attrs.any? { |xa| xa.name == attr_name }
-
               next if found
 
               report_error(
@@ -371,6 +420,42 @@ module Lutaml
             nil
           end
 
+          # A fixed value compares in the value space: whitespace is
+          # normalized on both sides per the declared type's whiteSpace
+          # facet (addB104: fixed="  123  " with type xs:integer admits
+          # "123").
+          #
+          # @return [Boolean]
+          def fixed_value_matches?(value, schema_attr)
+            rule = attribute_whitespace_rule(schema_attr)
+            canonical_lexical(value, rule) ==
+              canonical_lexical(schema_attr.fixed, rule)
+          end
+
+          # @return [Symbol] :preserve, :replace or :collapse
+          def attribute_whitespace_rule(schema_attr)
+            reference = schema_attr.type.to_s
+            return :preserve unless builtin_type_name?(reference)
+
+            local = reference.split(":").last
+            return :preserve if local == "string"
+            return :replace if local == "normalizedString"
+
+            :collapse
+          end
+
+          # @return [String]
+          def canonical_lexical(value, rule)
+            case rule
+            when :collapse
+              value.to_s.gsub(/\s+/, " ").strip
+            when :replace
+              value.to_s.gsub(/[\t\n\r]/, " ")
+            else
+              value.to_s
+            end
+          end
+
           # Validate single attribute value
           #
           # @param xml_element [XmlElement] The element
@@ -384,7 +469,7 @@ module Lutaml
 
             # Check fixed value constraint
             if schema_attr.fixed
-              unless value == schema_attr.fixed
+              unless fixed_value_matches?(value, schema_attr)
                 report_error(
                   collector,
                   code: "fixed_attribute_value_mismatch",
@@ -689,6 +774,11 @@ module Lutaml
               schema_attr = find_schema_attribute(schema_attrs, xml_attr,
                                                   repository, schema_element)
               next if schema_attr
+
+              # xml:lang and friends are declared by the spec, not by
+              # the schema document.
+              next if xml_attr.namespace_uri == XmlBuiltins::NAMESPACE &&
+                XmlBuiltins.attribute(xml_attr.name)
 
               if wildcard &&
                   wildcard_permits_attribute?(wildcard, xml_element,

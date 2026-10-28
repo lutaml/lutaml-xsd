@@ -9,6 +9,8 @@ module Lutaml
       autoload :OccurrenceProductGuard,
                "lutaml/xsd/validation/occurrence_product_guard"
       autoload :ValueSpace, "lutaml/xsd/validation/value_space"
+      autoload :WildcardScope, "lutaml/xsd/validation/wildcard_scope"
+      autoload :XmlBuiltins, "lutaml/xsd/validation/xml_builtins"
     end
   end
 end

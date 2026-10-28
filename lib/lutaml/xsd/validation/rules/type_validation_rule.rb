@@ -61,6 +61,16 @@ module Lutaml
               type_def = resolve_xsi_type(xsi_type_name(xml_element),
                                           repository)
               unless type_def
+                # xsi:type may name a built-in — resolve_named_type only
+                # sees schema documents (addB028).
+                if builtin_override_reference(xml_element)
+                  validate_builtin_type(xml_element,
+                                        builtin_override_reference(xml_element),
+                                        collector,
+                                        declared: schema_element)
+                  return
+                end
+
                 report_error(
                   collector,
                   code: "xsi_type_unknown",
@@ -110,14 +120,16 @@ module Lutaml
             case type_def
             when Lutaml::Xsd::SimpleType
               validate_simple_type_content(xml_element, type_def, collector,
-                                           repository: repository)
+                                           repository: repository,
+                                           declared: schema_element)
             when Lutaml::Xsd::ComplexType
               return if abstract_type_used?(type_def, xml_element, collector)
 
               validate_complex_type_content(xml_element, type_def, collector)
             else
               # Handle built-in types
-              validate_builtin_type(xml_element, type_def, collector)
+              validate_builtin_type(xml_element, type_def, collector,
+                                    declared: schema_element)
             end
           end
 
@@ -316,6 +328,22 @@ module Lutaml
             repository.resolve_named_type(local_name)
           end
 
+          # The xsi:type reference in full (`xsd:boolean`), when it names
+          # a built-in type.
+          #
+          # @param xml_element [XmlElement]
+          # @return [String, nil]
+          def builtin_override_reference(xml_element)
+            reference = xsi_attribute(xml_element, "type")&.value.to_s
+            parts = reference.split(":")
+            return nil unless parts.size == 2
+
+            prefix, local = parts
+            return nil unless %w[xs xsd].include?(prefix)
+
+            "#{prefix}:#{local}"
+          end
+
           # Resolve the type definition for an element
           #
           # @param schema_element [Lutaml::Xsd::Element] Schema element
@@ -339,6 +367,25 @@ module Lutaml
             nil
           end
 
+          # The value a simple-typed element validates against: its text
+          # content, or — when the element is empty and the declaration
+          # carries a fixed or default value — that supplied value (XSD
+          # 1.0 §3.3.3; isDefault005).
+          #
+          # @param xml_element [XmlElement]
+          # @param declared [Lutaml::Xml::Schema::Xsd::Element, nil]
+          # @return [String]
+          def effective_text(xml_element, declared)
+            text = xml_element.text_content.to_s
+            return text unless text.empty?
+            return text unless declared.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+
+            supplied = [declared.fixed, declared.default].compact.find do |value|
+              value.to_s.match?(/\S/)
+            end
+            supplied.nil? ? text : supplied.to_s
+          end
+
           # Validate simple type content
           #
           # @param xml_element [XmlElement] The XML element
@@ -346,8 +393,9 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_simple_type_content(xml_element, simple_type,
-                                           collector, repository: nil)
-            value = xml_element.text_content
+                                           collector, repository: nil,
+                                           declared: nil)
+            value = effective_text(xml_element, declared)
 
             # Validate base type if present
             if simple_type.restriction
@@ -755,19 +803,21 @@ module Lutaml
           # @param type_name [String] The type name
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_builtin_type(xml_element, type_name, collector)
-            answer = engine_builtin_answer(type_name, xml_element.text_content)
+          def validate_builtin_type(xml_element, type_name, collector,
+                                    declared: nil)
+            value = effective_text(xml_element, declared)
+            answer = engine_builtin_answer(type_name, value)
             return if answer.nil?
             return if answer
 
             report_error(
               collector,
               code: "type_validation_error",
-              message: "'#{xml_element.text_content}' is not a valid " \
+              message: "'#{value}' is not a valid " \
                        "#{type_name}",
               location: xml_element.xpath,
               context: {
-                value: xml_element.text_content,
+                value: value,
                 type: type_name,
               },
             )

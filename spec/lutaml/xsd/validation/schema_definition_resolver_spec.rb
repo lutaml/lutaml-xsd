@@ -66,6 +66,39 @@ RSpec.describe Lutaml::Xsd::Validation::SchemaDefinitionResolver do
       expect(element.name).to eq("person")
     end
 
+    it "keeps the fallback when a held schema is also nested as a resolved import" do
+      importing = Lutaml::Xml::Schema::Xsd.parse(
+        <<~XSD,
+          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                     targetNamespace="http://example.com/other">
+            <xs:import namespace="http://example.com/test"
+                       schemaLocation="test.xsd"/>
+          </xs:schema>
+        XSD
+      )
+      importing.import = [schema]
+      nested_repository = Class.new do
+        def initialize(schemas)
+          @schemas = schemas
+        end
+
+        attr_reader :schemas
+
+        def all_schemas
+          @schemas
+        end
+      end.new(
+        { "http://example.com/test" => schema,
+          "http://example.com/other" => importing },
+      )
+      nested_resolver = described_class.new(nested_repository)
+
+      element = nested_resolver.resolve("person", nil)
+
+      expect(element).not_to be_nil
+      expect(element.name).to eq("person")
+    end
+
     it "returns nil for unknown names" do
       expect(resolver.resolve("no_such_element", nil)).to be_nil
     end
