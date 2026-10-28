@@ -266,9 +266,22 @@ module Lutaml
           # @return [Array<Lutaml::Xsd::Attribute>]
           def expand_attribute_group(group, repository = nil, depth = 0)
             return [] if depth > 5
+            return [] unless group
 
             attrs = Array(group.attribute)
-            return attrs unless attrs.empty?
+
+            # An attributeGroup may reference other attributeGroups —
+            # their declarations flow into the expansion (attgD004).
+            Array(group.attribute_group).each do |nested_ref|
+              local = (nested_ref.ref || nested_ref.name).to_s
+                .split(":").last
+              declaration = repository&.resolve_attribute_group(local)
+              next unless declaration
+
+              attrs.concat(expand_attribute_group(declaration, repository,
+                                                  depth + 1))
+            end
+            return attrs if attrs.any?
 
             local = (group.ref || group.name).to_s.split(":").last
             declaration = repository&.resolve_attribute_group(local)
