@@ -529,11 +529,11 @@ module Lutaml
               report_error(
                 collector,
                 code: "sequence_min_occurs_violation",
-                message: "Element '#{particle_name(particle)}' must occur " \
+                message: "#{display_particle_name(particle)} must occur " \
                          "at least #{min_occurs} time(s)",
                 location: xml_element.xpath,
                 context: {
-                  particle: particle_name(particle),
+                  particle: display_particle_name(particle),
                   min_occurs: min_occurs,
                   actual: matched_count,
                 },
@@ -704,6 +704,18 @@ module Lutaml
             else
               particle.class.name.split("::").last
             end
+          end
+
+          # Containers have no instance name — naming them by class
+          # ('Sequence') reads like a missing element declaration; the
+          # group is the subject instead.
+          #
+          # @return [String]
+          def display_particle_name(particle)
+            return particle_name(particle) if
+              particle.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+
+            "The model group"
           end
 
           # Whether the container's whole content can match the empty
