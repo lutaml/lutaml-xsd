@@ -396,25 +396,32 @@ module Lutaml
             matches = schema_attrs.select { |sa| sa.name == xml_attr.name }
             return nil if matches.empty?
 
+            # Local declarations carry their own form/attributeFormDefault
+            # resolution, precomputed at index time (attMb/attMc/attLb).
             exact = matches.find do |sa|
-              expected = repository&.target_namespace_for(sa).to_s
-              expected == xml_attr.namespace_uri.to_s
+              expected = repository&.expected_attribute_namespace(sa)
+              (expected || repository&.target_namespace_for(sa).to_s) ==
+                xml_attr.namespace_uri.to_s
             end
             return exact if exact
 
             unqualified = matches.find do |sa|
               xml_attr.namespace_uri.to_s.empty? &&
-                repository&.target_namespace_for(sa).to_s.empty?
+                repository&.expected_attribute_namespace(sa).to_s.empty? &&
+                !repository&.expected_attribute_namespace(sa).nil?
             end
             return unqualified if unqualified
 
             # attributeFormDefault="qualified": local attributes expect
-            # the owner schema's target namespace even unindexed.
+            # the owner schema's target namespace even unindexed — but
+            # never over an explicit form on the declaration itself.
             afq = repository&.attribute_form_default_for(schema_element)
               .to_s == "qualified"
             if afq && xml_attr.namespace_uri.to_s.match?(/\S/)
               tns = repository&.target_namespace_for(schema_element).to_s
-              return matches.first if tns == xml_attr.namespace_uri.to_s
+              if tns == xml_attr.namespace_uri.to_s
+                return matches.find { |sa| sa.form.to_s.empty? }
+              end
             end
 
             nil

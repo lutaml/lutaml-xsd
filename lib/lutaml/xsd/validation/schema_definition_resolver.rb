@@ -35,6 +35,8 @@ module Lutaml
           Lutaml::Xml::Schema::Xsd::Choice => %i[element any group],
           Lutaml::Xml::Schema::Xsd::All => %i[element].freeze,
         }.freeze
+        CONTENT_KINDS = %i[complex_content simple_content].freeze
+        CONTENT_PART_KINDS = %i[extension restriction].freeze
 
         def initialize(repository)
           @repository = repository
@@ -43,6 +45,7 @@ module Lutaml
           @block_defaults = {}.compare_by_identity
           @declaration_kinds = {}.compare_by_identity
           @attribute_form_defaults = {}.compare_by_identity
+          @expected_attribute_namespaces = {}.compare_by_identity
           @attributes = Hash.new { |hash, key| hash[key] = [] }
           @attribute_groups = {}
           @elements = index_elements
@@ -75,6 +78,16 @@ module Lutaml
         # @return [String, nil]
         def attribute_form_default_for(element)
           @attribute_form_defaults[element]
+        end
+
+        # The instance namespace an attribute declaration expects:
+        # precomputed from the declaration's form and the owner schema's
+        # attributeFormDefault; globals resolve qualified.
+        #
+        # @param attribute [Object]
+        # @return [String, nil]
+        def expected_attribute_namespace(attribute)
+          @expected_attribute_namespaces[attribute]
         end
 
         # Named attribute-group declaration by local name (for
@@ -367,6 +380,7 @@ module Lutaml
           end
           Array(schema.complex_type).each do |complex_type|
             index_type(index, complex_type, namespace, schema)
+            index_local_attributes(complex_type, namespace, schema)
           end
           Array(schema.attribute).each do |attribute|
             index_attribute(attribute, namespace)
@@ -374,6 +388,9 @@ module Lutaml
           Array(schema.attribute_group).each do |group|
             name = group.name.to_s
             @attribute_groups[name] = group unless name.empty?
+            Array(group.attribute).each do |member|
+              index_local_attribute(member, namespace, schema)
+            end
           end
           Array(schema.group).each do |group|
             each_particle_element(group, schema) do |element|
@@ -395,8 +412,57 @@ module Lutaml
           return unless attribute
           return if attribute.name.nil? || attribute.name.empty?
 
+          # Global attributes are always qualified.
           @namespaces[attribute] = namespace
+          @expected_attribute_namespaces[attribute] = namespace.to_s
           @attributes[attribute.name] << [attribute, namespace]
+        end
+
+        # Attribute declarations carried by a complex type body itself:
+        # direct children plus extension/restriction attribute lists
+        # (attribute-group members index through their group).
+        def index_local_attributes(type, namespace, schema)
+          return unless type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
+          Array(type.attribute).each do |attribute|
+            index_local_attribute(attribute, namespace, schema)
+          end
+          CONTENT_KINDS.each do |content_kind|
+            content = type.public_send(content_kind)
+            next unless content
+
+            CONTENT_PART_KINDS.each do |part_kind|
+              Array(content.public_send(part_kind)).each do |part|
+                Array(part.attribute).each do |attribute|
+                  index_local_attribute(attribute, namespace, schema)
+                end
+              end
+            end
+          end
+        end
+
+        # A local attribute's expected instance namespace: its explicit
+        # form wins over the owner schema's attributeFormDefault;
+        # qualified forms carry the owner schema's target namespace
+        # (XSD 1.0 §3.2.2).
+        def index_local_attribute(attribute, namespace, schema)
+          return unless attribute
+          return if attribute.name.nil? || attribute.name.empty?
+
+          @namespaces[attribute] = namespace
+          @expected_attribute_namespaces[attribute] =
+            case attribute.form.to_s
+            when "qualified"
+              namespace.to_s
+            when "unqualified"
+              ""
+            else
+              if schema.attribute_form_default.to_s == "qualified"
+                namespace.to_s
+              else
+                ""
+              end
+            end
         end
 
         def index_element(index, element, namespace, kind, schema)
