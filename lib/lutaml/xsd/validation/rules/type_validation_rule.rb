@@ -534,9 +534,42 @@ module Lutaml
           # @param xml_element [XmlElement] The element
           # @param collector [ResultCollector] Result collector
           # @return [void]
+          # The value the length facets measure: whitespace-normalized
+          # per the restriction's effective whiteSpace — an explicit
+          # facet wins, then the builtin base's default; preserve keeps
+          # every character (ctD028: "len\t\t" is five characters).
+          #
+          # @return [String]
+          def facet_value(value, restriction)
+            case whitespace_mode_for_facets(restriction)
+            when :collapse
+              value.to_s.gsub(/\s+/, " ").strip
+            when :replace
+              value.to_s.gsub(/[\t\n\r]/, " ")
+            else
+              value.to_s
+            end
+          end
+
+          # @return [Symbol] :preserve, :replace or :collapse
+          def whitespace_mode_for_facets(restriction)
+            explicit = Array(restriction.white_space).first&.value.to_s
+            return explicit.to_sym unless explicit.empty?
+
+            case restriction.base.to_s.split(":").last
+            when "string"
+              :preserve
+            when "normalizedString"
+              :replace
+            else
+              :collapse
+            end
+          end
+
           def validate_length_facets(value, restriction, xml_element,
                                      collector)
-            value_length = measured_length(value, restriction)
+            value_length =
+              measured_length(facet_value(value, restriction), restriction)
 
             # Facet collections are arrays; an empty array must not be
             # treated as a present facet.
