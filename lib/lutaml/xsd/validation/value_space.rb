@@ -16,12 +16,25 @@ module Lutaml
           end
         end
 
+        # Comparison keys may be Integers, Floats, Durations,
+        # DateTimes, or calendar-field ARRAYS — Arrays implement <=>
+        # but not the >=/>/<=/< operators, so every comparison goes
+        # through the spaceship result. Incomparable keys fail closed
+        # (treated as a violation).
         RANGE_FACETS = {
-          "min_inclusive" => ->(value, bound) { value >= bound },
-          "min_exclusive" => ->(value, bound) { value > bound },
-          "max_inclusive" => ->(value, bound) { value <= bound },
-          "max_exclusive" => ->(value, bound) { value < bound },
+          "min_inclusive" => ->(v, b) { sign_ok?(v, b) { |c| c >= 0 } },
+          "min_exclusive" => ->(v, b) { sign_ok?(v, b, &:positive?) },
+          "max_inclusive" => ->(v, b) { sign_ok?(v, b) { |c| c <= 0 } },
+          "max_exclusive" => ->(v, b) { sign_ok?(v, b, &:negative?) },
         }.freeze
+
+        class << self
+          # @api private
+          def sign_ok?(value, bound)
+            cmp = value <=> bound
+            !cmp.nil? && yield(cmp)
+          end
+        end
 
         module_function
 
