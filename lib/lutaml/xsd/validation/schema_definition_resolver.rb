@@ -46,6 +46,7 @@ module Lutaml
           @declaration_kinds = {}.compare_by_identity
           @attribute_form_defaults = {}.compare_by_identity
           @expected_attribute_namespaces = {}.compare_by_identity
+          @named_types = {}
           @attributes = Hash.new { |hash, key| hash[key] = [] }
           @attribute_groups = {}
           @elements = index_elements
@@ -161,12 +162,42 @@ module Lutaml
         # @return [Object, nil]
         def resolve_named_type(local_name)
           return nil if local_name.nil? || local_name.empty?
+          return @named_types[local_name] if @named_types.key?(local_name)
 
+          result = nil
           schemas.each do |schema|
-            found = Array(schema.complex_type).find { |ct| ct.name == local_name }
+            found = Array(schema.complex_type).find do |ct|
+              ct.name == local_name
+            end
+            found ||= Array(schema.simple_type).find do |st|
+              st.name == local_name
+            end
+            result = found || find_nested_named_type(local_name, schema)
+            break if result
+          end
+          @named_types[local_name] = result
+        end
+
+        # Named types declared in documents reached through resolved
+        # includes/imports — chameleon types (ctE018) live in a
+        # no-namespace include target.
+        #
+        # @return [Object, nil]
+        def find_nested_named_type(local_name, schema, depth = 0)
+          return nil if depth > 8
+
+          (Array(schema.include) + Array(schema.import)).each do |nested|
+            next unless nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
+
+            found = Array(nested.complex_type).find do |ct|
+              ct.name == local_name
+            end
+            found ||= Array(nested.simple_type).find do |st|
+              st.name == local_name
+            end
             return found if found
 
-            found = Array(schema.simple_type).find { |st| st.name == local_name }
+            found = find_nested_named_type(local_name, nested, depth + 1)
             return found if found
           end
           nil
@@ -373,14 +404,22 @@ module Lutaml
                                    schema.to_xml]
         end
 
-        def index_schema(index, schema, held_signatures = [])
-          namespace = schema.target_namespace
+        def index_schema(index, schema, held_signatures = [],
+                         chameleon_namespace = nil,
+                         chameleon_includer = nil)
+          # A no-namespace document reached through xs:include is a
+          # chameleon: its declarations adopt the includer's target
+          # namespace AND form/derivation defaults (ctE018).
+          raw_namespace = schema.target_namespace
+          chameleon = raw_namespace.to_s.empty? && chameleon_namespace
+          namespace = chameleon ? chameleon_namespace : raw_namespace
+          defaults_schema = chameleon ? chameleon_includer : schema
           Array(schema.element).each do |element|
-            index_element(index, element, namespace, :top, schema)
+            index_element(index, element, namespace, :top, defaults_schema)
           end
           Array(schema.complex_type).each do |complex_type|
             index_type(index, complex_type, namespace, schema)
-            index_local_attributes(complex_type, namespace, schema)
+            index_local_attributes(complex_type, namespace, defaults_schema)
           end
           Array(schema.attribute).each do |attribute|
             index_attribute(attribute, namespace)
@@ -389,18 +428,28 @@ module Lutaml
             name = group.name.to_s
             @attribute_groups[name] = group unless name.empty?
             Array(group.attribute).each do |member|
-              index_local_attribute(member, namespace, schema)
+              index_local_attribute(member, namespace, defaults_schema)
             end
           end
           Array(schema.group).each do |group|
             each_particle_element(group, schema) do |element|
-              index_element(index, element, namespace, :inline, schema)
+              index_element(index, element, namespace, :inline,
+                            defaults_schema)
             end
           end
           # lutaml-model nests resolved xs:import / xs:include targets
           # as child Schema objects (raw Import models stay for
           # unresolvable locations); their declarations validate too.
-          (Array(schema.import) + Array(schema.include)).each do |nested|
+          # Only includes pass the includer's namespace down — imports
+          # never chameleonize.
+          Array(schema.include).each do |nested|
+            next unless nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
+            next if held_signatures.include?(schema_signature(nested))
+
+            index_schema(index, nested, held_signatures, namespace,
+                         defaults_schema)
+          end
+          Array(schema.import).each do |nested|
             next unless nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
             next if held_signatures.include?(schema_signature(nested))
 
