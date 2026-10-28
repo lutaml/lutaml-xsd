@@ -159,6 +159,19 @@ module Lutaml
             schemas[key] = schema
             locations[path] = schema
           end
+          hint_paths(test_case.instance_path).each do |path|
+            next if locations.key?(path)
+
+            schema = Lutaml::Xml::Schema::Xsd.parse(File.read(path),
+                                                    location: path)
+            key = schema.target_namespace if
+              schema.target_namespace.to_s.match?(/\S/)
+            schemas[key] = schema
+            locations[path] = schema
+          rescue StandardError
+            # A hint the suite's tree cannot satisfy contributes nothing.
+            next
+          end
           config = Validation::ValidationConfiguration.new
           job = Validation::ValidationJob.new(
             xml_content: File.read(test_case.instance_path),
@@ -167,6 +180,41 @@ module Lutaml
             config: config,
           )
           job.execute.valid?
+        end
+
+        # Schema documents the INSTANCE hints at (xsi:schemaLocation /
+        # xsi:noNamespaceSchemaLocation on the root), resolved relative
+        # to the instance file — the suite's multi-document cases name
+        # their companion schemas only in the instance (ctL021).
+        #
+        # @param instance_path [String]
+        # @return [Array<String>]
+        def hint_paths(instance_path)
+          root = Moxml::Context.new.parse(File.read(instance_path)).root
+          return [] unless root
+
+          base = File.dirname(instance_path)
+          locations = []
+          root.attributes.each do |attribute|
+            next unless attribute.namespace&.uri ==
+              Validation::SchemaLocationExtractor::XSI_NAMESPACE
+
+            case attribute.name
+            when "schemaLocation"
+              attribute.value.to_s.split(/\s+/).each_slice(2) do |_ns, location|
+                next if location.nil? || location.empty?
+
+                path = File.expand_path(location, base)
+                locations << path if File.exist?(path)
+              end
+            when "noNamespaceSchemaLocation"
+              path = File.expand_path(attribute.value.to_s, base)
+              locations << path if File.exist?(path)
+            end
+          end
+          locations
+        rescue StandardError
+          []
         end
       end
     end

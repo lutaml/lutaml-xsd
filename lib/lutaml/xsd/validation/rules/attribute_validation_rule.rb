@@ -80,8 +80,8 @@ module Lutaml
             resolved_attributes =
               resolve_schema_attributes(schema_attributes, repository)
             xml_attributes = xml_element.attributes
-            wildcard = collect_any_attribute(schema_element, repository,
-                                             xml_element)
+            wildcards = collect_any_attribute(schema_element, repository,
+                                              xml_element)
 
             # Step 1: Check required attributes are present
             validate_required_attributes(xml_element, schema_attributes,
@@ -98,7 +98,7 @@ module Lutaml
             validate_no_unexpected_attributes(xml_element,
                                               resolved_attributes,
                                               xml_attributes, collector,
-                                              wildcard: wildcard,
+                                              wildcards: wildcards,
                                               repository: repository,
                                               schema_element: schema_element)
           end
@@ -767,7 +767,7 @@ module Lutaml
           # @return [void]
           def validate_no_unexpected_attributes(xml_element, schema_attrs,
                                                 xml_attrs, collector,
-                                                wildcard: nil, repository: nil,
+                                                wildcards: [], repository: nil,
                                                 schema_element: nil)
             xml_attrs.each do |xml_attr|
               # Skip xmlns attributes
@@ -787,11 +787,26 @@ module Lutaml
               next if xml_attr.namespace_uri == XmlBuiltins::NAMESPACE &&
                 XmlBuiltins.attribute(xml_attr.name)
 
-              if wildcard &&
-                  wildcard_permits_attribute?(wildcard, xml_element,
-                                              xml_attr, repository)
+              # The derivation's wildcard UNION admits: any permitting
+              # wildcard covers the attribute, and a strict mode on any
+              # admitting wildcard still demands a declaration in the
+              # attribute's own namespace.
+              admitted = false
+              strict_undeclared = false
+              wildcards.each do |wildcard|
+                next unless wildcard_permits_attribute?(wildcard,
+                                                        xml_element,
+                                                        xml_attr, repository)
+
+                admitted = true
                 if wildcard_process_mode(wildcard) == "strict" &&
                     !attribute_declared?(xml_attr, repository)
+                  strict_undeclared = true
+                end
+              end
+
+              if admitted
+                if strict_undeclared
                   report_error(
                     collector,
                     code: "wildcard_undeclared_attribute",
@@ -820,16 +835,6 @@ module Lutaml
             end
           end
 
-          # The xs:anyAttribute wildcard declared on this type, where the
-          # parse layer exposes one (attribute groups and content-model
-          # extension/restriction do). complexType-level wildcards are not
-          # mapped upstream yet, so types carrying one keep the
-          # pre-wildcard behavior for undeclared attributes.
-          #
-          # @param schema_def [Lutaml::Xml::Schema::Xsd::Element,
-          #   Lutaml::Xsd::ComplexType, nil]
-          # @param repository [SchemaDefinitionResolver, nil]
-          # @return [AnyAttribute, nil]
           # Whether the loaded lutaml-model parses xs:anyAttribute on
           # complexType (the mapping landed after 0.8.121); probed once
           # with a minimal schema.
@@ -842,6 +847,11 @@ module Lutaml
             end
           end
 
+          # The attribute wildcards governing a type: the derivation
+          # UNION — a base type's wildcard stays in force beside the
+          # extension's own (ctH011: ##local base + ##other extension).
+          #
+          # @return [Array<AnyAttribute>]
           def collect_any_attribute(schema_def, repository = nil,
                                     xml_element = nil)
             if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
@@ -855,17 +865,18 @@ module Lutaml
               type_def = resolve_type(schema_def, repository)
               return collect_any_attribute(type_def, repository) if type_def
             end
-            return nil unless schema_def
+            return [] unless schema_def
 
-            if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType) &&
+            wildcards = []
+            complex_wildcard = schema_def.any_attribute if
+              schema_def.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType) &&
                 complex_type_wildcard_support?
-              wildcard = schema_def.any_attribute
-              return wildcard if wildcard
-            end
+            wildcards << complex_wildcard if complex_wildcard
 
             Array(schema_def.attribute_group).each do |group|
-              wildcard = Array(group.any_attribute).first
-              return wildcard if wildcard
+              Array(group.any_attribute).each do |wildcard|
+                wildcards << wildcard
+              end
             end
 
             CONTENT_KINDS.each do |content_kind|
@@ -873,20 +884,20 @@ module Lutaml
               next unless content
 
               CONTENT_PART_KINDS.each do |part_kind|
-                part = Array(content.public_send(part_kind)).first
-                next unless part
-
-                wildcard = Array(part.any_attribute).first
-                return wildcard if wildcard
+                Array(content.public_send(part_kind)).each do |part|
+                  Array(part.any_attribute).each do |wildcard|
+                    wildcards << wildcard
+                  end
+                end
               end
             end
 
             # The base type's wildcard flows into the derived type
             # through extension and restriction alike.
             base = derivation_base(schema_def, repository)
-            return collect_any_attribute(base, repository) if base
+            wildcards.concat(collect_any_attribute(base, repository)) if base
 
-            nil
+            wildcards
           end
 
           # The named base type of the derivation shape, when present.

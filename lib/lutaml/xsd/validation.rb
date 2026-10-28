@@ -8,6 +8,8 @@ module Lutaml
       autoload :EngineBacked, "lutaml/xsd/validation/engine_backed"
       autoload :OccurrenceProductGuard,
                "lutaml/xsd/validation/occurrence_product_guard"
+      autoload :SchemaLocationExtractor,
+               "lutaml/xsd/validation/schema_location_extractor"
       autoload :ValueSpace, "lutaml/xsd/validation/value_space"
       autoload :WildcardScope, "lutaml/xsd/validation/wildcard_scope"
       autoload :XmlBuiltins, "lutaml/xsd/validation/xml_builtins"
