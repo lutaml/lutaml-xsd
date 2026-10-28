@@ -38,7 +38,7 @@ module Lutaml
 
             Array(schema_element.key).each do |constraint|
               values = collect_values(xml_element, constraint, collector,
-                                      repository, target_ns)
+                                      repository, target_ns, :key)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_key_violation")
               collected[constraint.name] = values if constraint.name
@@ -46,7 +46,7 @@ module Lutaml
 
             Array(schema_element.unique).each do |constraint|
               values = collect_values(xml_element, constraint, collector,
-                                      repository, target_ns)
+                                      repository, target_ns, :unique)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_unique_violation")
               collected[constraint.name] = values if constraint.name
@@ -57,7 +57,7 @@ module Lutaml
               next if referred.nil?
 
               collect_values(xml_element, constraint, collector,
-                             repository, target_ns).each do |value|
+                             repository, target_ns, :keyref).each do |value|
                 next if referred.include?(value)
 
                 report_error(
@@ -75,7 +75,7 @@ module Lutaml
           private
 
           def collect_values(xml_element, constraint, collector, repository,
-                             target_namespace)
+                             target_namespace, kind)
             fields = field_xpaths(constraint, target_namespace)
             selector_xpaths(constraint, target_namespace).flat_map do |selector|
               Array(xml_element.moxml_element.xpath(selector)).map do |node|
@@ -102,8 +102,24 @@ module Lutaml
                 end
 
                 # A qualified node has every field present; an absent
-                # field means the node does not contribute a row.
-                next nil if values.any?(&:nil?)
+                # field means the node does not contribute a row —
+                # except for xs:KEY, where a selected node whose fields
+                # do not all evaluate is itself an error (XSD 1.0
+                # §3.11.4; xmllint: "Not all fields of key
+                # identity-constraint evaluate to a node").
+                if values.any?(&:nil?)
+                  next nil unless kind == :key
+
+                  report_error(
+                    collector,
+                    code: "key_field_absent_violation",
+                    message: "Not all fields of key '#{constraint.name}' " \
+                             "evaluate to a node in '#{node.name}'",
+                    location: xml_element.xpath,
+                    context: { constraint: constraint.name },
+                  )
+                  next nil
+                end
 
                 canonical = fields.each_with_index.map do |field, index|
                   declared = field_declared_type(node, field, repository)
@@ -139,18 +155,20 @@ module Lutaml
             end
           end
 
-          # Identity values compare in the field's VALUE space: numeric
-          # lexical forms compare numerically (3.0 == 3) and padding is
-          # insignificant — applied only when the declared type is
-          # numeric; string fields compare lexically.
+          # Identity values compare in the field's VALUE space: a
+          # numeric-typed field canonicalizes to a NUMBER (so decimal 1
+          # equals integer 1, and neither equals the STRING "1" —
+          # different value spaces stay distinct, idL090); untyped and
+          # string-typed fields compare lexically. Both sides of a
+          # keyref canonicalize the same way, keeping them symmetric.
           #
-          # @return [String]
+          # @return [Numeric, String]
           def canonical_field_value(raw)
             s = raw.to_s.strip
             return s unless s.match?(/\A-?\d+(\.\d+)?\z/)
 
             f = s.to_f
-            f == f.to_i ? f.to_i.to_s : f.to_s
+            f == f.to_i ? f.to_i : f
           end
 
           # @param node [Moxml::Node] attribute or element node
