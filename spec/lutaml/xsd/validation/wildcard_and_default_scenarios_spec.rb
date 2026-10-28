@@ -281,4 +281,115 @@ RSpec.describe "wildcard scoping, anyType and default content" do
       expect(codes(result)).not_to include("min_occurs_violation")
     end
   end
+
+  describe "attribute form defaults" do
+    it "accepts a qualified instance attribute for a form=qualified declaration" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="t" xmlns:t="t" elementFormDefault="qualified">
+          <xs:complexType name="attRef">
+            <xs:attribute name="ca1" form="qualified"/>
+          </xs:complexType>
+          <xs:element name="doc">
+            <xs:complexType>
+              <xs:choice>
+                <xs:element name="elem" type="t:attRef"/>
+              </xs:choice>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(
+        schema,
+        '<t:doc xmlns:t="t"><t:elem t:ca1="123"/></t:doc>',
+      )
+
+      expect(codes(result)).not_to include("unexpected_attribute")
+    end
+
+    it "rejects an unqualified instance attribute for a form=qualified declaration" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="t" xmlns:t="t" elementFormDefault="qualified">
+          <xs:complexType name="attRef">
+            <xs:attribute name="ca1" form="qualified"/>
+          </xs:complexType>
+          <xs:element name="doc">
+            <xs:complexType>
+              <xs:choice>
+                <xs:element name="elem" type="t:attRef"/>
+              </xs:choice>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(
+        schema,
+        '<t:doc xmlns:t="t"><t:elem ca1="123"/></t:doc>',
+      )
+
+      expect(codes(result)).to include("unexpected_attribute")
+    end
+
+    it "honors form=unqualified over attributeFormDefault=qualified" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="t" xmlns:t="t" elementFormDefault="qualified"
+                   attributeFormDefault="qualified">
+          <xs:attributeGroup name="attG">
+            <xs:attribute name="aga1" form="unqualified"/>
+          </xs:attributeGroup>
+          <xs:complexType name="attRef">
+            <xs:attributeGroup ref="t:attG"/>
+          </xs:complexType>
+          <xs:element name="doc">
+            <xs:complexType>
+              <xs:choice>
+                <xs:element name="elem" type="t:attRef"/>
+              </xs:choice>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(
+        schema,
+        '<t:doc xmlns:t="t"><t:elem t:aga1="123"/></t:doc>',
+      )
+
+      expect(codes(result)).to include("unexpected_attribute")
+    end
+
+    it "accepts attributeGroup members qualified through the group declaration" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="t" xmlns:t="t">
+          <xs:attributeGroup name="attG">
+            <xs:attribute name="aga1" default="abc" form="qualified"/>
+            <xs:attribute name="aga2"/>
+          </xs:attributeGroup>
+          <xs:complexType name="attRef">
+            <xs:attribute name="ca1"/>
+            <xs:attributeGroup ref="t:attG"/>
+          </xs:complexType>
+          <xs:element name="doc">
+            <xs:complexType>
+              <xs:choice>
+                <xs:element name="elem" type="t:attRef" form="qualified"/>
+              </xs:choice>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(
+        schema,
+        '<t:doc xmlns:t="t"><t:elem t:aga1="abc" ca1="123"/></t:doc>',
+      )
+
+      expect(codes(result)).not_to include("unexpected_attribute")
+    end
+  end
 end
