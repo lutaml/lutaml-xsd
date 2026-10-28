@@ -251,13 +251,17 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
     collector
   end
 
-  it "accepts a declared attribute beside a complexType wildcard",
+  it "rejects an unprefixed attribute whose declaration lives in the target namespace under strict ##local processing",
      if: COMPLEX_WILDCARD_MAPPED do
+    # The unprefixed attribute is in no namespace; a strict wildcard
+    # demands a declaration in THAT namespace, and the only `known`
+    # declaration is {http://example.com/c}known (wildO006 shape).
     collector = validate_xml(
       '<item xmlns="http://example.com/c" id="1" known="x"/>',
     )
 
-    expect(collector.errors).to be_empty
+    expect(collector.errors.map(&:code))
+      .to include("wildcard_undeclared_attribute")
   end
 
   it "rejects an undeclared attribute under strict processing",
