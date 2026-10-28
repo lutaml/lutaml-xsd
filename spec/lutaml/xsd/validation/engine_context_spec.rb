@@ -80,6 +80,17 @@ RSpec.describe Lutaml::Xsd::Validation::EngineContext do
       expect(engine.builtin_valid?("xs:date", "not-a-date")).to eq(false)
     end
 
+    it "normalizes nil facade answers through the value space", if: ENGINE_BUILTIN do
+      # moxml#485: the facade's date lambdas leak nil when the lexical
+      # misses their regex — the value space still decides.
+      engine = compile
+
+      expect(engine.builtin_valid?("xs:date", "not-a-date")).to eq(false)
+      expect(engine.builtin_valid?("xs:dateTime", "garbage")).to eq(false)
+      expect(engine.builtin_valid?("xs:date", "2024-02-30")).to eq(false)
+      expect(engine.builtin_valid?("xs:date", "2024-01-15")).to eq(true)
+    end
+
     it "returns nil when the engine lacks a builtin table", if: ENGINE_SUPPORTED, unless: ENGINE_BUILTIN do
       engine = compile
 

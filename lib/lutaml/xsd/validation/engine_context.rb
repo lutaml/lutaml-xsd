@@ -162,14 +162,21 @@ module Lutaml
         end
 
         # Lexical check against the built-in type table ("xs:NAME" spelling).
+        # A nil from moxml's facade table (moxml#485: date lambdas leak
+        # nil instead of false when the lexical misses their regex)
+        # normalizes through our own value space — an unknown to them is
+        # still decidable here.
         #
         # @param builtin_name [String] e.g. "xs:date"
         # @param lexical [String] the value to check
-        # @return [Boolean, nil] nil when the engine cannot answer
+        # @return [Boolean, nil] nil when neither table can answer
         def builtin_valid?(builtin_name, lexical)
-          Moxml::XSD.builtin_valid?(@context, builtin_name, lexical)
+          answer = Moxml::XSD.builtin_valid?(@context, builtin_name, lexical)
+          return answer unless answer.nil?
+
+          ValueSpace.lexical_answer(builtin_name, lexical)
         rescue StandardError
-          nil
+          ValueSpace.lexical_answer(builtin_name, lexical)
         end
 
         # Lexical check against a schema's named simpleType.

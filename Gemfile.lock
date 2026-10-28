@@ -82,7 +82,7 @@ GEM
       lutaml-model (~> 0.8.15)
       rubyzip (>= 2.3, < 4)
     memo_wise (1.13.0)
-    moxml (0.5.153)
+    moxml (0.5.168)
     nokogiri (1.19.4-aarch64-linux-gnu)
       racc (~> 1.4)
     nokogiri (1.19.4-aarch64-linux-musl)
@@ -266,7 +266,7 @@ CHECKSUMS
   lutaml-store (0.3.2) sha256=9c455dbab32b4c635c48a27213f6f56fda191731c4574eb6187184ba0588a672
   lutaml-xsd (1.2.51)
   memo_wise (1.13.0) sha256=30220c38c4cef410849bc73553c58664dc2c91c6379e4a1df22aea02358b716b
-  moxml (0.5.153) sha256=561c6df843edd4a3b7f4c6785f9cfd6fef61050df7f1113fdcd45d8495704fc2
+  moxml (0.5.168) sha256=84e302ae1585a4e977b4a75bc98826bb43cf51ab76c684127a6d087f354df98d
   nokogiri (1.19.4-aarch64-linux-gnu) sha256=1269fb644a6de405057a53dd5c762b1209b43ca7424f839454d3dbc677c31a8f
   nokogiri (1.19.4-aarch64-linux-musl) sha256=35c65b9ce72b3bb03207bdbe7067915019dc18c1b9b59139684bd6690fdd01af
   nokogiri (1.19.4-arm-linux-gnu) sha256=a301313e38bb065d68239e79734bcd6f56fb6efaacebde29e9abf2a4735340ca
