@@ -30,14 +30,24 @@ module Lutaml
 
         # Minimal repository shape the validation stack consumes.
         class Repository
-          def initialize(schemas)
+          # @param schemas [Hash] namespace => parsed Schema
+          # @param locations [Hash] source path => parsed Schema, for
+          #   engines that resolve relative imports from a file location
+          def initialize(schemas, locations = {})
             @schemas = schemas
+            @locations = locations
           end
 
           attr_reader :schemas
 
           def all_schemas
             @schemas
+          end
+
+          # @return [String, nil] the file the schema was parsed from
+          def source_path_for(schema)
+            @locations.find { |_path, candidate| candidate.equal?(schema) }
+              &.first
           end
         end
 

@@ -51,20 +51,30 @@ module Lutaml
             return unless schema_particle
             return unless parent_element
 
+            wildcards = collect_wildcards(schema_particle, repository)
+            name_counts = collect_declared_names(schema_particle,
+                                                 repository).tally
+
             # Handle different particle types
             case schema_particle
             when Lutaml::Xsd::Element
               validate_element_occurrence(parent_element, schema_particle,
-                                          collector, repository: repository)
+                                          collector, repository: repository,
+                                                     wildcards: wildcards,
+                                                     name_counts: name_counts)
             when Lutaml::Xsd::Sequence
               validate_sequence_occurrences(parent_element, schema_particle,
-                                            collector, repository: repository)
+                                            collector, repository: repository,
+                                                       wildcards: wildcards,
+                                                       name_counts: name_counts)
             when Lutaml::Xsd::Choice
               validate_choice_occurrences(parent_element, schema_particle,
                                           collector, repository: repository)
             when Lutaml::Xsd::All
               validate_all_occurrences(parent_element, schema_particle,
-                                       collector, repository: repository)
+                                       collector, repository: repository,
+                                                  wildcards: wildcards,
+                                                  name_counts: name_counts)
             when Lutaml::Xml::Schema::Xsd::Group
               # The group REF carries the occurrence bounds; the expanded
               # declaration itself has none.
@@ -73,7 +83,10 @@ module Lutaml
                   parent_element, container, collector,
                   repository: repository,
                   min_occurs: parse_occurs(schema_particle.min_occurs, 1),
-                  max_occurs: parse_max_occurs(schema_particle.max_occurs, 1)
+                  max_occurs: parse_max_occurs(schema_particle.max_occurs, 1),
+                  wildcards: collect_wildcards(container, repository),
+                  name_counts: collect_declared_names(container,
+                                                      repository).tally
                 )
               end
             end
@@ -100,7 +113,9 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_element_occurrence(parent_element, schema_element,
-                                          collector, repository: nil)
+                                          collector, repository: nil,
+                                          wildcards: [], name_counts: nil,
+                                          container_min: 1)
             min_occurs = parse_occurs(schema_element.min_occurs, 1)
             max_occurs = parse_max_occurs(schema_element.max_occurs, 1)
 
@@ -109,9 +124,20 @@ module Lutaml
               parent_element, schema_element, repository
             )
 
+            # A wildcard in the same content model can absorb the same
+            # named children this declaration counts, and same-named
+            # sibling declarations each count every same-named child —
+            # per-name counts cannot attribute occurrences in either
+            # case; abstain (addB135, memberType004).
+            return if wildcard_absorbs_counts?(parent_element, wildcards,
+                                               schema_element, repository)
+            return if ambiguous_declared_name?(schema_element, name_counts)
+
             # Check minimum occurrence
-            validate_min_occurs(parent_element, schema_element, actual_count,
-                                min_occurs, collector)
+            unless container_min.zero?
+              validate_min_occurs(parent_element, schema_element,
+                                  actual_count, min_occurs, collector)
+            end
 
             # Check maximum occurrence
             validate_max_occurs(parent_element, schema_element, actual_count,
@@ -126,13 +152,16 @@ module Lutaml
           # @return [void]
           def validate_container_occurrences(parent_element, container,
                                              collector, repository:,
-                                             min_occurs:, max_occurs:)
+                                             min_occurs:, max_occurs:,
+                                             wildcards: [], name_counts: {})
             case container
             when Lutaml::Xsd::Sequence
               validate_sequence_occurrences(parent_element, container,
                                             collector, repository: repository,
                                                        min_occurs: min_occurs,
-                                                       max_occurs: max_occurs)
+                                                       max_occurs: max_occurs,
+                                                       wildcards: wildcards,
+                                                       name_counts: name_counts)
             when Lutaml::Xsd::Choice
               validate_choice_occurrences(parent_element, container,
                                           collector, repository: repository,
@@ -142,13 +171,16 @@ module Lutaml
               validate_all_occurrences(parent_element, container, collector,
                                        repository: repository,
                                        min_occurs: min_occurs,
-                                       max_occurs: max_occurs)
+                                       max_occurs: max_occurs,
+                                       wildcards: wildcards,
+                                       name_counts: name_counts)
             end
           end
 
           def validate_sequence_occurrences(parent_element, sequence,
                                             collector, repository: nil,
-                                            min_occurs: nil, max_occurs: nil)
+                                            min_occurs: nil, max_occurs: nil,
+                                            wildcards: [], name_counts: {})
             return if sequence.element.empty?
             # A container that may occur zero times voids its inner
             # requirements (mgG012: sequence(e1) maxOccurs="0", empty doc
@@ -181,7 +213,12 @@ module Lutaml
 
             Array(sequence.element).each do |element|
               validate_element_occurrence(parent_element, element, collector,
-                                          repository: repository)
+                                          repository: repository,
+                                          wildcards: wildcards,
+                                          name_counts: name_counts,
+                                          container_min:
+                                            parse_occurs(sequence.min_occurs,
+                                                         1))
             end
 
             # Nested particles are deliberately not recursed into: their
@@ -192,34 +229,136 @@ module Lutaml
             # content rule's NFA matcher verdict.
           end
 
-          # Greedy cyclic scan of the children against the sequence's
-          # element list; returns the number of COMPLETED iterations.
-          # Optional elements complicate this — a mismatch simply ends
-          # the scan, which keeps the approximation conservative.
+          # Greedy scan of the children against the sequence's element
+          # list; returns the number of COMPLETED iterations, or nil when
+          # the scan cannot decide. Children fill the candidate at the
+          # current position up to its maxOccurs, then advance past it;
+          # optional candidates are skipped when a child cannot fill
+          # them. An unplaceable child or a non-empty trailing partial
+          # iteration leaves the iteration split ambiguous — a different
+          # split may still satisfy the bounds (addB176:
+          # sequence{2}(a1..2, b0..1) matches a,a,b as {a} {a,b}) — so
+          # the count is indeterminate and the caller must abstain.
           #
-          # @return [Integer]
+          # @return [Integer, nil]
           def count_sequence_iterations(parent_element, sequence, repository)
             elements = Array(sequence.element)
             return 0 if elements.empty?
 
-            idx = 0
+            position = 0
+            consumed = Array.new(elements.size, 0)
             iterations = 0
             parent_element.children.each do |child|
-              candidate = elements[idx]
-              next unless candidate
+              position, placed = place_child(child, elements, position,
+                                             consumed, repository)
+              return nil unless placed
 
-              unless particle_matches_declaration?(child, candidate,
-                                                   repository)
-                return iterations
+              consumed[position] += 1
+              position += 1
+              next unless position == elements.size
+
+              iterations += 1
+              position = 0
+              consumed.fill(0)
+            end
+            return nil unless position.zero?
+
+            iterations
+          end
+
+          # Advance the iteration position so one child can be consumed;
+          # placed=false when the child matches no reachable candidate.
+          #
+          # @return [Array(Integer, Boolean)]
+          def place_child(child, elements, position, consumed, repository)
+            while position < elements.size
+              candidate = elements[position]
+              if child_matches_particle?(child, candidate, repository)
+                max = parse_max_occurs(candidate.max_occurs, 1)
+                return position, true if max == :unbounded ||
+                  consumed[position] < max
+              elsif parse_occurs(candidate.min_occurs, 1) != 0
+                return position, false
               end
+              position += 1
+            end
+            [position, false]
+          end
 
-              idx += 1
-              if idx == elements.size
-                iterations += 1
-                idx = 0
+          def child_matches_particle?(child, candidate, repository)
+            particle_matches_declaration?(child, candidate, repository) ||
+              substitution_member?(child, candidate, repository)
+          end
+
+          # Whether a wildcard in the same content model can absorb a
+          # child this declaration's count would claim — the per-name
+          # count then over-attributes occurrences (addB135).
+          #
+          # @return [Boolean]
+          def wildcard_absorbs_counts?(parent_element, wildcards,
+                                       schema_element, repository)
+            return false if wildcards.empty?
+
+            parent_element.children.any? do |child|
+              next false unless
+                child_matches_particle?(child, schema_element, repository)
+
+              wildcards.any? do |wildcard|
+                wildcard_permits?(wildcard, parent_element, child,
+                                  repository)
               end
             end
-            iterations
+          end
+
+          # Whether another declaration in the same content model shares
+          # this declaration's local name — every same-named child is
+          # then counted against both, so per-name bounds cannot decide.
+          #
+          # @return [Boolean]
+          def ambiguous_declared_name?(schema_element, name_counts)
+            return false if name_counts.nil? || name_counts.empty?
+
+            local = declared_local_name(schema_element)
+            return false if local.nil?
+
+            name_counts[local].to_i > 1
+          end
+
+          # @return [String, nil]
+          def declared_local_name(particle)
+            local = (particle.name || particle.ref).to_s.split(":").last
+            local.nil? || local.empty? ? nil : local
+          end
+
+          # Local names declared by element particles across the content
+          # model, group refs expanded.
+          #
+          # @return [Array<String>]
+          def collect_declared_names(particle, repository, depth = 0)
+            case particle
+            when Lutaml::Xsd::Element, Lutaml::Xml::Schema::Xsd::Element
+              local = declared_local_name(particle)
+              local ? [local] : []
+            when Lutaml::Xml::Schema::Xsd::Group
+              return [] if depth > 8
+
+              expand_group_container(particle, repository).flat_map do |container|
+                collect_declared_names(container, repository, depth + 1)
+              end
+            else
+              return [] if depth > 8
+
+              accessors = PARTICLE_CHILD_ACCESSORS.find do |klass, _|
+                particle.is_a?(klass)
+              end&.last
+              return [] unless accessors
+
+              accessors.flat_map do |accessor|
+                Array(particle.public_send(accessor)).flat_map do |child|
+                  collect_declared_names(child, repository, depth + 1)
+                end
+              end
+            end
           end
 
           # @return [void]
@@ -228,6 +367,9 @@ module Lutaml
                                                 min_occurs, max_occurs)
             iterations = count_sequence_iterations(parent_element, sequence,
                                                    repository)
+            # The greedy scan cannot split the children into iterations —
+            # abstain rather than report a false violation.
+            return if iterations.nil?
 
             return if iterations >= min_occurs &&
               (max_occurs == :unbounded || iterations <= max_occurs)
@@ -388,17 +530,27 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_all_occurrences(parent_element, all, collector,
-                                       repository: nil, **)
+                                       repository: nil, min_occurs: nil,
+                                       max_occurs: nil, wildcards: [],
+                                       name_counts: {})
             return if all.element.empty?
 
-            all_max = parse_max_occurs(all.max_occurs, 1)
+            all_max = max_occurs || parse_max_occurs(all.max_occurs, 1)
             return if all_max.is_a?(Integer) && all_max.zero?
+
+            # The all or its group ref being optional voids the member
+            # minimums.
+            container_min = [min_occurs, parse_occurs(all.min_occurs, 1)]
+              .compact.min
 
             # In xs:all, each element can appear 0 or 1 times
             # (or based on its minOccurs/maxOccurs)
             Array(all.element).each do |element|
               validate_element_occurrence(parent_element, element, collector,
-                                          repository: repository)
+                                          repository: repository,
+                                          wildcards: wildcards,
+                                          name_counts: name_counts,
+                                          container_min: container_min)
             end
           end
 

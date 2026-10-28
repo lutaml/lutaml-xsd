@@ -149,15 +149,20 @@ module Lutaml
         end
 
         def pipeline_valid?(test_case)
-          schemas = test_case.schema_paths.to_h do |path|
+          schemas = {}
+          locations = {}
+          test_case.schema_paths.each do |path|
             schema = Lutaml::Xml::Schema::Xsd.parse(File.read(path),
                                                     location: path)
-            [(schema.target_namespace if schema.target_namespace.to_s.match?(/\S/)), schema]
+            key = schema.target_namespace if
+              schema.target_namespace.to_s.match?(/\S/)
+            schemas[key] = schema
+            locations[path] = schema
           end
           config = Validation::ValidationConfiguration.new
           job = Validation::ValidationJob.new(
             xml_content: File.read(test_case.instance_path),
-            repository: Runner::Repository.new(schemas),
+            repository: Runner::Repository.new(schemas, locations),
             rule_registry: Validation::RuleRegistry.default(config),
             config: config,
           )

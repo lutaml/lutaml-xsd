@@ -595,6 +595,9 @@ module Lutaml
                                           repository)
             return unless wildcard.process_contents.to_s == "strict"
             return if wildcard_child_declared?(child, repository)
+            # xsi:type supplies the type definition itself — strict
+            # assessment proceeds with it (addB116).
+            return if xsi_attribute(child, "type")
 
             report_error(
               collector,

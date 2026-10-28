@@ -60,6 +60,17 @@ module Lutaml
         UninitializedGuard.guard(Element, :target_namespace, :complex_content,
                                  :simple_content, :sequence, :choice, :all,
                                  :group, :restriction)
+
+        # lutaml-model maps xs:all's occurrence bounds from the Ruby
+        # attribute names (`min_occurs`) instead of the XML ones, so
+        # minOccurs/maxOccurs on xs:all deserialize as nil. Re-map with
+        # the XML names until the upstream mapping is fixed.
+        class All < Base
+          xml do
+            map_attribute :minOccurs, to: :min_occurs
+            map_attribute :maxOccurs, to: :max_occurs
+          end
+        end
       end
     end
   end

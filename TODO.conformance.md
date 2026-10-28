@@ -120,24 +120,44 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 3961/4696 (84.3%) |
+| pipeline | 4039/4696 (86.0%) |
 
 (2026-10-28, bundled-stack measurement — both runs below use the
 LOCKFILE's gems, what CI ships.) Same-stack comparison:
-1.2.41 baseline 3925 (83.6%) → this branch 3961 (84.3%), +36 cases:
-IC 36→29, Schema 25→15, Additional 46→41, ModelGroups 17→13,
-ComplexType 12→9, Particles 31→29. ENVIRONMENT CAVEAT: earlier
+1.2.43 baseline 3961 (84.3%) → this branch 4039 (86.0%), +78 cases.
+Two rounds land together: the lexical value-space round (PR #181 —
+DataTypes 97→43: date/time/dateTime/gYear*/duration/base64/QName
+answered from the value space, own-answer-first over the engine) and
+the Additional correctness round (Additional 41→26, Wildcards 11→8,
+ModelGroups 13→7, SimpleType 30→24, Particles 29→23, Errata 3→1):
+occurrence-rule abstentions (wildcard overlap, same-named siblings,
+optional containers, indeterminate iteration splits), xs:all own
+bounds (matcher wrap + the lutaml-model#1046 minOccurs mapping defect
+re-mapped locally), resolver nested-import dedupe by DOCUMENT
+signature (namespace keys wrongly pruned same-ns include sets —
+schC3), anyType attribute tolerance, xml:* built-in declarations,
+xsi:type built-in overrides, fixed/default empty-content values,
+whitespace-canonical fixed attribute comparison, skip-wildcard
+subtree suppression, strict-wildcard xsi:type exemption, and
+engine xsd_file plumbing (schemas compile from their source files so
+relative imports resolve: addD004, addB148). File-compile is
+faithful to the schema author's view and flips five engine verdicts
+vs the old roundtrip compile — all ENGINE-side (moxml#483 family):
+reA1/reA7 (regex dialect enforced from file), schG7/idG022
+(import-aware strict/IC enforcement false-rejects valid docs),
+elemZ016 (ID-uniqueness rejection lost). ENVIRONMENT CAVEAT: earlier
 register numbers (88.5/88.6%) were measured against mise's UNPINNED
 system gems (lutaml-model 0.8.132 + a newer moxml whose released
-regex-dialect fix predates our lockfile pin) — Regex shows 355 fails
+regex-dialect fix predates our lockfile pin) — Regex shows 357 fails
 bundled vs 128 there; closing that gap is a moxml/lockfile version
 bump, an owner decision, not a pipeline change. Suite @ 7bc3365
 (rake setup re-clones every run). Batch workers MUST run under
 `bundle exec` — plain `ruby -Ilib` silently loads system gems.
 
 Suite history (same-stack where known): 71.8% baseline → 83.5%
-(pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (this branch).
-Failure concentration (the work queue, largest first):
+(pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
+(#181 + Additional round). Failure concentration (the work queue,
+largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
   bulk carry the ENGINE's rejection (leptris XSD-regex dialect lacks
@@ -180,12 +200,18 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
 - remaining (2026-10-28, bundled-stack complete measurement,
-  3961/4696 = 84.3%): Regex (355 — bulk ENGINE-side dialect gap, the
+  4039/4696 = 86.0%): Regex (357 — bulk ENGINE-side dialect gap, the
   fix ships in a newer moxml than our lockfile pins; owner version
-  bump), DataTypes (97), Additional (41), Element (35), Attribute
-  (30), SimpleType (30), Particles (29), IdentityConstraint (29),
-  Schema (15), ComplexType (9), AttributeGroup (18), ModelGroups
-  (13), Group (20), Wildcards (11), Errata10 (3), Notations (1)
+  bump), DataTypes (43), Element (36), Attribute (35), SimpleType
+  (24), Particles (23), IdentityConstraint (31), Additional (26),
+  Schema (18), ComplexType (9), AttributeGroup (19), Group (20),
+  ModelGroups (7), Wildcards (8), Errata10 (1). Additional remainder
+  splits: engine-blocked (implicit anyType, skip wildcards,
+  attributeGroup ordering, schema-set substitution, file-compile
+  fixed-value comparison — moxml#483), model-blocked (addB187:
+  xs:import without namespace crashes lutaml-model's import walk —
+  candidate upstream filing), and batch-crosstalk artifacts that pass
+  in isolation (the family run shares one process across cases)
 - IC ROUND (2026-10-28): (a) prefixed WILDCARD selector steps
   (`.//myNS:*`) now translate to namespace-uri() tests — they slipped
   through the earlier adaptation untouched and the key never built
