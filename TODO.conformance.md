@@ -120,25 +120,23 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4138/4676 (88.5%) |
+| pipeline | 3961/4696 (84.3%) |
 
-(2026-10-27, NFA content-model matcher branch, suite @ 7bc3365.)
-Measured 4676 of 4696 cases: batch offsets 3000-3019 were skipped
-because batch workers died natively (no Ruby error, low RSS). ROOT
-CAUSE (2026-10-27): the engine's compiled automaton for occurrence
-products like `element unbounded inside sequence{100}`
-(particlesZ034_b) grows until jetsam kills the process — each case
-runs in under 2s alone, the kill needs prior compiles to accumulate.
-Guarded by `OccurrenceProductGuard` (engine-inert above a 1e6
-particle-path product cap; engine-side explosion registered upstream
-moxml#473); the next full-suite measurement picks the 20 cases up.
-Suite history: 71.8% baseline → 83.5% (pre-NFA)
-→ 88.5%; +261 cases net over the pre-NFA pipeline. Composition
-families: Particles 42→24 fails, ModelGroups 21→18, in-scope A/B
-(old vs new code over the same 750 cases): 75→60. The remaining
-ModelGroups gap: xs:redefine schemas cannot PARSE (lutaml-model#1025,
-upstream) and several mgQ/mgA valid cases carry engine-side false
-rejections (moxml#466, upstream).
+(2026-10-28, bundled-stack measurement — both runs below use the
+LOCKFILE's gems, what CI ships.) Same-stack comparison:
+1.2.41 baseline 3925 (83.6%) → this branch 3961 (84.3%), +36 cases:
+IC 36→29, Schema 25→15, Additional 46→41, ModelGroups 17→13,
+ComplexType 12→9, Particles 31→29. ENVIRONMENT CAVEAT: earlier
+register numbers (88.5/88.6%) were measured against mise's UNPINNED
+system gems (lutaml-model 0.8.132 + a newer moxml whose released
+regex-dialect fix predates our lockfile pin) — Regex shows 355 fails
+bundled vs 128 there; closing that gap is a moxml/lockfile version
+bump, an owner decision, not a pipeline change. Suite @ 7bc3365
+(rake setup re-clones every run). Batch workers MUST run under
+`bundle exec` — plain `ruby -Ilib` silently loads system gems.
+
+Suite history (same-stack where known): 71.8% baseline → 83.5%
+(pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (this branch).
 Failure concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
@@ -181,13 +179,27 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   narrows but cannot drop attributes, XSD 1.0 §3.4.2); the mgB/mgF
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
-- remaining (2026-10-28, complete-suite measurement 4162/4696 = 88.6%,
-  first run with all 4696 cases — the occurrence-product guard
-  recovered the last 20): Additional (41), Attribute (30), Element
-  (28), Regex (128, bulk engine-side), DataTypes (88),
-  IdentityConstraint (36), SimpleType (30), Wildcards (29), Schema
-  (25), AttributeGroup (18), ComplexType (19), Group (9), Errata10
-  (4), Notations (1)
+- remaining (2026-10-28, bundled-stack complete measurement,
+  3961/4696 = 84.3%): Regex (355 — bulk ENGINE-side dialect gap, the
+  fix ships in a newer moxml than our lockfile pins; owner version
+  bump), DataTypes (97), Additional (41), Element (35), Attribute
+  (30), SimpleType (30), Particles (29), IdentityConstraint (29),
+  Schema (15), ComplexType (9), AttributeGroup (18), ModelGroups
+  (13), Group (20), Wildcards (11), Errata10 (3), Notations (1)
+- IC ROUND (2026-10-28): (a) prefixed WILDCARD selector steps
+  (`.//myNS:*`) now translate to namespace-uri() tests — they slipped
+  through the earlier adaptation untouched and the key never built
+  (idL085); (b) the zero-occurrence guards crashed on
+  maxOccurs="unbounded" (parse yields a Symbol, `.zero?` raised) —
+  every schema with an unbounded container turned the occurrence rule
+  into a rule_execution_error, a live false-reject class since the
+  guards landed; (c) numeric-typed key fields canonicalize to actual
+  NUMBERS — decimal 1 == integer 1 stays unified, and neither equals
+  the string "1" (cross-space distinctness, idL090); both keyref
+  sides canonicalize identically; (d) for xs:KEY a selected node
+  whose fields do not all evaluate is an error
+  (key_field_absent_violation, xmllint-arbitrated), uniques/keyrefs
+  keep the skip.
 - ATTRIBUTE TYPE VALIDATION (2026-10-28): validate_attribute_type was
   a stub — attribute values were never checked. Now: built-in lexical
   via the engine table (lax without an engine), restriction facets
