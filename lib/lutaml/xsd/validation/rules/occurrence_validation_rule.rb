@@ -152,8 +152,10 @@ module Lutaml
             return if sequence.element.empty?
             # A container that may occur zero times voids its inner
             # requirements (mgG012: sequence(e1) maxOccurs="0", empty doc
-            # is valid).
+            # is valid). maxOccurs="unbounded" parses to a Symbol — the
+            # zero test only applies to integers.
             return if max_occurs.nil? &&
+              parse_max_occurs(sequence.max_occurs, 1).is_a?(Integer) &&
               parse_max_occurs(sequence.max_occurs, 1).zero?
 
             # Group-ref bounds: the sequence repeats as a UNIT, so the
@@ -258,7 +260,7 @@ module Lutaml
                                           max_occurs: nil)
             min_occurs ||= parse_occurs(choice.min_occurs, 1)
             max_occurs ||= parse_max_occurs(choice.max_occurs, 1)
-            return if max_occurs.zero?
+            return if max_occurs.is_a?(Integer) && max_occurs.zero?
 
             present_count = count_choice_alternatives(parent_element, choice,
                                                       repository)
@@ -388,7 +390,9 @@ module Lutaml
           def validate_all_occurrences(parent_element, all, collector,
                                        repository: nil, **)
             return if all.element.empty?
-            return if parse_max_occurs(all.max_occurs, 1).zero?
+
+            all_max = parse_max_occurs(all.max_occurs, 1)
+            return if all_max.is_a?(Integer) && all_max.zero?
 
             # In xs:all, each element can appear 0 or 1 times
             # (or based on its minOccurs/maxOccurs)

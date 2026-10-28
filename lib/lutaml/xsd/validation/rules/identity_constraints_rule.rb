@@ -30,11 +30,15 @@ module Lutaml
             # identity constraints resolve names against the declaration.
             return unless schema_element.is_a?(Lutaml::Xml::Schema::Xsd::Element)
 
+            # Selector/field namespace prefixes resolve against the owner
+            # schema's target namespace (the suite's single-namespace shapes).
+            target_ns = repository&.target_namespace_for(schema_element).to_s
+
             collected = {}
 
             Array(schema_element.key).each do |constraint|
               values = collect_values(xml_element, constraint, collector,
-                                      repository)
+                                      repository, target_ns)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_key_violation")
               collected[constraint.name] = values if constraint.name
@@ -42,7 +46,7 @@ module Lutaml
 
             Array(schema_element.unique).each do |constraint|
               values = collect_values(xml_element, constraint, collector,
-                                      repository)
+                                      repository, target_ns)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_unique_violation")
               collected[constraint.name] = values if constraint.name
@@ -53,7 +57,7 @@ module Lutaml
               next if referred.nil?
 
               collect_values(xml_element, constraint, collector,
-                             repository).each do |value|
+                             repository, target_ns).each do |value|
                 next if referred.include?(value)
 
                 report_error(
@@ -70,9 +74,10 @@ module Lutaml
 
           private
 
-          def collect_values(xml_element, constraint, collector, repository)
-            fields = field_xpaths(constraint)
-            selector_xpaths(constraint).flat_map do |selector|
+          def collect_values(xml_element, constraint, collector, repository,
+                             target_namespace)
+            fields = field_xpaths(constraint, target_namespace)
+            selector_xpaths(constraint, target_namespace).flat_map do |selector|
               Array(xml_element.moxml_element.xpath(selector)).map do |node|
                 values = []
                 ambiguous = false
@@ -177,23 +182,23 @@ module Lutaml
             end
           end
 
-          def selector_xpaths(constraint)
+          def selector_xpaths(constraint, target_namespace)
             return [] unless constraint.selector
 
             selector = constraint.selector
             if selector.is_a?(Lutaml::Xml::Schema::Xsd::Selector)
-              xpath_strings(selector.xpath)
+              xpath_strings(selector.xpath, target_namespace)
             else
-              xpath_strings(selector)
+              xpath_strings(selector, target_namespace)
             end
           end
 
-          def field_xpaths(constraint)
+          def field_xpaths(constraint, target_namespace)
             Array(constraint.field).flat_map do |field|
               if field.is_a?(Lutaml::Xml::Schema::Xsd::Field)
-                xpath_strings(field.xpath)
+                xpath_strings(field.xpath, target_namespace)
               else
-                xpath_strings(field)
+                xpath_strings(field, target_namespace)
               end
             end
           end
@@ -203,26 +208,41 @@ module Lutaml
           # it. Top-level unions split into one path each; prefixed
           # steps rewrite to local-name() tests — the adapter resolves
           # no namespace bindings, so "myNS:t" cannot evaluate as-is.
-          def xpath_strings(value)
+          def xpath_strings(value, target_namespace)
             case value
             when String
-              value.split(/\s*\|\s*/).reject(&:empty?).map { |p| adapt_xpath(p) }
+              value.split(/\s*\|\s*/).reject(&:empty?)
+                .map { |p| adapt_xpath(p, target_namespace) }
             else
               []
             end
           end
 
-          # Rewrites namespace-prefixed steps to local-name() tests.
-          # Prefix-insensitive, equivalent for the suite's
-          # single-namespace selector shapes.
+          # Rewrites namespace-prefixed steps to adapter-evaluable tests.
+          # A prefixed NAME becomes a local-name() test (prefix-
+          # insensitive, equivalent for the suite's single-namespace
+          # shapes); a prefixed WILDCARD (`myNS:*`) becomes a
+          # namespace-uri() test against the owner schema's target
+          # namespace, untranslatable without it.
           #
           # @return [String]
-          def adapt_xpath(path)
-            path.gsub(/@([\w.-]+):([\w.-]+)/) do
-              "@*[local-name()='#{Regexp.last_match(2)}']"
-            end.gsub(/(?<![@\w])[\w.-]+:([\w.-]+)/) do
-              "*[local-name()='#{Regexp.last_match(1)}']"
-            end
+          def adapt_xpath(path, target_namespace)
+            path
+              .gsub(/@([\w.-]+):([\w.-]+)/) do
+                "@*[local-name()='#{Regexp.last_match(2)}']"
+              end
+              .gsub(/(?<![@\w])([\w.-]+):([\w.*-]+)/) do
+                name = Regexp.last_match(2)
+                if name == "*"
+                  if target_namespace.to_s.match?(/\S/)
+                    "*[namespace-uri()='#{target_namespace}']"
+                  else
+                    "*"
+                  end
+                else
+                  "*[local-name()='#{name}']"
+                end
+              end
           end
 
           # Keyref `refer` as a string; nil when the model left it
