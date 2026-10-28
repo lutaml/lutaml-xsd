@@ -101,10 +101,11 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::TypeValidationRule do
       Moxml::Context.new.parse("<date>not-a-date</date>").root
     end
 
-    it "keeps the existing no-op builtin behavior" do
+    it "checks builtin lexicals the value space can decide" do
       rule.validate(xml_element, schema_element, collector)
 
-      expect(collector.errors).to be_empty
+      codes = collector.errors.map(&:code)
+      expect(codes).to include("type_validation_error")
     end
   end
 end

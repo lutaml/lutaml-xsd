@@ -779,6 +779,9 @@ module Lutaml
           # @param value [String, nil] The lexical value
           # @return [Boolean, nil]
           def engine_builtin_answer(type_name, value)
+            own = lexical_answer(type_name, value)
+            return own unless own.nil?
+
             engine = validation_engine
             return unless engine&.supported?
 

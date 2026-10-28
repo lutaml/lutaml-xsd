@@ -469,8 +469,11 @@ module Lutaml
 
           # @return [Hash, nil]
           def builtin_violation(type_name, value)
-            engine = validation_engine
-            answer = engine&.builtin_valid?(type_name, value)
+            answer = lexical_answer(type_name, value)
+            if answer.nil?
+              engine = validation_engine
+              answer = engine&.builtin_valid?(type_name, value)
+            end
             return nil if answer.nil? || answer
 
             {
