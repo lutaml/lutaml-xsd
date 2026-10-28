@@ -205,7 +205,7 @@ module Lutaml
           return false unless model
 
           collect_wildcards(model, resolver).any? do |wildcard|
-            wildcard.process_contents.to_s == "skip" &&
+            wildcard_process_mode(wildcard) == "skip" &&
               wildcard_permits?(wildcard, parent, child, resolver)
           end
         end

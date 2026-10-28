@@ -593,7 +593,7 @@ module Lutaml
           # @return [void]
           def check_strict_wildcard_child(child, wildcard, collector,
                                           repository)
-            return unless wildcard.process_contents.to_s == "strict"
+            return unless wildcard_process_mode(wildcard) == "strict"
             return if wildcard_child_declared?(child, repository)
             # xsi:type supplies the type definition itself — strict
             # assessment proceeds with it (addB116).

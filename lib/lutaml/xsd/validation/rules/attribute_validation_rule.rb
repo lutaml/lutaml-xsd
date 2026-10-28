@@ -790,7 +790,7 @@ module Lutaml
               if wildcard &&
                   wildcard_permits_attribute?(wildcard, xml_element,
                                               xml_attr, repository)
-                if wildcard.process_contents.to_s == "strict" &&
+                if wildcard_process_mode(wildcard) == "strict" &&
                     !attribute_declared?(xml_attr, repository)
                   report_error(
                     collector,
@@ -944,14 +944,22 @@ module Lutaml
           end
 
           # Whether a strict-wildcard attribute resolves to a global
-          # declaration in the repository.
+          # declaration in the attribute's OWN namespace — the
+          # unique-name fallback may not answer for a different
+          # namespace (wildO006: unprefixed attribute, {ns}name declared).
           #
           # @return [Boolean]
           def attribute_declared?(xml_attr, repository)
             return true if repository.nil?
 
-            !repository.resolve_attribute(xml_attr.name,
-                                          xml_attr.namespace_uri).nil?
+            declaration = repository.resolve_attribute(
+              xml_attr.name, xml_attr.namespace_uri
+            )
+            return false unless declaration
+
+            expected = repository.expected_attribute_namespace(declaration)
+            expected.nil? ||
+              expected == xml_attr.namespace_uri.to_s
           end
 
           # Target namespace of the schema owning the parent's declaration.

@@ -32,6 +32,15 @@ module Lutaml
           container ? [container] : []
         end
 
+        # processContents defaults to strict when absent (XSD 1.0
+        # §3.9.2); wildZ001/wildO006 rely on the default.
+        #
+        # @return [String]
+        def wildcard_process_mode(wildcard)
+          mode = wildcard.process_contents.to_s
+          mode.empty? ? "strict" : mode
+        end
+
         def collect_wildcards(particle, repository, depth = 0)
           return [] if particle.nil? || depth > 8
 
