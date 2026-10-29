@@ -402,6 +402,71 @@ module Lutaml
             supplied.nil? ? text : supplied.to_s
           end
 
+          # XSD 1.0 §3.3.3: a fixed value constrains the element — a
+          # non-empty lexical must equal it in the value space
+          # (elemQ018). Empty content already validates against the
+          # fixed value through effective_text.
+          #
+          # @return [void]
+          def validate_fixed_content(xml_element, declared, value, collector)
+            return unless declared.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+
+            fixed = declared.fixed.to_s
+            return if fixed.empty?
+            return if value.to_s.empty?
+
+            rule = declared_whitespace_rule(declared)
+            return if canonical(value.to_s, rule) == canonical(fixed, rule)
+
+            report_error(
+              collector,
+              code: "fixed_content_value_mismatch",
+              message: "Element '#{xml_element.name}' must have fixed " \
+                       "value '#{fixed}'",
+              location: xml_element.xpath,
+              context: {
+                element: xml_element.name,
+                expected: fixed,
+                actual: value,
+              },
+            )
+          end
+
+          # @return [Symbol] :preserve, :replace or :collapse
+          def declared_whitespace_rule(declared)
+            reference = declared.type.to_s
+            local =
+              if reference.match?(/\S/)
+                return :preserve unless
+                  %w[xs xsd].include?(reference.split(":").first)
+
+                reference.split(":").last
+              elsif declared.simple_type&.restriction
+                declared.simple_type.restriction.base.to_s.split(":").last
+              end
+
+            case local
+            when "string"
+              :preserve
+            when "normalizedString"
+              :replace
+            else
+              :collapse
+            end
+          end
+
+          # @return [String]
+          def canonical(value, rule)
+            case rule
+            when :collapse
+              value.to_s.gsub(/\s+/, " ").strip
+            when :replace
+              value.to_s.gsub(/[\t\n\r]/, " ")
+            else
+              value.to_s
+            end
+          end
+
           # Validate simple type content
           #
           # @param xml_element [XmlElement] The XML element
@@ -412,6 +477,7 @@ module Lutaml
                                            collector, repository: nil,
                                            declared: nil)
             value = effective_text(xml_element, declared)
+            validate_fixed_content(xml_element, declared, value, collector)
 
             # Validate base type if present
             if simple_type.restriction
@@ -855,6 +921,7 @@ module Lutaml
           def validate_builtin_type(xml_element, type_name, collector,
                                     declared: nil)
             value = effective_text(xml_element, declared)
+            validate_fixed_content(xml_element, declared, value, collector)
             answer = engine_builtin_answer(type_name, value)
             return if answer.nil?
             return if answer
