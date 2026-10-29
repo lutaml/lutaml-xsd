@@ -7,6 +7,7 @@ require_relative "rules/attribute_validation_rule"
 require_relative "rules/occurrence_validation_rule"
 require_relative "rules/content_model_validation_rule"
 require_relative "rules/identity_constraints_rule"
+require_relative "rules/id_uniqueness_rule"
 
 module Lutaml
   module Xsd
@@ -61,6 +62,7 @@ module Lutaml
           end
           if config.feature_enabled?(:validate_identity_constraints)
             registry.register(Rules::IdentityConstraintsRule.new)
+            registry.register(Rules::IdUniquenessRule.new)
           end
           registry
         end
