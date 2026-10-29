@@ -157,7 +157,11 @@ module Lutaml
           # from the declared type — the base chain must reach it. Lists
           # and unions derive from anySimpleType, not from their item or
           # member types, so a pure list/union never qualifies. A union
-          # base admits overrides derived from (or naming) any member.
+          # base admits overrides NAMING any member (suite-arbitrated:
+          # types merely derived from a member do not qualify —
+          # elemT065/074). Complex types derive through both content
+          # kinds — a simpleContent extension of a simple base is a
+          # derivation too (elemT058).
           #
           # @return [Boolean]
           def validly_derived?(type, base_local, repository, depth = 0)
@@ -172,11 +176,7 @@ module Lutaml
 
             case type
             when Lutaml::Xml::Schema::Xsd::ComplexType
-              content = type.complex_content
-              return false unless content
-
-              part = Array(content.extension).first ||
-                Array(content.restriction).first
+              part = derivation_part(type)
               return false unless part
 
               next_local = part.base.to_s.split(":").last
@@ -202,34 +202,34 @@ module Lutaml
             end
           end
 
-          # Whether the override is, or derives from, any member of the
-          # declared union (member types nest through named references).
+          # Whether the override is, or names, any member of the
+          # declared union. Types derived from a member do not qualify
+          # (suite-arbitrated, elemT065/074).
           #
           # @return [Boolean]
-          def union_member_derived?(override, union_base, repository, depth)
+          def union_member_derived?(override, union_base, _repository, _depth)
             members = union_base.union.member_types.to_s.split(/\s+/)
               .map { |m| m.split(":").last }.reject(&:empty?)
-            return false if depth > 10
 
-            members.any? do |member_local|
-              override.name.to_s.split(":").last == member_local ||
-                validly_derived?(override, member_local, repository,
-                                 depth + 1)
-            end
+            members.include?(override.name.to_s.split(":").last)
           end
 
           # XSD 1.0 §3.3.4 / §3.4.6: block on the element declaration
           # AND on the declared complexType forbids replacing the type
-          # with one derived by the blocked kind. Direct derivation from
-          # the declared base is checked; deeper chains need the
-          # derivation-closure backlog.
+          # with one derived by the blocked kind. A type-less
+          # declaration's implicit xs:anyType participates too: every
+          # simple override restricts it, and a complex override's
+          # outermost derivation is its kind (elemT026).
           #
           # @return [Boolean]
           def override_blocked?(schema_element, override_type, repository)
             declared_local = schema_element.type.to_s.split(":").last
-            return false if declared_local.to_s.empty?
-
-            kind = derivation_kind_from(override_type, declared_local)
+            kind =
+              if declared_local.to_s.empty?
+                any_type_derivation_kind(override_type)
+              else
+                derivation_kind_from(override_type, declared_local)
+              end
             return false unless kind
 
             tokens = effective_block_tokens(schema_element, repository)
@@ -243,6 +243,22 @@ module Lutaml
 
             blocked = tokens.include?("#all") ? %w[extension restriction] : tokens
             blocked.include?(kind)
+          end
+
+          # Derivation kind of an override against a type-less
+          # declaration's implicit xs:anyType.
+          #
+          # @return [String, nil]
+          def any_type_derivation_kind(override_type)
+            case override_type
+            when Lutaml::Xml::Schema::Xsd::SimpleType
+              "restriction"
+            when Lutaml::Xml::Schema::Xsd::ComplexType
+              part = derivation_part(override_type)
+              return nil unless part
+
+              part.class.name.include?("Extension") ? "extension" : "restriction"
+            end
           end
 
           # The derivation kind of the override type when it directly
