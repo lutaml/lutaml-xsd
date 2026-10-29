@@ -282,6 +282,57 @@ RSpec.describe "wildcard scoping, anyType and default content" do
     end
   end
 
+  describe "built-in ID uniqueness" do
+    let(:id_schema) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element ref="item" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="item">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="key" type="xs:ID"/>
+              </xs:sequence>
+              <xs:attribute name="ref" type="xs:ID"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "rejects a repeated ID element value" do
+      result = run_pipeline(
+        id_schema,
+        "<root><item><key>a</key></item><item><key>a</key></item></root>",
+      )
+
+      expect(codes(result)).to include("id_duplicate_violation")
+    end
+
+    it "rejects a repeated ID attribute value" do
+      result = run_pipeline(
+        id_schema,
+        '<root><item ref="a"><key>a</key></item></root>',
+      )
+
+      expect(codes(result)).to include("id_duplicate_violation")
+    end
+
+    it "accepts distinct ID values" do
+      result = run_pipeline(
+        id_schema,
+        "<root><item><key>a</key></item><item><key>b</key></item></root>",
+      )
+
+      expect(codes(result)).not_to include("id_duplicate_violation")
+    end
+  end
+
   describe "attribute form defaults" do
     it "accepts a qualified instance attribute for a form=qualified declaration" do
       schema = <<~XSD
