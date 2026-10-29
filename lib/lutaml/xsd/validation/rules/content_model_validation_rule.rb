@@ -694,7 +694,7 @@ module Lutaml
             return false if substitution_blocked?(declaration, head,
                                                   head_local, repository)
 
-            declaration.substitution_group.to_s.split(":").last == head_local
+            substitution_member_of?(declaration, head_local, repository)
           end
 
           # Get particle name for error messages

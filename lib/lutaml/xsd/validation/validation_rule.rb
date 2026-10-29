@@ -376,6 +376,30 @@ module Lutaml
           schema_element&.nillable.to_s.match?(/\A(true|1)\z/) || false
         end
 
+        # XSD 1.0 §3.3.6: substitution-group membership is transitive —
+        # a member of a member is a member of the head (elemZ003's
+        # chained a←b←c←d←e←f←g hierarchy). The declaration follows its
+        # substitutionGroup chain up to the head.
+        #
+        # @param declaration [Object] the resolved element declaration
+        # @param head_local [String] the particle's head local name
+        # @param repository [SchemaDefinitionResolver, nil]
+        # @param depth [Integer] cycle guard
+        # @return [Boolean]
+        def substitution_member_of?(declaration, head_local, repository,
+                                    depth = 0)
+          return false if depth > 10
+
+          head = declaration.substitution_group.to_s.split(":").last
+          return false if head.nil? || head.empty?
+          return true if head == head_local
+
+          parent = repository&.resolve(head, nil)
+          return false unless parent
+
+          substitution_member_of?(parent, head_local, repository, depth + 1)
+        end
+
         # Whether an instance child matches a content-model particle of
         # any kind. Containers match when the child matches any leaf
         # inside them (inner ordering permissive; the outer walk stays
