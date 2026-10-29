@@ -595,7 +595,7 @@ module Lutaml
             return false if substitution_blocked?(declaration, resolved_head,
                                                   head_local, repository)
 
-            declaration.substitution_group.to_s.split(":").last == head_local
+            substitution_member_of?(declaration, head_local, repository)
           end
 
           # Count how many choice alternatives are present
