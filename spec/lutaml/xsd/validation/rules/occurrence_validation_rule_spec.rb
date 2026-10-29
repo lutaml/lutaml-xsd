@@ -15,7 +15,8 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::OccurrenceValidationRule do
 
   # Helper to create a moxml element with children
   def create_moxml_element(name, children = [])
-    Struct.new(:name, :children, :namespace).new(name, children, nil)
+    fixture = Struct.new(:name, :children, :namespace, :attributes)
+    fixture.new(name, children, nil, [])
   end
 
   # Helper to create a moxml child element

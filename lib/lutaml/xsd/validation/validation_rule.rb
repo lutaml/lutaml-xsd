@@ -360,6 +360,22 @@ module Lutaml
           Array(simple.extension).first || Array(simple.restriction).first
         end
 
+        # Whether the element is genuinely nilled: xsi:nil="true" on a
+        # nillable declaration. A nilled element has no content — the
+        # content-model and occurrence walks exempt it entirely
+        # (QFE1700g2).
+        #
+        # @param xml_element [XmlElement]
+        # @param schema_element [Object, nil]
+        # @return [Boolean]
+        def nilled_instance?(xml_element, schema_element)
+          nil_attr = xsi_attribute(xml_element, "nil")
+          return false unless nil_attr
+          return false unless nil_attr.value.to_s.match?(/\A(true|1)\z/)
+
+          schema_element&.nillable.to_s.match?(/\A(true|1)\z/) || false
+        end
+
         # Whether an instance child matches a content-model particle of
         # any kind. Containers match when the child matches any leaf
         # inside them (inner ordering permissive; the outer walk stays
