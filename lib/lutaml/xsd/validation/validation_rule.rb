@@ -316,7 +316,9 @@ module Lutaml
         end
 
         # The derivation kind of a type when it directly derives from
-        # the named base; nil when it does not derive from it.
+        # the named base; nil when it does not derive from it. Both
+        # content kinds count — a simpleContent extension of a simple
+        # base is a derivation (elemT058).
         #
         # @return [String, nil]
         def derivation_kind_from(type, declared_local)
@@ -324,17 +326,11 @@ module Lutaml
 
           case type
           when Lutaml::Xml::Schema::Xsd::ComplexType
-            content = type.complex_content
-            return nil unless content
+            part = derivation_part(type)
+            return nil unless part
+            return nil unless part.base.to_s.split(":").last == declared_local
 
-            %i[extension restriction].each do |kind|
-              part = content.public_send(kind)
-              next unless part
-
-              return kind.to_s if
-                part.base.to_s.split(":").last == declared_local
-            end
-            nil
+            part.class.name.include?("Extension") ? "extension" : "restriction"
           when Lutaml::Xml::Schema::Xsd::SimpleType
             restriction = type.restriction
             if restriction &&
@@ -344,6 +340,24 @@ module Lutaml
 
             nil
           end
+        end
+
+        # The derivation part of a complex type: complexContent's
+        # extension/restriction, else simpleContent's.
+        #
+        # @param type [Lutaml::Xml::Schema::Xsd::ComplexType]
+        # @return [Object, nil]
+        def derivation_part(type)
+          complex = type.complex_content
+          if complex
+            return Array(complex.extension).first ||
+                Array(complex.restriction).first
+          end
+
+          simple = type.simple_content
+          return nil unless simple
+
+          Array(simple.extension).first || Array(simple.restriction).first
         end
 
         # Whether an instance child matches a content-model particle of
