@@ -51,10 +51,15 @@ module Lutaml
           return if rules.empty?
 
           resolver = SchemaDefinitionResolver.new(repository)
-          each_element(document) do |xml_element, parent|
-            # A skip wildcard in the parent's content model forbids any
-            # assessment of the matched subtree (XSD 1.0 §3.9.4.2).
-            next if skip_wildcard_subtree?(parent, xml_element, resolver)
+          walk_elements(document) do |xml_element, parent, subtree_suppressed|
+            # A skip wildcard anywhere up the ancestor chain forbids
+            # assessment of the whole subtree (XSD 1.0 §3.9.4.2) —
+            # suppression is hereditary (QFE1700a1: the skipped e2's
+            # empty xs:int child escapes assessment too).
+            next true if subtree_suppressed
+
+            skip_here = skip_wildcard_subtree?(parent, xml_element, resolver)
+            next true if skip_here
 
             schema_def = resolver.resolve(
               xml_element.name, xml_element.namespace_uri
@@ -65,6 +70,7 @@ module Lutaml
 
               execute_rule(rule, xml_element, argument, resolver)
             end
+            false
           end
         rescue ResultCollector::StopValidationError
           # Stop validation early if configured
@@ -176,18 +182,25 @@ module Lutaml
 
         private
 
-        # Depth-first walk over instance elements, passing the parent.
+        # Depth-first walk over instance elements. The block returns
+        # whether the element's SUBTREE escapes assessment; the decision
+        # is inherited by every descendant.
         #
         # @param node [XmlDocument, XmlElement] Start node
         # @param parent [XmlElement, nil]
+        # @param inherited [Boolean] the ancestor suppression decision
         # @yieldparam element [XmlElement]
         # @yieldparam parent [XmlElement, nil]
-        def each_element(node, parent = nil, &)
+        # @yieldparam inherited [Boolean]
+        # @return [void]
+        def walk_elements(node, parent = nil, inherited: false, &)
           element = node.is_a?(XmlDocument) ? node.root_element : node
           return unless element
 
-          yield element, parent
-          element.children.each { |child| each_element(child, element, &) }
+          suppress = yield(element, parent, inherited) || inherited
+          element.children.each do |child|
+            walk_elements(child, element, inherited: suppress, &)
+          end
         end
 
         # Whether the parent's content model holds a processContents

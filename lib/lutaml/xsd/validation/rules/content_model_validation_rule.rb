@@ -71,6 +71,9 @@ module Lutaml
           def validate(xml_element, schema_def, collector, repository: nil)
             return unless schema_def
 
+            # A nilled element has no content to match (QFE1700g2).
+            return if nilled_instance?(xml_element, schema_def)
+
             particles = effective_particles(
               xml_element, schema_def, repository
             )

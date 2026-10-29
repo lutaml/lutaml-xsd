@@ -51,6 +51,13 @@ module Lutaml
             return unless schema_particle
             return unless parent_element
 
+            # A nilled element has no content to count (QFE1700g2).
+            declaration = repository&.resolve(
+              parent_element.name, parent_element.namespace_uri
+            )
+            return if declaration &&
+              nilled_instance?(parent_element, declaration)
+
             wildcards = collect_wildcards(schema_particle, repository)
             name_counts = collect_declared_names(schema_particle,
                                                  repository).tally
