@@ -16,12 +16,30 @@ module Lutaml
         # itself; cross-element keyref scopes and recursive selector depth
         # are backlog items (TODO.conformance.md).
         class IdentityConstraintsRule < ValidationRule
+          # A tagged identity value: equality requires BOTH the
+          # value-space family and the value to match, so disjoint
+          # primitives (float vs decimal, boolean vs numeric) never
+          # collide even on identical lexicals.
+          ValueKey = Struct.new(:space, :value)
+
           def category
             :identity
           end
 
           def description
             "Validates key, keyref and unique identity constraints"
+          end
+
+          # Constraint names this rule evaluated during the job. The
+          # engine-findings arbitration consults it: the engine's unique
+          # check is value-LEXICAL, so its duplicate findings for a
+          # constraint the Ruby rule evaluated clean are value-space
+          # false positives (idF012/013/014). Instance state lives one
+          # registry = one job (IdUniquenessRule pattern).
+          #
+          # @return [Set<String>]
+          def evaluated_constraints
+            @evaluated_constraints ||= []
           end
 
           def validate(xml_element, schema_element, collector,
@@ -37,6 +55,7 @@ module Lutaml
             collected = {}
 
             Array(schema_element.key).each do |constraint|
+              evaluated_constraints << constraint.name.to_s if constraint.name
               values = collect_values(xml_element, constraint, collector,
                                       repository, target_ns, :key)
               report_duplicates(collector, xml_element, constraint, values,
@@ -45,6 +64,7 @@ module Lutaml
             end
 
             Array(schema_element.unique).each do |constraint|
+              evaluated_constraints << constraint.name.to_s if constraint.name
               values = collect_values(xml_element, constraint, collector,
                                       repository, target_ns, :unique)
               report_duplicates(collector, xml_element, constraint, values,
@@ -53,6 +73,7 @@ module Lutaml
             end
 
             Array(schema_element.keyref).each do |constraint|
+              evaluated_constraints << constraint.name.to_s if constraint.name
               referred = refer_name(constraint) && collected[refer_name(constraint)]
               next if referred.nil?
 
@@ -123,9 +144,7 @@ module Lutaml
 
                 canonical = fields.each_with_index.map do |field, index|
                   declared = field_declared_type(node, field, repository)
-                  numeric = declared &&
-                    repository&.numeric_simple_type?(declared)
-                  numeric ? canonical_field_value(values[index]) : values[index]
+                  value_key(values[index], declared, repository)
                 end
                 canonical.length == 1 ? canonical.first : canonical
               end
@@ -154,12 +173,19 @@ module Lutaml
                 candidate.name == "type" && candidate.namespace&.uri ==
                   XSI_NAMESPACE
               end
-              override_local =
-                override && override.value.to_s.split(":").last
-              if override_local &&
-                  repository&.resolve_named_type(override_local)
-                return override_local
-              end
+              override_value = override && override.value.to_s
+              override_parts = override_value&.split(":")
+              override_local = override_parts&.last
+              prefixed_builtin =
+                override_parts && %w[xs xsd].include?(override_parts.first)
+              # The field's value space follows the INSTANCE type — a
+              # built-in override (xs:boolean) counts even though no
+              # schema document declares it.
+              builtin_override = override_local && (
+                repository&.resolve_named_type(override_local) ||
+                prefixed_builtin
+              )
+              return override_local if builtin_override
 
               repository&.resolve(node.name, node.namespace_uri)
                 &.type.to_s.split(":").last.then do |t|
@@ -168,13 +194,42 @@ module Lutaml
             end
           end
 
-          # Identity values compare in the field's VALUE space: a
-          # numeric-typed field canonicalizes to a NUMBER (so decimal 1
-          # equals integer 1, and neither equals the STRING "1" —
-          # different value spaces stay distinct, idL090); untyped and
-          # string-typed fields compare lexically. Both sides of a
-          # keyref canonicalize the same way, keeping them symmetric.
+          # Identity values compare in the field's VALUE space. Numeric
+          # primitives tag the key with their family: decimal and its
+          # integer derivatives share one space (decimal 1 equals
+          # integer 1, idL090), while float/double are a disjoint
+          # primitive (float 1 is NOT decimal 1, idF013) and boolean is
+          # its own space (boolean 1 is not decimal 1, idF012). Both
+          # sides of a keyref canonicalize the same way, keeping them
+          # symmetric.
           #
+          # @return [ValueKey, String] a tagged key for typed fields, the
+          #   raw lexical otherwise
+          def value_key(raw, declared_local, repository)
+            case repository&.value_space_family(declared_local)
+            when :decimal
+              ValueKey.new(:decimal, canonical_field_value(raw))
+            when :float
+              ValueKey.new(:float, raw.to_s.strip.to_f)
+            when :boolean
+              boolean_key(raw)
+            else
+              raw
+            end
+          end
+
+          # A boolean key from a valid boolean lexical; anything else
+          # keeps the raw lexical (the engine flags the invalid value,
+          # and grouping stays lexical).
+          #
+          # @return [ValueKey, String]
+          def boolean_key(raw)
+            lexical = raw.to_s.strip
+            return raw unless %w[true false 0 1].include?(lexical)
+
+            ValueKey.new(:boolean, %w[true 1].include?(lexical))
+          end
+
           # @return [Numeric, String]
           def canonical_field_value(raw)
             s = raw.to_s.strip

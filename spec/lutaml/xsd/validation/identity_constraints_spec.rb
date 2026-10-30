@@ -148,4 +148,61 @@ RSpec.describe "identity constraints (key/keyref/unique)" do
       expect(codes).to include("duplicate_unique_violation")
     end
   end
+
+  context "with same lexicals in disjoint value spaces" do
+    let(:xsd_source) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element ref="uid" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+            <xs:unique name="uuid">
+              <xs:selector xpath=".//uid"/>
+              <xs:field xpath="."/>
+            </xs:unique>
+          </xs:element>
+          <xs:element name="uid" type="xs:anyType"/>
+        </xs:schema>
+      XSD
+    end
+
+    it "keeps boolean and decimal distinct" do
+      result = validator.validate(
+        '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+        ' xmlns:xs="http://www.w3.org/2001/XMLSchema">' \
+        "<uid xsi:type=\"xs:boolean\">1</uid>" \
+        "<uid xsi:type=\"xs:decimal\">1</uid></root>",
+      )
+
+      codes = result.errors.map(&:code)
+      expect(codes).not_to include("duplicate_unique_violation")
+    end
+
+    it "keeps float and decimal distinct" do
+      result = validator.validate(
+        '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+        ' xmlns:xs="http://www.w3.org/2001/XMLSchema">' \
+        "<uid xsi:type=\"xs:float\">1</uid>" \
+        "<uid xsi:type=\"xs:decimal\">1</uid></root>",
+      )
+
+      codes = result.errors.map(&:code)
+      expect(codes).not_to include("duplicate_unique_violation")
+    end
+
+    it "keeps decimal and integer unified" do
+      result = validator.validate(
+        '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+        ' xmlns:xs="http://www.w3.org/2001/XMLSchema">' \
+        "<uid xsi:type=\"xs:integer\">1</uid>" \
+        "<uid xsi:type=\"xs:decimal\">1</uid></root>",
+      )
+
+      expect(result.errors.map(&:code))
+        .to include("duplicate_unique_violation")
+    end
+  end
 end

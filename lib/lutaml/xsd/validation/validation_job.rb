@@ -89,6 +89,7 @@ module Lutaml
           return result_from_collector if should_stop_after_constraints?
 
           validate_identity if @config.feature_enabled?(:validate_identity_constraints)
+          arbitrate_engine_findings
 
           result_from_collector
         end
@@ -153,6 +154,41 @@ module Lutaml
           @rule_engine.execute_category(:identity, @document, @repository)
         rescue ResultCollector::StopValidationError
           # Stop validation if configured to stop on first error
+        end
+
+        # The engine's identity-unique check compares values LEXICALLY,
+        # so its duplicate findings for a constraint the Ruby rule
+        # evaluated clean are value-space false positives (idF012/013/
+        # 014: same lexical, disjoint primitives). The Ruby rule engine
+        # is authoritative for value spaces — arbitrate those findings
+        # out after the identity pass. Findings for constraints the Ruby
+        # rule never evaluated stay (the engine may see wider scopes).
+        #
+        # @return [void]
+        def arbitrate_engine_findings
+          evaluated = @rule_registry.rules_for_category(:identity)
+            .find { |rule| rule.is_a?(Rules::IdentityConstraintsRule) }
+            &.evaluated_constraints
+          return unless evaluated
+
+          @result_collector.errors.reject! do |error|
+            next false unless error.code == EngineContext::ENGINE_CODE
+
+            name = duplicate_constraint_name(error.message)
+            !name.nil? && evaluated.include?(name)
+          end
+        end
+
+        # @return [String, nil] the constraint name a DUPLICATE-shaped
+        #   engine message names — the arbitration must not touch the
+        #   other engine findings (idG006's missing-field message shares
+        #   the "key 'N':" prefix but is not a value-space claim)
+        def duplicate_constraint_name(message)
+          head = message.match(/\A(?:unique|key(?:ref)?)\s+'([^']+)':/i)
+          return head && head[1] if head && message.match?(/duplicate/i)
+
+          tail = message.match(/\ADuplicate .* for '([^']+)'\z/i)
+          tail && tail[1]
         end
 
         # Schema-side UPA checking (XSD 1.0 3.8.6). Findings describe the
