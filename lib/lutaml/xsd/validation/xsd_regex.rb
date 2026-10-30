@@ -78,6 +78,12 @@ module Lutaml
           case rest[0]
           when "i" then NAME_START_CLASS
           when "c" then NAME_CHAR_CLASS
+          when "d" then "\\p{Nd}"
+          when "D" then "\\P{Nd}"
+          when "w" then "[\\p{L}\\p{N}.\\-]"
+          when "W" then "[^\\p{L}\\p{N}.\\-]"
+          when "s" then "[\\t\\n\\r ]"
+          when "S" then "[^\\t\\n\\r ]"
           when "p", "P"
             close = rest.index("}")
             inner = rest[2...close].to_s
@@ -164,6 +170,13 @@ module Lutaml
           end
             .gsub("\\i") { NAME_START_CLASS }
             .gsub("\\c") { NAME_CHAR_CLASS }
+            # Class-interior expansions: properties compose inside
+            # [...] directly; complementing escapes (\W/\S/\D) are left
+            # to Ruby (no set complement inside a class).
+            .gsub("\\d") { "\\p{Nd}" }
+            .gsub("\\D") { "\\P{Nd}" }
+            .gsub("\\w") { "\\p{L}\\p{N}\\-. " }
+            .gsub("\\s") { "\\t\\n\\r " }
         end
 
         # XSD writes blocks as \p{IsBasicLatin} (hyphenated, camel-cased);
