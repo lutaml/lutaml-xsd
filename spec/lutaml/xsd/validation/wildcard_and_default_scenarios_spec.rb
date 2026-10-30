@@ -178,6 +178,73 @@ RSpec.describe "wildcard scoping, anyType and default content" do
 
       expect(codes(result)).not_to include("fixed_attribute_value_mismatch")
     end
+
+    it "checks the fixed value of a type-less element" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="a" fixed="fixed_value"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<root><a>not fixed</a></root>")
+
+      expect(codes(result)).to include("fixed_content_value_mismatch")
+    end
+
+    it "checks the fixed value of a complex-typed element" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root" fixed="abc">
+            <xs:complexType mixed="true">
+              <xs:sequence minOccurs="0">
+                <xs:element name="e1"/>
+                <xs:element name="e2"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<root>not_fixed</root>")
+
+      expect(codes(result)).to include("fixed_content_value_mismatch")
+    end
+  end
+
+  describe "undeclared root with an xsi:type override" do
+    it "is assessed against the named type instead of rejected" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:complexType name="t">
+            <xs:attribute name="a" type="xs:string"/>
+          </xs:complexType>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, '<doc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="t" a="x"/>')
+
+      expect(codes(result)).not_to include("element_not_allowed")
+    end
+
+    it "still rejects an undeclared root whose override does not resolve" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:complexType name="t">
+            <xs:attribute name="a" type="xs:string"/>
+          </xs:complexType>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, '<doc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="zzz"/>')
+
+      expect(codes(result)).to include("element_not_allowed")
+    end
   end
 
   describe "xsi:type overrides naming built-ins" do

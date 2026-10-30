@@ -120,33 +120,41 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4430/4696 (94.3%) |
+| pipeline | 4435/4696 (94.4%) |
 
 (2026-10-30, bundled-stack measurement on main with the escape,
-hint-following, pattern-alternative and identity-crash rounds.)
-Same-stack comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%) →
-4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411 (93.9%) → 4430
-(94.3%), +469 net over the 1.2.43 baseline. The escapes round (PR
-#197 — \d→\p{Nd}, \w/\W/\s to their XSD value spaces) collapses
-Regex 120→69; same-step pattern facets now behave as alternatives
-and whitespace-only text reaches the facets intact (PR #200), Regex
-69→59. The identity-field xsi:type lookup no longer crashes when the
-instance has no override (PR #201) — an earlier interim 93.9% register
-had counted that crash as 94 extra IdentityConstraint failures, so
-the IC tail is 30 as before. Production hint-following (PR #196,
-instance_base:) makes multi-document instances validate fully. The
-dominant remainder is the moxml schema-set scope (Wildcards 27,
-Schema 23, ComplexType 10 — import-declared nodes invisible to
-single-file engine compiles, moxml#483 thread) and the IC tail
-(30 — the idF union-unique class needs union-member typed values;
-the engine's unique check is value-lexical, so those cases are
-engine-bound until moxml implements value-space tuples).
+hint-following, pattern-alternative, identity-crash and engine-set
+rounds.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) → 4039
+(86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411
+(93.9%) → 4430 (94.3%) → 4435 (94.4%), +474 net over the 1.2.43
+baseline. The escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s to their
+XSD value spaces) collapses Regex 120→69; same-step pattern facets now
+behave as alternatives and whitespace-only text reaches the facets
+intact (PR #200), Regex 69→59. The identity-field xsi:type lookup no
+longer crashes when the instance has no override (PR #201) — an
+earlier interim 93.9% register had counted that crash as 94 extra
+IdentityConstraint failures, so the IC tail is 30 as before. The
+engine now compiles file-backed schemas as a SCHEMA SET
+(Context#xsd_set, moxml#487 — PR #203), so cross-document components
+(substitution members above all) are visible to the engine; fixed
+content is checked on type-less and complex-typed elements and an
+undeclared root with a resolvable xsi:type is assessed instead of
+rejected (isDefault070/077, addB187). Production hint-following (PR
+#196, instance_base:) makes multi-document instances validate fully.
+The dominant remainder is the strict-wildcard admission gap under set
+compilation (Wildcards 26, Schema 23, ComplexType 9 — filed
+leptris#1920: direct refs resolve through the set, wildcard admission
+stays head-document-local) and the IC tail (30 — the idF union-unique
+class needs union-member typed values; the engine's unique check is
+value-lexical, so those cases are engine-bound until moxml implements
+value-space tuples).
 
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
 (#181+#182) → 87.1% (#183–#186) → 92.8% (lockfile refresh:
 moxml 0.5.170 + lutaml-model 0.8.147) → 93.9% (escape + hint rounds)
-→ 94.3% (#200/#201 pattern alternatives and IC crash). Failure
+→ 94.3% (#200/#201 pattern alternatives and IC crash) → 94.4%
+(#203 engine schema-set + fixed-content/root rounds). Failure
 concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
@@ -190,18 +198,34 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
 - remaining (2026-10-30, bundled-stack complete measurement with the
-  escape + hint-following + pattern-alternative + identity-crash
-  rounds, 4430/4696 = 94.3%): Regex (59 — exotic dialect corners +
-  character-reference shapes), IdentityConstraint (30 — the idF
-  union-unique class needs union-member typed values; the engine's
-  unique check is value-lexical so those cases are engine-bound until
-  moxml implements value-space tuples), Wildcards (27 — engine
-  schema-set scope), Schema (23 — engine schema-set scope), DataTypes
-  (17), Particles (20), Group (19), AttributeGroup (17), SimpleType
-  (12), Attribute (12), ComplexType (10 — engine schema-set scope),
-  Additional (10), Element (5), Errata10 (2), ModelGroups (2),
+  escape + hint-following + pattern-alternative + identity-crash +
+  engine-set rounds, 4435/4696 = 94.4%): Regex (59 — exotic dialect
+  corners + character-reference shapes), IdentityConstraint (30 —
+  the idF union-unique class needs union-member typed values; the
+  engine's unique check is value-lexical so those cases are
+  engine-bound until moxml implements value-space tuples), Wildcards
+  (26), Schema (23 — strict-wildcard admission under set compilation,
+  leptris#1920), DataTypes (17), Particles (20), Group (19),
+  AttributeGroup (17), SimpleType (12), Attribute (12), ComplexType
+  (9), Additional (7), Element (5), Errata10 (2), ModelGroups (2),
   Notations (1). Production xsi:schemaLocation hint-following SHIPPED
   (PR #196, instance_base:)
+- ENGINE SET ROUND (2026-10-30, PR #203): EngineContext compiles all
+  file-backed schemas as ONE schema set via Context#xsd_set (moxml
+  #487; lockfile rides 0.5.175) when every document compiled cleanly
+  per-file — cross-document components (substitution members, addB132)
+  become engine-visible. ENGINE-STABILITY LESSON: a failed native
+  compile POISONS the engine's state — repeated failures abort a later
+  validation with SIGABRT (elemO001 after 3+ failed dtZ compiles);
+  failed set attempts per case must never stack, so the set is only
+  attempted when per-file compiles are all clean, and failed handles
+  are released (release alone is NOT enough — the poison survives it).
+  Broken schemas keep exactly the per-file inertness of the old path.
+  Also: fixed content checked on TYPE-LESS (implicit anyType) and
+  COMPLEX-TYPED elements (isDefault070/077 short-circuited before the
+  check), and an undeclared root with a RESOLVABLE xsi:type is
+  assessed against that type instead of rejected (addB187). Filing:
+  leptris#1920 (wildcard admission across set documents).
 - PATTERN ROUND (2026-10-30, PR #200): same-step pattern facets are
   ALTERNATIVES (XSD Part 2 §4.3.4.4) in both the element and attribute
   rules — p16/p17/p20; `XmlElement#text_content` now returns raw

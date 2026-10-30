@@ -14,9 +14,11 @@ module Lutaml
       # authoritative. All query methods return nil (not false) when the
       # engine cannot answer, and callers fall back to Ruby logic.
       #
-      # An instance document is validated only against compiled schemas
-      # that declare its root element with a matching targetNamespace —
-      # repositories (and the global processed-schema cache) hold many
+      # An instance document is validated against the compiled set (root
+      # name matched across every member document's top-level elements —
+      # the root may live in an imported document) and, when pathless
+      # roundtrip schemas exist, against those individually.
+      # Repositories (and the global processed-schema cache) hold many
       # unrelated schemas, and blanket validation would let every schema
       # reject every document.
       class EngineContext
@@ -31,13 +33,20 @@ module Lutaml
         class << self
           # Compile repository schemas for the current adapter.
           #
+          # File-backed schemas compile as ONE schema set (Context#xsd_set)
+          # so imports resolve across documents — the per-file faces
+          # structurally cannot see import-declared nodes (moxml#483).
+          # Pathless schemas (minimal spec repositories) keep per-schema
+          # roundtrip compiles; the whole set falls back to per-file
+          # compiles when the adapter lacks set compilation.
+          #
           # @param repository [#all_schemas] Schema repository
           # @param context [Moxml::Context] Adapter context
           # @return [EngineContext, nil] nil when the adapter has no engine
           def compile(repository, context: Moxml::Context.new)
             return nil unless xsd_supported?(context)
 
-            schemas = repository.all_schemas.values.filter_map do |schema|
+            entries = repository.all_schemas.values.filter_map do |schema|
               # The engine's compiled automaton grows with the product
               # of maxOccurs along particle paths; past the guard cap
               # the compile has killed the process (particlesZ034_b) —
@@ -51,9 +60,77 @@ module Lutaml
               rescue NoMethodError
                 nil
               end
+              [schema, (path if path && File.exist?(path))]
+            end
+
+            new(context, compile_entries(context, entries))
+          end
+
+          # @return [Array<CompiledSchema>]
+          def compile_entries(context, entries)
+            file_entries = entries.select { |_, path| path }
+            per_file = file_entries.filter_map do |schema, path|
               compile_schema(context, schema, path)
             end
-            new(context, schemas)
+            pathless = entries.reject { |_, path| path }
+              .filter_map { |schema, _| compile_schema(context, schema) }
+
+            # Escalate to a schema set only when EVERY file-backed
+            # document compiled cleanly per-file. A failed native compile
+            # poisons the engine's state — repeated failures abort later
+            # validations — and a broken document would fail the set
+            # anyway, so broken schemas stay exactly as inert as the
+            # per-file path makes them. Healthy multi-document sets gain
+            # the cross-import visibility the per-file faces cannot have.
+            compiled_set = nil
+            if per_file.size == file_entries.size && file_entries.size > 1
+              compiled_set = compile_set(
+                context, file_entries.map { |_, path| path }
+              )
+              if compiled_set
+                per_file.each do |compiled|
+                  handle = compiled.handle
+                  handle.release if handle.is_a?(Moxml::XSD::Schema)
+                end
+              end
+            end
+
+            return [compiled_set] + pathless if compiled_set
+
+            per_file + pathless
+          end
+
+          # @return [CompiledSchema, nil] nil on a schema-level set
+          #   failure; raises through when the adapter cannot compile
+          #   sets at all (nokogiri pins the contract unsupported; older
+          #   moxml lacks the face)
+          def compile_set(context, paths)
+            return nil if paths.empty?
+
+            compiled = context.xsd_set(*paths)
+            if compiled.compile_error
+              # A rejected compile still owns native state — dropping
+              # the handle unreleased accumulates engine pools across
+              # batched suite runs.
+              compiled.release if compiled.is_a?(Moxml::XSD::Schema)
+              return nil
+            end
+
+            CompiledSchema.new(
+              compiled, nil, set_element_names(context, paths)
+            )
+          rescue Moxml::NotImplementedError, NoMethodError
+            raise
+          rescue StandardError
+            nil
+          end
+
+          def set_element_names(context, paths)
+            paths.flat_map do |path|
+              inspect_schema(context, File.read(path))[:element_names]
+            rescue StandardError
+              []
+            end
           end
 
           # An unassessable schema (not a Schema object, malformed model)
@@ -103,7 +180,10 @@ module Lutaml
               else
                 context.xsd(source)
               end
-            return nil if compiled.compile_error
+            if compiled.compile_error
+              compiled.release if compiled.is_a?(Moxml::XSD::Schema)
+              return nil
+            end
 
             info = inspect_schema(context, source)
             CompiledSchema.new(

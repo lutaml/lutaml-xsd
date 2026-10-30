@@ -115,7 +115,13 @@ module Lutaml
                 return
               end
             end
-            return unless type_def
+            if type_def.nil?
+              # A type-less declaration is xs:anyType; its fixed value
+              # still constrains the lexical content (isDefault070).
+              validate_fixed_content(xml_element, schema_element,
+                                     xml_element.text_content, collector)
+              return
+            end
 
             case type_def
             when Lutaml::Xsd::SimpleType
@@ -125,6 +131,11 @@ module Lutaml
             when Lutaml::Xsd::ComplexType
               return if abstract_type_used?(type_def, xml_element, collector)
 
+              # A fixed value constrains the element as a whole — the
+              # complex walk checks the type's model, this checks the
+              # declaration's own fixed content (isDefault077).
+              validate_fixed_content(xml_element, schema_element,
+                                     xml_element.text_content, collector)
               validate_complex_type_content(xml_element, type_def, collector)
             else
               # Handle built-in types
