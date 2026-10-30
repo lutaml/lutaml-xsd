@@ -154,8 +154,9 @@ module Lutaml
                 candidate.name == "type" && candidate.namespace&.uri ==
                   XSI_NAMESPACE
               end
-              override_local = override&.value.to_s.split(":").last
-              if override_local.match?(/\S/) &&
+              override_local =
+                override && override.value.to_s.split(":").last
+              if override_local &&
                   repository&.resolve_named_type(override_local)
                 return override_local
               end
