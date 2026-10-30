@@ -157,11 +157,11 @@ module Lutaml
           # from the declared type — the base chain must reach it. Lists
           # and unions derive from anySimpleType, not from their item or
           # member types, so a pure list/union never qualifies. A union
-          # base admits overrides NAMING any member (suite-arbitrated:
-          # types merely derived from a member do not qualify —
-          # elemT065/074). Complex types derive through both content
-          # kinds — a simpleContent extension of a simple base is a
-          # derivation too (elemT058).
+          # base admits overrides naming a member or validly deriving
+          # from one (elemT071); the override's block-kind comes from
+          # the member chain (elemT074). Complex types derive through
+          # both content kinds — a simpleContent extension of a simple
+          # base is a derivation too (elemT058).
           #
           # @return [Boolean]
           def validly_derived?(type, base_local, repository, depth = 0)
@@ -202,16 +202,22 @@ module Lutaml
             end
           end
 
-          # Whether the override is, or names, any member of the
-          # declared union. Types derived from a member do not qualify
-          # (suite-arbitrated, elemT065/074).
+          # Whether the override names a member of the declared union or
+          # validly derives from one (elemT071: R-A restricting member
+          # A is a valid override of Union-A; elemT074's rejection comes
+          # from its block, not the derivation).
           #
           # @return [Boolean]
-          def union_member_derived?(override, union_base, _repository, _depth)
+          def union_member_derived?(override, union_base, repository, depth)
             members = union_base.union.member_types.to_s.split(/\s+/)
               .map { |m| m.split(":").last }.reject(&:empty?)
+            return false if depth > 10
 
-            members.include?(override.name.to_s.split(":").last)
+            members.any? do |member_local|
+              override.name.to_s.split(":").last == member_local ||
+                validly_derived?(override, member_local, repository,
+                                 depth + 1)
+            end
           end
 
           # XSD 1.0 §3.3.4 / §3.4.6: block on the element declaration
@@ -228,7 +234,9 @@ module Lutaml
               if declared_local.to_s.empty?
                 any_type_derivation_kind(override_type)
               else
-                derivation_kind_from(override_type, declared_local)
+                derivation_kind_from(override_type, declared_local) ||
+                  member_derivation_kind(override_type, declared_local,
+                                         repository)
               end
             return false unless kind
 
@@ -259,6 +267,29 @@ module Lutaml
 
               part.class.name.include?("Extension") ? "extension" : "restriction"
             end
+          end
+
+          # Derivation kind of an override that derives from a MEMBER
+          # of the declared union — the member chain supplies the kind
+          # for block checks (elemT074: R-A restricts member A →
+          # "restriction", so block="restriction" forbids the
+          # override).
+          #
+          # @return [String, nil]
+          def member_derivation_kind(override_type, declared_local,
+                                     repository)
+            declared = repository&.resolve_named_type(declared_local)
+            return nil unless
+              declared.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType) &&
+                declared.union
+
+            declared.union.member_types.to_s.split(/\s+/)
+              .map { |m| m.split(":").last }.reject(&:empty?)
+              .each do |member|
+                kind = derivation_kind_from(override_type, member)
+                return kind if kind
+              end
+            nil
           end
 
           # The derivation kind of the override type when it directly
@@ -482,7 +513,8 @@ module Lutaml
             # Validate base type if present
             if simple_type.restriction
               validate_restriction(value, simple_type.restriction,
-                                   xml_element, collector)
+                                   xml_element, collector,
+                                   repository: repository)
             elsif simple_type.list
               validate_list(value, simple_type.list, xml_element, collector,
                             repository: repository)
@@ -499,7 +531,7 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_complex_type_content(xml_element, complex_type,
-                                            collector)
+                                            collector, repository: nil)
             # Complex type validation is handled by:
             # - AttributeValidationRule for attributes
             # - ContentModelValidationRule for content model
@@ -508,7 +540,7 @@ module Lutaml
             # Check for simple content
             if complex_type.simple_content
               validate_simple_content(xml_element, complex_type.simple_content,
-                                      collector)
+                                      collector, repository: repository)
             end
           end
 
@@ -519,15 +551,42 @@ module Lutaml
           # @param xml_element [XmlElement] The XML element
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_restriction(value, restriction, xml_element, collector)
+          def validate_restriction(value, restriction, xml_element, collector,
+                                   repository: nil)
             # Validate base type first
             if restriction.base
               validate_base_type(value, restriction.base, xml_element,
                                  collector)
             end
 
+            # List-derived types: pattern and enumeration facets apply
+            # to each ITEM of the list (XSD §4.3.4/4.3.5), and the
+            # lexical is whitespace-collapsed first (stH005/stG010).
+            if repository &&
+                list_derived?(restriction.base.to_s.split(":").last,
+                              repository)
+              validate_list_item_facets(value, restriction, xml_element,
+                                        collector)
+              return
+            end
+
             # Validate facets
-            validate_facets(value, restriction, xml_element, collector)
+            validate_facets(value, restriction, xml_element, collector,
+                            repository: repository)
+          end
+
+          # Pattern/enumeration validation per list item.
+          #
+          # @return [void]
+          def validate_list_item_facets(value, restriction, xml_element,
+                                        collector)
+            collapsed = value.to_s.gsub(/\s+/, " ").strip
+            collapsed.split.each do |item|
+              validate_pattern_facets(item, restriction, xml_element,
+                                      collector)
+              validate_enumeration_facets(item, restriction, xml_element,
+                                          collector)
+            end
           end
 
           # Validate base type
@@ -557,10 +616,12 @@ module Lutaml
           # @param xml_element [XmlElement] The XML element
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_facets(value, restriction, xml_element, collector)
+          def validate_facets(value, restriction, xml_element, collector,
+                              repository: nil)
             # Check each facet type
             validate_pattern_facets(value, restriction, xml_element, collector)
-            validate_length_facets(value, restriction, xml_element, collector)
+            validate_length_facets(value, restriction, xml_element, collector,
+                                   repository: repository)
             validate_range_facets(value, restriction, xml_element, collector)
             validate_enumeration_facets(value, restriction, xml_element,
                                         collector)
@@ -649,9 +710,18 @@ module Lutaml
           end
 
           def validate_length_facets(value, restriction, xml_element,
-                                     collector)
-            value_length =
-              measured_length(facet_value(value, restriction), restriction)
+                                     collector, repository: nil)
+            # Length facets measure characters/octets/items; QName and
+            # NOTATION value spaces are (uri, name) tuples and name
+            # references — the suite exempts them from length semantics
+            # (QName/NOTATION length families).
+            base_local = restriction.base.to_s.split(":").last
+            return if %w[QName NOTATION].include?(base_local)
+
+            value_length = measured_length(
+              facet_value(value, restriction), restriction,
+              repository: repository, base_local: base_local
+            )
 
             # Facet collections are arrays; an empty array must not be
             # treated as a present facet.
@@ -857,7 +927,18 @@ module Lutaml
             Array(union.simple_type).each do |member|
               dry = ResultCollector.new(ValidationConfiguration.new)
               if member.restriction
-                validate_facets(value, member.restriction, xml_element, dry)
+                # List-derived member bases are whitespace-collapsed:
+                # the raw element text keeps its indentation (stH005).
+                member_value = value
+                if repository &&
+                    list_derived?(
+                      member.restriction.base.to_s.split(":").last,
+                      repository,
+                    )
+                  member_value = value.to_s.gsub(/\s+/, " ").strip
+                end
+                validate_facets(member_value, member.restriction,
+                                xml_element, dry)
                 return true if dry.errors.empty? && dry.warnings.empty?
               else
                 return true
@@ -894,7 +975,8 @@ module Lutaml
           # @param simple_content [Lutaml::Xsd::SimpleContent] Simple content
           # @param collector [ResultCollector] Result collector
           # @return [void]
-          def validate_simple_content(xml_element, simple_content, collector)
+          def validate_simple_content(xml_element, simple_content, collector,
+                                      repository: nil)
             # Simple content means element has text content and attributes
             # Validate the text content as a simple type
             if simple_content.extension
@@ -904,7 +986,8 @@ module Lutaml
               # Restriction constrains a simple type
               value = xml_element.text_content
               validate_restriction(value, simple_content.restriction,
-                                   xml_element, collector)
+                                   xml_element, collector,
+                                   repository: repository)
             end
           end
 
