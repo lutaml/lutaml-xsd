@@ -134,7 +134,9 @@ module Lutaml
 
           # The declared type local name of the field's node: attribute
           # fields resolve through the selector node's declaration's
-          # type; element fields through their own declaration.
+          # type; element fields through their own declaration — or the
+          # instance's xsi:type when it overrides (the field's value
+          # space follows the INSTANCE type, idF-class).
           #
           # @return [String, nil]
           def field_declared_type(node, field, repository)
@@ -148,6 +150,16 @@ module Lutaml
 
               repository.declared_attribute_type(parent_type, attr_local)
             else
+              override = node.attributes.find do |candidate|
+                candidate.name == "type" && candidate.namespace&.uri ==
+                  XSI_NAMESPACE
+              end
+              override_local = override&.value.to_s.split(":").last
+              if override_local.match?(/\S/) &&
+                  repository&.resolve_named_type(override_local)
+                return override_local
+              end
+
               repository&.resolve(node.name, node.namespace_uri)
                 &.type.to_s.split(":").last.then do |t|
                   t.to_s.empty? ? nil : t
