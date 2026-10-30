@@ -120,28 +120,21 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4360/4696 (92.8%) |
+| pipeline | 4411/4696 (93.9%) |
 
-(2026-10-30, bundled-stack measurement on the refreshed lockfile —
-moxml 0.5.170 + lutaml-model 0.8.147, both within the existing
-gemspec floors.) Same-stack comparison: 1.2.43 baseline 3961
-(84.3%) → 4039 (86.0%) → 4090 (87.1%, PRs #181–#186 rounds) → 4360
-(92.8%), +399 net over the 1.2.43 baseline. The dependency refresh
-alone contributes +270: moxml 0.5.170 ships the facade builtin table
-(#485, with our date-lambda nil-leak correction) and the XSD-regex
-dialect repair (Regex 350→120), and its engine enforces strict
-wildcards/imports from file compiles; lutaml-model 0.8.147 fixes the
-namespace-less import parse crash (#1051) and the Redefine crash
-(#1025), un-parsing the addB187/schF1/wildG006/attgC007/mgO classes.
-The refreshed ENGINE shifts some verdicts the other way — new
-engine-side classes to triage: Wildcards 5→27, Schema 15→23,
-ComplexType 1→10 (strict wildcard/import enforcement now rejects
-documents the old engine accepted; same moxml queue). Blockades
-remaining: the new engine strictness classes (moxml#483/#485
-thread), production xsi:schemaLocation hint-following (owner
-decision). Suite @ 7bc3365 (rake setup re-clones every run). Batch
-workers MUST run under `bundle exec` — plain `ruby -Ilib` silently
-loads system gems.
+(2026-10-30, bundled-stack measurement on main with the escape +
+hint-following rounds.) Same-stack comparison: 1.2.43 baseline 3961
+(84.3%) → 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile
+refresh) → 4411 (93.9%), +450 net over the 1.2.43 baseline. The
+escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s to their XSD value
+spaces) collapses Regex 120→69; production hint-following (PR #196,
+instance_base:) makes multi-document instances validate fully. The
+dominant remainder is the moxml schema-set scope (Wildcards 27,
+Schema 23, ComplexType 10 — import-declared nodes invisible to
+single-file engine compiles, moxml#483 thread) and the IC tail
+(30 — the idF union-unique class needs union-member typed values;
+the engine's unique check is value-lexical, so those cases are
+engine-bound until moxml implements value-space tuples).
 
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
@@ -189,22 +182,19 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   narrows but cannot drop attributes, XSD 1.0 §3.4.2); the mgB/mgF
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
-- remaining (2026-10-30, bundled-stack complete measurement on the
-  refreshed lockfile (moxml 0.5.170 + lutaml-model 0.8.147),
-  4360/4696 = 92.8%): Regex (120 — remainder pipeline corners + new
-  engine dialect edges), IdentityConstraint (30), Wildcards (27 —
-  NEW engine-side strict-wildcard class, was 5 on moxml 0.5.168),
-  Schema (23 — likewise engine-shifted, was 15), DataTypes (21),
+- remaining (2026-10-30, bundled-stack complete measurement with the
+  escape + hint-following rounds, 4411/4696 = 93.9%): Regex (69 —
+  exotic dialect corners + character-reference shapes),
+  IdentityConstraint (30 — the idF union-unique class needs
+  union-member typed values; the engine's unique check is
+  value-lexical so those cases are engine-bound until moxml
+  implements value-space tuples), Wildcards (27 — engine schema-set
+  scope), Schema (23 — engine schema-set scope), DataTypes (21),
   Particles (20), Group (19), AttributeGroup (17), SimpleType (14),
-  Attribute (12), ComplexType (10 — engine-shifted, was 1),
+  Attribute (12), ComplexType (10 — engine schema-set scope),
   Additional (10), Element (8), Errata10 (2), ModelGroups (2),
-  Notations (1). The parse-crash blockades are GONE (lutaml-model
-  #1051/#1025 fixed); the dominant remainder is the refreshed
-  engine's strict wildcard/import enforcement (moxml#483/#485
-  thread) plus batch-crosstalk artifacts that pass in isolation.
-  Production xsi:schemaLocation hint-following is designed (harness
-  implements it) but not wired into ValidationJob — an owner
-  decision
+  Notations (1). Production xsi:schemaLocation hint-following SHIPPED
+  (PR #196, instance_base:)
 - IC ROUND (2026-10-28): (a) prefixed WILDCARD selector steps
   (`.//myNS:*`) now translate to namespace-uri() tests — they slipped
   through the earlier adaptation untouched and the key never built
