@@ -120,14 +120,20 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4411/4696 (93.9%) |
+| pipeline | 4430/4696 (94.3%) |
 
-(2026-10-30, bundled-stack measurement on main with the escape +
-hint-following rounds.) Same-stack comparison: 1.2.43 baseline 3961
-(84.3%) → 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile
-refresh) → 4411 (93.9%), +450 net over the 1.2.43 baseline. The
-escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s to their XSD value
-spaces) collapses Regex 120→69; production hint-following (PR #196,
+(2026-10-30, bundled-stack measurement on main with the escape,
+hint-following, pattern-alternative and identity-crash rounds.)
+Same-stack comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%) →
+4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411 (93.9%) → 4430
+(94.3%), +469 net over the 1.2.43 baseline. The escapes round (PR
+#197 — \d→\p{Nd}, \w/\W/\s to their XSD value spaces) collapses
+Regex 120→69; same-step pattern facets now behave as alternatives
+and whitespace-only text reaches the facets intact (PR #200), Regex
+69→59. The identity-field xsi:type lookup no longer crashes when the
+instance has no override (PR #201) — an earlier interim 93.9% register
+had counted that crash as 94 extra IdentityConstraint failures, so
+the IC tail is 30 as before. Production hint-following (PR #196,
 instance_base:) makes multi-document instances validate fully. The
 dominant remainder is the moxml schema-set scope (Wildcards 27,
 Schema 23, ComplexType 10 — import-declared nodes invisible to
@@ -139,8 +145,9 @@ engine-bound until moxml implements value-space tuples).
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
 (#181+#182) → 87.1% (#183–#186) → 92.8% (lockfile refresh:
-moxml 0.5.170 + lutaml-model 0.8.147). Failure concentration (the
-work queue, largest first):
+moxml 0.5.170 + lutaml-model 0.8.147) → 93.9% (escape + hint rounds)
+→ 94.3% (#200/#201 pattern alternatives and IC crash). Failure
+concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
   bulk carry the ENGINE's rejection (leptris XSD-regex dialect lacks
@@ -183,18 +190,32 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
 - remaining (2026-10-30, bundled-stack complete measurement with the
-  escape + hint-following rounds, 4411/4696 = 93.9%): Regex (69 —
-  exotic dialect corners + character-reference shapes),
-  IdentityConstraint (30 — the idF union-unique class needs
-  union-member typed values; the engine's unique check is
-  value-lexical so those cases are engine-bound until moxml
-  implements value-space tuples), Wildcards (27 — engine schema-set
-  scope), Schema (23 — engine schema-set scope), DataTypes (21),
-  Particles (20), Group (19), AttributeGroup (17), SimpleType (14),
-  Attribute (12), ComplexType (10 — engine schema-set scope),
-  Additional (10), Element (8), Errata10 (2), ModelGroups (2),
+  escape + hint-following + pattern-alternative + identity-crash
+  rounds, 4430/4696 = 94.3%): Regex (59 — exotic dialect corners +
+  character-reference shapes), IdentityConstraint (30 — the idF
+  union-unique class needs union-member typed values; the engine's
+  unique check is value-lexical so those cases are engine-bound until
+  moxml implements value-space tuples), Wildcards (27 — engine
+  schema-set scope), Schema (23 — engine schema-set scope), DataTypes
+  (17), Particles (20), Group (19), AttributeGroup (17), SimpleType
+  (12), Attribute (12), ComplexType (10 — engine schema-set scope),
+  Additional (10), Element (5), Errata10 (2), ModelGroups (2),
   Notations (1). Production xsi:schemaLocation hint-following SHIPPED
   (PR #196, instance_base:)
+- PATTERN ROUND (2026-10-30, PR #200): same-step pattern facets are
+  ALTERNATIVES (XSD Part 2 §4.3.4.4) in both the element and attribute
+  rules — p16/p17/p20; `XmlElement#text_content` now returns raw
+  character data, with emptiness a stripped check at the consumers, so
+  a lone newline matches `[\n]` (reG11/reG13). Regex 69→59, +10 net,
+  no family regressions (before/after list diff).
+- IC CRASH ROUND (2026-10-30, PR #201): the xsi:type local-name
+  lookup in `field_declared_type` ran `match?` on the nil result of
+  splitting an empty string, so every identity-constraints pass over a
+  document whose field nodes carry no xsi:type aborted with
+  rule_execution_error — 94 IdentityConstraint cases (every idF/idG
+  element-field case). Guarded; IC back to 198/228 (30 failures). The
+  interim 93.9% register predates the crash scan, so its IC=30 number
+  described code before this regression, not after it.
 - IC ROUND (2026-10-28): (a) prefixed WILDCARD selector steps
   (`.//myNS:*`) now translate to namespace-uri() tests — they slipped
   through the earlier adaptation untouched and the key never built
