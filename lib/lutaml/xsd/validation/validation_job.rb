@@ -98,7 +98,10 @@ module Lutaml
         # An instance whose root element is not declared by any schema in
         # the package can never be valid; surface it explicitly (the
         # engine's root-matching stays silent for unknown roots, and the
-        # rule engine skips unresolved declarations by design).
+        # rule engine skips unresolved declarations by design). A root
+        # carrying a RESOLVABLE xsi:type is assessed against that type
+        # instead (addB187) — the check only fires when nothing anchors
+        # the document.
         #
         # @return [void]
         def validate_root_declaration
@@ -107,6 +110,7 @@ module Lutaml
 
           resolver = SchemaDefinitionResolver.new(@repository)
           return if resolver.resolve(root.name, root.namespace_uri)
+          return if overridable_root?(root, resolver)
 
           @result_collector.add_error(
             ValidationError.new(
@@ -123,6 +127,21 @@ module Lutaml
           )
         rescue ResultCollector::StopValidationError
           # Stop validation if configured to stop on first error
+        end
+
+        # Whether the root anchors itself through xsi:type naming a type
+        # the package defines (XSD assessment of an undeclared root with
+        # an override).
+        #
+        # @return [Boolean]
+        def overridable_root?(root, resolver)
+          override = root.attributes.find do |attribute|
+            attribute.name == "type" &&
+              attribute.namespace_uri ==
+                "http://www.w3.org/2001/XMLSchema-instance"
+          end
+          local = override && override.value.to_s.split(":").last
+          !local.nil? && resolver.resolve_named_type(local)
         end
 
         # Validate identity constraints (key/keyref/unique)
