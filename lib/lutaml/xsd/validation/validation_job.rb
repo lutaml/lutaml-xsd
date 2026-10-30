@@ -32,10 +32,25 @@ module Lutaml
         # @param repository [SchemaRepository] The schema repository
         # @param rule_registry [RuleRegistry] Registry of validation rules
         # @param config [ValidationConfiguration] Validation configuration
+        # @param instance_base [String, nil] directory the instance was
+        #   read from — when given, xsi:schemaLocation /
+        #   xsi:noNamespaceSchemaLocation hints that resolve layer over
+        #   the package repository; without it hints are ignored
         #
         # @raise [ArgumentError] if required parameters are missing
-        def initialize(xml_content:, repository:, rule_registry:, config:)
+        def initialize(xml_content:, repository:, rule_registry:, config:,
+                       instance_base: nil)
           @xml_content = xml_content
+          @instance_base = instance_base
+          # Instance-hinted schemas (xsi:schemaLocation) layer over the
+          # package when the caller provides the instance's directory —
+          # relative hints never resolve against the working directory.
+          if @instance_base
+            hinted = HintedSchemaRepository.from_hints(
+              repository, xml_content, @instance_base
+            )
+            repository = hinted if hinted
+          end
           @repository = repository
           @rule_registry = rule_registry
           @config = config
