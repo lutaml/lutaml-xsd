@@ -77,7 +77,7 @@ module Lutaml
             return nil unless id_typed?(schema_element, repository)
 
             text = xml_element.text_content.to_s
-            text.empty? ? nil : text
+            text.strip.empty? ? nil : text
           end
 
           # Whether the declaration's type is xs:ID — a direct builtin

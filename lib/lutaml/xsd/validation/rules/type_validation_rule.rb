@@ -424,7 +424,7 @@ module Lutaml
           # @return [String]
           def effective_text(xml_element, declared)
             text = xml_element.text_content.to_s
-            return text unless text.empty?
+            return text unless text.strip.empty?
             return text unless declared.is_a?(Lutaml::Xml::Schema::Xsd::Element)
 
             supplied = [declared.fixed, declared.default].compact.find do |value|
@@ -641,24 +641,14 @@ module Lutaml
             patterns = Array(restriction.pattern)
             return if patterns.empty?
 
-            patterns.each do |pattern|
+            # Multiple pattern facets on ONE restriction step are
+            # alternatives (XSD Part 2 §4.3.4.4): valid when the value
+            # matches any of them (p16). Steps in a derivation chain
+            # each get their own call and remain conjunctive.
+            candidates = patterns.filter_map do |pattern|
               pattern_value = pattern.value || pattern.to_s
-
               begin
-                regex = XsdRegex.to_regexp(pattern_value)
-                next if value.match?(regex)
-
-                report_error(
-                  collector,
-                  code: "pattern_mismatch",
-                  message: "Value '#{value}' does not match pattern " \
-                           "'#{pattern_value}'",
-                  location: xml_element.xpath,
-                  context: {
-                    value: value,
-                    pattern: pattern_value,
-                  },
-                )
+                [pattern_value, XsdRegex.to_regexp(pattern_value)]
               rescue RegexpError => e
                 report_warning(
                   collector,
@@ -666,8 +656,24 @@ module Lutaml
                   message: "Invalid pattern in schema: #{e.message}",
                   location: xml_element.xpath,
                 )
+                nil
               end
             end
+            return if candidates.empty?
+            return if candidates.any? { |(_, regex)| value.match?(regex) }
+
+            unmatched = candidates.map(&:first).join(" | ")
+            report_error(
+              collector,
+              code: "pattern_mismatch",
+              message: "Value '#{value}' does not match pattern " \
+                       "'#{unmatched}'",
+              location: xml_element.xpath,
+              context: {
+                value: value,
+                pattern: unmatched,
+              },
+            )
           end
 
           # Validate length facets
