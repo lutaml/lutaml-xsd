@@ -3,6 +3,7 @@
 require "spec_helper"
 require "lutaml/xsd"
 require "lutaml/xsd/validation"
+require "tmpdir"
 require "lutaml/xsd/conformance/runner"
 
 RSpec.describe "wildcard scoping, anyType and default content" do
@@ -279,6 +280,75 @@ RSpec.describe "wildcard scoping, anyType and default content" do
 
       expect(codes(result)).not_to include("sequence_min_occurs_violation")
       expect(codes(result)).not_to include("min_occurs_violation")
+    end
+  end
+
+  describe "instance schema-location hints" do
+    let(:entry_schema) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:anyAttribute namespace="##any"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+    let(:companion_schema) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="companion">
+          <xs:attribute name="known" type="xs:string"/>
+        </xs:schema>
+      XSD
+    end
+
+    def write_fixtures
+      dir = Dir.mktmpdir
+      File.write(File.join(dir, "entry.xsd"), entry_schema)
+      File.write(File.join(dir, "companion.xsd"), companion_schema)
+      instance = <<~XML
+        <root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="entry.xsd"
+              xsi:schemaLocation="companion companion.xsd"
+              xmlns:c="companion" c:known="x"/>
+      XML
+      instance_path = File.join(dir, "instance.xml")
+      File.write(instance_path, instance)
+      [dir, instance_path, instance]
+    end
+
+    it "follows xsi hints when the instance base is given" do
+      dir, _path, instance = write_fixtures
+
+      schema = Lutaml::Xml::Schema::Xsd.parse(entry_schema, location: File.join(dir, "entry.xsd"))
+      config = Lutaml::Xsd::Validation::ValidationConfiguration.new
+      job = Lutaml::Xsd::Validation::ValidationJob.new(
+        xml_content: instance,
+        repository: Lutaml::Xsd::Conformance::Runner::Repository.new({ nil => schema }),
+        rule_registry: Lutaml::Xsd::Validation::RuleRegistry.default(config),
+        config: config,
+        instance_base: dir,
+      )
+
+      expect(codes(job.execute)).not_to include("wildcard_undeclared_attribute")
+      expect(codes(job.execute)).not_to include("unexpected_attribute")
+    end
+
+    it "ignores hints without an instance base" do
+      dir, _path, instance = write_fixtures
+
+      schema = Lutaml::Xml::Schema::Xsd.parse(entry_schema, location: File.join(dir, "entry.xsd"))
+      config = Lutaml::Xsd::Validation::ValidationConfiguration.new
+      job = Lutaml::Xsd::Validation::ValidationJob.new(
+        xml_content: instance,
+        repository: Lutaml::Xsd::Conformance::Runner::Repository.new({ nil => schema }),
+        rule_registry: Lutaml::Xsd::Validation::RuleRegistry.default(config),
+        config: config,
+      )
+
+      expect(codes(job.execute)).to include("wildcard_undeclared_attribute")
     end
   end
 
