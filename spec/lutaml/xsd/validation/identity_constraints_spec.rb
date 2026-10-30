@@ -109,4 +109,43 @@ RSpec.describe "identity constraints (key/keyref/unique)" do
     expect(result.valid?).to be(false)
     expect(result.errors.map(&:code)).to include("duplicate_key_violation")
   end
+
+  context "with an element-keyed field and no xsi:type override" do
+    let(:xsd_source) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="catalog">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="item" maxOccurs="unbounded">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="code" type="xs:string"/>
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+              </xs:sequence>
+            </xs:complexType>
+            <xs:unique name="codeKey">
+              <xs:selector xpath="item"/>
+              <xs:field xpath="code"/>
+            </xs:unique>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "evaluates the field through the declaration type" do
+      result = validator.validate(
+        "<catalog>" \
+        "<item><code>a</code></item>" \
+        "<item><code>a</code></item>" \
+        "</catalog>",
+      )
+
+      codes = result.errors.map(&:code)
+      expect(codes).not_to include("rule_execution_error")
+      expect(codes).to include("duplicate_unique_violation")
+    end
+  end
 end
