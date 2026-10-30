@@ -330,9 +330,12 @@ module Lutaml
         end
 
         # Length units follow the base type: binary types measure octets,
-        # list types count items.
-        def measured_length(value, restriction)
-          base = restriction.base.to_s.split(":").last
+        # list types count items — including named types whose chain
+        # reaches a list (stG002: maxLength on a restriction of a list
+        # of integers counts entries).
+        def measured_length(value, restriction, repository: nil,
+                            base_local: nil)
+          base = base_local || restriction.base.to_s.split(":").last
           text = value.to_s
           case base
           when "hexBinary"
@@ -343,7 +346,31 @@ module Lutaml
           when *LIST_BASES
             text.split(/\s+/).reject(&:empty?).length
           else
-            text.length
+            if repository && list_derived?(base, repository)
+              text.split(/\s+/).reject(&:empty?).length
+            else
+              text.length
+            end
+          end
+        end
+
+        # @return [Boolean]
+        def list_derived?(local, repository, depth = 0)
+          return false if depth > 8
+
+          type = repository.resolve_named_type(local)
+          return false unless
+            type.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
+
+          if type.list
+            true
+          elsif type.restriction
+            list_derived?(
+              type.restriction.base.to_s.split(":").last, repository,
+              depth + 1
+            )
+          else
+            false
           end
         end
       end
