@@ -120,38 +120,45 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4436/4696 (94.5%) |
+| pipeline | 4439/4696 (94.5%) |
 
 (2026-10-30, bundled-stack measurement on main with the escape,
-hint-following, pattern-alternative, identity-crash, engine-set and
-engine-refresh rounds; engine leptris 1.9.394.0.) Same-stack
-comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%) → 4090
-(87.1%) → 4360 (92.8%, lockfile refresh) → 4411 (93.9%) → 4430
-(94.3%) → 4435 (94.4%) → 4436 (94.5%), +475 net over the 1.2.43
-baseline. The escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s to their
-XSD value spaces) collapses Regex 120→69; same-step pattern facets now
-behave as alternatives and whitespace-only text reaches the facets
-intact (PR #200), Regex 69→59. The identity-field xsi:type lookup no
-longer crashes when the instance has no override (PR #201) — an
-earlier interim 93.9% register had counted that crash as 94 extra
-IdentityConstraint failures, so the IC tail is 30 as before. The
-engine compiles file-backed schemas as a SCHEMA SET (Context#xsd_set,
-moxml#487 — PR #203), so cross-document components (substitution
-members above all) are visible to the engine; fixed content is
-checked on type-less and complex-typed elements and an undeclared
-root with a resolvable xsi:type is assessed instead of rejected
-(isDefault070/077, addB187). The engine refresh (leptris 1.9.394.0)
-adds attMa003/004; the strict-wildcard/attribute admission gap now
-points at MOXML's facade SchemaRules re-check (single-document
-source), filed moxml#510 — the raw engine admits these documents
-since leptris#1920, but the facade finding still fires and even
-regressed ctE019 on the refresh. Production hint-following (PR #196,
+hint-following, pattern-alternative, identity-crash, engine-set,
+engine-refresh and IC value-space rounds; engine leptris 1.9.394.0.)
+Same-stack comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%) →
+4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411 (93.9%) → 4430
+(94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%), +478 net over
+the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s
+to their XSD value spaces) collapses Regex 120→69; same-step pattern
+facets now behave as alternatives and whitespace-only text reaches
+the facets intact (PR #200), Regex 69→59. The identity-field xsi:type
+lookup no longer crashes when the instance has no override (PR #201)
+— an earlier interim 93.9% register had counted that crash as 94
+extra IdentityConstraint failures, so the IC tail is 30 as before.
+The engine compiles file-backed schemas as a SCHEMA SET
+(Context#xsd_set, moxml#487 — PR #203), so cross-document components
+(substitution members above all) are visible to the engine; fixed
+content is checked on type-less and complex-typed elements and an
+undeclared root with a resolvable xsi:type is assessed instead of
+rejected (isDefault070/077, addB187). The engine refresh (leptris
+1.9.394.0) adds attMa003/004; the strict-wildcard/attribute admission
+gap now points at MOXML's facade SchemaRules re-check
+(single-document source), filed moxml#510 — the raw engine admits
+these documents since leptris#1920, but the facade finding still
+fires and even regressed ctE019 on the refresh. Identity fields now
+compare in their VALUE-SPACE FAMILIES (PR #205): decimal and its
+integer derivatives share one space (idL090 holds), float/double and
+boolean are disjoint primitives — same lexical in disjoint spaces is
+a distinct identity (idF012/013/014) — and the engine's lexical-only
+duplicate findings for constraints the Ruby rule evaluated clean are
+arbitrated out (blast-radius scanned: one engine-decided IC case
+exists and its finding is not duplicate-shaped, idG006, so the
+arbitration does not touch it). Production hint-following (PR #196,
 instance_base:) makes multi-document instances validate fully. The
 dominant remainder is that facade re-check (Wildcards 26, Schema 23,
-ComplexType 10, moxml#510) and the IC tail (30 — value-space
-distinctness idF012/013/014, attribute-default fields idF016/017,
-redefine extensions idF025/030/034, plus idG/idH/idZ under-detections
-— the engine's unique check is value-lexical).
+ComplexType 10, moxml#510) and the IC tail (27 — attribute-default
+fields idF016/017, redefine extensions idF025/030/034, plus
+idG/idH/idZ under-detections).
 
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
@@ -159,7 +166,8 @@ Suite history (same-stack where known): 71.8% baseline → 83.5%
 moxml 0.5.170 + lutaml-model 0.8.147) → 93.9% (escape + hint rounds)
 → 94.3% (#200/#201 pattern alternatives and IC crash) → 94.4%
 (#203 engine schema-set + fixed-content/root rounds) → 94.5%
-(engine refresh leptris 1.9.394.0). Failure
+(engine refresh leptris 1.9.394.0; IC value-space round PR #205,
+4439). Failure
 concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
@@ -204,18 +212,29 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   via resolved_element_order) are fixed
 - remaining (2026-10-30, bundled-stack complete measurement with the
   escape + hint-following + pattern-alternative + identity-crash +
-  engine-set + engine-refresh rounds, 4436/4696 = 94.5%): Regex (59 —
-  exotic dialect corners + character-reference shapes),
-  IdentityConstraint (30 — value-space distinctness idF012/013/014,
-  attribute-default fields idF016/017, redefine extensions
-  idF025/030/034, idG/idH/idZ under-detections; the engine's unique
-  check is value-lexical), Wildcards (26), Schema (23 — facade
+  engine-set + engine-refresh + IC value-space rounds, 4439/4696 =
+  94.5%): Regex (59 — exotic dialect corners + character-reference
+  shapes), IdentityConstraint (27 — attribute-default fields
+  idF016/017, redefine extensions idF025/030/034, idG/idH/idZ
+  under-detections), Wildcards (26), Schema (23 — facade
   strict-wildcard re-check, moxml#510), DataTypes (17), Particles
   (20), Group (19), AttributeGroup (17), SimpleType (12), Attribute
   (10), ComplexType (10 — moxml#510 attribute-side twin, ctE019),
   Additional (7), Element (5), Errata10 (2), ModelGroups (2),
   Notations (1). Production xsi:schemaLocation hint-following SHIPPED
   (PR #196, instance_base:)
+- IC VALUE-SPACE ROUND (2026-10-30, PR #205): identity field keys are
+  tagged with their value-space FAMILY — decimal + integer derivatives
+  share one space (idL090 holds), float/double and boolean are DISJOINT
+  primitives, so identical lexicals in disjoint spaces are distinct
+  identities (idF012 boolean-1 vs decimal-1, idF013 float vs decimal,
+  idF014 float vs unsignedByte; the instance xsi:type anchors the
+  space even when it names a built-in). The ENGINE duplicate findings
+  for constraints the Ruby rule evaluated clean are arbitrated out
+  after the identity pass (the engine unique check is lexical-only);
+  blast-radius scan: exactly ONE engine-decided IC case exists
+  (idG006) and its finding is missing-field-shaped, not
+  duplicate-shaped, so the arbitration touches nothing. IC 30 → 27.
 - ENGINE REFRESH ROUND (2026-10-30): lockfile leptris 1.9.390.3 →
   1.9.394.0 (engine train: xs:override base chase leptris#1913,
   strict-wildcard admission across sets leptris#1920, binding floor
