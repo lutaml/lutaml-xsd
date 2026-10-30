@@ -120,45 +120,34 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4090/4696 (87.1%) |
+| pipeline | 4360/4696 (92.8%) |
 
-(2026-10-29, bundled-stack measurement on main @ 274f75b, 1.2.50 —
-both runs below use the LOCKFILE's gems, what CI ships.) Same-stack
-comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%, #181+182) →
-4090 (87.1%), +129 net over the 1.2.43 baseline. Rounds landing
-since the 86.0% register: the lexical value-space round (PR #181 —
-DataTypes 97→43), the Additional correctness round (PR #182 —
-Additional 41→23, occurrence-rule abstentions, xs:all own bounds,
-resolver dedupe by document signature, anyType attributes, xml:*
-built-ins, xsi:type built-in overrides, fixed/default content,
-skip-subtree suppression, engine xsd_file), the attribute FORM round
-(PR #183 — Attribute 30→12: explicit form > attributeFormDefault,
-precomputed per declaration), the wildcard STRICT-default round
-(PR #184 — absent processContents = strict, own-namespace strict
-declaration checks, whitespace-preserving text_content +
-whiteSpace-aware length facets), the multi-document round (PR #185 —
-chameleon includes adopt the includer's namespace/defaults, harness
-follows xsi:schemaLocation hints, attribute wildcard UNION;
-ComplexType 9→1, ctE/ctH/ctL classes), and nested attributeGroup
-expansion (PR #186). File-compile and hint-following are faithful to
-the schema author's view and shift some verdicts to ENGINE-side
-classes (moxml#483 family: regex dialect from file, schema-set
-scope, same-root-name crosstalk — reA1/reA7, schG7/idG022, schA1
-multi-hint artifacts). Remaining blockades: lutaml-model#1051
-(namespace-less import parse crash), lutaml-model#1025 (Redefine
-crash), moxml#483. ENVIRONMENT CAVEAT: earlier register numbers
-(88.5/88.6%) were measured against mise's UNPINNED system gems
-(lutaml-model 0.8.132 + a newer moxml whose released regex-dialect
-fix predates our lockfile pin) — Regex shows 350 fails bundled vs
-128 there; closing that gap is a moxml/lockfile version bump, an
-owner decision, not a pipeline change. Suite @ 7bc3365 (rake setup
-re-clones every run). Batch workers MUST run under `bundle exec` —
-plain `ruby -Ilib` silently loads system gems.
+(2026-10-30, bundled-stack measurement on the refreshed lockfile —
+moxml 0.5.170 + lutaml-model 0.8.147, both within the existing
+gemspec floors.) Same-stack comparison: 1.2.43 baseline 3961
+(84.3%) → 4039 (86.0%) → 4090 (87.1%, PRs #181–#186 rounds) → 4360
+(92.8%), +399 net over the 1.2.43 baseline. The dependency refresh
+alone contributes +270: moxml 0.5.170 ships the facade builtin table
+(#485, with our date-lambda nil-leak correction) and the XSD-regex
+dialect repair (Regex 350→120), and its engine enforces strict
+wildcards/imports from file compiles; lutaml-model 0.8.147 fixes the
+namespace-less import parse crash (#1051) and the Redefine crash
+(#1025), un-parsing the addB187/schF1/wildG006/attgC007/mgO classes.
+The refreshed ENGINE shifts some verdicts the other way — new
+engine-side classes to triage: Wildcards 5→27, Schema 15→23,
+ComplexType 1→10 (strict wildcard/import enforcement now rejects
+documents the old engine accepted; same moxml queue). Blockades
+remaining: the new engine strictness classes (moxml#483/#485
+thread), production xsi:schemaLocation hint-following (owner
+decision). Suite @ 7bc3365 (rake setup re-clones every run). Batch
+workers MUST run under `bundle exec` — plain `ruby -Ilib` silently
+loads system gems.
 
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
-(#181+#182) → 87.1% (#183–#186). Failure concentration (the work
-queue, largest first):
+(#181+#182) → 87.1% (#183–#186) → 92.8% (lockfile refresh:
+moxml 0.5.170 + lutaml-model 0.8.147). Failure concentration (the
+work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
   bulk carry the ENGINE's rejection (leptris XSD-regex dialect lacks
@@ -200,25 +189,22 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   narrows but cannot drop attributes, XSD 1.0 §3.4.2); the mgB/mgF
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
-- remaining (2026-10-29, bundled-stack complete measurement on 1.2.50
-  main, 4090/4696 = 87.1%): Regex (350 — bulk ENGINE-side dialect
-  gap, the fix ships in a newer moxml than our lockfile pins; owner
-  version bump), DataTypes (43), Element (34), SimpleType (24),
-  Particles (23), IdentityConstraint (32), Additional (23), Group
-  (20), AttributeGroup (16), Schema (15), Attribute (12),
-  ModelGroups (7), Wildcards (5), Errata10 (1), ComplexType (1).
-  Blockades: engine-side (moxml#483: implicit anyType, skip
-  wildcards, attributeGroup ordering, schema-set
-  substitution/hints, file-compile fixed-value comparison,
-  same-root-name crosstalk), model-side (lutaml-model#1051
-  namespace-less import crash — addB187/schF1/wildG006-class;
-  #1025 Redefine crash — attgC007/attLa005/mgO006-class), and
-  batch-crosstalk artifacts that pass in isolation (the family run
-  shares one process across cases). Known artifact classes: the
-  multi-hint diagnostics walk names containers by class
-  ('Sequence') instead of particle names; production
-  xsi:schemaLocation hint-following is designed (harness implements
-  it) but not wired into ValidationJob — an owner decision
+- remaining (2026-10-30, bundled-stack complete measurement on the
+  refreshed lockfile (moxml 0.5.170 + lutaml-model 0.8.147),
+  4360/4696 = 92.8%): Regex (120 — remainder pipeline corners + new
+  engine dialect edges), IdentityConstraint (30), Wildcards (27 —
+  NEW engine-side strict-wildcard class, was 5 on moxml 0.5.168),
+  Schema (23 — likewise engine-shifted, was 15), DataTypes (21),
+  Particles (20), Group (19), AttributeGroup (17), SimpleType (14),
+  Attribute (12), ComplexType (10 — engine-shifted, was 1),
+  Additional (10), Element (8), Errata10 (2), ModelGroups (2),
+  Notations (1). The parse-crash blockades are GONE (lutaml-model
+  #1051/#1025 fixed); the dominant remainder is the refreshed
+  engine's strict wildcard/import enforcement (moxml#483/#485
+  thread) plus batch-crosstalk artifacts that pass in isolation.
+  Production xsi:schemaLocation hint-following is designed (harness
+  implements it) but not wired into ValidationJob — an owner
+  decision
 - IC ROUND (2026-10-28): (a) prefixed WILDCARD selector steps
   (`.//myNS:*`) now translate to namespace-uri() tests — they slipped
   through the earlier adaptation untouched and the key never built
