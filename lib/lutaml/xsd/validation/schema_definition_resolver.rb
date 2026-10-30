@@ -212,22 +212,33 @@ module Lutaml
           unsignedByte
         ].freeze
 
-        # Whether a named simple type is numeric — builtin numerics
-        # directly, derived named types through their restriction base
-        # chains. Lists and unions are not numeric.
+        # The primitive value-space family a named simple type belongs
+        # to: :decimal covers decimal and its integer derivatives (one
+        # overlapping space, decimal 1 == integer 1), :float covers
+        # float/double (a DISJOINT primitive — float 1 is not decimal 1),
+        # :boolean its own. Derived named types resolve through
+        # restriction base chains.
         #
         # @param local_name [String]
         # @param depth [Integer] recursion guard
-        # @return [Boolean]
-        def numeric_simple_type?(local_name, depth = 0)
-          return false if depth > 10
-          return true if NUMERIC_BUILTINS.include?(local_name.to_s)
+        # @return [Symbol, nil]
+        def value_space_family(local_name, depth = 0)
+          return nil if depth > 10
+
+          family = if %w[float double].include?(local_name.to_s)
+                     :float
+                   elsif local_name.to_s == "boolean"
+                     :boolean
+                   elsif NUMERIC_BUILTINS.include?(local_name.to_s)
+                     :decimal
+                   end
+          return family if family
 
           named = resolve_named_type(local_name)
-          return false unless named.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
-          return false unless named.restriction
+          return nil unless named.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
+          return nil unless named.restriction
 
-          numeric_simple_type?(
+          value_space_family(
             named.restriction.base.to_s.split(":").last, depth + 1
           )
         end
