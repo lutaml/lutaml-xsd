@@ -136,20 +136,20 @@ module Lutaml
 
         # Get text content of the element
         #
+        # Raw character data: whitespace is significant — a lone newline
+        # is a value a pattern can match ([\n]). Emptiness consumers
+        # strip explicitly.
+        #
         # @return [String]
         def text_content
-          text = @moxml_element.text.to_s
-          # Indentation-only text is emptiness, not content — but real
-          # content keeps its whitespace (whiteSpace=preserve lengths,
-          # ctD028).
-          text.match?(/\A\s*\z/) ? "" : text
+          @moxml_element.text.to_s
         end
 
         # Check if element has text content
         #
         # @return [Boolean]
         def has_text?
-          !text_content.empty?
+          !text_content.strip.empty?
         end
 
         # Check if element has child elements

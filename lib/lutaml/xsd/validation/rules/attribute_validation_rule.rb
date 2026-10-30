@@ -698,17 +698,20 @@ module Lutaml
             patterns = Array(restriction.pattern)
             return nil if patterns.empty?
 
-            violated = patterns.find do |pattern|
+            # Pattern facets on one restriction step are alternatives
+            # (XSD Part 2 §4.3.4.4) — p16.
+            compiled = patterns.filter_map do |pattern|
               pattern_value = pattern.value || pattern.to_s
               begin
-                !value.match?(XsdRegex.to_regexp(pattern_value))
+                [pattern_value, XsdRegex.to_regexp(pattern_value)]
               rescue RegexpError
-                false
+                nil
               end
             end
-            return nil unless violated
+            return nil if compiled.empty?
+            return nil if compiled.any? { |(_, regex)| value.match?(regex) }
 
-            pattern_value = violated.value || violated.to_s
+            pattern_value = compiled.map(&:first).join(" | ")
             {
               code: "attribute_pattern_violation",
               message: "has value '#{value}' that does not match " \

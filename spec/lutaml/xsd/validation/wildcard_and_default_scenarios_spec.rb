@@ -513,4 +513,85 @@ RSpec.describe "wildcard scoping, anyType and default content" do
       expect(codes(result)).not_to include("unexpected_attribute")
     end
   end
+
+  describe "pattern facets" do
+    it "matches a whitespace-only value against a whitespace pattern" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="doc">
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:pattern value="[\\n]"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<doc>\n</doc>")
+
+      expect(codes(result)).not_to include("pattern_mismatch")
+    end
+
+    it "treats multiple patterns on one step as alternatives" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="doc">
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:pattern value="[abc]+"/>
+                <xs:pattern value="[123]+"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<doc>112233123</doc>")
+
+      expect(codes(result)).not_to include("pattern_mismatch")
+    end
+
+    it "reports only when no pattern on the step matches" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="doc">
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:pattern value="[abc]+"/>
+                <xs:pattern value="[123]+"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, "<doc>x</doc>")
+
+      expect(codes(result)).to include("pattern_mismatch")
+    end
+
+    it "treats multiple patterns on an attribute restriction as alternatives" do
+      schema = <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="doc">
+            <xs:complexType>
+              <xs:attribute name="att">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:pattern value="[abc]+"/>
+                    <xs:pattern value="[123]+"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:attribute>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+
+      result = run_pipeline(schema, '<doc att="112233123"/>')
+
+      expect(codes(result)).not_to include("attribute_pattern_violation")
+    end
+  end
 end
