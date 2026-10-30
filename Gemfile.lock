@@ -46,23 +46,23 @@ GEM
     fiddle (1.1.8)
     json (3.1.0)
     language_server-protocol (3.17.0.6)
-    leptris (1.9.390.3-aarch64-linux)
+    leptris (1.9.394.0-aarch64-linux)
       ffi (~> 1.15)
-    leptris (1.9.390.3-aarch64-linux-musl)
+    leptris (1.9.394.0-aarch64-linux-musl)
       ffi (~> 1.15)
-    leptris (1.9.390.3-arm-linux)
+    leptris (1.9.394.0-arm-linux)
       ffi (~> 1.15)
-    leptris (1.9.390.3-arm-linux-musl)
+    leptris (1.9.394.0-arm-linux-musl)
       ffi (~> 1.15)
-    leptris (1.9.390.3-arm64-darwin)
+    leptris (1.9.394.0-arm64-darwin)
       ffi (~> 1.15)
-    leptris (1.9.390.3-x64-mingw-ucrt)
+    leptris (1.9.394.0-x64-mingw-ucrt)
       ffi (~> 1.15)
-    leptris (1.9.390.3-x86_64-darwin)
+    leptris (1.9.394.0-x86_64-darwin)
       ffi (~> 1.15)
-    leptris (1.9.390.3-x86_64-linux)
+    leptris (1.9.394.0-x86_64-linux)
       ffi (~> 1.15)
-    leptris (1.9.390.3-x86_64-linux-musl)
+    leptris (1.9.394.0-x86_64-linux-musl)
       ffi (~> 1.15)
     lint_roller (1.1.0)
     liquid (5.14.0)
@@ -251,15 +251,15 @@ CHECKSUMS
   fiddle (1.1.8) sha256=7fa8ee3627271497f3add5503acdbc3f40b32f610fc1cf49634f083ef3f32eee
   json (3.1.0) sha256=3ce7ccf8fde58960177a3a756c31f292a4c1e1dedee884547096a5b0604e3bd8
   language_server-protocol (3.17.0.6) sha256=5ef2c0c138f8267e1bc631d3328347d354f96724b0af22f2c79516120443b7f0
-  leptris (1.9.390.3-aarch64-linux) sha256=f2c627c2148091a23ad8d989ece41753b15bb09d15b237cba0d69a19a0f804ad
-  leptris (1.9.390.3-aarch64-linux-musl) sha256=1e76c9d3f2c503b1dd481179006263b13779e0e8aa6d38996e88904f6d42fd4c
-  leptris (1.9.390.3-arm-linux) sha256=23baa99f4de4b2d5454dd0ec7e9bd9eb2f0f3c40a85e05a487b430c36f731139
-  leptris (1.9.390.3-arm-linux-musl) sha256=71de45525a4537c20759a0bfac6d7fc35b750b6e7909fe5ccc50b059d311d946
-  leptris (1.9.390.3-arm64-darwin) sha256=0104b35c5d04ad947606e934ae3fdaea96013fbabd7c6c94baffab8c7e226bf9
-  leptris (1.9.390.3-x64-mingw-ucrt) sha256=4a35edf79fd388645828aa9951cf0ba9b91089aef68ecaed2e2ae24efc6b3984
-  leptris (1.9.390.3-x86_64-darwin) sha256=2738b4288d533a3614e95d9e66f1e02ca323eb4381c13dc78defe871ccb8a2e4
-  leptris (1.9.390.3-x86_64-linux) sha256=2ed9511f616ff58d186111931e62188c3e9f5fc68765978c080053197dd32ae4
-  leptris (1.9.390.3-x86_64-linux-musl) sha256=d4ef9bfae8b2928d65153687435061ccc60a847da702137e7a341e97a09cd61e
+  leptris (1.9.394.0-aarch64-linux) sha256=b5c371e230359d1983c157748c9f869c22c255d109ce56618a59fac377bd0389
+  leptris (1.9.394.0-aarch64-linux-musl) sha256=7c72b49db7249adfb6dd69ea2754a307e95296d88a4b5cd3813705016d895f61
+  leptris (1.9.394.0-arm-linux) sha256=8cf0e4d3e75f5e91f5bb1428c22c5742b3d719b9c0114d44671e1acfe81aa3e8
+  leptris (1.9.394.0-arm-linux-musl) sha256=72ac9350562b773e1b938739616fc7d54f07111a92320d779b4c83142d5d059d
+  leptris (1.9.394.0-arm64-darwin) sha256=3f44c622b436ba3dcdb928b699fa4cf070689e456343398ed07c1cad422b9213
+  leptris (1.9.394.0-x64-mingw-ucrt) sha256=bf3678e46483f0bf1c8e044e3e365208e8b00c3902adca53a1a25b4c484fecb7
+  leptris (1.9.394.0-x86_64-darwin) sha256=4e9686e9ad0b8d625d6807ce2891e8cea8a4404f90649441602074eef1fb0f18
+  leptris (1.9.394.0-x86_64-linux) sha256=351c5f8c3125a3e1058adf5311fee2135514bc2fbb2889722f1558e1e6bfd781
+  leptris (1.9.394.0-x86_64-linux-musl) sha256=d15f8a3e1f4b1f2388e124d44efcef699de27ef3eae2ec2ec6a0fad137399bda
   lint_roller (1.1.0) sha256=2c0c845b632a7d172cb849cc90c1bce937a28c5c8ccccb50dfd46a485003cc87
   liquid (5.14.0) sha256=e1020c2b2ee58c7a4d3bfdc7a331537bd27a783353748bff0bf27c6ac0c17065
   lutaml-model (0.8.147) sha256=0c864fafe44be5316a618fb3f2fdc3ab49ebc8db263c4ca97aeeeaa4d28895db

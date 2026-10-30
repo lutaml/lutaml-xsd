@@ -120,13 +120,14 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4435/4696 (94.4%) |
+| pipeline | 4436/4696 (94.5%) |
 
 (2026-10-30, bundled-stack measurement on main with the escape,
-hint-following, pattern-alternative, identity-crash and engine-set
-rounds.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) → 4039
-(86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411
-(93.9%) → 4430 (94.3%) → 4435 (94.4%), +474 net over the 1.2.43
+hint-following, pattern-alternative, identity-crash, engine-set and
+engine-refresh rounds; engine leptris 1.9.394.0.) Same-stack
+comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%) → 4090
+(87.1%) → 4360 (92.8%, lockfile refresh) → 4411 (93.9%) → 4430
+(94.3%) → 4435 (94.4%) → 4436 (94.5%), +475 net over the 1.2.43
 baseline. The escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s to their
 XSD value spaces) collapses Regex 120→69; same-step pattern facets now
 behave as alternatives and whitespace-only text reaches the facets
@@ -134,27 +135,31 @@ intact (PR #200), Regex 69→59. The identity-field xsi:type lookup no
 longer crashes when the instance has no override (PR #201) — an
 earlier interim 93.9% register had counted that crash as 94 extra
 IdentityConstraint failures, so the IC tail is 30 as before. The
-engine now compiles file-backed schemas as a SCHEMA SET
-(Context#xsd_set, moxml#487 — PR #203), so cross-document components
-(substitution members above all) are visible to the engine; fixed
-content is checked on type-less and complex-typed elements and an
-undeclared root with a resolvable xsi:type is assessed instead of
-rejected (isDefault070/077, addB187). Production hint-following (PR
-#196, instance_base:) makes multi-document instances validate fully.
-The dominant remainder is the strict-wildcard admission gap under set
-compilation (Wildcards 26, Schema 23, ComplexType 9 — filed
-leptris#1920: direct refs resolve through the set, wildcard admission
-stays head-document-local) and the IC tail (30 — the idF union-unique
-class needs union-member typed values; the engine's unique check is
-value-lexical, so those cases are engine-bound until moxml implements
-value-space tuples).
+engine compiles file-backed schemas as a SCHEMA SET (Context#xsd_set,
+moxml#487 — PR #203), so cross-document components (substitution
+members above all) are visible to the engine; fixed content is
+checked on type-less and complex-typed elements and an undeclared
+root with a resolvable xsi:type is assessed instead of rejected
+(isDefault070/077, addB187). The engine refresh (leptris 1.9.394.0)
+adds attMa003/004; the strict-wildcard/attribute admission gap now
+points at MOXML's facade SchemaRules re-check (single-document
+source), filed moxml#510 — the raw engine admits these documents
+since leptris#1920, but the facade finding still fires and even
+regressed ctE019 on the refresh. Production hint-following (PR #196,
+instance_base:) makes multi-document instances validate fully. The
+dominant remainder is that facade re-check (Wildcards 26, Schema 23,
+ComplexType 10, moxml#510) and the IC tail (30 — value-space
+distinctness idF012/013/014, attribute-default fields idF016/017,
+redefine extensions idF025/030/034, plus idG/idH/idZ under-detections
+— the engine's unique check is value-lexical).
 
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
 (#181+#182) → 87.1% (#183–#186) → 92.8% (lockfile refresh:
 moxml 0.5.170 + lutaml-model 0.8.147) → 93.9% (escape + hint rounds)
 → 94.3% (#200/#201 pattern alternatives and IC crash) → 94.4%
-(#203 engine schema-set + fixed-content/root rounds). Failure
+(#203 engine schema-set + fixed-content/root rounds) → 94.5%
+(engine refresh leptris 1.9.394.0). Failure
 concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
@@ -199,17 +204,28 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   via resolved_element_order) are fixed
 - remaining (2026-10-30, bundled-stack complete measurement with the
   escape + hint-following + pattern-alternative + identity-crash +
-  engine-set rounds, 4435/4696 = 94.4%): Regex (59 — exotic dialect
-  corners + character-reference shapes), IdentityConstraint (30 —
-  the idF union-unique class needs union-member typed values; the
-  engine's unique check is value-lexical so those cases are
-  engine-bound until moxml implements value-space tuples), Wildcards
-  (26), Schema (23 — strict-wildcard admission under set compilation,
-  leptris#1920), DataTypes (17), Particles (20), Group (19),
-  AttributeGroup (17), SimpleType (12), Attribute (12), ComplexType
-  (9), Additional (7), Element (5), Errata10 (2), ModelGroups (2),
+  engine-set + engine-refresh rounds, 4436/4696 = 94.5%): Regex (59 —
+  exotic dialect corners + character-reference shapes),
+  IdentityConstraint (30 — value-space distinctness idF012/013/014,
+  attribute-default fields idF016/017, redefine extensions
+  idF025/030/034, idG/idH/idZ under-detections; the engine's unique
+  check is value-lexical), Wildcards (26), Schema (23 — facade
+  strict-wildcard re-check, moxml#510), DataTypes (17), Particles
+  (20), Group (19), AttributeGroup (17), SimpleType (12), Attribute
+  (10), ComplexType (10 — moxml#510 attribute-side twin, ctE019),
+  Additional (7), Element (5), Errata10 (2), ModelGroups (2),
   Notations (1). Production xsi:schemaLocation hint-following SHIPPED
   (PR #196, instance_base:)
+- ENGINE REFRESH ROUND (2026-10-30): lockfile leptris 1.9.390.3 →
+  1.9.394.0 (engine train: xs:override base chase leptris#1913,
+  strict-wildcard admission across sets leptris#1920, binding floor
+  1.9.386). attMa003/004 flip valid; ctE019 REGRESSED on the refresh —
+  triaged as the facade SchemaRules single-document-source blind spot
+  (moxml#510, evidence comment posted), not a Ruby-side defect. The
+  wildcard-admission class did NOT flip with the engine fix because
+  the facade re-check (lib/moxml/xsd/schema_rules.rb) still reads one
+  schema source — moxml#510 tracks the fix shape (set-wide declaration
+  index, or defer to the engine's admission).
 - ENGINE SET ROUND (2026-10-30, PR #203): EngineContext compiles all
   file-backed schemas as ONE schema set via Context#xsd_set (moxml
   #487; lockfile rides 0.5.175) when every document compiled cleanly
