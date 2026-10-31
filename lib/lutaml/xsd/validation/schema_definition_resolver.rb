@@ -147,9 +147,11 @@ module Lutaml
 
         # Named type for an element's `type="prefix:Name"` reference.
         #
-        # @param schema_element [Lutaml::Xml::Schema::Xsd::Element]
+        # @param schema_element [Lutaml::Xml::Schema::Xsd::Element, nil]
         # @return [Object, nil]
         def resolve_type(schema_element)
+          return nil unless schema_element
+
           reference = schema_element.type
           return nil if reference.nil? || reference.to_s.empty?
 
@@ -282,6 +284,67 @@ module Lutaml
             resolve_named_type(part.base.to_s.split(":").last),
             attr_local, depth + 1
           )
+        end
+
+        # The Attribute MODEL declared for attr_local on a complex type:
+        # its own attribute list (refs resolve to the global
+        # declaration), then the derivation base chain through extension
+        # and restriction.
+        #
+        # @param type [Lutaml::Xml::Schema::Xsd::ComplexType]
+        # @param attr_local [String]
+        # @param depth [Integer] recursion guard
+        # @return [Lutaml::Xml::Schema::Xsd::Attribute, nil]
+        def find_declared_attribute(type, attr_local, depth = 0)
+          return nil if depth > 6
+          return nil unless type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
+          Array(type.attribute).each do |attr|
+            next unless attr.name == attr_local
+
+            return attr if attr.type
+
+            ref_local = attr.ref.to_s.split(":").last
+            ref_global = ref_local && resolve_attribute(ref_local, nil)
+            return ref_global if ref_global
+          end
+
+          content = type.complex_content || type.simple_content
+          return nil unless content
+
+          part = Array(content.extension).first ||
+            Array(content.restriction).first
+          return nil unless part
+
+          Array(part.attribute).each do |attr|
+            next unless attr.name == attr_local
+
+            return attr if attr.type
+
+            ref_local = attr.ref.to_s.split(":").last
+            ref_global = ref_local && resolve_attribute(ref_local, nil)
+            return ref_global if ref_global
+          end
+
+          find_declared_attribute(
+            resolve_named_type(part.base.to_s.split(":").last),
+            attr_local, depth + 1
+          )
+        end
+
+        # The value an attribute declaration SUPPLIES when the instance
+        # omits it: fixed, else default (XSD 1.0 §3.2.3 — idF016/017).
+        #
+        # @param type [Lutaml::Xml::Schema::Xsd::ComplexType]
+        # @param attr_local [String]
+        # @return [String, nil]
+        def declared_attribute_supply(type, attr_local)
+          declaration = find_declared_attribute(type, attr_local)
+          return nil unless declaration
+
+          supplied = [declaration.fixed, declaration.default].compact
+            .find { |value| value.to_s.match?(/\S/) }
+          supplied&.to_s
         end
 
         # Global attribute declaration by name (for strict xs:anyAttribute
@@ -427,6 +490,11 @@ module Lutaml
           defaults_schema = chameleon ? chameleon_includer : schema
           Array(schema.element).each do |element|
             index_element(index, element, namespace, :top, defaults_schema)
+            # A global element's INLINE complexType carries local
+            # attribute declarations too — their form resolution was
+            # only indexed for named types (idG027/idH025).
+            index_local_attributes(element.complex_type, namespace,
+                                   defaults_schema)
           end
           Array(schema.complex_type).each do |complex_type|
             index_type(index, complex_type, namespace, schema)
