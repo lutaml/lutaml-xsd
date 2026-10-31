@@ -120,15 +120,16 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4454/4696 (94.9%) |
+| pipeline | 4495/4696 (95.7%) |
 
 (2026-10-31, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
-engine-refresh, IC value-space and IC field-resolution rounds; engine
-leptris 1.9.394.0.) Same-stack comparison: 1.2.43 baseline 3961
-(84.3%) → 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile
-refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%)
-→ 4439 (94.5%) → 4454 (94.9%), +493 net over the 1.2.43 baseline.
+engine-refresh, IC value-space, IC field-resolution and facade-silence
+rounds; moxml 0.5.177, lutaml-model 0.8.148, engine leptris
+1.9.394.0.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) →
+4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411
+(93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%)
+→ 4454 (94.9%) → 4495 (95.7%), +534 net over the 1.2.43 baseline.
 The escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s to their XSD value
 spaces) collapses Regex 120→69; same-step pattern facets now behave
 as alternatives and whitespace-only text reaches the facets intact
@@ -160,11 +161,16 @@ engine xpath answers empty for namespace-uri() on attribute nodes
 (idH023), and an out-of-scope (prefixed, other-namespace) field leaves
 a KEY row uncontributed instead of incomplete (idG029). Production
 hint-following (PR #196, instance_base:) makes multi-document
-instances validate fully. The dominant remainder is that facade
-re-check (Wildcards 26, Schema 23, ComplexType 10, moxml#510), the
-redefine self-extension engine defect (idF025/030/034, idG019/028 —
-leptris#1926) and singleton IC corners (idG024, idK012, idZ008/010/
-011/012/015).
+instances validate fully. The FACADE-SILENCE round: moxml 0.5.177
+(its #513) makes the strict re-check silent on composed schemas —
+41 cases flip at once (Wildcards 26→3, Schema 23→14, ComplexType
+10→4), zero regressions; two shapes still carry findings on composed
+schemas (ctE019 attribute re-check, addB116 substitution-member
+admission — evidence commented on moxml#510). The dominant remainder
+is now the redefine self-extension engine defect (idF025/030/034,
+idG019/028, idG024 — leptris#1926, 6 cases), singleton IC corners
+(idK012, idZ008/010/011/012/015) and the Regex 59 engine-dialect
+corners.
 
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
@@ -173,7 +179,8 @@ moxml 0.5.170 + lutaml-model 0.8.147) → 93.9% (escape + hint rounds)
 → 94.3% (#200/#201 pattern alternatives and IC crash) → 94.4%
 (#203 engine schema-set + fixed-content/root rounds) → 94.5%
 (engine refresh leptris 1.9.394.0; IC value-space round PR #205,
-4439) → 94.9% (IC field-resolution round PR #206, 4454). Failure
+4439) → 94.9% (IC field-resolution round PR #206, 4454) → 95.7%
+(facade-silence dep refresh, moxml 0.5.177, 4495). Failure
 concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
@@ -219,18 +226,29 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
 - remaining (2026-10-31, bundled-stack complete measurement with the
   escape + hint-following + pattern-alternative + identity-crash +
   engine-set + engine-refresh + IC value-space + IC field-resolution
-  rounds, 4454/4696 = 94.9%): Regex (59 — exotic dialect corners +
-  character-reference shapes), Wildcards (26), Schema (23 — facade
-  strict-wildcard re-check, moxml#510), DataTypes (17), Particles
-  (20), Group (19), AttributeGroup (17), SimpleType (12),
-  IdentityConstraint (12 — redefine self-extension idF025/030/034 +
-  idG019/028 are leptris#1926; idG024 engine; idK012/idZ008/010/011/
-  012/015 singleton corners: cross-namespace keyrefs, IDREF defaults,
-  complexContent constraint location), Attribute (10), ComplexType
-  (10 — moxml#510 attribute-side twin, ctE019),
-  Additional (7), Element (5), Errata10 (2), ModelGroups (2),
+  + facade-silence rounds, 4495/4696 = 95.7%): Regex (59 — exotic
+  dialect corners + character-reference shapes), Schema (14 —
+  remaining composed-schema shapes on moxml#510: ctE019-class
+  attribute re-check + addB116-class substitution admission live
+  elsewhere in the set), DataTypes (17), Particles (19), Group (19),
+  AttributeGroup (17), SimpleType (12), IdentityConstraint (12 —
+  redefine self-extension idF025/030/034 + idG019/028 + idG024 are
+  leptris#1926; idK012/idZ008/010/011/012/015 singleton corners:
+  cross-namespace keyrefs, IDREF defaults, complexContent constraint
+  location), Attribute (10), Additional (7), ComplexType (4),
+  Element (4), Wildcards (3), Errata10 (2), ModelGroups (2),
   Notations (1). Production xsi:schemaLocation hint-following SHIPPED
   (PR #196, instance_base:)
+- FACADE-SILENCE ROUND (2026-10-31, dep refresh): lockfile moxml
+  0.5.175 → 0.5.177 (its #513 makes the strict re-check silent on
+  composed schemas — the moxml#510 fix) + lutaml-model 0.8.147 →
+  0.8.148 (+ yeptris 0.6.51 ride; leptris stays 1.9.394.0 — 1.9.395
+  is a UTF-8 performance release, not yet resolving in the lockfile).
+  +41 cases at once, zero regressions: Wildcards 26→3, Schema 23→14,
+  ComplexType 10→4, Element 5→4. Upstream follow-ups posted: moxml
+  #510 comment (ctE019 attribute re-check + addB116 substitution
+  admission still fire on composed schemas), leptris#1926 comment
+  (idG024 joins the redefine tally, 6 cases).
 - IC VALUE-SPACE ROUND (2026-10-30, PR #205): identity field keys are
   tagged with their value-space FAMILY — decimal + integer derivatives
   share one space (idL090 holds), float/double and boolean are DISJOINT
