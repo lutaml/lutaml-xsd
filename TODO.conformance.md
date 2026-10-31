@@ -177,6 +177,46 @@ idG019/028, idG024 — leptris#1926, 6 cases), singleton IC corners
 (idK012, idZ008/010/011/012/015) and the Regex 59 engine-dialect
 corners.
 
+## Suite caveats — what the denominator does and does not contain
+(read before "fixing" any remaining failure; 2026-10-31 audit)
+
+- **Denominator**: the pinned suite carries 4755 instance tests; the
+  harness measures 4696. The 59 excluded come from testGroups with no
+  resolvable schemaTest (schema-less: addB155–addB169, attMd001–011,
+  stZ058–066, schA2–A8, ctZ011_a, elemZ017/elemZ033b,
+  particlesZ025/026). The pass-rate is over the runnable set, stated
+  as x/4696.
+- **Contested tests (never chase these)**: 17 instance tests carry TWO
+  contradictory `<expected>` entries (Unicode-version dependent; the
+  harness takes the FIRST) and 32 more are flagged status="queried" in
+  the suite meta. 49 of these live in the excluded schema-less set.
+  The remainder that ARE measured (18 today: the reJ class — bugzilla
+  4113, where the suite's expectation contradicts the Unicode 3.1
+  tables XSD 1.0 cites; gMonth002/004 `--MM--` spellings — leptris
+  #1936; reS17/38/51 `\d` vintage — leptris #1936; addB188,
+  double018_1956, particlesZ001 version skew) currently FAIL, and our
+  verdicts agree with the DISPUTED or Unicode-6 reading. These are
+  highlighted, not chased: changing our code to satisfy the first
+  expectation would codify a suite mistake.
+- **Batch crosstalk**: measures run 50 cases per process and suite
+  enumeration order is unstable; a handful of cases (the
+  NOTATION-length class, idG011/012) pass in isolation and flake in
+  batches (a raise in batch context is counted as a failure). A
+  single-case probe is the honest verdict for any disputed member;
+  per-run ±few-case jitter is crosstalk noise, not code movement.
+
+## Upstream defect inventory (all remaining engine-bound classes)
+
+| Class | Cases | Filed |
+|---|---|---|
+| Facade strict re-check on composed schemas — remaining shapes (ctE019 attribute re-check, addB116 substitution admission) | ~8 | moxml#510 (+2 follow-up comments) |
+| Redefine self-extension drops the extension content model | 6 | leptris#1926 (+2 follow-ups) |
+| Built-in lexical tables reject valid forms (gMonth spellings, Unicode-3.1 digits, list/union members, char-reference shapes) | ~14 | leptris#1936 |
+| Automaton size cap surfaces as an instance error instead of engine-inert silence | 6 | moxml#514 (follow-up to #473) |
+| Regex dialect remainder (engine `\d` vintage, `\p{Is...}` blocks, char-reference shapes) | ~30 | engine-side of leptris#1936 |
+| Strict wildcard/attribute admission on further compositions | ~5 | moxml#510 thread |
+| Ruby-side under-detections (Group 16, DataTypes 7, IC 6, Attribute 5, Additional 4, Particles 4, SimpleType 4, Element 1, Wildcards 1 — minus what the regex round banked) | ~60 | OURS — the remaining Ruby work queue |
+
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
 (#181+#182) → 87.1% (#183–#186) → 92.8% (lockfile refresh:
