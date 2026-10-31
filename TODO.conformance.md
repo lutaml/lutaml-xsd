@@ -120,45 +120,51 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4439/4696 (94.5%) |
+| pipeline | 4454/4696 (94.9%) |
 
-(2026-10-30, bundled-stack measurement on main with the escape,
+(2026-10-31, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
-engine-refresh and IC value-space rounds; engine leptris 1.9.394.0.)
-Same-stack comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%) →
-4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411 (93.9%) → 4430
-(94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%), +478 net over
-the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s
-to their XSD value spaces) collapses Regex 120→69; same-step pattern
-facets now behave as alternatives and whitespace-only text reaches
-the facets intact (PR #200), Regex 69→59. The identity-field xsi:type
-lookup no longer crashes when the instance has no override (PR #201)
-— an earlier interim 93.9% register had counted that crash as 94
-extra IdentityConstraint failures, so the IC tail is 30 as before.
-The engine compiles file-backed schemas as a SCHEMA SET
-(Context#xsd_set, moxml#487 — PR #203), so cross-document components
-(substitution members above all) are visible to the engine; fixed
-content is checked on type-less and complex-typed elements and an
-undeclared root with a resolvable xsi:type is assessed instead of
-rejected (isDefault070/077, addB187). The engine refresh (leptris
-1.9.394.0) adds attMa003/004; the strict-wildcard/attribute admission
-gap now points at MOXML's facade SchemaRules re-check
-(single-document source), filed moxml#510 — the raw engine admits
-these documents since leptris#1920, but the facade finding still
-fires and even regressed ctE019 on the refresh. Identity fields now
-compare in their VALUE-SPACE FAMILIES (PR #205): decimal and its
-integer derivatives share one space (idL090 holds), float/double and
-boolean are disjoint primitives — same lexical in disjoint spaces is
-a distinct identity (idF012/013/014) — and the engine's lexical-only
-duplicate findings for constraints the Ruby rule evaluated clean are
-arbitrated out (blast-radius scanned: one engine-decided IC case
-exists and its finding is not duplicate-shaped, idG006, so the
-arbitration does not touch it). Production hint-following (PR #196,
-instance_base:) makes multi-document instances validate fully. The
-dominant remainder is that facade re-check (Wildcards 26, Schema 23,
-ComplexType 10, moxml#510) and the IC tail (27 — attribute-default
-fields idF016/017, redefine extensions idF025/030/034, plus
-idG/idH/idZ under-detections).
+engine-refresh, IC value-space and IC field-resolution rounds; engine
+leptris 1.9.394.0.) Same-stack comparison: 1.2.43 baseline 3961
+(84.3%) → 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile
+refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%)
+→ 4439 (94.5%) → 4454 (94.9%), +493 net over the 1.2.43 baseline.
+The escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s to their XSD value
+spaces) collapses Regex 120→69; same-step pattern facets now behave
+as alternatives and whitespace-only text reaches the facets intact
+(PR #200), Regex 69→59. The identity-field xsi:type lookup no longer
+crashes when the instance has no override (PR #201) — an earlier
+interim 93.9% register had counted that crash as 94 extra
+IdentityConstraint failures. The engine compiles file-backed schemas
+as a SCHEMA SET (Context#xsd_set, moxml#487 — PR #203), so
+cross-document components (substitution members above all) are
+visible to the engine; fixed content is checked on type-less and
+complex-typed elements and an undeclared root with a resolvable
+xsi:type is assessed instead of rejected (isDefault070/077, addB187).
+The engine refresh (leptris 1.9.394.0) adds attMa003/004; the
+strict-wildcard/attribute admission gap now points at MOXML's facade
+SchemaRules re-check (single-document source), filed moxml#510 — the
+raw engine admits these documents since leptris#1920, but the facade
+finding still fires and even regressed ctE019 on the refresh.
+Identity fields compare in their VALUE-SPACE FAMILIES (PR #205) and
+the engine's lexical-only duplicate findings for constraints the Ruby
+rule evaluated clean are arbitrated out. The IC FIELD-RESOLUTION
+round (PR #206) closes 15 more: absent attribute fields now consult
+the declaration's fixed/default supply (idF016/017), selector/field
+steps resolve in the constraint's namespace governance — unprefixed
+element steps match the TARGET namespace (idH020/021), @ns:* wildcard
+attribute fields select through the Moxml attribute API because the
+engine xpath answers empty for namespace-uri() on attribute nodes
+(idL049/idL102), global elements' INLINE complexTypes are form-indexed
+(idG027/idH025/030/031), resolve_type(nil) no longer crashes
+(idH023), and an out-of-scope (prefixed, other-namespace) field leaves
+a KEY row uncontributed instead of incomplete (idG029). Production
+hint-following (PR #196, instance_base:) makes multi-document
+instances validate fully. The dominant remainder is that facade
+re-check (Wildcards 26, Schema 23, ComplexType 10, moxml#510), the
+redefine self-extension engine defect (idF025/030/034, idG019/028 —
+leptris#1926) and singleton IC corners (idG024, idK012, idZ008/010/
+011/012/015).
 
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
@@ -167,7 +173,7 @@ moxml 0.5.170 + lutaml-model 0.8.147) → 93.9% (escape + hint rounds)
 → 94.3% (#200/#201 pattern alternatives and IC crash) → 94.4%
 (#203 engine schema-set + fixed-content/root rounds) → 94.5%
 (engine refresh leptris 1.9.394.0; IC value-space round PR #205,
-4439). Failure
+4439) → 94.9% (IC field-resolution round PR #206, 4454). Failure
 concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
@@ -210,16 +216,18 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   narrows but cannot drop attributes, XSD 1.0 §3.4.2); the mgB/mgF
   rule_execution crashes (xs:annotation leaking into particle lists
   via resolved_element_order) are fixed
-- remaining (2026-10-30, bundled-stack complete measurement with the
+- remaining (2026-10-31, bundled-stack complete measurement with the
   escape + hint-following + pattern-alternative + identity-crash +
-  engine-set + engine-refresh + IC value-space rounds, 4439/4696 =
-  94.5%): Regex (59 — exotic dialect corners + character-reference
-  shapes), IdentityConstraint (27 — attribute-default fields
-  idF016/017, redefine extensions idF025/030/034, idG/idH/idZ
-  under-detections), Wildcards (26), Schema (23 — facade
+  engine-set + engine-refresh + IC value-space + IC field-resolution
+  rounds, 4454/4696 = 94.9%): Regex (59 — exotic dialect corners +
+  character-reference shapes), Wildcards (26), Schema (23 — facade
   strict-wildcard re-check, moxml#510), DataTypes (17), Particles
-  (20), Group (19), AttributeGroup (17), SimpleType (12), Attribute
-  (10), ComplexType (10 — moxml#510 attribute-side twin, ctE019),
+  (20), Group (19), AttributeGroup (17), SimpleType (12),
+  IdentityConstraint (12 — redefine self-extension idF025/030/034 +
+  idG019/028 are leptris#1926; idG024 engine; idK012/idZ008/010/011/
+  012/015 singleton corners: cross-namespace keyrefs, IDREF defaults,
+  complexContent constraint location), Attribute (10), ComplexType
+  (10 — moxml#510 attribute-side twin, ctE019),
   Additional (7), Element (5), Errata10 (2), ModelGroups (2),
   Notations (1). Production xsi:schemaLocation hint-following SHIPPED
   (PR #196, instance_base:)

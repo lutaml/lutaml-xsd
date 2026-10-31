@@ -93,6 +93,13 @@ module Lutaml
             end
           end
 
+          # The adapted form of a namespace-prefixed wildcard attribute
+          # field (@ns:* — adapt_xpath's own emission). The engine xpath
+          # answers EMPTY for namespace-uri() on attribute nodes, so
+          # these fields select the element's attributes directly.
+          ADAPTED_WILDCARD_ATTRIBUTE =
+            /\A(?:attribute::?|@)\*\[namespace-uri\(\)='([^']*)'\]\z/
+
           private
 
           def collect_values(xml_element, constraint, collector, repository,
@@ -103,11 +110,15 @@ module Lutaml
                 values = []
                 ambiguous = false
                 fields.each do |field|
-                  matched = Array(node.xpath(field))
+                  matched = field_nodes(node, field)
                   # A field evaluating to a node-set with more than one
                   # member violates the constraint (XSD 1.0 §3.11.4).
                   ambiguous = true if matched.size > 1
-                  values << (matched.first ? field_node_value(matched.first) : nil)
+                  values << if matched.first
+                              field_node_value(matched.first)
+                            else
+                              field_supply_value(node, field, repository)
+                            end
                 end
 
                 if ambiguous
@@ -130,6 +141,7 @@ module Lutaml
                 # identity-constraint evaluate to a node").
                 if values.any?(&:nil?)
                   next nil unless kind == :key
+                  next nil if out_of_scope_fields?(values, constraint)
 
                   report_error(
                     collector,
@@ -248,6 +260,33 @@ module Lutaml
             end
           end
 
+          def field_nodes(node, adapted_field)
+            wildcard = adapted_field.match(ADAPTED_WILDCARD_ATTRIBUTE)
+            return Array(node.xpath(adapted_field)) unless wildcard
+
+            namespace = Regexp.last_match(1)
+            node.attributes.select do |attribute|
+              attribute.namespace&.uri == namespace
+            end
+          end
+
+          # The value an ABSENT attribute field still contributes: the
+          # declaration's fixed/default supply (idF016/017). Element
+          # fields and unresolvable declarations contribute nothing.
+          #
+          # @return [String, nil]
+          def field_supply_value(node, field, repository)
+            return nil unless field.to_s.start_with?("@")
+
+            attr_local = field.sub(/\A@/, "").sub(/\A[\w.-]+:/, "")
+            parent_decl = repository&.resolve(node.name, node.namespace_uri)
+            parent_type = parent_decl&.complex_type ||
+              repository&.resolve_type(parent_decl)
+            return nil unless parent_type
+
+            repository.declared_attribute_supply(parent_type, attr_local)
+          end
+
           def report_duplicates(collector, xml_element, constraint, values,
                                 code)
             values.group_by(&:itself).each do |value, group|
@@ -289,6 +328,37 @@ module Lutaml
             end
           end
 
+          # Whether an absent field leaves a KEY row VIOLATED rather
+          # than uncontributed: a field governed by ANOTHER namespace (a
+          # prefixed step outside the constraint's scope — idG029) just
+          # drops the row; only unprefixed, in-scope fields make the row
+          # an incomplete-key error.
+          #
+          # @return [Boolean]
+          def out_of_scope_fields?(values, constraint)
+            raw = raw_fields(constraint)
+            values.each_index.any? do |index|
+              values[index].nil? && raw[index].to_s.match?(/[\w.-]+:/)
+            end
+          end
+
+          # The field steps as WRITTEN (unions split the same way the
+          # adapted list splits) — the absent-row decision reads the
+          # step's own namespace governance from these.
+          #
+          # @return [Array<String>]
+          def raw_fields(constraint)
+            Array(constraint.field).flat_map do |field|
+              value =
+                if field.is_a?(Lutaml::Xml::Schema::Xsd::Field)
+                  field.xpath
+                else
+                  field
+                end
+              value.to_s.split(/\s*\|\s*/).reject(&:empty?)
+            end
+          end
+
           # Selector/field values are either the raw XPath string or the
           # parsed xs:selector/xs:field model whose xpath attribute holds
           # it. Top-level unions split into one path each; prefixed
@@ -313,9 +383,14 @@ module Lutaml
           #
           # @return [String]
           def adapt_xpath(path, target_namespace)
-            path
-              .gsub(/@([\w.-]+):([\w.-]+)/) do
-                "@*[local-name()='#{Regexp.last_match(2)}']"
+            adapted = path
+              .gsub(/@([\w.-]+):([\w.*-]+)/) do
+                name = Regexp.last_match(2)
+                if name == "*" && target_namespace.to_s.match?(/\S/)
+                  "@*[namespace-uri()='#{target_namespace}']"
+                else
+                  "@*[local-name()='#{name}']"
+                end
               end
               .gsub(/(?<![@\w])([\w.-]+):([\w.*-]+)/) do
                 name = Regexp.last_match(2)
@@ -329,6 +404,19 @@ module Lutaml
                   "*[local-name()='#{name}']"
                 end
               end
+            return adapted unless target_namespace.to_s.match?(/\S/)
+
+            # Unprefixed element steps resolve to the schema's TARGET
+            # namespace in identity-constraint XPaths (xmllint de-facto,
+            # idH020) — the local-name() test is prefix-insensitive, the
+            # same trade the prefixed rewrite makes.
+            # The atomic group matters: a plain greedy name followed by
+            # (?!:) backtracks (attribut|e) and mangles the attribute
+            # axis into a corrupt step.
+            adapted.gsub(%r{(^|/)((?>[a-zA-Z_][\w.-]*))(?!:)}) do
+              "#{Regexp.last_match(1)}" \
+                "*[local-name()='#{Regexp.last_match(2)}']"
+            end
           end
 
           # Keyref `refer` as a string; nil when the model left it

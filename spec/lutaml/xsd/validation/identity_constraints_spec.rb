@@ -205,4 +205,74 @@ RSpec.describe "identity constraints (key/keyref/unique)" do
         .to include("duplicate_unique_violation")
     end
   end
+
+  context "with fields supplied by the declaration" do
+    let(:xsd_source) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element ref="uid" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+            <xs:unique name="uuid">
+              <xs:selector xpath=".//uid"/>
+              <xs:field xpath="@val"/>
+            </xs:unique>
+          </xs:element>
+          <xs:element name="uid">
+            <xs:complexType>
+              <xs:attribute name="val" type="xs:string" default="test"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "counts an absent defaulted attribute as its default" do
+      result = validator.validate(
+        '<root><uid val="test"/><uid/></root>',
+      )
+
+      expect(result.errors.map(&:code))
+        .to include("duplicate_unique_violation")
+    end
+  end
+
+  context "with unprefixed selectors in a namespaced schema" do
+    let(:xsd_source) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="myNS" xmlns="myNS">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element ref="kid" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+            <xs:key name="kuuid">
+              <xs:selector xpath=".//kid"/>
+              <xs:field xpath="@val"/>
+            </xs:key>
+          </xs:element>
+          <xs:element name="kid">
+            <xs:complexType>
+              <xs:attribute name="val" type="xs:string"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "collects key rows from qualified instances" do
+      result = validator.validate(
+        '<myNS:root xmlns:myNS="myNS">' \
+        "<myNS:kid val=\"1\"/><myNS:kid val=\"1\"/></myNS:root>",
+      )
+
+      expect(result.errors.map(&:code))
+        .to include("duplicate_key_violation")
+    end
+  end
 end
