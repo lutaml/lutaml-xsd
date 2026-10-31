@@ -120,17 +120,18 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4524/4696 (96.3%) |
+| pipeline | 4534/4696 (96.6%) |
 
 (2026-10-31, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
-engine-refresh, IC value-space, IC field-resolution, facade-silence
-and regex-semantics rounds; moxml 0.5.177, lutaml-model 0.8.148,
-engine leptris 1.9.394.0.) Same-stack comparison: 1.2.43 baseline
-3961 (84.3%) → 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile
-refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%)
-→ 4439 (94.5%) → 4454 (94.9%) → 4495 (95.7%) → 4524 (96.3%), +563
-net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+engine-refresh, IC value-space, IC field-resolution, facade-silence,
+regex-semantics and redefine-refresh rounds; moxml 0.5.178,
+lutaml-model 0.8.149, engine leptris 1.9.397.0.) Same-stack
+comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%) → 4090
+(87.1%) → 4360 (92.8%, lockfile refresh) → 4411 (93.9%) → 4430
+(94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%) → 4454 (94.9%)
+→ 4495 (95.7%) → 4524 (96.3%) → 4534 (96.6%), +573 net over the
+1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -210,7 +211,7 @@ corners.
 | Class | Cases | Filed |
 |---|---|---|
 | Facade strict re-check on composed schemas — remaining shapes (ctE019 attribute re-check, addB116 substitution admission) | ~8 | moxml#510 (+2 follow-up comments) |
-| Redefine self-extension drops the extension content model | 6 | leptris#1926 (+2 follow-ups) |
+| Redefine self-extension drops the extension content model | 0 — FIXED in leptris 1.9.396 | leptris#1926 (closed) |
 | Built-in lexical tables reject valid forms (gMonth spellings, Unicode-3.1 digits, list/union members, char-reference shapes) | ~14 | leptris#1936 |
 | Automaton size cap surfaces as an instance error instead of engine-inert silence | 6 | moxml#514 (follow-up to #473) |
 | Regex dialect remainder (engine `\d` vintage, `\p{Is...}` blocks, char-reference shapes) | ~30 | engine-side of leptris#1936 |
@@ -226,7 +227,8 @@ moxml 0.5.170 + lutaml-model 0.8.147) → 93.9% (escape + hint rounds)
 (engine refresh leptris 1.9.394.0; IC value-space round PR #205,
 4439) → 94.9% (IC field-resolution round PR #206, 4454) → 95.7%
 (facade-silence dep refresh, moxml 0.5.177, 4495) → 96.3% (regex
-semantics round PR #208, 4524). Failure
+semantics round PR #208, 4524) → 96.6% (redefine refresh, leptris
+1.9.396/1.9.397, 4534). Failure
 concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
@@ -272,22 +274,32 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
 - remaining (2026-10-31, bundled-stack complete measurement with the
   escape + hint-following + pattern-alternative + identity-crash +
   engine-set + engine-refresh + IC value-space + IC field-resolution
-  + facade-silence + regex-semantics rounds, 4524/4696 = 96.3%):
+  + facade-silence + regex-semantics + redefine-refresh rounds,
+  4534/4696 = 96.6%):
   Regex (30 — ALL engine-bound: the whole remainder carries a leptris
   verdict; the Ruby \d legacy-Nd fix cannot flip the reS/reT class
-  while the engine's own \d keeps the ASCII vintage), Schema (14 —
-  remaining composed-schema shapes on moxml#510: ctE019-class
-  attribute re-check + addB116-class substitution admission live
-  elsewhere in the set + schA1-class same-root multi-document
-  crosstalk), DataTypes (17), Particles (19), Group (19),
-  AttributeGroup (17), SimpleType (12), IdentityConstraint (12 —
-  redefine self-extension idF025/030/034 + idG019/028 + idG024 are
-  leptris#1926; idK012/idZ008/010/011/012/015 singleton corners:
-  cross-namespace keyrefs, IDREF defaults, complexContent constraint
-  location), Attribute (10), Additional (7), ComplexType (4),
-  Element (4), Wildcards (3), Errata10 (2), ModelGroups (2),
-  Notations (1). Production xsi:schemaLocation hint-following SHIPPED
-  (PR #196, instance_base:)
+  while the engine's own \d keeps the ASCII vintage — leptris#1936),
+  Schema (13 — remaining composed-schema shapes on moxml#510:
+  addB116-class substitution admission + schA1-class same-root
+  multi-document crosstalk; the ctE019 attribute re-check FIXED in
+  leptris 1.9.395), DataTypes (17), Particles (18), Group (19),
+  AttributeGroup (17), SimpleType (10), Attribute (10), Additional
+  (7), IdentityConstraint (6 — idK012/idZ008/010/011/012/015
+  singleton corners: cross-namespace keyrefs, IDREF defaults,
+  complexContent constraint location — the redefine class FIXED in
+  leptris 1.9.396), ComplexType (3), Element (4), Wildcards (3),
+  Errata10 (2), ModelGroups (2), Notations (1). Production
+  xsi:schemaLocation hint-following SHIPPED (PR #196, instance_base:)
+- REDEFINE REFRESH ROUND (2026-10-31): lockfile moxml 0.5.177 →
+  0.5.178, lutaml-model 0.8.148 → 0.8.149, leptris 1.9.394.0 →
+  1.9.397.0 — the train carried OUR filings: leptris 1.9.395 fixes
+  the ctE019 chameleon-include attribute re-check (moxml#510
+  straggler), 1.9.396 fixes the xs:redefine dropped bodies
+  (leptris#1926 — all six IC cases flip). +10 cases, zero
+  regressions. Still open upstream: leptris#1936 (lexical tables —
+  gMonth/reZ/stG classes unchanged), moxml#514 (automaton cap as
+  error — particlesA/Jb unchanged), moxml#510 stragglers (addB116
+  substitution admission).
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
