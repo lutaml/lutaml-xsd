@@ -120,18 +120,18 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4534/4696 (96.6%) |
+| pipeline | 4540/4696 (96.7%) |
 
 (2026-10-31, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
 engine-refresh, IC value-space, IC field-resolution, facade-silence,
-regex-semantics and redefine-refresh rounds; moxml 0.5.178,
-lutaml-model 0.8.149, engine leptris 1.9.397.0.) Same-stack
+regex-semantics, redefine-refresh and gmonth-refresh rounds; moxml
+0.5.178, lutaml-model 0.8.151, engine leptris 1.9.398.0.) Same-stack
 comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%) → 4090
 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411 (93.9%) → 4430
 (94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%) → 4454 (94.9%)
-→ 4495 (95.7%) → 4524 (96.3%) → 4534 (96.6%), +573 net over the
-1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+→ 4495 (95.7%) → 4524 (96.3%) → 4534 (96.6%) → 4540 (96.7%), +579
+net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -191,14 +191,23 @@ corners.
   contradictory `<expected>` entries (Unicode-version dependent; the
   harness takes the FIRST) and 32 more are flagged status="queried" in
   the suite meta. 49 of these live in the excluded schema-less set.
-  The remainder that ARE measured (18 today: the reJ class — bugzilla
+  The remainder that ARE measured (19 today: the reJ class — bugzilla
   4113, where the suite's expectation contradicts the Unicode 3.1
   tables XSD 1.0 cites; gMonth002/004 `--MM--` spellings — leptris
-  #1936; reS17/38/51 `\d` vintage — leptris #1936; addB188,
-  double018_1956, particlesZ001 version skew) currently FAIL, and our
+  #1936, FIXED engine-side 1.9.398; reS17/38/51 `\d` vintage — leptris
+  #1936; addB188, double018_1956, particlesZ001 version skew;
+  gMonth_pattern001_1274.v — bugzilla 6901 queried 2009 then
+  accepted-invalid 2012, but the pattern `--[0-9]{2}--` trivially
+  matches the instance `--03--`, so our verdict follows the queried
+  reading since the gMonth errata fix) currently FAIL, and our
   verdicts agree with the DISPUTED or Unicode-6 reading. These are
   highlighted, not chased: changing our code to satisfy the first
   expectation would codify a suite mistake.
+- **Cap-inert exposure**: the moxml#514 fix (engine cap silent at
+  validation) removed a COINCIDENTAL rejection — particlesA013.i was
+  passing only because the engine's cap error rejected it; the Ruby
+  content rules miss its actual violation (a Particles
+  under-detection now in the work queue).
 - **Batch crosstalk**: measures run 50 cases per process and suite
   enumeration order is unstable; a handful of cases (the
   NOTATION-length class, idG011/012) pass in isolation and flake in
@@ -212,8 +221,8 @@ corners.
 |---|---|---|
 | Facade strict re-check on composed schemas — remaining shapes (ctE019 attribute re-check, addB116 substitution admission) | ~8 | moxml#510 (+2 follow-up comments) |
 | Redefine self-extension drops the extension content model | 0 — FIXED in leptris 1.9.396 | leptris#1926 (closed) |
-| Built-in lexical tables reject valid forms (gMonth spellings, Unicode-3.1 digits, list/union members, char-reference shapes) | ~14 | leptris#1936 |
-| Automaton size cap surfaces as an instance error instead of engine-inert silence | 6 | moxml#514 (follow-up to #473) |
+| Built-in lexical tables reject valid forms (Unicode-3.1 digits, list/union members, char-reference shapes; gMonth spellings FIXED in 1.9.398) | ~12 | leptris#1936 |
+| Automaton size cap surfaces as an instance error instead of engine-inert silence | 0 — FIXED in leptris 1.9.398 | moxml#514 (follow-up to #473) |
 | Regex dialect remainder (engine `\d` vintage, `\p{Is...}` blocks, char-reference shapes) | ~30 | engine-side of leptris#1936 |
 | Strict wildcard/attribute admission on further compositions | ~5 | moxml#510 thread |
 | Ruby-side under-detections (Group 16, DataTypes 7, IC 6, Attribute 5, Additional 4, Particles 4, SimpleType 4, Element 1, Wildcards 1 — minus what the regex round banked) | ~60 | OURS — the remaining Ruby work queue |
@@ -300,6 +309,17 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   gMonth/reZ/stG classes unchanged), moxml#514 (automaton cap as
   error — particlesA/Jb unchanged), moxml#510 stragglers (addB116
   substitution admission).
+- GMONTH REFRESH ROUND (2026-10-31): lockfile leptris 1.9.397.0 →
+  1.9.398.0, lutaml-model 0.8.149 → 0.8.151 (yeptris 0.6.52 ride;
+  moxml STAYS 0.5.178 — the 0.6.0 line is breaking (Opal removal) and
+  the gemspec floor `~> 0.5.147` excludes it; a floor bump is an
+  OWNER DECISION and has no semantic gain for us). The train carried
+  two more of OUR filings: leptris#1936's gMonth leg (both spellings
+  validate — gMonth002/004 flip) and moxml#514 (the automaton cap is
+  inert at instance validation — particlesA014/A015/Jb003 flip).
+  +8 cases, 2 flips documented not chased: gMonth_pattern001_1274.v
+  (bugzilla 6901 — see caveats) and particlesA013.i (cap-inert
+  exposed a Particles under-detection). Suite 4540/4696 (96.7%).
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
