@@ -120,22 +120,27 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4495/4696 (95.7%) |
+| pipeline | 4524/4696 (96.3%) |
 
 (2026-10-31, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
-engine-refresh, IC value-space, IC field-resolution and facade-silence
-rounds; moxml 0.5.177, lutaml-model 0.8.148, engine leptris
-1.9.394.0.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) →
-4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411
-(93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%)
-→ 4454 (94.9%) → 4495 (95.7%), +534 net over the 1.2.43 baseline.
-The escapes round (PR #197 — \d→\p{Nd}, \w/\W/\s to their XSD value
-spaces) collapses Regex 120→69; same-step pattern facets now behave
-as alternatives and whitespace-only text reaches the facets intact
-(PR #200), Regex 69→59. The identity-field xsi:type lookup no longer
-crashes when the instance has no override (PR #201) — an earlier
-interim 93.9% register had counted that crash as 94 extra
+engine-refresh, IC value-space, IC field-resolution, facade-silence
+and regex-semantics rounds; moxml 0.5.177, lutaml-model 0.8.148,
+engine leptris 1.9.394.0.) Same-stack comparison: 1.2.43 baseline
+3961 (84.3%) → 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile
+refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%)
+→ 4439 (94.5%) → 4454 (94.9%) → 4495 (95.7%) → 4524 (96.3%), +563
+net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+\w/\W/\s to their XSD value spaces) collapses Regex 120→69;
+same-step pattern facets now behave as alternatives and
+whitespace-only text reaches the facets intact (PR #200), Regex
+69→59; the REGEX-SEMANTICS round (PR #208) takes \w/\W to their
+Appendix F complements (\w = [^\p{P}\p{Z}\p{C}]), adds the \I/\C
+complements, carries the Unicode-3.1 legacy Nd set in \d
+(U+1369-U+1371, bugzilla 13607) and roots out the unescaped-hyphen
+Ruby warning — Regex 59→30. The identity-field xsi:type lookup no
+longer crashes when the instance has no override (PR #201) — an
+earlier interim 93.9% register had counted that crash as 94 extra
 IdentityConstraint failures. The engine compiles file-backed schemas
 as a SCHEMA SET (Context#xsd_set, moxml#487 — PR #203), so
 cross-document components (substitution members above all) are
@@ -180,7 +185,8 @@ moxml 0.5.170 + lutaml-model 0.8.147) → 93.9% (escape + hint rounds)
 (#203 engine schema-set + fixed-content/root rounds) → 94.5%
 (engine refresh leptris 1.9.394.0; IC value-space round PR #205,
 4439) → 94.9% (IC field-resolution round PR #206, 4454) → 95.7%
-(facade-silence dep refresh, moxml 0.5.177, 4495). Failure
+(facade-silence dep refresh, moxml 0.5.177, 4495) → 96.3% (regex
+semantics round PR #208, 4524). Failure
 concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
@@ -226,11 +232,14 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
 - remaining (2026-10-31, bundled-stack complete measurement with the
   escape + hint-following + pattern-alternative + identity-crash +
   engine-set + engine-refresh + IC value-space + IC field-resolution
-  + facade-silence rounds, 4495/4696 = 95.7%): Regex (59 — exotic
-  dialect corners + character-reference shapes), Schema (14 —
+  + facade-silence + regex-semantics rounds, 4524/4696 = 96.3%):
+  Regex (30 — ALL engine-bound: the whole remainder carries a leptris
+  verdict; the Ruby \d legacy-Nd fix cannot flip the reS/reT class
+  while the engine's own \d keeps the ASCII vintage), Schema (14 —
   remaining composed-schema shapes on moxml#510: ctE019-class
   attribute re-check + addB116-class substitution admission live
-  elsewhere in the set), DataTypes (17), Particles (19), Group (19),
+  elsewhere in the set + schA1-class same-root multi-document
+  crosstalk), DataTypes (17), Particles (19), Group (19),
   AttributeGroup (17), SimpleType (12), IdentityConstraint (12 —
   redefine self-extension idF025/030/034 + idG019/028 + idG024 are
   leptris#1926; idK012/idZ008/010/011/012/015 singleton corners:
@@ -239,6 +248,16 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   Element (4), Wildcards (3), Errata10 (2), ModelGroups (2),
   Notations (1). Production xsi:schemaLocation hint-following SHIPPED
   (PR #196, instance_base:)
+- REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
+  Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
+  via the exact positive partition L/M/N/S), \I/\C complements added
+  (reQ class), and \d carries the Unicode-3.1 legacy Nd set
+  (U+1369-U+1371, demoted to No in 4.0.1 — the suite's Unicode-4.0
+  expectations keep them, bugzilla 13607; the engine's \d vintage is
+  upstream). The class-emitter now hyphen-escapes literals per
+  F.1.1 (a '-' after a completed range, at the edges, or before ']')
+  — the recurring "character class has '-' without escape" Ruby
+  warning is dead at the root. Regex 59 → 30, all engine-bound.
 - FACADE-SILENCE ROUND (2026-10-31, dep refresh): lockfile moxml
   0.5.175 → 0.5.177 (its #513 makes the strict re-check silent on
   composed schemas — the moxml#510 fix) + lutaml-model 0.8.147 →
