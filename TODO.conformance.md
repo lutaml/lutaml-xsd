@@ -524,7 +524,14 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   plus an IMPORTED attributeGroup ref; the facade re-check misses
   the hook members (the Ruby walk resolves it) — evidence
   commented on moxml#522 (same root, new shape). REMAINING 85:
-  Regex 22 (engine dialect), AttributeGroup 14 (11 #522-thread +
+  Regex 22 (REGEX AUDIT 2026-11-05: ALL contested-highlight or
+  crosstalk — reJ 14 + reS 3 + reDH7a are the bugzilla-4113/6901
+  disputed families; reU6 + reT84 are FOUR-WAY vintage flip-flops
+  in the meta (valid/invalid/valid/invalid-Unicode_4.0.0 — the
+  harness takes the first); reT51 is the ASCII-vintage \d vs
+  Unicode-Nd irreconcilable reading (bugzilla 13607 cousin);
+  reT63 PASSES in isolation (batch-crosstalk artifact) — ZERO
+  actionable Ruby work in Regex), AttributeGroup 14 (11 #522-thread +
   the 4 new attgC), SimpleType 11, DataTypes 10 (corners), IC 6
   (idK/idZ singletons), Particles 6, Schema 3 (schA1/D10 Ruby +
   schG2 #522), Wildcards 3, Element 2, ModelGroups 2, Errata10 1.
