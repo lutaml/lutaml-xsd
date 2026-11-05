@@ -58,6 +58,13 @@ module Lutaml
           # the lenient unresolvable path (idF/idG/idH class).
           @redefined_targets = []
           @redefined_body_names = []
+          # Redefine SIMPLE-type bodies: the body is the effective type
+          # for every reference to the name (§4.2.2 — redefine modifies
+          # the schema as a whole, including target-document
+          # components; stZ033: the target doc's own b2 carries the
+          # redefined enumeration). The facet walk never recurses into
+          # named bases, so the body's base reference terminates here.
+          @redefined_simple_bodies = {}
           @elements = index_elements
         end
 
@@ -211,6 +218,11 @@ module Lutaml
         # @return [Object, nil]
         def resolve_named_type(local_name, owner_ns = nil)
           return nil if local_name.nil? || local_name.empty?
+
+          # A redefine SIMPLE-type body is the effective type for every
+          # reference to the name.
+          body = @redefined_simple_bodies[local_name]
+          return body if body
 
           list = named_type_candidates(local_name)
           return nil if list.empty?
@@ -696,7 +708,13 @@ module Lutaml
           end
           Array(red.simple_type).each do |body|
             name = body.name.to_s
-            @redefined_body_names << name unless name.empty?
+            next if name.empty?
+
+            @redefined_body_names << name
+            # The body IS the effective type (§4.2.2): every reference
+            # to the name — including the target document's own — sees
+            # the redefined facets.
+            @redefined_simple_bodies[name] = body
           end
           Array(red.attribute_group).each do |group|
             name = group.name.to_s
