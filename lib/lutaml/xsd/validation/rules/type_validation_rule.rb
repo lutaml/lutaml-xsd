@@ -1049,6 +1049,33 @@ module Lutaml
                                     declared: nil)
             value = effective_text(xml_element, declared)
             validate_fixed_content(xml_element, declared, value, collector)
+            # A simple type has no element content: children under a
+            # builtin-typed element are illegal even when the lexical
+            # text is fine (dtZ86723 — the xsi:type-overridden root
+            # carries a stray child beside a valid int). xs:anyType
+            # overrides admit anything (isDefault072); unresolvable
+            # type REFERENCES arrive here as bare names (the lenient
+            # fallback returns schema_element.type) and are not
+            # builtin-typed at all (idF/idG's redefine-lenient
+            # "tabletype").
+            prefix = type_name.to_s.split(":").first
+            local = type_name.to_s.split(":").last
+            if !xml_element.children.empty? &&
+                BUILTIN_PREFIXES.include?(prefix) &&
+                local != "anyType"
+              report_error(
+                collector,
+                code: "simple_type_element_content",
+                message: "Element '#{xml_element.name}' has a simple " \
+                         "type (#{type_name}) and cannot carry " \
+                         "element children",
+                location: xml_element.xpath,
+                context: {
+                  element: xml_element.name,
+                  type: type_name,
+                },
+              )
+            end
             answer = engine_builtin_answer(type_name, value)
             return if answer.nil?
             return if answer
