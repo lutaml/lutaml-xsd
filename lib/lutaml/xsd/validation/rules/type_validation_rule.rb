@@ -852,6 +852,10 @@ module Lutaml
             end
 
             return if allowed_values.include?(value)
+            # Appendix E membership is by VALUE: timezone-shifted
+            # lexical forms of the same instant are members (the #27
+            # reading — "+00:00" equals "Z").
+            return if temporal_enumeration_match?(allowed_values, value)
 
             report_error(
               collector,
@@ -864,6 +868,28 @@ module Lutaml
               },
               suggestion: "Use one of: #{allowed_values.join(', ')}",
             )
+          end
+
+          # Instant-equality membership for temporal enumerations: both
+          # sides must parse as date-times and denote the same instant
+          # (timezone-shifted spellings are members). Unparseable forms
+          # never match — the string compare stays authoritative.
+          #
+          # @return [Boolean]
+          def temporal_enumeration_match?(allowed_values, value)
+            require "date"
+            instant = begin
+              DateTime.parse(value.to_s)
+            rescue StandardError
+              return false
+            end
+            allowed_values.any? do |allowed|
+              begin
+                DateTime.parse(allowed) == instant
+              rescue StandardError
+                false
+              end
+            end
           end
 
           # Validate list type
