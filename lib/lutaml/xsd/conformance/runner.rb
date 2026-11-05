@@ -170,7 +170,18 @@ module Lutaml
             schema = Lutaml::Xml::Schema::Xsd.parse(
               File.read(kase.schema_path), location: kase.schema_path
             )
-            Repository.new(schema.target_namespace.to_s => schema)
+            # Location registration (moxml#522): the engine lane's
+            # compile consults the schema's file path — without it
+            # the facade cannot resolve the instance's
+            # xsi:schemaLocation hint documents, and strict admission
+            # answers against the head unit alone. The path goes in
+            # the LOCATIONS table (second argument), never the
+            # namespace table: a path key in all_schemas re-indexes
+            # the schema and flips substitution-group verdicts.
+            Repository.new(
+              { schema.target_namespace.to_s => schema },
+              { kase.schema_path => schema },
+            )
           end
         end
       end
