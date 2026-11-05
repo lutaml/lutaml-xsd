@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4614/4696 (98.25%) |
+| pipeline | 4617/4696 (98.32%) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -144,7 +144,7 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
 4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
 round) → 4578 (97.49%, attribute-prohibition round) → 4585 (97.64%,
-multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round), +653 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round) → 4617 (98.32%, ic-ancestor-scope round), +656 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -527,6 +527,21 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   (98.28% restored, zero regressions vs the 406 baseline). The
   407 wins ride again when #47 and #529 land. NET: no score
   change; the pin protects the register.
+
+- IC ANCESTOR-SCOPE ROUND (2026-11-05): +1 IC (idZ008; suite
+  4614->4617 = 98.32% with the prefix-resolution and
+  temporal-enumeration riders on main, zero regressions, rspec
+  green). A keyref whose `refer` names a key declared on an
+  ANCESTOR element resolved against an empty table — the
+  collected-keys map reset per element (idZ008: the key KeyAAA on
+  A, the keyref QQQ on the descendant A2, selector "."). The map
+  now accumulates across the walk; instance document order
+  guarantees ancestors process before descendants. The other five
+  IC singletons (idK012, idZ010/011/012/015) have DIFFERENT roots
+  (cross-namespace keyrefs, IDREF defaults) — next rounds. NOTE:
+  the PREFIX-RESOLUTION round (+1, particlesQ032 via the 1131
+  xmlns-declarations retention in lutaml-model 0.8.167 — pinned)
+  is also on main; the score line carries both.
 
 - SIMPLE-TYPE-CHILDREN ROUND (2026-11-05, third attempt — the first
   two regressed 15 at scale): +1 DataTypes (dtZ86723; suite
