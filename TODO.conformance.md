@@ -238,6 +238,9 @@ corners.
 | mixed="true" on a particle-less complexType rejects text (ctA033/ctA035) | 2 | leptris-rs#35 (sub 2) |
 | xs:redefine composition compiles to an EMPTY content model (idF025/033/034, idG018/019/027/028) | 7 | leptris-rs#35 (sub 3) |
 | Default-supplied content on an empty list-typed element (stZ072) | 1 | leptris-rs#35 (sub 4) |
+| Fixed+empty ROOT-content legs (stE050, stE055) — survivors of the #25/#35 wave | 2 | leptris-rs#45 |
+| Substitution member bound to a same-name local of another type (elemZ020) — survivor of #29 | 1 | leptris-rs#46 |
+| Parsed schemas discard xmlns prefix maps — qualified QName resolution impossible (particlesQ032 class) | 1+ | lutaml-model#1131 |
 | Fixed + empty ATTRIBUTE values still rejected — the #25 attribute leg (addB104, attO006) | 2 | leptris-rs#36 |
 | Content model enforced on NILLED elements (QFE1700g2, particlesIa002) | 2 | leptris-rs#26 |
 | dateTime enumeration rejects timezone-equal forms (dateTime_enumeration005a/b) | 2 | leptris-rs#27 |
