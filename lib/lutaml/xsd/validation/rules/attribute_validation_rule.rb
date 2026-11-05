@@ -828,20 +828,19 @@ module Lutaml
           def enumeration_violation(value, restriction)
             allowed = Array(restriction.enumeration).map(&:value)
             return nil if allowed.empty? || allowed.include?(value)
+
             # Appendix E membership is by VALUE: timezone-shifted
-            # spellings of the same instant are members.
+            # spellings of the same instant are members. Unparseable
+            # forms never match — the string compare stays
+            # authoritative.
             require "date"
-            begin
-              instant = DateTime.parse(value.to_s)
-              return nil if allowed.any? do |candidate|
-                begin
-                  DateTime.parse(candidate) == instant
-                rescue StandardError
-                  false
-                end
-              end
+            instant = begin
+              DateTime.parse(value.to_s)
             rescue StandardError
               nil
+            end
+            return nil if instant && allowed.any? do |candidate|
+              parse_candidate_instant(candidate) == instant
             end
 
             {
@@ -850,6 +849,14 @@ module Lutaml
                        "#{allowed.map { |v| "'#{v}'" }.join(', ')}",
               context: { value: value, allowed: allowed },
             }
+          end
+
+          # @return [DateTime, nil]
+          def parse_candidate_instant(text)
+            require "date"
+            DateTime.parse(text.to_s)
+          rescue StandardError
+            nil
           end
 
           def pattern_violation(value, restriction)

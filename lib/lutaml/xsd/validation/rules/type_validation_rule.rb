@@ -878,18 +878,19 @@ module Lutaml
           # @return [Boolean]
           def temporal_enumeration_match?(allowed_values, value)
             require "date"
-            instant = begin
-              DateTime.parse(value.to_s)
-            rescue StandardError
-              return false
-            end
+            instant = parse_instant(value)
+            return false unless instant
+
             allowed_values.any? do |allowed|
-              begin
-                DateTime.parse(allowed) == instant
-              rescue StandardError
-                false
-              end
+              parse_instant(allowed) == instant
             end
+          end
+
+          # @return [DateTime, nil]
+          def parse_instant(text)
+            DateTime.parse(text.to_s)
+          rescue StandardError
+            nil
           end
 
           # Validate list type
