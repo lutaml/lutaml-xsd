@@ -65,6 +65,11 @@ module Lutaml
           # redefined enumeration). The facet walk never recurses into
           # named bases, so the body's base reference terminates here.
           @redefined_simple_bodies = {}
+          # Exact namespaces for PREFIXED ref particles, from the
+          # owning schema's xmlns declarations (lutaml-model 0.8.167
+          # retains them — #1131). The prefix IS the semantics: a ref
+          # names the declaration its prefix binds, exactly.
+          @ref_namespaces = {}.compare_by_identity
           @elements = index_elements
         end
 
@@ -597,6 +602,96 @@ module Lutaml
                                    schema.to_xml]
         end
 
+        # Exact namespaces for every PREFIXED ref particle in the
+        # document, resolved through the document's own xmlns
+        # declarations (lutaml-model 0.8.167+ retains them — #1131).
+        # The prefix IS the semantics: a ref names the declaration its
+        # prefix binds. Documents parsed by older lutaml-models carry
+        # no declarations and simply contribute nothing.
+        #
+        # @return [void]
+        def register_ref_namespaces(schema)
+          declarations = schema.respond_to?(:xmlns_declarations) &&
+            schema.xmlns_declarations
+          return unless declarations.is_a?(Hash)
+
+          descend = lambda do |node, depth|
+            return if depth > 10
+            return unless node
+
+            if node.is_a?(Array)
+              node.each { |child| descend.call(child, depth) }
+              return
+            end
+
+            if node.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+              ref = node.ref.to_s
+              if ref.include?(":")
+                uri = declarations[ref.split(":").first]
+                @ref_namespaces[node] = uri if uri
+              end
+              return
+            end
+            if node.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+              declaration =
+                resolve_group((node.ref || node.name).to_s.split(":").last)
+              container = declaration &&
+                (Array(declaration.sequence).first ||
+                 Array(declaration.choice).first ||
+                 Array(declaration.all).first)
+              descend.call(container, depth + 1) if container
+              return
+            end
+
+            containers = {
+              Lutaml::Xml::Schema::Xsd::Schema =>
+                %i[element complex_type simple_type attribute
+                   attribute_group group import include redefine],
+              Lutaml::Xml::Schema::Xsd::ComplexType =>
+                %i[sequence choice all group complex_content
+                   simple_content],
+              Lutaml::Xml::Schema::Xsd::ExtensionComplexContent =>
+                %i[sequence choice all group],
+              Lutaml::Xml::Schema::Xsd::RestrictionComplexContent =>
+                %i[sequence choice all group],
+              Lutaml::Xml::Schema::Xsd::ComplexContent =>
+                %i[extension restriction],
+              Lutaml::Xml::Schema::Xsd::SimpleContent =>
+                %i[extension restriction],
+              Lutaml::Xml::Schema::Xsd::Sequence =>
+                %i[element any sequence choice group],
+              Lutaml::Xsd::Sequence =>
+                %i[element any sequence choice group],
+              Lutaml::Xml::Schema::Xsd::Choice =>
+                %i[element any sequence choice group],
+              Lutaml::Xsd::Choice =>
+                %i[element any sequence choice group],
+              Lutaml::Xml::Schema::Xsd::All => %i[element],
+              Lutaml::Xsd::All => %i[element],
+            }[node.class]
+            return unless containers
+
+            containers.each do |accessor|
+              Array(node.public_send(accessor)).each do |child|
+                descend.call(child, depth + 1)
+              end
+            end
+          end
+          descend.call(schema, 0)
+        end
+
+        public
+
+        # The exact namespace a PREFIXED ref particle names, when the
+        # owning document's prefix map is retained (0.8.167+); nil
+        # otherwise (the owner-namespace heuristic applies).
+        #
+        # @param particle [Object]
+        # @return [String, nil]
+        def ref_namespace(particle)
+          @ref_namespaces[particle]
+        end
+
         def index_schema(index, schema, held_signatures = [],
                          chameleon_namespace = nil,
                          chameleon_includer = nil)
@@ -607,6 +702,7 @@ module Lutaml
           chameleon = raw_namespace.to_s.empty? && chameleon_namespace
           namespace = chameleon ? chameleon_namespace : raw_namespace
           defaults_schema = chameleon ? chameleon_includer : schema
+          register_ref_namespaces(schema)
           Array(schema.element).each do |element|
             index_element(index, element, namespace, :top, defaults_schema)
             # A global element's INLINE complexType carries local
