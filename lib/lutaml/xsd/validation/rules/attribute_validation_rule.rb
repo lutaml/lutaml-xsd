@@ -828,6 +828,21 @@ module Lutaml
           def enumeration_violation(value, restriction)
             allowed = Array(restriction.enumeration).map(&:value)
             return nil if allowed.empty? || allowed.include?(value)
+            # Appendix E membership is by VALUE: timezone-shifted
+            # spellings of the same instant are members.
+            require "date"
+            begin
+              instant = DateTime.parse(value.to_s)
+              return nil if allowed.any? do |candidate|
+                begin
+                  DateTime.parse(candidate) == instant
+                rescue StandardError
+                  false
+                end
+              end
+            rescue StandardError
+              nil
+            end
 
             {
               code: "attribute_enumeration_violation",
