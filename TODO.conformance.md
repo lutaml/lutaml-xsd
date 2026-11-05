@@ -515,6 +515,19 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   checks bind the no-ns int ct-A to the ns-b boolean children —
   'true' vs xsd:int — the per-child type plumbing under hint
   layering), full type-redefine body semantics.
+- RIDE-407 PIN-BACK (2026-11-05): the leptris 1.9.407.0 + moxml
+  0.6.3 + lutaml-model 0.8.166 train carried fixes (the FULL #45
+  stE legs, the #522 attgC four + attgD mostly + attJ018 +
+  schF1/P2, stE065/066/096) AND a WHOLESALE 407 regex regression:
+  ~177 cases — the ENTIRE Unicode-block escape family (~80
+  \p{Is...} per-block tests) plus the reL/reP/reQ/reR/reS/reT
+  series — filed leptris-rs#47; moxml 0.6.3 regressed 5 attribute
+  cases (addB059/196c/197c, attO009/011) — filed moxml#529. THE
+  STACK IS PINNED BACK to the known-good 1.9.406.0/0.6.2/0.8.161
+  (98.28% restored, zero regressions vs the 406 baseline). The
+  407 wins ride again when #47 and #529 land. NET: no score
+  change; the pin protects the register.
+
 - SIMPLE-TYPE-CHILDREN ROUND (2026-11-05, third attempt — the first
   two regressed 15 at scale): +1 DataTypes (dtZ86723; suite
   4613->4614 = 98.25%, zero regressions, rspec green). A simple
