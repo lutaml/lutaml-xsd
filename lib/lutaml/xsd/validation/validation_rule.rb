@@ -254,9 +254,14 @@ module Lutaml
             # matches no-namespace declarations, and a hint-loaded
             # document can supply a foreign namesake. The owner probe
             # is GLOBAL-only: a ref names a global declaration, and an
-            # inline namesake must not satisfy it.
+            # inline namesake must not satisfy it. A RETAINED prefix
+            # map (lutaml-model 0.8.167+, #1131) resolves the ref
+            # EXACTLY — the prefix is the semantics.
+            exact_ns = repository&.ref_namespace(particle)
             declaration =
-              (owner_ns && repository&.resolve_global(local, owner_ns)) ||
+              if exact_ns || owner_ns
+                repository&.resolve_global(local, exact_ns || owner_ns)
+              end ||
               repository&.resolve(local, child.namespace_uri) ||
               repository&.resolve(local, nil)
             # An unresolvable ref (particlesQ032: a no-namespace document
