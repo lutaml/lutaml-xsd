@@ -52,7 +52,12 @@ module Lutaml
             # schema's target namespace (the suite's single-namespace shapes).
             target_ns = repository&.target_namespace_for(schema_element).to_s
 
-            collected = {}
+            # Key tables accumulate across the walk: a keyref whose
+            # `refer` names a key declared on an ANCESTOR resolves
+            # against the ancestor's rows (idZ008 — the key on A, the
+            # keyref on the descendant A2). Instance document order
+            # guarantees ancestors are processed before descendants.
+            collected = @collected_keys ||= {}
 
             Array(schema_element.key).each do |constraint|
               evaluated_constraints << constraint.name.to_s if constraint.name
