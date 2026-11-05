@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4613/4696 (98.23%) |
+| pipeline | 4614/4696 (98.25%) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -144,7 +144,7 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
 4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
 round) → 4578 (97.49%, attribute-prohibition round) → 4585 (97.64%,
-multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round), +652 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round), +653 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -512,6 +512,22 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   checks bind the no-ns int ct-A to the ns-b boolean children —
   'true' vs xsd:int — the per-child type plumbing under hint
   layering), full type-redefine body semantics.
+- SIMPLE-TYPE-CHILDREN ROUND (2026-11-05, third attempt — the first
+  two regressed 15 at scale): +1 DataTypes (dtZ86723; suite
+  4613->4614 = 98.25%, zero regressions, rspec green). A simple
+  type has no element content: the builtin assessment reports
+  children even when the lexical text is valid. THREE guards make
+  it sound where the earlier attempts were not: xs:anyType
+  overrides admit anything (isDefault072); unresolvable type
+  REFERENCES arrive at the builtin path as BARE NAMES through the
+  lenient fallback (resolve_element_type returns
+  schema_element.type on miss) — only xs/xsd-prefixed names are
+  builtin-typed, so the redefine-lenient tabletype class
+  (idF/idG) never triggers. The full 19-case battery — including
+  every case both earlier attempts regressed — passes. THE ROOT
+  CAUSE DISCOVERY: the lenient string fallback meant every
+  failed type resolution silently took the builtin path — the
+  children check is the first consumer that had to distinguish.
 - TEMPORAL-ENUMERATION ROUND (2026-11-05): +2 DataTypes (10->8,
   dateTime_enumeration005a/b; suite 4611->4613 = 98.23%, zero
   regressions, rspec green). Enumeration membership is a VALUE-space
