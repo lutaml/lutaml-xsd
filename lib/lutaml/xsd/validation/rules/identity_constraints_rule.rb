@@ -128,6 +128,14 @@ module Lutaml
               ambiguous = true if matched.size > 1
               values << if matched.first.nil?
                           field_supply_value(node, field, repository)
+                        elsif !matched.first.is_a?(Moxml::Element) &&
+                            skip_governed_attribute?(node, matched.first,
+                                                     repository)
+                          # A skip-wildcard-governed attribute is not
+                          # assessed, so it supplies no identity-
+                          # constraint value: the field treats it as
+                          # absent (idZ015).
+                          nil
                         elsif matched.first.is_a?(Moxml::Element) &&
                             field_node_non_simple?(
                               matched.first, constraint, raws[index],
@@ -335,6 +343,104 @@ module Lutaml
             return nil unless parent_type
 
             repository.declared_attribute_supply(parent_type, attr_local)
+          end
+
+          # Whether the instance attribute is governed by a SKIP
+          # wildcard on the selector node's declaration: a skip-
+          # governed attribute is not assessed, so it supplies no
+          # identity-constraint field value (idZ015).
+          #
+          # @return [Boolean]
+          def skip_governed_attribute?(element_node, attribute_node,
+                                       repository)
+            declaration = repository&.resolve(element_node.name,
+                                              element_node.namespace_uri)
+            return false unless declaration
+
+            type = declaration.complex_type ||
+              repository.resolve_type(declaration)
+            return false unless type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
+            target_ns = repository.target_namespace_for(declaration)
+            attribute_ns = attribute_namespace(element_node, attribute_node)
+            attribute_skip_wildcards(type, repository, 0).any? do |wildcard|
+              wildcard_process_mode(wildcard) == "skip" &&
+                wildcard_admits_namespace?(wildcard, attribute_ns, target_ns)
+            end
+          end
+
+          # The attribute's namespace URI: the xpath result nodes are
+          # adapter objects (leptris ResultAttr carries no namespace),
+          # so the name-matched attribute on the MOXML element wrapper
+          # resolves it.
+          #
+          # @return [String]
+          def attribute_namespace(element_node, attribute_node)
+            found = element_node.attributes.find do |candidate|
+              candidate.name == attribute_node.name
+            end
+            found&.namespace&.uri.to_s
+          end
+
+          # The anyAttribute wildcards reachable from the type: its own,
+          # content-part bodies, and attributeGroup members (nested
+          # refs depth-guarded).
+          #
+          # @return [Array<Lutaml::Xml::Schema::Xsd::AnyAttribute>]
+          def attribute_skip_wildcards(type, repository, depth)
+            return [] if depth > 3
+
+            wildcards = Array(type.any_attribute)
+            Array(type.attribute_group).each do |group|
+              wildcards.concat(Array(group.any_attribute))
+              local = (group.ref || group.name).to_s.split(":").last
+              declaration = local && repository.resolve_attribute_group(local)
+              if declaration
+                wildcards.concat(attribute_skip_wildcards(declaration,
+                                                          repository,
+                                                          depth + 1))
+              end
+            end
+            content_kinds = %i[complex_content simple_content]
+            part_kinds = %i[extension restriction]
+            content_kinds.each do |content_kind|
+              content = type.public_send(content_kind)
+              next unless content
+
+              part_kinds.each do |part_kind|
+                Array(content.public_send(part_kind)).each do |part|
+                  wildcards.concat(Array(part.any_attribute))
+                end
+              end
+            end
+            wildcards
+          end
+
+          # Whether the wildcard's namespace constraint admits the
+          # attribute's namespace (mirrors WildcardScope#wildcard_permits?
+          # for attribute nodes, against the declaration's target
+          # namespace).
+          #
+          # @return [Boolean]
+          def wildcard_admits_namespace?(wildcard, uri, target_ns)
+            case wildcard.namespace.to_s
+            when "##any", ""
+              true
+            when "##other"
+              !uri.empty? && uri != target_ns.to_s
+            when "##local"
+              uri.empty?
+            when "##targetNamespace"
+              uri == target_ns.to_s
+            else
+              wildcard.namespace.to_s.split(/\s+/).any? do |entry|
+                case entry
+                when "##local" then uri.empty?
+                when "##targetNamespace" then uri == target_ns.to_s
+                else entry == uri
+                end
+              end
+            end
           end
 
           # Whether an element field's node supplies no identity value:
