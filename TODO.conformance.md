@@ -526,6 +526,24 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   STACK IS PINNED BACK to the known-good 1.9.406.0/0.6.2/0.8.161
   (98.28% restored, zero regressions vs the 406 baseline). The
   407 wins ride again when #47 and #529 land. NET: no score
+- ID-VALUE-CONSTRAINT ROUND (2026-11-07): +1 IC (idZ011; suite
+  4619->4620 = 98.38%, zero regressions, rspec green). Value
+  constraints (fixed/default) are FORBIDDEN on attribute declarations
+  typed xs:ID or derived from it (XSD 1.0 §3.2.6) — the schema is
+  uncompilable, so every instance reached is invalid regardless of
+  instance use. The attribute rule's declaration-scoped step 1c
+  checks the builtin-prefixed reference, ref-resolved declarations,
+  and the inline/named restriction base chain (depth 6); the
+  idZ011_a companion (xs:STRING default) stays clean. Family probes:
+  Attribute 113/113 clean, AttributeGroup 14 = the parked moxml#522
+  set unchanged. PROBE LESSON (repeat): single-process family probes
+  CRAWL after ~50 engine-heavy cases (engine-state accumulation;
+  enumeration order is unstable so the hang point moves) — the case
+  runs alone in <1s; batched methodology or the full measure is the
+  only reliable family signal at this scale. Remaining IC
+  singletons: idZ012 (IDREFS default references no ID), idZ015 (a
+  skip-wildcard-governed attribute supplies no IC field value).
+
   change; the pin protects the register.
 - NON-SIMPLE-FIELD ROUND (2026-11-07): +2 IC (idK012, idZ010; suite
   4617->4619 = 98.36%, zero regressions, rspec green). An identity
