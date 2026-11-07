@@ -62,7 +62,8 @@ module Lutaml
             Array(schema_element.key).each do |constraint|
               evaluated_constraints << constraint.name.to_s if constraint.name
               values = collect_values(xml_element, constraint, collector,
-                                      repository, target_ns, :key)
+                                      repository, target_ns, :key,
+                                      schema_element)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_key_violation")
               collected[constraint.name] = values if constraint.name
@@ -71,7 +72,8 @@ module Lutaml
             Array(schema_element.unique).each do |constraint|
               evaluated_constraints << constraint.name.to_s if constraint.name
               values = collect_values(xml_element, constraint, collector,
-                                      repository, target_ns, :unique)
+                                      repository, target_ns, :unique,
+                                      schema_element)
               report_duplicates(collector, xml_element, constraint, values,
                                 "duplicate_unique_violation")
               collected[constraint.name] = values if constraint.name
@@ -83,7 +85,8 @@ module Lutaml
               next if referred.nil?
 
               collect_values(xml_element, constraint, collector,
-                             repository, target_ns, :keyref).each do |value|
+                             repository, target_ns, :keyref,
+                             schema_element).each do |value|
                 next if referred.include?(value)
 
                 report_error(
@@ -107,24 +110,53 @@ module Lutaml
 
           private
 
+          # Field values (and violation flags) for ONE selector-matched
+          # node: per field, the supply value, the node's text/attr
+          # value, or a non-simple verdict.
+          #
+          # @return [Array(Array, Boolean, Boolean)] [values, ambiguous,
+          #   non_simple]
+          def evaluate_field_row(node, fields, raws, constraint,
+                                 owner_element, repository)
+            values = []
+            ambiguous = false
+            non_simple = false
+            fields.each_with_index do |field, index|
+              matched = field_nodes(node, field)
+              # A field evaluating to a node-set with more than one
+              # member violates the constraint (XSD 1.0 §3.11.4).
+              ambiguous = true if matched.size > 1
+              values << if matched.first.nil?
+                          field_supply_value(node, field, repository)
+                        elsif matched.first.is_a?(Moxml::Element) &&
+                            field_node_non_simple?(
+                              matched.first, constraint, raws[index],
+                              owner_element, repository
+                            )
+                          # An element field hitting an element with
+                          # ELEMENT children (complex content), or one
+                          # DECLARED non-simple (complex content or
+                          # xsd:anyType — the typeless default), supplies
+                          # no identity value: the field "does evaluate
+                          # to a node of non-simple type" (idK012/idZ010).
+                          non_simple = true
+                          nil
+                        else
+                          field_node_value(matched.first)
+                        end
+            end
+            [values, ambiguous, non_simple]
+          end
+
           def collect_values(xml_element, constraint, collector, repository,
-                             target_namespace, kind)
+                             target_namespace, kind, owner_element)
             fields = field_xpaths(constraint, target_namespace)
+            raws = raw_fields(constraint)
             selector_xpaths(constraint, target_namespace).flat_map do |selector|
               Array(xml_element.moxml_element.xpath(selector)).map do |node|
-                values = []
-                ambiguous = false
-                fields.each do |field|
-                  matched = field_nodes(node, field)
-                  # A field evaluating to a node-set with more than one
-                  # member violates the constraint (XSD 1.0 §3.11.4).
-                  ambiguous = true if matched.size > 1
-                  values << if matched.first
-                              field_node_value(matched.first)
-                            else
-                              field_supply_value(node, field, repository)
-                            end
-                end
+                values, ambiguous, non_simple =
+                  evaluate_field_row(node, fields, raws, constraint,
+                                     owner_element, repository)
 
                 if ambiguous
                   report_error(
@@ -132,6 +164,19 @@ module Lutaml
                     code: "field_node_set_violation",
                     message: "Field #{fields.join(', ')} evaluates to " \
                              "more than one node in '#{node.name}'",
+                    location: xml_element.xpath,
+                    context: { constraint: constraint.name },
+                  )
+                  next
+                end
+
+                if non_simple
+                  report_error(
+                    collector,
+                    code: "field_non_simple_type_violation",
+                    message: "Field #{fields.join(', ')} of #{kind} " \
+                             "'#{constraint.name}' evaluates to a node of " \
+                             "non-simple type in '#{node.name}'",
                     location: xml_element.xpath,
                     context: { constraint: constraint.name },
                   )
@@ -292,6 +337,67 @@ module Lutaml
             repository.declared_attribute_supply(parent_type, attr_local)
           end
 
+          # Whether an element field's node supplies no identity value:
+          # it has element children, is declared non-simple (complex
+          # content or xsd:anyType — the typeless default), or carries a
+          # resolvable xsi:type override to a non-simple type — the
+          # override governs the INSTANCE value space, so a simple
+          # override keeps the field simple no matter what the schema
+          # declares (idF-class).
+          #
+          # @param matched [Moxml::Element]
+          # @return [Boolean]
+          def field_node_non_simple?(matched, constraint, raw_field,
+                                     owner_element, repository)
+            override = override_governs_simple(matched, repository)
+            return !override unless override.nil?
+
+            matched.elements.any? ||
+              declared_field_non_simple?(constraint, raw_field,
+                                         owner_element, repository)
+          end
+
+          # The simple/non-simple verdict of the field node's xsi:type
+          # override, or nil when the node has no resolvable override.
+          #
+          # @return [Boolean, nil]
+          def override_governs_simple(node, repository)
+            override = node.attributes.find do |candidate|
+              candidate.name == "type" &&
+                candidate.namespace&.uri == XSI_NAMESPACE
+            end
+            return unless override
+
+            parts = override.value.to_s.split(":")
+            local = parts.last
+            return if local.nil? || local.empty?
+            return local != "anyType" if %w[xs xsd].include?(parts.first)
+
+            case repository&.resolve_named_type(local)
+            when Lutaml::Xml::Schema::Xsd::SimpleType then true
+            when Lutaml::Xml::Schema::Xsd::ComplexType then false
+            end
+          end
+
+          # Whether the field's element declaration — reached by
+          # descending the IC owner's content model through the raw
+          # selector path, then the raw field step — is non-simple
+          # (complex content or xsd:anyType). Unresolvable paths allow
+          # no determination.
+          #
+          # @return [Boolean]
+          def declared_field_non_simple?(constraint, raw_field,
+                                         owner_element, repository)
+            return false unless repository && owner_element
+
+            owner_type = owner_element.complex_type ||
+              repository.resolve_type(owner_element)
+            raw_selectors(constraint).any? do |selector_raw|
+              repository.field_declaration_simple(owner_type, selector_raw,
+                                                  raw_field) == false
+            end
+          end
+
           def report_duplicates(collector, xml_element, constraint, values,
                                 code)
             values.group_by(&:itself).each do |value, group|
@@ -345,6 +451,20 @@ module Lutaml
             values.each_index.any? do |index|
               values[index].nil? && raw[index].to_s.match?(/[\w.-]+:/)
             end
+          end
+
+          # The selector steps as WRITTEN (unions split the same way the
+          # adapted list splits) — the declared-field determination
+          # descends the schema through these.
+          #
+          # @return [Array<String>]
+          def raw_selectors(constraint)
+            raw = if constraint.selector.is_a?(Lutaml::Xml::Schema::Xsd::Selector)
+                    constraint.selector.xpath
+                  else
+                    constraint.selector
+                  end
+            raw.to_s.split(/\s*\|\s*/).reject(&:empty?)
           end
 
           # The field steps as WRITTEN (unions split the same way the

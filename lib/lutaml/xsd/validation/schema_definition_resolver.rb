@@ -527,7 +527,227 @@ module Lutaml
           particle_for_type(resolve_named_type(local_name))
         end
 
+        # Whether the element declaration an identity-constraint field
+        # binds to is SIMPLE-typed. A field may take an identity value
+        # only from a simple-typed node: a complex type with complex
+        # content (element children, idK012) or xsd:anyType — the
+        # default for a typeless local declaration (idZ010's A3/A22) —
+        # supplies no identity value. The declaration is reached by
+        # descending the IC owner's content model through the raw
+        # selector path, then the selector element's own type through
+        # the raw field path.
+        #
+        # @param owner_type [Lutaml::Xml::Schema::Xsd::ComplexType, nil]
+        # @param selector_raw [String] the selector XPath as written
+        # @param field_raw [String] the field XPath as written
+        # @return [Boolean, nil] nil when unresolvable (no determination)
+        def field_declaration_simple(owner_type, selector_raw, field_raw)
+          sel_type = path_bound_type(owner_type, selector_raw)
+          bound = sel_type && path_bound_with_decl(sel_type, field_raw)
+          return unless bound
+
+          field_type, field_decl, owner_self = bound
+          return type_supplies_identity_value?(field_type) if owner_self
+          return unless field_decl
+
+          element_declaration_simple?(field_decl)
+        end
+
         private
+
+        # Whether a TYPE carries an identity value for a field bound to
+        # the selector node itself (a "." field): a simple type or a
+        # complex type with simple content does; complex content does not.
+        #
+        # @param type [Object]
+        # @return [Boolean, nil]
+        def type_supplies_identity_value?(type)
+          case type
+          when Lutaml::Xml::Schema::Xsd::SimpleType then true
+          when Lutaml::Xml::Schema::Xsd::ComplexType
+            !type.simple_content.nil?
+          end
+        end
+
+        # The type an identity-constraint XPath (selector or field)
+        # binds to, descended through the content model from +type+.
+        # A bare "." binds +type+ itself; each named step locates the
+        # child element declaration and descends into its type.
+        #
+        # @param type [Object, nil]
+        # @param raw_path [String] the XPath as written
+        # @return [Object, nil]
+        def path_bound_type(type, raw_path, depth = 0)
+          path_bound_with_decl(type, raw_path, depth)&.first
+        end
+
+        # The bound type AND the final element declaration of an
+        # identity-constraint XPath. The declaration is nil when the
+        # path is a bare "." (the bound node IS the starting element).
+        #
+        # @param type [Object, nil]
+        # @param raw_path [String] the XPath as written
+        # @return [Array(Object, Object, Boolean), nil] [type, decl,
+        #   owner_self] — nil when unresolvable
+        def path_bound_with_decl(type, raw_path, depth = 0)
+          return nil if type.nil? || depth > 8
+
+          steps = raw_path.to_s.split("/").reject do |step|
+            step.empty? || step == "."
+          end
+          current = type
+          decl = nil
+          steps.each_with_index do |step, index|
+            local = step.split(":").last
+            return nil if step.start_with?("@") || local.nil? || local == "*"
+
+            decl = declared_child_element(current, local, depth)
+            return nil unless decl
+
+            current = declared_element_type(decl, depth)
+            # A nil type mid-path (typeless or unresolvable named)
+            # cannot descend further; a nil type on the FINAL step
+            # still binds its declaration — typeless defaults to
+            # xsd:anyType, which the caller's predicate decides.
+            return nil if current.nil? && index < steps.length - 1
+          end
+          [current, decl, steps.empty?]
+        end
+
+        # The element declaration for +local_name+ in the content model
+        # of +type+: its own particles first, then the derivation base
+        # chain (derived types inherit the base's particles).
+        #
+        # @param type [Object, nil]
+        # @param local_name [String]
+        # @param depth [Integer] recursion guard
+        # @return [Lutaml::Xml::Schema::Xsd::Element, nil]
+        def declared_child_element(type, local_name, depth = 0)
+          return nil if depth > 8
+          return nil unless type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
+          found = find_particle_element(particle_for_type(type), local_name,
+                                        depth)
+          return found if found
+
+          content = type.complex_content
+          part = content && (Array(content.extension).first ||
+            Array(content.restriction).first)
+          return nil unless part
+
+          declared_child_element(
+            resolve_named_type(part.base.to_s.split(":").last),
+            local_name, depth + 1
+          )
+        end
+
+        # Depth-first search for an Element particle named +local_name+.
+        # A ref particle binds the GLOBAL declaration (the descent needs
+        # its type); prefix-insensitive, the same trade the adapted
+        # XPath evaluation makes.
+        #
+        # @param node [Object, Array, nil]
+        # @param local_name [String]
+        # @param depth [Integer] recursion guard
+        # @return [Lutaml::Xml::Schema::Xsd::Element, nil]
+        def find_particle_element(node, local_name, depth = 0)
+          return nil if node.nil? || depth > 24
+
+          if node.is_a?(Array)
+            node.each do |child|
+              found = find_particle_element(child, local_name, depth + 1)
+              return found if found
+            end
+            return nil
+          end
+
+          if node.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+            return node if node.name.to_s.split(":").last == local_name
+
+            ref_local = node.ref.to_s.split(":").last
+            return nil unless ref_local == local_name
+
+            return resolve_global(ref_local, nil)
+          end
+
+          nested = CONTAINER_NESTED_KINDS[node.class]
+          nested&.each do |kind|
+            found = find_particle_element(Array(node.public_send(kind)),
+                                          local_name, depth + 1)
+            return found if found
+          end
+          (CONTAINER_LEAF_KINDS[node.class] || []).each do |kind|
+            Array(node.public_send(kind)).each do |leaf|
+              next unless leaf
+
+              if leaf.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+                resolved = if leaf.ref
+                             resolve_group(leaf.ref.to_s
+                                             .split(":").last)
+                           else
+                             leaf
+                           end
+                found = find_particle_element(resolved, local_name,
+                                              depth + 1)
+                return found if found
+              elsif leaf.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+                found = find_particle_element(leaf, local_name, depth + 1)
+                return found if found
+              end
+            end
+          end
+          nil
+        end
+
+        # The TYPE a bound element declaration carries: its inline
+        # complexType or simpleType, else the named type its +type+
+        # attribute resolves to.
+        #
+        # @param element_decl [Lutaml::Xml::Schema::Xsd::Element]
+        # @param depth [Integer] recursion guard
+        # @return [Object, nil]
+        def declared_element_type(element_decl, _depth = 0)
+          return element_decl.complex_type if element_decl.complex_type
+          return element_decl.simple_type if element_decl.simple_type
+
+          name = element_decl.type.to_s
+          return nil if name.empty?
+
+          resolve_named_type(name.split(":").last)
+        end
+
+        # Whether a bound element declaration's type is SIMPLE: an
+        # inline simpleType, a simple-named type, or a complex type
+        # with SIMPLE content (text value carries the identity value).
+        # Complex content — including xsd:anyType, the default for a
+        # typeless declaration — is NOT simple.
+        #
+        # @param element_decl [Lutaml::Xml::Schema::Xsd::Element]
+        # @return [Boolean, nil] nil when the named type is unresolvable
+        def element_declaration_simple?(element_decl)
+          return true if element_decl.simple_type
+
+          complex = element_decl.complex_type
+          return !complex.simple_content.nil? if complex
+
+          name = element_decl.type.to_s
+          return false if name.empty?
+
+          parts = name.split(":")
+          return false if parts.last == "anyType"
+
+          resolved = resolve_named_type(parts.last)
+          case resolved
+          when Lutaml::Xml::Schema::Xsd::SimpleType then true
+          when Lutaml::Xml::Schema::Xsd::ComplexType
+            !resolved.simple_content.nil?
+          else
+            # Unresolvable but builtin-prefixed (xs:/xsd: both bind the
+            # schema namespace) is simple; unresolvable otherwise allows
+            # no determination.
+            parts.first.to_s.match?(/\Axs(d)?\z/) || nil
+          end
+        end
 
         def particle_for_type(type)
           case type
