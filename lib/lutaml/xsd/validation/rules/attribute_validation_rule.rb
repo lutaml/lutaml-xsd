@@ -653,7 +653,9 @@ module Lutaml
             return :preserve unless builtin_type_name?(reference)
 
             local = reference.split(":").last
-            return :preserve if local == "string"
+            # anySimpleType's whiteSpace is PRESERVE — the ur-simple
+            # type canonicalizes nothing.
+            return :preserve if ["string", "anySimpleType"].include?(local)
             return :replace if local == "normalizedString"
 
             :collapse

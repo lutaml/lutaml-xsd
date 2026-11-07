@@ -297,3 +297,56 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::TypeValidationRule,
     end
   end
 end
+
+RSpec.describe "fixed value against xs:anySimpleType (test93160)" do
+  let(:validator) do
+    repository = Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ nil => schema })
+    config = {
+      "validation" => {
+        "features" => { "engine_validation" => false },
+      },
+    }
+    Lutaml::Xsd::Validation::Validator.new(repository, config: config)
+  end
+
+  let(:schema) do
+    Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <xs:element name="root">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="fooTest" type="xs:anySimpleType"
+                          fixed="test information"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:schema>
+    XSD
+  end
+
+  it "compares the raw lexical — whitespace-padded text mismatches" do
+    result = validator.validate(
+      "<root>\n\t<fooTest>\n\t\ttest information\n\t</fooTest>\n</root>",
+    )
+
+    expect(result.valid?).to be(false)
+    expect(result.errors.map(&:code)).to include("fixed_content_value_mismatch")
+  end
+
+  it "accepts the exact lexical" do
+    result = validator.validate(
+      "<root><fooTest>test information</fooTest></root>",
+    )
+
+    expect(result.valid?).to be(true)
+  end
+end
