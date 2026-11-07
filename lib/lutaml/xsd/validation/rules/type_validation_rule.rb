@@ -488,7 +488,10 @@ module Lutaml
               end
 
             case local
-            when "string"
+            when "string", "anySimpleType"
+              # anySimpleType's whiteSpace is PRESERVE (the ur-simple
+              # type canonicalizes nothing) — a fixed compare against
+              # it compares the raw lexical (test93160).
               :preserve
             when "normalizedString"
               :replace
