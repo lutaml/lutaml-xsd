@@ -527,6 +527,32 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   (98.28% restored, zero regressions vs the 406 baseline). The
   407 wins ride again when #47 and #529 land. NET: no score
   change; the pin protects the register.
+- NON-SIMPLE-FIELD ROUND (2026-11-07): +2 IC (idK012, idZ010; suite
+  4617->4619 = 98.36%, zero regressions, rspec green). An identity
+  field takes a value only from a SIMPLE-typed node: a field hitting
+  an element with element children (idK012's pid, complexContent
+  restriction of anyType) or one DECLARED non-simple — complex
+  content, or xsd:anyType as the typeless-local default (idZ010's
+  A3/A22, the cross-namespace import shape) — previously contributed
+  its concatenated text as a clean row. The rule consults the field's
+  declaration via SchemaDefinitionResolver#field_declaration_simple:
+  the IC owner's content model descends the raw selector path, the
+  selector element's own type descends the raw field path (base
+  chains included; refs resolve to the global declaration). THREE
+  guards keep it sound: a resolvable xsi:type override governs the
+  INSTANCE value space (idF-class overrides stay simple, idL090
+  decimal/string fields untouched); unresolvable descents yield nil
+  = no determination (the lenient path is untouched); unresolvable
+  named types are simple only when builtin-prefixed. LESSON: the
+  tri-state verdicts live in NON-predicate methods — rubocop -A
+  rewrites `return nil` guards in `?`-methods to `return false`,
+  which silently hardened the lenient path twice before the probes
+  caught it. The remaining three IC singletons have DIFFERENT roots
+  (next rounds): idZ011 (schema-side xs:ID value-constraint
+  prohibition, §3.2.6), idZ012 (IDREFS default "abc" references no
+  ID), idZ015 (a skip-wildcard-governed attribute supplies no IC
+  field value).
+
 
 - IC ANCESTOR-SCOPE ROUND (2026-11-05): +1 IC (idZ008; suite
   4614->4617 = 98.32% with the prefix-resolution and
