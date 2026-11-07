@@ -276,3 +276,170 @@ RSpec.describe "identity constraints (key/keyref/unique)" do
     end
   end
 end
+
+RSpec.describe "identity constraint fields of non-simple type" do
+  let(:validator) do
+    repository = Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ nil => schema })
+    config = {
+      "validation" => {
+        "features" => { "engine_validation" => false },
+      },
+    }
+    Lutaml::Xsd::Validation::Validator.new(repository, config: config)
+  end
+
+  context "with a field on a complex-content element (idK012)" do
+    let(:schema) do
+      Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element ref="uid" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+            <xs:unique name="uuid">
+              <xs:selector xpath=".//uid"/>
+              <xs:field xpath="pid"/>
+            </xs:unique>
+          </xs:element>
+          <xs:element name="uid">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="pid">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="gid"/>
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "rejects the non-simple field node" do
+      result = validator.validate(
+        "<root><uid><pid><gid>v</gid></pid></uid></root>",
+      )
+
+      expect(result.valid?).to be(false)
+      expect(result.errors.map(&:code))
+        .to include("field_non_simple_type_violation")
+    end
+  end
+
+  context "with a typeless field element (xsd:anyType default, idZ010)" do
+    let(:schema) do
+      Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="a" maxOccurs="unbounded">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="A22"/>
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+              </xs:sequence>
+            </xs:complexType>
+            <xs:key name="aKey">
+              <xs:selector xpath="a"/>
+              <xs:field xpath="A22"/>
+            </xs:key>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "rejects the anyType field node despite text-only content" do
+      result = validator.validate(
+        "<root><a><A22>v1</A22></a><a><A22>v2</A22></a></root>",
+      )
+
+      expect(result.valid?).to be(false)
+      expect(result.errors.map(&:code))
+        .to include("field_non_simple_type_violation")
+    end
+  end
+
+  context "with a simple-typed field element" do
+    let(:schema) do
+      Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="a" maxOccurs="unbounded">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="A22" type="xs:string"/>
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+              </xs:sequence>
+            </xs:complexType>
+            <xs:key name="aKey">
+              <xs:selector xpath="a"/>
+              <xs:field xpath="A22"/>
+            </xs:key>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "accepts rows from the simple-typed field" do
+      result = validator.validate(
+        "<root><a><A22>v1</A22></a><a><A22>v2</A22></a></root>",
+      )
+
+      expect(result.valid?).to be(true)
+    end
+  end
+
+  context "with a resolvable xsi:type override on the field element" do
+    let(:schema) do
+      Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element ref="uid" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+            <xs:unique name="uuid">
+              <xs:selector xpath=".//uid"/>
+              <xs:field xpath="."/>
+            </xs:unique>
+          </xs:element>
+          <xs:element name="uid" type="xs:anyType"/>
+        </xs:schema>
+      XSD
+    end
+
+    it "lets the override govern the instance value space" do
+      result = validator.validate(
+        '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+        ' xmlns:xs="http://www.w3.org/2001/XMLSchema">' \
+        '<uid xsi:type="xs:boolean">1</uid>' \
+        '<uid xsi:type="xs:decimal">1.0</uid></root>',
+      )
+
+      expect(result.valid?).to be(true)
+    end
+  end
+end
