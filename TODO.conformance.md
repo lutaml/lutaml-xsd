@@ -521,6 +521,27 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   schF1/P2, stE065/066/096) AND a WHOLESALE 407 regex regression:
   ~177 cases — the ENTIRE Unicode-block escape family (~80
   \p{Is...} per-block tests) plus the reL/reP/reQ/reR/reS/reT
+- ANYSIMPLETYPE-WHITESPACE ROUND (2026-11-07): +1 Additional
+  (test93160; suite 4627->4628 = 98.55%, pending measure confirm).
+  xs:anySimpleType's whiteSpace is PRESERVE — the ur-simple type
+  canonicalizes nothing — but the fixed-compare whitespace rule fell
+  through to collapse, so whitespace-padded text equaled the fixed
+  value. The element- and attribute-side whitespace maps now send
+  anySimpleType to preserve; the fixed compare is a RAW-LEXICAL
+  compare (xmllint: the padded actual does not match the fixed).
+  PARKED same-day classifications (the per-position binding wall —
+  the parent-context redesign charter): isDefault079 (two same-named
+  locals with DIFFERENT fixed values — the second child binds to the
+  second particle; we mis-bind to the first; xmllint validates),
+  QFE1700c1 (skip-suppression must follow the matcher's DETERMINISTIC
+  assignment — the ref particle takes its e2 and validates its
+  content, not the skip-wildcard hereditary escape), addB065
+  (xsi:nil=true on non-nillable silent), addB188 (xsi:type-assessed
+  undeclared root skips the attribute check). errC007's namespace
+  fallback narrowing REVERTED after 5 regressions (addB132/ctZ007/
+  elemZ021b/f/elemZ023 lean on the lenient fallback for
+  substitution/import shapes) — parked with the same charter.
+
   series — filed leptris-rs#47; moxml 0.6.3 regressed 5 attribute
 - WILDCARD-LAYERING ROUND (2026-11-07): +3 Wildcards (wildZ013b/c
   valid, wildZ013e invalid; suite 4624->4627 = 98.57%, zero
