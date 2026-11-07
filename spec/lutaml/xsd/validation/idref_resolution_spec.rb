@@ -68,6 +68,43 @@ RSpec.describe "IDREF(S) resolution to document IDs" do
     end
   end
 
+  context "with element-typed IDREF(S)" do
+    let(:schema) do
+      Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   elementFormDefault="qualified">
+          <xs:element name="root">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element type="xs:ID" name="id"/>
+                <xs:element type="xs:IDREF" name="idref"/>
+                <xs:element type="xs:IDREFS" name="idrefs"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "accepts collapsed references that match a collapsed ID" do
+      result = validator.validate(
+        "<root><id> a1 </id><idref> a1 </idref>" \
+        "<idrefs>a1</idrefs></root>",
+      )
+
+      expect(result.valid?).to be(true)
+    end
+
+    it "rejects a dangling element reference" do
+      result = validator.validate(
+        "<root><id>a1</id><idref>zzz</idref><idrefs>a1</idrefs></root>",
+      )
+
+      expect(result.valid?).to be(false)
+      expect(result.errors.map(&:code)).to include("idref_violation")
+    end
+  end
+
   context "with instance IDREF attributes" do
     let(:schema) do
       Lutaml::Xml::Schema::Xsd.parse(<<~XSD)

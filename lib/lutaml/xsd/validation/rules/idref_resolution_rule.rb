@@ -70,8 +70,10 @@ module Lutaml
           def collect_element_ids(element, declaration, ids, repository)
             return unless builtin_typed?(declaration, repository, "ID")
 
-            text = element.text_content.to_s
-            ids << text unless text.strip.empty?
+            # ID/IDREF(S) collapse whitespace (token derivation) — the
+            # value space is the collapsed form, never the raw lexical
+            # (dtZ107447: " John " both sides).
+            ids.concat(element.text_content.to_s.split)
           end
 
           # @return [void]
@@ -80,7 +82,7 @@ module Lutaml
               instance = element.attributes.find do |candidate|
                 candidate.name == attr.name
               end
-              ids << instance.value if instance
+              ids.concat(instance.value.to_s.split) if instance
             end
           end
 
@@ -104,13 +106,15 @@ module Lutaml
           end
 
           # @return [void]
-          def check_element_reference(element, declaration, _ids, collector,
+          def check_element_reference(element, declaration, ids, collector,
                                       repository)
             return unless
               builtin_typed?(declaration, repository, "IDREF") ||
                 builtin_typed?(declaration, repository, "IDREFS")
 
             reference_values(element.text_content.to_s).each do |value|
+              next if ids.include?(value)
+
               report_unresolved(value, element, collector, "element")
             end
           end
