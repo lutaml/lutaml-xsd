@@ -523,6 +523,20 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   \p{Is...} per-block tests) plus the reL/reP/reQ/reR/reS/reT
   series — filed leptris-rs#47; moxml 0.6.3 regressed 5 attribute
   cases (addB059/196c/197c, attO009/011) — filed moxml#529. THE
+- REDEFINE-GROUP ROUND (2026-11-07): +2 ModelGroups (mgO006,
+  mgO034; suite 4622->4624 = 98.46%, zero regressions, rspec
+  green). index_redefine registered simpleType bodies
+  (@redefined_simple_bodies) and attributeGroup bodies
+  (@attribute_groups) but NOT group bodies — resolve_group walked
+  the schemas and found the TARGET original (mgO006B's
+  all(e1, e2?)) instead of the redefining body (choice(e1)), so
+  foo's sequence(e1, group-ref) saw two e1s against the all's
+  max-1 and false-positived occurrence bounds. The body IS the
+  effective definition for every reference to the name (§4.2.2 —
+  the same principle the simple-type round landed for stZ033).
+  Group sentinels (schT redefine trio, groupG/H/J, idF/G engine
+  legs) unchanged.
+
   STACK IS PINNED BACK to the known-good 1.9.406.0/0.6.2/0.8.161
 - SKIP-WILDCARD-FIELD ROUND (2026-11-07): +1 IC (idZ015; suite
   4621->4622 = 98.42%, zero regressions, rspec green). THE LAST IC
