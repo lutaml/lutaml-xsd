@@ -65,6 +65,11 @@ module Lutaml
           # redefined enumeration). The facet walk never recurses into
           # named bases, so the body's base reference terminates here.
           @redefined_simple_bodies = {}
+          # Redefine GROUP bodies: the body is the effective definition
+          # for every reference to the name (§4.2.2 — same principle as
+          # the simple-type bodies; mgO006/034: the body's choice(e1)
+          # replaces the target's all(...)).
+          @redefined_groups = {}
           # Exact namespaces for PREFIXED ref particles, from the
           # owning schema's xmlns declarations (lutaml-model 0.8.167
           # retains them — #1131). The prefix IS the semantics: a ref
@@ -482,6 +487,11 @@ module Lutaml
         # @return [Lutaml::Xml::Schema::Xsd::Group, nil]
         def resolve_group(local_name)
           return nil if local_name.nil? || local_name.empty?
+
+          # A redefine body is the effective definition for every
+          # reference to the name — the target originals never serve.
+          body = @redefined_groups[local_name]
+          return body if body
 
           schemas.each do |schema|
             found = Array(schema.group).find { |g| g.name == local_name }
@@ -1039,6 +1049,12 @@ module Lutaml
             original = @attribute_groups[name]
             @redefined_originals[name] = original if original
             @attribute_groups[name] = group
+          end
+          Array(red.group).each do |group|
+            name = group.name.to_s
+            next if name.empty?
+
+            @redefined_groups[name] = group
           end
         end
 
