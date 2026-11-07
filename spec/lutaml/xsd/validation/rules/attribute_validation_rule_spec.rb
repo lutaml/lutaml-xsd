@@ -430,3 +430,100 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
       .to include("attribute_lexical_violation")
   end
 end
+
+RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
+               "xs:ID value constraints (idZ011)" do
+  let(:config) { Lutaml::Xsd::Validation::ValidationConfiguration.new }
+  let(:collector) { Lutaml::Xsd::Validation::ResultCollector.new(config) }
+  let(:rule) { described_class.new }
+  let(:xsd_xml) do
+    <<~XSD
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <xs:element name="root">
+          <xs:complexType>
+            <xs:attribute name="id" type="xs:ID" fixed="a"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:schema>
+    XSD
+  end
+  let(:schema) { Lutaml::Xml::Schema::Xsd.parse(xsd_xml) }
+  let(:repository) do
+    Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ nil => schema })
+  end
+  let(:resolver) do
+    Lutaml::Xsd::Validation::SchemaDefinitionResolver.new(repository)
+  end
+  let(:schema_def) { resolver.resolve("root", nil) }
+  let(:navigator) do
+    Object.new.tap do |nav|
+      nav.define_singleton_method(:current_xpath) { "/root" }
+    end
+  end
+
+  def validate_xml(xml)
+    root = Moxml::Context.new.parse(xml).root
+    xml_element = Lutaml::Xsd::Validation::XmlElement.new(root, navigator)
+    rule.validate(xml_element, schema_def, collector, repository: resolver)
+    collector
+  end
+
+  it "rejects a fixed value constraint on an xs:ID declaration" do
+    collector = validate_xml("<root><e id=\"a\"/></root>")
+
+    expect(collector.errors.map(&:code))
+      .to include("id_value_constraint_violation")
+  end
+
+  it "rejects the constraint regardless of instance use" do
+    collector = validate_xml("<root/>")
+
+    expect(collector.errors.map(&:code))
+      .to include("id_value_constraint_violation")
+  end
+
+  it "accepts a value constraint on a non-ID declaration (idZ011_a)" do
+    schema = Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <xs:element name="root">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="e" maxOccurs="2">
+                <xs:complexType>
+                  <xs:attribute name="att" type="xs:string" default="a"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:schema>
+    XSD
+    repository = Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ nil => schema })
+    resolver = Lutaml::Xsd::Validation::SchemaDefinitionResolver
+      .new(repository)
+    schema_def = resolver.resolve("root", nil)
+    root = Moxml::Context.new.parse("<root><e/></root>").root
+    xml_element = Lutaml::Xsd::Validation::XmlElement.new(root, navigator)
+    rule.validate(xml_element, schema_def, collector, repository: resolver)
+
+    expect(collector.errors).to be_empty
+  end
+end
