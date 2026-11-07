@@ -106,6 +106,13 @@ module Lutaml
                                            xml_attributes, collector,
                                            wildcards: wildcards)
 
+            # Step 1c: an xs:ID declaration cannot carry a value
+            # constraint — the schema itself is uncompilable, so the
+            # instance is invalid wherever the declaration is reached
+            # (XSD 1.0 §3.2.6, idZ011).
+            validate_id_value_constraints(schema_attributes, collector,
+                                          xml_element, repository)
+
             # Step 2: Validate attribute values
             validate_attribute_values(xml_element, resolved_attributes,
                                       xml_attributes, collector,
@@ -434,6 +441,73 @@ module Lutaml
                 suggestion: "Add attribute: #{attr_name}=\"...\"",
               )
             end
+          end
+
+          # An xs:ID declaration with fixed or default is an illegal
+          # value constraint (XSD 1.0 §3.2.6): the type definition is
+          # or is derived from xs:ID. Declaration-scoped — fires on the
+          # element's type regardless of instance use (idZ011).
+          #
+          # @return [void]
+          def validate_id_value_constraints(schema_attrs, collector,
+                                            xml_element, repository)
+            schema_attrs.each do |schema_attr|
+              next if schema_attr.fixed.to_s.empty? &&
+                schema_attr.default.to_s.empty?
+              next unless id_typed_attribute?(schema_attr, repository)
+
+              report_error(
+                collector,
+                code: "id_value_constraint_violation",
+                message: "Attribute '#{schema_attr.name}' is typed " \
+                         "xs:ID (or derived from it) and cannot carry " \
+                         "a fixed or default value constraint",
+                location: xml_element.xpath,
+                context: { attribute: schema_attr.name },
+              )
+            end
+          end
+
+          # Whether the declaration's type is xs:ID or derives from it:
+          # a builtin-prefixed reference, or a restriction base chain
+          # (inline or named) whose terminal is xs:ID.
+          #
+          # @return [Boolean]
+          def id_typed_attribute?(schema_attr, repository)
+            return true if builtin_id_type?(schema_attr.type)
+
+            ref = schema_attr.ref.to_s
+            if ref.match?(/\S/) && repository
+              resolved = repository.resolve_attribute(ref.split(":").last,
+                                                      nil)
+              return true if resolved && builtin_id_type?(resolved.type)
+            end
+
+            named = schema_attr.type.to_s.split(":").last
+            chain = schema_attr.simple_type ||
+              (named && repository&.resolve_named_type(named))
+            id_derived_chain?(chain, repository, 0)
+          end
+
+          # @return [Boolean]
+          def builtin_id_type?(reference)
+            parts = reference.to_s.split(":")
+            %w[xs xsd].include?(parts.first) && parts.last == "ID"
+          end
+
+          # @param type [Lutaml::Xml::Schema::Xsd::SimpleType, nil]
+          # @return [Boolean]
+          def id_derived_chain?(type, repository, depth)
+            return false if depth > 6 || type.nil?
+
+            base = type.restriction&.base.to_s
+            return true if builtin_id_type?(base)
+            return false if base.empty?
+
+            id_derived_chain?(
+              repository&.resolve_named_type(base.split(":").last),
+              repository, depth + 1
+            )
           end
 
           # Check if attribute is required
