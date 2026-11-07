@@ -522,6 +522,24 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   ~177 cases — the ENTIRE Unicode-block escape family (~80
   \p{Is...} per-block tests) plus the reL/reP/reQ/reR/reS/reT
   series — filed leptris-rs#47; moxml 0.6.3 regressed 5 attribute
+- WILDCARD-LAYERING ROUND (2026-11-07): +3 Wildcards (wildZ013b/c
+  valid, wildZ013e invalid; suite 4624->4627 = 98.57%, zero
+  regressions, rspec green). THREE defects: (1) attributeGroup refs
+  nested in content parts never contributed their anyAttribute
+  wildcards (wildZ013b — the extension's attG2-51 ref); (2) the
+  derivation wildcard list admitted with plain UNION semantics where
+  same-type wildcards must INTERSECT (wildZ013e: intersection1's
+  ##other + ##local b c give set(b, c) — absent-ns attributes fail
+  ##other) — collect_any_attribute now returns one GROUP per
+  derivation layer: groups union (the extension union, ctH011
+  unchanged), members intersect; (3) the chameleon import's ##other
+  evaluated against the INCLUDER's target namespace — the
+  per-wildcard owner tns (indexed for attributeGroup declarations
+  and redefine bodies now) evaluates a chameleon's ##other against
+  its own ABSENT target (wildZ013c's ##local b c + ##other(not-
+  absent) admit everything the instance carries). Family: Wildcards
+  + Attribute clean; AttributeGroup 14 = the parked moxml#522 set.
+
   cases (addB059/196c/197c, attO009/011) — filed moxml#529. THE
 - REDEFINE-GROUP ROUND (2026-11-07): +2 ModelGroups (mgO006,
   mgO034; suite 4622->4624 = 98.46%, zero regressions, rspec
