@@ -951,6 +951,10 @@ module Lutaml
           Array(schema.attribute_group).each do |group|
             name = group.name.to_s
             @attribute_groups[name] = group unless name.empty?
+            # The group's own effective target namespace — a chameleon
+            # document's wildcards evaluate against the includer's
+            # (wildZ013c), a named document's against its own.
+            @namespaces[group] = namespace unless name.empty?
             Array(group.attribute).each do |member|
               index_local_attribute(member, namespace, defaults_schema)
             end
@@ -1049,6 +1053,7 @@ module Lutaml
             original = @attribute_groups[name]
             @redefined_originals[name] = original if original
             @attribute_groups[name] = group
+            @namespaces[group] = namespace
           end
           Array(red.group).each do |group|
             name = group.name.to_s

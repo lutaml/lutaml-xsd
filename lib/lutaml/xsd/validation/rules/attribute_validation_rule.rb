@@ -538,9 +538,14 @@ module Lutaml
 
               xml_attr = xml_attrs.find { |xa| xa.name == attr_name }
               next unless xml_attr
-              next if wildcards.any? do |wildcard|
-                wildcard_permits_attribute?(wildcard, xml_element, xml_attr,
-                                            nil)
+              # A wildcard that admits the attribute shadows the
+              # prohibition (attZ002): any group admitting (union
+              # across layers, intersection within).
+              next if wildcards.any? do |group|
+                group.all? do |wildcard|
+                  wildcard_permits_attribute?(wildcard, xml_element,
+                                              xml_attr, nil)
+                end
               end
 
               report_error(
@@ -1042,20 +1047,23 @@ module Lutaml
               next if xml_attr.namespace_uri == XmlBuiltins::NAMESPACE &&
                 XmlBuiltins.attribute(xml_attr.name)
 
-              # The derivation's wildcard UNION admits: any permitting
-              # wildcard covers the attribute, and a strict mode on any
-              # admitting wildcard still demands a declaration in the
-              # attribute's own namespace.
+              # The derivation's wildcard GROUPS admit: ACROSS groups
+              # (derivation layers) any group admits the attribute — the
+              # extension union; WITHIN a group every wildcard must
+              # admit — same-type wildcards intersect (wildZ013b/c/e).
               admitted = false
               strict_undeclared = false
-              wildcards.each do |wildcard|
-                next unless wildcard_permits_attribute?(wildcard,
-                                                        xml_element,
-                                                        xml_attr, repository)
+              wildcards.each do |group|
+                next unless group.all? do |wildcard|
+                  wildcard_permits_attribute?(wildcard, xml_element,
+                                              xml_attr, repository)
+                end
 
                 admitted = true
-                if wildcard_process_mode(wildcard) == "strict" &&
+                group.each do |wildcard|
+                  next unless wildcard_process_mode(wildcard) == "strict" &&
                     !attribute_declared?(xml_attr, repository)
+
                   strict_undeclared = true
                 end
               end
@@ -1106,7 +1114,12 @@ module Lutaml
           # UNION — a base type's wildcard stays in force beside the
           # extension's own (ctH011: ##local base + ##other extension).
           #
-          # @return [Array<AnyAttribute>]
+          # @return [Array<Array<AnyAttribute>>] wildcard GROUPS: one
+          #   group per derivation layer (the base's groups stay beside
+          #   the derived layer — the extension union, wildZ013b/c);
+          #   wildcards INSIDE one group are same-type and intersect
+          #   (wildZ013e: intersection1's two attributeGroup refs give
+          #   set(b, c), rejecting what ##other alone would admit).
           def collect_any_attribute(schema_def, repository = nil,
                                     xml_element = nil)
             if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
@@ -1122,21 +1135,21 @@ module Lutaml
             end
             return [] unless schema_def
 
-            wildcards = []
+            own = []
             complex_wildcard = schema_def.any_attribute if
               schema_def.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType) &&
                 complex_type_wildcard_support?
-            wildcards << complex_wildcard if complex_wildcard
+            own << complex_wildcard if complex_wildcard
 
             # A wildcard nested in an attributeGroup DECLARATION reaches
             # the type only through the group's resolution — the type's
             # ref particle carries no children of its own (attgD019).
             Array(schema_def.attribute_group).each do |group|
               Array(group.any_attribute).each do |wildcard|
-                wildcards << wildcard
+                own << wildcard
               end
 
-              collect_group_wildcards(group, repository, wildcards, 0)
+              collect_group_wildcards(group, repository, own, 0)
             end
 
             CONTENT_KINDS.each do |content_kind|
@@ -1146,22 +1159,31 @@ module Lutaml
               CONTENT_PART_KINDS.each do |part_kind|
                 Array(content.public_send(part_kind)).each do |part|
                   Array(part.any_attribute).each do |wildcard|
-                    wildcards << wildcard
+                    own << wildcard
+                  end
+                  # An attributeGroup REF inside the derivation body
+                  # carries the wildcard the type presents (wildZ013b:
+                  # the extension's attG2-51 ref).
+                  Array(part.attribute_group).each do |group_ref|
+                    collect_group_wildcards(group_ref, repository, own, 0)
                   end
                 end
               end
             end
 
             # The base type's wildcard flows into the derived type
-            # through extension and restriction alike.
+            # through extension and restriction alike — as its own
+            # layer beside the derived one.
             base = derivation_base(schema_def, repository)
-            wildcards.concat(collect_any_attribute(base, repository)) if base
-
-            wildcards
+            groups = base ? collect_any_attribute(base, repository) : []
+            groups.unshift(own) unless own.empty?
+            groups
           end
 
           # The wildcards of an attributeGroup reference's DECLARATION,
-          # following nested attributeGroup refs (depth-guarded).
+          # following nested attributeGroup refs (depth-guarded). Each
+          # wildcard records its declaring group's effective target
+          # namespace for the ##other evaluation.
           #
           # @return [void]
           def collect_group_wildcards(group, repository, wildcards, depth)
@@ -1175,6 +1197,8 @@ module Lutaml
 
             Array(declaration.any_attribute).each do |wildcard|
               wildcards << wildcard
+              wildcard_owner_tns[wildcard] =
+                repository&.target_namespace_for(declaration)
             end
 
             Array(declaration.attribute_group).each do |nested|
@@ -1214,7 +1238,15 @@ module Lutaml
           def wildcard_permits_attribute?(wildcard, parent, xml_attr,
                                           repository)
             ns = xml_attr.namespace_uri.to_s
-            target = content_target_namespace(parent, repository).to_s
+            # The WILDCARD's own declaration namespace — a chameleon
+            # document's ##other evaluates against its own (absent)
+            # target, not the includer's (wildZ013c).
+            target =
+              if wildcard_owner_tns.key?(wildcard)
+                wildcard_owner_tns[wildcard].to_s
+              else
+                content_target_namespace(parent, repository).to_s
+              end
             case wildcard.namespace.to_s
             when "##any", ""
               true
@@ -1235,6 +1267,16 @@ module Lutaml
                 end
               end
             end
+          end
+
+          # The effective target namespace of each collected wildcard's
+          # DECLARING attributeGroup (identity-keyed — equal-valued
+          # wildcards eql? together). Untracked wildcards fall back to
+          # the element declaration's namespace.
+          #
+          # @return [Hash]
+          def wildcard_owner_tns
+            @wildcard_owner_tns ||= {}.compare_by_identity
           end
 
           # Whether a strict-wildcard attribute resolves to a global

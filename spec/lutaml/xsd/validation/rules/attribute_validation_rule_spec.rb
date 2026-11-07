@@ -527,3 +527,75 @@ RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
     expect(collector.errors).to be_empty
   end
 end
+
+RSpec.describe Lutaml::Xsd::Validation::Rules::AttributeValidationRule,
+               "wildcard groups (wildZ013)" do
+  let(:config) { Lutaml::Xsd::Validation::ValidationConfiguration.new }
+  let(:collector) { Lutaml::Xsd::Validation::ResultCollector.new(config) }
+  let(:rule) { described_class.new }
+  let(:schema) do
+    Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                 targetNamespace="a" xmlns:a="a">
+        <xs:element name="doc" type="a:paired"/>
+        <xs:complexType name="paired">
+          <xs:attributeGroup ref="a:gOther"/>
+          <xs:attributeGroup ref="a:gLocalBC"/>
+        </xs:complexType>
+        <xs:attributeGroup name="gOther">
+          <xs:anyAttribute namespace="##other" processContents="lax"/>
+        </xs:attributeGroup>
+        <xs:attributeGroup name="gLocalBC">
+          <xs:anyAttribute namespace="##local b c" processContents="lax"/>
+        </xs:attributeGroup>
+      </xs:schema>
+    XSD
+  end
+  let(:repository) do
+    Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ "a" => schema })
+  end
+  let(:resolver) do
+    Lutaml::Xsd::Validation::SchemaDefinitionResolver.new(repository)
+  end
+  let(:schema_def) { resolver.resolve("doc", "a") }
+  let(:navigator) do
+    Object.new.tap do |nav|
+      nav.define_singleton_method(:current_xpath) { "/paired" }
+    end
+  end
+
+  def validate_xml(xml)
+    root = Moxml::Context.new.parse(xml).root
+    xml_element = Lutaml::Xsd::Validation::XmlElement.new(root, navigator)
+    rule.validate(xml_element, schema_def, collector, repository: resolver)
+    collector
+  end
+
+  # ##other(a) paired with ##local b c on the SAME type: same-type
+  # wildcards intersect (wildZ013e) — absent-namespace attributes
+  # fail ##other and must be rejected even though ##local admits them.
+  it "rejects an attribute one same-type wildcard refuses" do
+    collector = validate_xml(
+      '<a:doc xmlns:a="a" xmlns:b="b" b:att="1" plain="x"/>',
+    )
+
+    expect(collector.errors.map(&:code)).to include("unexpected_attribute")
+  end
+
+  it "accepts an attribute every same-type wildcard admits" do
+    collector = validate_xml(
+      '<a:doc xmlns:a="a" xmlns:b="b" b:att="1"/>',
+    )
+
+    expect(collector.errors).to be_empty
+  end
+end
