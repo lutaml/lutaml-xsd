@@ -525,6 +525,21 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   cases (addB059/196c/197c, attO009/011) — filed moxml#529. THE
   STACK IS PINNED BACK to the known-good 1.9.406.0/0.6.2/0.8.161
   (98.28% restored, zero regressions vs the 406 baseline). The
+- IDREF-RESOLUTION ROUND (2026-11-07): +1 IC (idZ012; suite
+  4620->4621 = 98.40%, zero regressions, rspec green). Every
+  IDREF/IDREFS value must match an ID in the document (XSD 1.0
+  §3.3.3) — the check did not exist at all. IdrefResolutionRule
+  (identity category, root-scoped two-phase scan beside
+  IdUniquenessRule) collects every document ID (element text +
+  attributes), then checks IDREF/IDREFS values from instance
+  attributes, element text, AND the declaration's fixed/default
+  supply when the instance omits the attribute — a defaulted IDREFS
+  still references (idZ012: drefs type="xs:IDREFS" default="abc"
+  against a document with no ID). IDREFS tokenizes; every token must
+  resolve; the two-phase order makes forward references valid.
+  Remaining IC singleton: idZ015 (a skip-wildcard-governed attribute
+  supplies no IC field value).
+
   407 wins ride again when #47 and #529 land. NET: no score
 - ID-VALUE-CONSTRAINT ROUND (2026-11-07): +1 IC (idZ011; suite
   4619->4620 = 98.38%, zero regressions, rspec green). Value
