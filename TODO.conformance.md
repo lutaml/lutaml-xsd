@@ -524,6 +524,26 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   series — filed leptris-rs#47; moxml 0.6.3 regressed 5 attribute
   cases (addB059/196c/197c, attO009/011) — filed moxml#529. THE
   STACK IS PINNED BACK to the known-good 1.9.406.0/0.6.2/0.8.161
+- SKIP-WILDCARD-FIELD ROUND (2026-11-07): +1 IC (idZ015; suite
+  4621->4622 = 98.42%, zero regressions, rspec green). THE LAST IC
+  SINGLETON — the idK/idZ family is now CLEAN (all six roots fixed
+  across the four rounds). An attribute admitted by a
+  processContents=skip wildcard is NOT ASSESSED, so it supplies no
+  identity-constraint field value: the field treats it as absent and
+  a key whose fields do not all evaluate is violated (idZ015: foo's
+  ##any skip anyAttribute + key field @bar; xmllint: "Not all fields
+  of key identity-constraint evaluate to a node"). The skip check
+  walks the selector node's declaration anyAttribute wildcards
+  (own + content parts + attributeGroup members, depth 3) and the
+  namespace constraint reads the attribute's URI from the MOXML
+  element wrapper — xpath result attributes are ADAPTER objects
+  (leptris ResultAttr carries no namespace). GOTCHA: the first
+  implementation read node.namespace and CRASHED under leptris —
+  the suite probe "passed" as CRASH-AS-INVALID, caught by writing
+  the rule-level spec FIRST (rule_execution_error instead of the
+  finding). Suite verdicts from crashes are not fixes; assert the
+  finding code.
+
   (98.28% restored, zero regressions vs the 406 baseline). The
 - IDREF-RESOLUTION ROUND (2026-11-07): +1 IC (idZ012; suite
   4620->4621 = 98.40%, zero regressions, rspec green). Every
