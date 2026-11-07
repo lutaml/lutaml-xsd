@@ -443,3 +443,49 @@ RSpec.describe "identity constraint fields of non-simple type" do
     end
   end
 end
+
+RSpec.describe "identity constraint fields under skip wildcards" do
+  let(:validator) do
+    repository = Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ nil => schema })
+    config = {
+      "validation" => {
+        "features" => { "engine_validation" => false },
+      },
+    }
+    Lutaml::Xsd::Validation::Validator.new(repository, config: config)
+  end
+
+  context "with a skip-governed attribute field (idZ015)" do
+    let(:schema) do
+      Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:element name="foo">
+            <xs:complexType>
+              <xs:anyAttribute namespace="##any" processContents="skip"/>
+            </xs:complexType>
+            <xs:key name="aKey">
+              <xs:selector xpath="."/>
+              <xs:field xpath="@bar"/>
+            </xs:key>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "treats the skip-governed attribute as absent for a key" do
+      result = validator.validate('<foo bar="abc"/>')
+
+      expect(result.valid?).to be(false)
+      expect(result.errors.map(&:code)).to include("key_field_absent_violation")
+    end
+  end
+end
