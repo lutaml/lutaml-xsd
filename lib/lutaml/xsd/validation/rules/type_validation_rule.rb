@@ -333,6 +333,22 @@ module Lutaml
                 return true
               end
 
+              # A fixed value constraint forbids nilled elements
+              # outright (addB065; xmllint: "cannot be 'nilled' because
+              # there is a fixed value constraint").
+              unless schema_element.fixed.to_s.empty?
+                report_error(
+                  collector,
+                  code: "xsi_nil_with_fixed",
+                  message: "Element '#{xml_element.name}' cannot be " \
+                           "nilled because there is a fixed value " \
+                           "constraint defined for it",
+                  location: xml_element.xpath,
+                  context: { element: xml_element.name },
+                )
+                return true
+              end
+
               if xml_element.children.empty? &&
                   xml_element.text_content.to_s.strip.empty?
                 return true
