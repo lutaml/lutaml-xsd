@@ -65,6 +65,25 @@ module Lutaml
             schema_def = resolver.resolve(
               xml_element.name, xml_element.namespace_uri
             )
+            if parent
+              parent_declaration =
+                resolver.resolve(parent.name, parent.namespace_uri)
+              candidates = resolver.positional_children(parent_declaration,
+                                                        xml_element.name)
+              positional = candidates[same_name_sibling_index(xml_element,
+                                                              parent)]
+              # The binding must agree with the child's OWN namespace:
+              # an unqualified ref's global namesake never serves a
+              # qualified local namesake (particlesQ016).
+              child_ns = xml_element.namespace_uri.to_s
+              expected_ns =
+                resolver.expected_namespace_for(positional).to_s
+              if positional &&
+                  ((child_ns.empty? && expected_ns.empty?) ||
+                   child_ns == expected_ns)
+                schema_def = positional
+              end
+            end
             rules.each do |rule|
               argument = rule.schema_argument(schema_def, repository: resolver)
               next if argument.nil? && !rule.runs_without_schema?
@@ -202,6 +221,23 @@ module Lutaml
           element.children.each do |child|
             walk_elements(child, element, inherited: suppress, &)
           end
+        end
+
+        # The child's position among its same-named siblings — the index
+        # the positional binding (duplicate same-named declarations,
+        # isDefault079) binds to. Computed on the RAW moxml nodes: the
+        # wrapper objects are not identity-stable across accessor calls
+        # (the IdUniquenessRule lesson).
+        #
+        # @return [Integer]
+        def same_name_sibling_index(element, parent)
+          raw_children = Array(parent.moxml_element.elements)
+          position = raw_children.index do |node|
+            node.equal?(element.moxml_element)
+          end
+          return 0 if position.nil?
+
+          raw_children.take(position).count { |node| node.name == element.name }
         end
 
         # Whether the parent's content model holds a processContents

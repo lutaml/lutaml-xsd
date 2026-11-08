@@ -350,3 +350,56 @@ RSpec.describe "fixed value against xs:anySimpleType (test93160)" do
     expect(result.valid?).to be(true)
   end
 end
+
+RSpec.describe "positional binding of duplicate same-named locals (isDefault079)" do
+  let(:validator) do
+    repository = Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ nil => schema })
+    config = {
+      "validation" => {
+        "features" => { "engine_validation" => false },
+      },
+    }
+    Lutaml::Xsd::Validation::Validator.new(repository, config: config)
+  end
+
+  let(:schema) do
+    Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <xs:element name="regvaluemodopset">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="op" type="xs:string" fixed="delete"/>
+              <xs:element name="op" type="xs:string" fixed="write"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:schema>
+    XSD
+  end
+
+  it "binds the second same-named child to the second particle" do
+    result = validator.validate(
+      "<regvaluemodopset><op>delete</op><op>write</op></regvaluemodopset>",
+    )
+
+    expect(result.valid?).to be(true)
+  end
+
+  it "rejects a child that matches neither position" do
+    result = validator.validate(
+      "<regvaluemodopset><op>delete</op><op>delete</op></regvaluemodopset>",
+    )
+
+    expect(result.valid?).to be(false)
+    expect(result.errors.map(&:code)).to include("fixed_content_value_mismatch")
+  end
+end
