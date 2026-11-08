@@ -489,3 +489,71 @@ RSpec.describe "identity constraint fields under skip wildcards" do
     end
   end
 end
+
+RSpec.describe "lax anyType content (errC007)" do
+  let(:validator) do
+    repository = Class.new(Lutaml::Xsd::SchemaRepository) do
+      def initialize(schemas)
+        super()
+        @fixture_schemas = schemas
+      end
+
+      def all_schemas
+        @fixture_schemas
+      end
+    end.new({ "http://www.tempuri.org" => schema })
+    config = {
+      "validation" => {
+        "features" => { "engine_validation" => false },
+      },
+    }
+    Lutaml::Xsd::Validation::Validator.new(repository, config: config)
+  end
+
+  let(:schema) do
+    Lutaml::Xml::Schema::Xsd.parse(<<~XSD)
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                 targetNamespace="http://www.tempuri.org"
+                 xmlns:a="http://www.tempuri.org">
+        <xs:element name="root">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="localElement1"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="testContent" type="xs:short"/>
+      </xs:schema>
+    XSD
+  end
+
+  it "skips an unqualified same-named child of an anyType element" do
+    result = validator.validate(
+      '<a:root xmlns:a="http://www.tempuri.org">' \
+      "<localElement1><testContent>any text</testContent></localElement1>" \
+      "</a:root>",
+    )
+
+    expect(result.valid?).to be(true)
+  end
+
+  it "validates a qualified child against its own declaration" do
+    result = validator.validate(
+      '<a:root xmlns:a="http://www.tempuri.org">' \
+      "<localElement1><a:testContent>123</a:testContent></localElement1>" \
+      "</a:root>",
+    )
+
+    expect(result.valid?).to be(true)
+  end
+
+  it "rejects a qualified child whose lexical violates the declaration" do
+    result = validator.validate(
+      '<a:root xmlns:a="http://www.tempuri.org">' \
+      "<localElement1><a:testContent>any text</a:testContent>" \
+      "</localElement1></a:root>",
+    )
+
+    expect(result.valid?).to be(false)
+  end
+end

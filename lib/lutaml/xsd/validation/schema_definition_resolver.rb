@@ -159,10 +159,14 @@ module Lutaml
           @expected_namespaces[element]
         end
 
+        # The namespace-EXACT resolution — no unique-name fallback. The
+        # lax anyType-content decision (errC007) and other
+        # namespace-strict consumers use it.
+        #
         # @param name [String] local element name
         # @param namespace_uri [String, nil] instance element namespace
         # @return [Lutaml::Xml::Schema::Xsd::Element, nil]
-        def resolve(name, namespace_uri)
+        def resolve_strict(name, namespace_uri)
           return nil if name.nil? || name.empty?
 
           candidates = @elements[name]
@@ -171,12 +175,32 @@ module Lutaml
           exact = candidates.find do |_element, namespace, _kind|
             namespace_matches?(namespace, namespace_uri)
           end
-          return exact&.first if exact
+          exact&.first
+        end
+
+        # Whether the type reference names xs:anyType.
+        #
+        # @param reference [String]
+        # @return [Boolean]
+        def builtin_any_type?(reference)
+          parts = reference.to_s.split(":")
+          %w[xs xsd].include?(parts.first) && parts.last == "anyType"
+        end
+
+        # @param name [String] local element name
+        # @param namespace_uri [String, nil] instance element namespace
+        # @return [Lutaml::Xml::Schema::Xsd::Element, nil]
+        def resolve(name, namespace_uri)
+          exact = resolve_strict(name, namespace_uri)
+          return exact if exact
 
           # Unique-name fallback for instances that omit namespaces even
           # though the schema declares one. A foreign namespace never
           # falls back.
           return nil unless namespace_uri.to_s.empty?
+
+          candidates = @elements[name]
+          return nil if candidates.empty?
 
           candidates.length == 1 ? candidates.first.first : nil
         end
