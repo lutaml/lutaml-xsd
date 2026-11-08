@@ -1032,56 +1032,19 @@ module Lutaml
                                                 wildcards: [], repository: nil,
                                                 schema_element: nil)
             xml_attrs.each do |xml_attr|
-              # Skip xmlns attributes
-              next if xml_attr.name == "xmlns" ||
-                xml_attr.prefix == "xmlns"
-
-              # Skip xsi attributes
-              next if xml_attr.namespace_uri ==
-                "http://www.w3.org/2001/XMLSchema-instance"
+              next if spec_namespace_attribute?(xml_attr)
 
               schema_attr = find_schema_attribute(schema_attrs, xml_attr,
                                                   repository, schema_element)
               next if schema_attr
 
-              # xml:lang and friends are declared by the spec, not by
-              # the schema document.
-              next if xml_attr.namespace_uri == XmlBuiltins::NAMESPACE &&
-                XmlBuiltins.attribute(xml_attr.name)
-
-              # The derivation's wildcard GROUPS admit: ACROSS groups
-              # (derivation layers) any group admits the attribute — the
-              # extension union; WITHIN a group every wildcard must
-              # admit — same-type wildcards intersect (wildZ013b/c/e).
-              admitted = false
-              strict_undeclared = false
-              wildcards.each do |group|
-                next unless group.all? do |wildcard|
-                  wildcard_permits_attribute?(wildcard, xml_element,
-                                              xml_attr, repository)
-                end
-
-                admitted = true
-                group.each do |wildcard|
-                  next unless wildcard_process_mode(wildcard) == "strict" &&
-                    !attribute_declared?(xml_attr, repository)
-
-                  strict_undeclared = true
-                end
-              end
+              admitted, strict_undeclared =
+                wildcard_admission(xml_attr, xml_element, wildcards,
+                                   repository)
 
               if admitted
-                if strict_undeclared
-                  report_error(
-                    collector,
-                    code: "wildcard_undeclared_attribute",
-                    message: "Attribute '#{xml_attr.qualified_name}' " \
-                             "matches xs:anyAttribute with " \
-                             "processContents=strict but is not declared",
-                    location: xml_element.xpath,
-                    context: { attribute: xml_attr.qualified_name },
-                  )
-                end
+                report_wildcard_finding(xml_element, xml_attr, collector,
+                                        strict_undeclared, repository)
                 next
               end
 
@@ -1098,6 +1061,79 @@ module Lutaml
                 suggestion: suggest_similar_attribute(xml_attr, schema_attrs),
               )
             end
+          end
+
+          # xmlns declarations, xsi, and the xml: builtins (lang, base,
+          # space — declared by the spec, not by the schema document)
+          # are not content.
+          #
+          # @return [Boolean]
+          def spec_namespace_attribute?(xml_attr)
+            return true if xml_attr.name == "xmlns" ||
+              xml_attr.prefix == "xmlns"
+
+            return true if xml_attr.namespace_uri ==
+              "http://www.w3.org/2001/XMLSchema-instance"
+
+            xml_attr.namespace_uri == XmlBuiltins::NAMESPACE &&
+              XmlBuiltins.attribute(xml_attr.name)
+          end
+
+          # The derivation's wildcard GROUPS admit: ACROSS groups
+          # (derivation layers) any group admits the attribute — the
+          # extension union; WITHIN a group every wildcard must admit —
+          # same-type wildcards intersect (wildZ013b/c/e). A strict
+          # wildcard in an admitting group still demands a declaration.
+          #
+          # @return [Array(Boolean, Boolean)] [admitted, strict_undeclared]
+          def wildcard_admission(xml_attr, xml_element, wildcards, repository)
+            admitted = false
+            strict_undeclared = false
+            wildcards.each do |group|
+              next unless group.all? do |wildcard|
+                wildcard_permits_attribute?(wildcard, xml_element,
+                                            xml_attr, repository)
+              end
+
+              admitted = true
+              group.each do |wildcard|
+                next unless wildcard_process_mode(wildcard) == "strict" &&
+                  !attribute_declared?(xml_attr, repository)
+
+                strict_undeclared = true
+              end
+            end
+            [admitted, strict_undeclared]
+          end
+
+          # An admitted wildcard attribute reports the strict-undeclared
+          # finding when strict demanded a declaration, then runs the
+          # lax obligation (XSD 1.0 §3.10.4): a wildcard-governed
+          # attribute whose declaration IS available (in the attribute's
+          # own namespace) is validated against it — duration028: the
+          # lax-governed "P" must still hit its global xs:duration
+          # declaration.
+          #
+          # @return [void]
+          def report_wildcard_finding(xml_element, xml_attr, collector,
+                                      strict_undeclared, repository)
+            if strict_undeclared
+              report_error(
+                collector,
+                code: "wildcard_undeclared_attribute",
+                message: "Attribute '#{xml_attr.qualified_name}' " \
+                         "matches xs:anyAttribute with " \
+                         "processContents=strict but is not declared",
+                location: xml_element.xpath,
+                context: { attribute: xml_attr.qualified_name },
+              )
+            end
+
+            found = wildcard_declaration(xml_attr, repository)
+            return unless found
+
+            validate_attribute_value(xml_element, xml_attr, found,
+                                     collector, repository: repository)
           end
 
           # Whether the loaded lutaml-model parses xs:anyAttribute on
@@ -1290,14 +1326,28 @@ module Lutaml
           def attribute_declared?(xml_attr, repository)
             return true if repository.nil?
 
+            !wildcard_declaration(xml_attr, repository).nil?
+          end
+
+          # The global declaration the wildcard-governed attribute
+          # resolves to, resolved in the attribute's OWN namespace and
+          # checked against the declaration's expected namespace
+          # (duration028's lax obligation uses it for value validation).
+          #
+          # @return [Lutaml::Xml::Schema::Xsd::Attribute, nil]
+          def wildcard_declaration(xml_attr, repository)
+            return nil if repository.nil?
+
             declaration = repository.resolve_attribute(
               xml_attr.name, xml_attr.namespace_uri
             )
-            return false unless declaration
+            return nil unless declaration
 
             expected = repository.expected_attribute_namespace(declaration)
-            expected.nil? ||
-              expected == xml_attr.namespace_uri.to_s
+            if expected.nil? ||
+                expected == xml_attr.namespace_uri.to_s
+              declaration
+            end
           end
 
           # Target namespace of the schema owning the parent's declaration.
