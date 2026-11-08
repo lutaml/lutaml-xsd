@@ -518,6 +518,20 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
 - RIDE-407 PIN-BACK (2026-11-05): the leptris 1.9.407.0 + moxml
   0.6.3 + lutaml-model 0.8.166 train carried fixes (the FULL #45
   stE legs, the #522 attgC four + attgD mostly + attJ018 +
+- PARENT-CONTEXT ROUND C (2026-11-08): +1 Additional (addB065;
+  suite 4630->4631 = 98.61%, pending measure confirm). A declaration
+  carrying a FIXED value constraint rejects xsi:nil=true outright
+  (XSD 1.0 §4.2.3 as the errata reads it; xmllint: "cannot be
+  'nilled' because there is a fixed value constraint defined for
+  it") — the nil-true branch now reports xsi_nil_with_fixed and
+  treats the element as nilled-handled. PARKED same-day: addB188
+  (an undeclared root anchored by xsi:type must assess against the
+  named type — the override-type dispatch was TRIED and reverted:
+  constraint-category rules assume Element schema_defs and crash on
+  ComplexType; the fix needs a per-rule ComplexType-capability
+  audit, a sibling of the parent-context charter). addB187's valid
+  twin re-verified after the revert.
+
   schF1/P2, stE065/066/096) AND a WHOLESALE 407 regex regression:
 - PARENT-CONTEXT ROUND B (2026-11-08): +1 Additional (isDefault079;
   suite 4629->4630 = 98.59%, zero regressions, rspec green).
