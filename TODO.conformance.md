@@ -520,6 +520,25 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   stE legs, the #522 attgC four + attgD mostly + attJ018 +
   schF1/P2, stE065/066/096) AND a WHOLESALE 407 regex regression:
   ~177 cases — the ENTIRE Unicode-block escape family (~80
+- PARENT-CONTEXT ROUND A (2026-11-08): +1 Errata10 (errC007; suite
+  4628->4629 = 98.57%, zero regressions, rspec green). The
+  parent-context redesign opens with an ENGINE-LEVEL win: anyType
+  content is LAX — a child validates only against a declaration in
+  its OWN namespace, so a strictly-unresolvable child of an anyType
+  element (including one the namespace fallback would have served
+  from a targeted schema) is lax-undeclared and its subtree escapes
+  assessment (the suppression rides the existing skip-wildcard walk,
+  hereditary like QFE1700a1). The resolver gains resolve_strict
+  (exact-namespace only) and the shared anyType reference check.
+  errC007's contract is now enforced WITHOUT the namespace-fallback
+  narrowing that regressed five substitution/import shapes — those
+  lookups never touch this path. Round B (next): positional binding
+  for duplicate same-named particles (isDefault079) — ordered
+  per-call walk (the resolver's visited_particle? memoizes on the
+  instance and would poison repeats), gated on >1 same-named
+  particles AND all indexed (@namespaces.key? — the attempt-3
+  starvation guard).
+
   \p{Is...} per-block tests) plus the reL/reP/reQ/reR/reS/reT
 - ANYSIMPLETYPE-WHITESPACE ROUND (2026-11-07): +1 Additional
   (test93160; suite 4627->4628 = 98.55%, pending measure confirm).
