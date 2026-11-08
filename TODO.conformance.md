@@ -519,6 +519,30 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   0.6.3 + lutaml-model 0.8.166 train carried fixes (the FULL #45
   stE legs, the #522 attgC four + attgD mostly + attJ018 +
   schF1/P2, stE065/066/096) AND a WHOLESALE 407 regex regression:
+- PARENT-CONTEXT ROUND B (2026-11-08): +1 Additional (isDefault079;
+  suite 4629->4630 = 98.59%, zero regressions, rspec green).
+  POSITIONAL BINDING for duplicate same-named locals: a model with
+  two regvalueop locals carrying DIFFERENT fixed values never bound
+  the second child to the second particle — the name-only dispatch
+  always hit the first. The engine computes each child's same-name
+  sibling index (on the RAW moxml nodes — wrapper objects are not
+  identity-stable across accessor calls, the IdUniquenessRule
+  lesson) and dispatches the positionally-bound declaration when
+  (a) the parent's model holds MORE THAN ONE same-named particle,
+  (b) every particle is INDEXED (attempt-3's starvation guard: raw
+  parent-model particles carry none of the form/ns metadata the
+  rules assume — resolver positional_children returns [] otherwise),
+  and (c) the candidate's expected namespace AGREES with the child's
+  (particlesQ016's global/local namesake guard). The ordered walk
+  keeps a PER-CALL visited set — the resolver's
+  each_particle_element memoizes on the instance and would poison
+  repeats. LESSON: scripted line-surgery on lib files dropped a
+  class end and leaked methods to top level (runtime-only
+  uninitialized-constant failures, caught by sentinel probes) —
+  structural edits go through the Edit tool only. Remaining parked
+  (matcher-assignment + root-assessment shapes): QFE1700c1,
+  addB065, addB188, schA1/D10 + the lax-wildcard six.
+
   ~177 cases — the ENTIRE Unicode-block escape family (~80
 - PARENT-CONTEXT ROUND A (2026-11-08): +1 Errata10 (errC007; suite
   4628->4629 = 98.57%, zero regressions, rspec green). The
