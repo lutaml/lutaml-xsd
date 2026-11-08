@@ -58,7 +58,8 @@ module Lutaml
             # empty xs:int child escapes assessment too).
             next true if subtree_suppressed
 
-            skip_here = skip_wildcard_subtree?(parent, xml_element, resolver)
+            skip_here = skip_wildcard_subtree?(parent, xml_element, resolver) ||
+              lax_any_type_child?(parent, xml_element, resolver)
             next true if skip_here
 
             schema_def = resolver.resolve(
@@ -221,6 +222,40 @@ module Lutaml
             wildcard_process_mode(wildcard) == "skip" &&
               wildcard_permits?(wildcard, parent, child, resolver)
           end
+        end
+
+        # A child of an ANYTYPE element validates only against a
+        # declaration in its OWN namespace (anyType content is lax —
+        # errC007's contract); a child with no exact-namespace
+        # declaration is lax-undeclared and its subtree escapes
+        # assessment. The namespace fallback never serves this
+        # decision: a targeted schema's global is a DIFFERENT element
+        # than the unqualified child.
+        #
+        # @return [Boolean]
+        def lax_any_type_child?(parent, child, resolver)
+          return false unless parent
+
+          declaration = resolver.resolve(parent.name, parent.namespace_uri)
+          return false unless any_type_declaration?(declaration, resolver)
+
+          resolver.resolve_strict(child.name, child.namespace_uri).nil?
+        end
+
+        # Whether the declaration's effective type is xs:anyType:
+        # declared by reference, or the implicit default for a typeless
+        # declaration.
+        #
+        # @return [Boolean]
+        def any_type_declaration?(declaration, resolver)
+          return false unless
+            declaration.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+
+          return true if resolver.builtin_any_type?(declaration.type.to_s)
+
+          declaration.type.to_s.empty? &&
+            declaration.complex_type.nil? &&
+            declaration.simple_type.nil?
         end
 
         # Handle errors that occur during rule execution
