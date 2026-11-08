@@ -1072,8 +1072,7 @@ module Lutaml
             return true if xml_attr.name == "xmlns" ||
               xml_attr.prefix == "xmlns"
 
-            return true if xml_attr.namespace_uri ==
-              "http://www.w3.org/2001/XMLSchema-instance"
+            return true if xml_attr.namespace_uri == XSI_NAMESPACE
 
             xml_attr.namespace_uri == XmlBuiltins::NAMESPACE &&
               XmlBuiltins.attribute(xml_attr.name)
