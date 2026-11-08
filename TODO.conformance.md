@@ -517,6 +517,22 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   layering), full type-redefine body semantics.
 - RIDE-407 PIN-BACK (2026-11-05): the leptris 1.9.407.0 + moxml
   0.6.3 + lutaml-model 0.8.166 train carried fixes (the FULL #45
+- LAX-OBIGATION ROUND (2026-11-08, parent-context round D): +5
+  DataTypes (duration028/029/030, dateTime013, gMonthDay006; suite
+  4631->4636 = 98.72%, pending measure confirm). THE LAX WILDCARD
+  OBLIGATION (XSD 1.0 §3.10.4) now runs: a wildcard-governed
+  attribute whose declaration IS AVAILABLE (resolved in the
+  attribute's OWN namespace, checked against the declaration's
+  expected namespace — the exact-ns discipline that killed the
+  first attempt's name-based mis-typing) is VALIDATED against it.
+  duration028: the lax-governed "P" hits the global xs:duration
+  declaration and rejects. The unexpected-attribute check splits
+  into admission / strict-undeclared reporting / the obligation.
+  The prior dead-end's regression shapes (idF/G comps, ctZ011_b,
+  elemZ014, schQ1, wildZ004) re-verified clean. PARKED REMAINDER:
+  QFE1700c1 (matcher assignment), addB188 (ComplexType-capability
+  sweep), schA1/D10 (child-value binding).
+
   stE legs, the #522 attgC four + attgD mostly + attJ018 +
 - PARENT-CONTEXT ROUND C (2026-11-08): +1 Additional (addB065;
   suite 4630->4631 = 98.61%, pending measure confirm). A declaration
