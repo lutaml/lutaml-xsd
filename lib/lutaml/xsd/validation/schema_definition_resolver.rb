@@ -587,7 +587,91 @@ module Lutaml
           element_declaration_simple?(field_decl)
         end
 
+        # The ordered same-named inline particles of the parent's
+        # content model — the POSITIONAL binding for duplicate
+        # declarations (isDefault079: two regvalueop locals with
+        # different fixed values; the second child binds to the second
+        # particle). Returns [] unless the name appears MORE THAN ONCE
+        # and every particle is INDEXED (attempt-3's starvation: raw
+        # particles carry none of the form/ns metadata the rules
+        # assume). The walk keeps its own cycle guard — the resolver's
+        # each_particle_element memoizes visited nodes on the instance
+        # and would poison repeated walks.
+        #
+        # @param parent_declaration [Lutaml::Xml::Schema::Xsd::Element, nil]
+        # @param local_name [String]
+        # @return [Array<Lutaml::Xml::Schema::Xsd::Element>]
+        def positional_children(parent_declaration, local_name)
+          type = parent_declaration&.complex_type ||
+            resolve_type(parent_declaration)
+          return [] unless type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
+          particles = []
+          collect_named_particles(particle_for_type(type), local_name,
+                                  particles, {}.compare_by_identity, 0)
+          return [] if particles.length < 2
+          return [] unless particles.all? { |p| @namespaces.key?(p) }
+
+          particles
+        end
+
         private
+
+        # Depth-first ordered collection of same-named element
+        # particles; per-call visited set (identity-keyed), group refs
+        # expanded.
+        #
+        # @return [void]
+        def collect_named_particles(node, local_name, out, visited, depth)
+          return if node.nil? || depth > 24
+
+          if node.is_a?(Array)
+            node.each do |child|
+              collect_named_particles(child, local_name, out, visited,
+                                      depth + 1)
+            end
+            return
+          end
+          return if visited[node]
+
+          visited[node] = true
+
+          if node.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+            if node.name.to_s.split(":").last == local_name
+              out << node
+            elsif node.ref.to_s.match?(/\S/) &&
+                node.ref.to_s.split(":").last == local_name
+              global = resolve_global(node.ref.to_s.split(":").last, nil)
+              out << global if global
+            end
+            return
+          end
+
+          nested = CONTAINER_NESTED_KINDS[node.class]
+          nested&.each do |kind|
+            collect_named_particles(Array(node.public_send(kind)),
+                                    local_name, out, visited, depth + 1)
+          end
+          (CONTAINER_LEAF_KINDS[node.class] || []).each do |kind|
+            Array(node.public_send(kind)).each do |leaf|
+              next unless leaf
+
+              if leaf.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+                resolved = if leaf.ref
+                             resolve_group(leaf.ref.to_s
+                                             .split(":").last)
+                           else
+                             leaf
+                           end
+                collect_named_particles(resolved, local_name, out, visited,
+                                        depth + 1)
+              elsif leaf.is_a?(Lutaml::Xml::Schema::Xsd::Element)
+                collect_named_particles(leaf, local_name, out, visited,
+                                        depth + 1)
+              end
+            end
+          end
+        end
 
         # Whether a TYPE carries an identity value for a field bound to
         # the selector node itself (a "." field): a simple type or a
