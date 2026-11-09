@@ -516,6 +516,27 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   'true' vs xsd:int — the per-child type plumbing under hint
   layering), full type-redefine body semantics.
 - RIDE-407 PIN-BACK (2026-11-05): the leptris 1.9.407.0 + moxml
+- PARENT-CONTEXT ROUND E (2026-11-09): +2 (Schema schA1,
+  Particles particlesA002; suite 4636->4638 = 98.76%, zero
+  regressions across all 94 batches, rspec green, the four-family
+  starvation sweep showing only the 8 known parked/contested). THE
+  CHILD→PARTICLE BINDING IS FULLY GENERAL: positional_children
+  dropped the duplicate gate — EVERY named child binds through its
+  parent's content model (schA1's same-local-name a1/a2 across three
+  namespaces resolve through the OWNING parent's type, not the
+  name+namespace guess that cross-bound an xsd:int namesake), with
+  the attempt-3 guards intact: every candidate particle INDEXED
+  (form/ns metadata survives) and the binding's expected namespace
+  must AGREE with the child's own (particlesQ016). The attempt-3
+  wall (277 regressions from raw-particle binding) is broken: the
+  wide DataTypes/Element/Particles/IC sweep is clean. PARKED:
+  schD10 (the chameleon form-default conflict — the suite wants the
+  chameleon doc's OWN unqualified elementFormDefault while ctE018
+  needed the includer's attributeFormDefault; owner decision on
+  which xmllint behavior is normative), QFE1700c1 (the suppression
+  must follow the NFA's child→particle assignment — matcher
+  surgery), addB188 (the ComplexType-capability audit).
+
   0.6.3 + lutaml-model 0.8.166 train carried fixes (the FULL #45
 - LAX-OBIGATION ROUND (2026-11-08, parent-context round D): +5
   DataTypes (duration028/029/030, dateTime013, gMonthDay006; suite
