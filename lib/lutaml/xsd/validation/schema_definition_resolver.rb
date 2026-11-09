@@ -588,15 +588,16 @@ module Lutaml
         end
 
         # The ordered same-named inline particles of the parent's
-        # content model — the POSITIONAL binding for duplicate
-        # declarations (isDefault079: two regvalueop locals with
-        # different fixed values; the second child binds to the second
-        # particle). Returns [] unless the name appears MORE THAN ONCE
-        # and every particle is INDEXED (attempt-3's starvation: raw
-        # particles carry none of the form/ns metadata the rules
-        # assume). The walk keeps its own cycle guard — the resolver's
-        # each_particle_element memoizes visited nodes on the instance
-        # and would poison repeated walks.
+        # content model — the CHILD→PARTICLE binding. The parent model
+        # binds every named child (schA1/D10: same local names across
+        # namespaces resolve through the OWNING parent's type, not the
+        # name+namespace guess; isDefault079: duplicate regvalueop
+        # locals bind positionally). Returns [] unless EVERY particle
+        # is indexed (attempt-3's starvation: raw particles carry none
+        # of the form/ns metadata the rules assume). The walk keeps its
+        # own cycle guard — the resolver's each_particle_element
+        # memoizes visited nodes on the instance and would poison
+        # repeated walks.
         #
         # @param parent_declaration [Lutaml::Xml::Schema::Xsd::Element, nil]
         # @param local_name [String]
@@ -609,7 +610,6 @@ module Lutaml
           particles = []
           collect_named_particles(particle_for_type(type), local_name,
                                   particles, {}.compare_by_identity, 0)
-          return [] if particles.length < 2
           return [] unless particles.all? { |p| @namespaces.key?(p) }
 
           particles
