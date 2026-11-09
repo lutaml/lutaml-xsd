@@ -420,9 +420,14 @@ module Lutaml
 
           # Resolve the type definition for an element
           #
-          # @param schema_element [Lutaml::Xsd::Element] Schema element
+          # @param schema_element [Lutaml::Xsd::Element, Lutaml::Xsd::ComplexType] Schema element
           # @return [Lutaml::Xsd::SimpleType, Lutaml::Xsd::ComplexType, nil]
           def resolve_element_type(schema_element, repository = nil)
+            # An override-dispatched ComplexType IS the type
+            # (addB188's assessed root).
+            return schema_element if
+              schema_element.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
             # Check for inline type definition
             return schema_element.simple_type if
               schema_element.simple_type

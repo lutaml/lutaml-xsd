@@ -143,8 +143,15 @@ module Lutaml
               local = parts.last
               declaration =
                 if parts.size == 2 && parts.first == "xml"
-                  # xml:base and friends are declared by the spec itself.
-                  XmlBuiltins.attribute(local)
+                  # xml:base and friends are declared by the spec itself;
+                  # a NON-builtin xml: reference (addB187's xml:blah)
+                  # resolves through the imported xml-namespace schema —
+                  # whose documents carry no target namespace, so the
+                  # declaration lives under no namespace.
+                  XmlBuiltins.attribute(local) ||
+                    repository&.resolve_attribute(local,
+                                                  XmlBuiltins::NAMESPACE) ||
+                    repository&.resolve_attribute(local, nil)
                 else
                   repository&.resolve_attribute(local, nil)
                 end
@@ -312,9 +319,13 @@ module Lutaml
 
           # Resolve type from element
           #
-          # @param element [Lutaml::Xsd::Element] Schema element
+          # @param element [Lutaml::Xsd::Element, Lutaml::Xsd::ComplexType]
+          #   Schema element — an override-dispatched ComplexType passes
+          #   through (addB188's assessed root)
           # @return [Lutaml::Xsd::ComplexType, nil]
           def resolve_type(element, repository = nil)
+            return element if element.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+
             return element.complex_type if element.complex_type
             return nil unless element.type
 
@@ -629,6 +640,17 @@ module Lutaml
               if tns == xml_attr.namespace_uri.to_s
                 return matches.find { |sa| sa.form.to_s.empty? }
               end
+            end
+
+            # The xml-namespace convention (addB187): a schema imported
+            # AS the xml namespace declares its attributes with no
+            # target namespace — a name match whose expected namespace
+            # is absent serves the xml-qualified instance attribute.
+            if xml_attr.namespace_uri == XmlBuiltins::NAMESPACE
+              xml_decl = matches.find do |sa|
+                repository&.expected_attribute_namespace(sa).nil?
+              end
+              return xml_decl if xml_decl
             end
 
             nil

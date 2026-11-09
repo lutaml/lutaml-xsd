@@ -549,7 +549,13 @@ module Lutaml
         # @param schema_element [Lutaml::Xml::Schema::Xsd::Element]
         # @return [Object, nil]
         def content_model_for(schema_element)
-          type = schema_element.complex_type || resolve_type(schema_element)
+          type = if schema_element.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+                   # An override-dispatched ComplexType IS the type
+                   # (addB188's assessed root).
+                   schema_element
+                 else
+                   schema_element.complex_type || resolve_type(schema_element)
+                 end
           particle_for_type(type)
         end
 
