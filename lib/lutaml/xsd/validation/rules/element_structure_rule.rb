@@ -105,10 +105,13 @@ module Lutaml
           # Validate element name matches schema definition
           #
           # @param xml_element [XmlElement] The XML element
-          # @param schema_element [Lutaml::Xsd::Element] Schema element
+          # @param schema_element [Lutaml::Xsd::Element, Lutaml::Xsd::ComplexType] Schema element
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_element_name(xml_element, schema_element, collector)
+            # An override-dispatched ComplexType anchors the instance's
+            # OWN name — assessment semantics (addB188's root).
+            return if schema_element.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
             return if names_match?(xml_element, schema_element)
 
             report_error(

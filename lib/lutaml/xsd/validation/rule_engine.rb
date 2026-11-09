@@ -65,6 +65,16 @@ module Lutaml
             schema_def = resolver.resolve(
               xml_element.name, xml_element.namespace_uri
             )
+            # An UNDECLARED element anchored by xsi:type assesses
+            # against the named type (XSD assessment semantics,
+            # addB188: the root's attributes must be checked against t
+            # even though no global declaration names the element).
+            if schema_def.nil?
+              override_type = resolver.resolve_named_type(
+                xsi_type_local(xml_element).to_s,
+              )
+              schema_def = override_type if override_type
+            end
             if parent
               parent_declaration =
                 resolver.resolve(parent.name, parent.namespace_uri)
@@ -223,6 +233,18 @@ module Lutaml
           end
         end
 
+        # The local part of the element's xsi:type attribute.
+        #
+        # @return [String, nil]
+        def xsi_type_local(xml_element)
+          override = xml_element.attributes.find do |attribute|
+            attribute.name == "type" &&
+              attribute.namespace_uri ==
+                ValidationRule::XSI_NAMESPACE
+          end
+          override && override.value.to_s.split(":").last
+        end
+
         # The child's position among its same-named siblings — the index
         # the positional binding (duplicate same-named declarations,
         # isDefault079) binds to. Computed on the RAW moxml nodes: the
@@ -243,10 +265,18 @@ module Lutaml
         # Whether the parent's content model holds a processContents
         # skip wildcard whose namespace range admits the child — the
         # child subtree then escapes assessment entirely (addB125).
+        # The content matcher's deterministic assignment overrides it:
+        # a child a DECLARED particle claims in the leftmost reading is
+        # assessed even though a skip wildcard could also admit it
+        # (QFE1700c1: the ref claims the second e2; its content must be
+        # validated).
         #
         # @return [Boolean]
         def skip_wildcard_subtree?(parent, child, resolver)
           return false unless parent
+
+          claim = @collector.content_claims[child.moxml_element.native]
+          return false if claim && claim.first != :wildcard
 
           declaration = resolver.resolve(parent.name, parent.namespace_uri)
           return false unless declaration
