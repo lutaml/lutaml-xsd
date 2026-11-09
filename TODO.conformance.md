@@ -515,6 +515,26 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   checks bind the no-ns int ct-A to the ns-b boolean children —
   'true' vs xsd:int — the per-child type plumbing under hint
   layering), full type-redefine body semantics.
+- PARENT-CONTEXT ROUND F (2026-11-09): +1 Element (QFE1700c1;
+  suite 4638->4639 = 98.79%, pending measure confirm). THE
+  SKIP-SUPPRESSION FOLLOWS THE MATCHER'S DETERMINISTIC ASSIGNMENT:
+  the NFA records the leftmost assignment (earliest compiled
+  accepting transition per child, occurrence bounds included — the
+  graph structure encodes them, so a 1..1 skip stops claiming after
+  its single consumption and a later element particle claims the
+  next match). The content rule publishes the claims through the
+  shared collector (both the native-handled and the matcher paths),
+  keyed by the child's STABLE NATIVE node (moxml wrappers are not
+  identity-stable — and the claims walk itself must run on the SAME
+  wrapper objects the match memo keyed); the suppression consult
+  assesses claimed-by-declaration children. QFE1700c1: the ref
+  claims the second e2, whose nilled-with-content violation fires.
+  Debug trail (for the record): three identity mismatches stacked —
+  wrapper-vs-raw keys at publication, wrapper-vs-native at consult,
+  and the greedy walk receiving raw nodes while the memo keyed
+  wrappers. PARKED: addB188 (ComplexType-capability audit),
+  schD10 (chameleon form-default owner decision).
+
 - RIDE-407 PIN-BACK (2026-11-05): the leptris 1.9.407.0 + moxml
 - PARENT-CONTEXT ROUND E (2026-11-09): +2 (Schema schA1,
   Particles particlesA002; suite 4636->4638 = 98.76%, zero
