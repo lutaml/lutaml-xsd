@@ -514,6 +514,23 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   STILL OPEN: schA1/schD10 (the hinted composition's CHILD value
   checks bind the no-ns int ct-A to the ns-b boolean children —
   'true' vs xsd:int — the per-child type plumbing under hint
+- PARENT-CONTEXT ROUND G (2026-11-09): +1 Additional (addB188;
+  suite 4639->4640 = 98.81%, pending measure confirm). AN UNDECLARED
+  element anchored by a RESOLVABLE xsi:type assesses against that
+  named type (XSD assessment semantics; addB188: the root's
+  attributes check against t — xml:blah2 is undeclared and rejects,
+  while addB187's DECLARED xml:blah passes). The capability audit
+  the first dispatch attempt needed: resolver content_model_for +
+  attribute/structure/type rules tolerate ComplexType schema
+  arguments (the occurrence rule's schema_argument →
+  content_model_for was the crasher); the structure rule anchors the
+  instance's OWN name for assessed types; xml:-prefixed attribute
+  refs resolve through the imported xml-namespace schema (whose
+  documents carry NO target namespace — the declaration lives under
+  no namespace, so the exact-ns match admits it only for
+  xml-qualified instance attributes). PARKED: schD10 (chameleon
+  form-default owner decision).
+
   layering), full type-redefine body semantics.
 - PARENT-CONTEXT ROUND F (2026-11-09): +1 Element (QFE1700c1;
   suite 4638->4639 = 98.79%, pending measure confirm). THE
