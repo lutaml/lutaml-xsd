@@ -551,12 +551,13 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   and the greedy walk receiving raw nodes while the memo keyed
   wrappers. PARKED: addB188 (ComplexType-capability audit),
   schD10 (chameleon form-default owner decision).
-  CORRECTION (2026-11-09): the claims mechanism below was LOST —
+  CORRECTION (2026-11-10): the claims mechanism below was LOST —
   a concurrent reset --hard wiped the code commit before its push,
-  and only this registration rode out with PR #252. The OUTCOME
-  (QFE1700c1 fixed at 4639) holds empirically on the current tree —
-  the E-round binding delivers it — and 1.2.108 ships a tree where
-  every registered claim is verified present.
+  and only this registration rode out with PR #252. QFE1700c1 is
+  NOT fixed: the 1.2.107-era "pass" was a crash-as-invalid artifact
+  (the orphaned consult crashed skip-wildcard cases into
+  unassessable verdicts). The mechanism is re-landed in round H;
+  QFE1700c1 stays a true failure until it ships.
 
 - RIDE-407 PIN-BACK (2026-11-05): the leptris 1.9.407.0 + moxml
 - PARENT-CONTEXT ROUND E (2026-11-09): +2 (Schema schA1,
