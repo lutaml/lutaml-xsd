@@ -556,8 +556,10 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   and only this registration rode out with PR #252. QFE1700c1 is
   NOT fixed: the 1.2.107-era "pass" was a crash-as-invalid artifact
   (the orphaned consult crashed skip-wildcard cases into
-  unassessable verdicts). The mechanism is re-landed in round H;
-  QFE1700c1 stays a true failure until it ships.
+  unassessable verdicts). The mechanism is RE-LANDED (round H,
+  2026-11-10: the NFA records the leftmost assignment and the
+  suppression consults it — a correctness property; the 4640 score
+  was already delivered by the round G tree, QFE1700c1 included).
 
 - RIDE-407 PIN-BACK (2026-11-05): the leptris 1.9.407.0 + moxml
 - PARENT-CONTEXT ROUND E (2026-11-09): +2 (Schema schA1,
