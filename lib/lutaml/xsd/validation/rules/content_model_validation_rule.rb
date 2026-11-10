@@ -159,6 +159,14 @@ module Lutaml
             )
             result = matcher.match(children)
             if result.matched
+              # Publish the deterministic assignment — the engine's
+              # skip-suppression walk consults which particle claimed
+              # each child (QFE1700c1). Keyed by the NATIVE node: moxml
+              # wrappers are not identity-stable across accessor calls.
+              claims = matcher.deterministic_claims(children)
+              collector.content_claims = claims.each_with_object(
+                {}.compare_by_identity
+              ) { |(node, claim), map| map[claim_key(node)] = claim }
               scan_wildcard_strict_usage(xml_element, particles, collector,
                                          repository, owner_ns)
               return

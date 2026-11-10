@@ -38,7 +38,15 @@ module Lutaml
           @errors = []
           @warnings = []
           @infos = []
+          # The content matcher's deterministic child→particle claims
+          # (native node keyed), published for the engine's
+          # skip-suppression walk (QFE1700c1).
+          @content_claims = {}.compare_by_identity
         end
+
+        # The content matcher's deterministic claims for the last
+        # matched content model (native node → [kind, particle]).
+        attr_accessor :content_claims
 
         # Add an error to the collection
         #
