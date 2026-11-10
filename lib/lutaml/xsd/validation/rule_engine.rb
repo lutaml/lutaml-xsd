@@ -265,10 +265,18 @@ module Lutaml
         # Whether the parent's content model holds a processContents
         # skip wildcard whose namespace range admits the child — the
         # child subtree then escapes assessment entirely (addB125).
+        # The content matcher's deterministic assignment overrides it:
+        # a child a DECLARED particle claims in the leftmost reading is
+        # assessed even though a skip wildcard could also admit it
+        # (QFE1700c1: the ref claims the second e2; its content must be
+        # validated).
         #
         # @return [Boolean]
         def skip_wildcard_subtree?(parent, child, resolver)
           return false unless parent
+
+          claim = @collector.content_claims[claim_key(child)]
+          return false if claim && claim.first != :wildcard
 
           declaration = resolver.resolve(parent.name, parent.namespace_uri)
           return false unless declaration

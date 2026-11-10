@@ -101,6 +101,22 @@ module Lutaml
           declaration = repository.resolve(parent.name, parent.namespace_uri)
           repository.target_namespace_for(declaration) if declaration
         end
+
+        # The stable identity a content claim is keyed by: the NATIVE
+        # node for pipeline elements (moxml wrappers are not
+        # identity-stable across accessor calls), the node itself for
+        # anything else.
+        #
+        # @param node [Object]
+        # @return [Object]
+        def claim_key(node)
+          inner = if node.is_a?(Lutaml::Xsd::Validation::XmlElement)
+                    node.moxml_element
+                  else
+                    node
+                  end
+          inner.is_a?(Moxml::Node) ? inner.native : inner
+        end
       end
     end
   end

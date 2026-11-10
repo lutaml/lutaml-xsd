@@ -52,9 +52,21 @@ module Lutaml
           end
           @memo.compare_by_identity
           @state = 0
+          # Global compile order of each transition (tuple-identity
+          # keyed) — the deterministic claims walk picks the earliest
+          # compiled accepting transition across the state set.
+          @transition_seq = {}.compare_by_identity
           entry, exit_state = compile_particles(particles)
           @accepting << exit_state
           @start = entry
+        end
+
+        # Compile-order sequence number of a transition tuple.
+        #
+        # @return [Integer]
+        def transition_order(kind, particle, to)
+          @transition_seq[[kind, particle, to]] ||=
+            (@transition_seq.size + 1)
         end
 
         def match(children)
@@ -72,6 +84,42 @@ module Lutaml
             Result.new(matched: false, fail_index: children.size,
                        fail_reason: :incomplete)
           end
+        end
+
+        # The deterministic leftmost assignment: at each child the
+        # EARLIEST-COMPILED accepting transition (model order) claims
+        # it, occurrence bounds included — the graph structure encodes
+        # them, so a 1..1 skip wildcard stops claiming after its single
+        # consumption and a later element particle claims the next
+        # match. Only transitions match() already DECIDED count — the
+        # memo is the authority and the match predicates are never
+        # re-invoked. The skip-suppression walk consults it so a child
+        # a declared particle claims is assessed rather than shadowed
+        # (QFE1700c1).
+        #
+        # @param children [Array] the SAME wrapper objects match() saw
+        # @return [Hash] child → [kind, particle] (identity-keyed)
+        def deterministic_claims(children)
+          claims = {}.compare_by_identity
+          current = closure([@start])
+          children.each do |child|
+            candidates = []
+            current.each do |from|
+              @transitions[from].each do |tuple|
+                kind, particle, to = tuple
+                next unless @memo[particle][child]
+
+                candidates << [transition_order(kind, particle, to),
+                               kind, particle, to]
+              end
+            end
+            next if candidates.empty?
+
+            _, kind, particle, to = candidates.min_by(&:first)
+            claims[child] = [kind, particle]
+            current = closure([to])
+          end
+          claims
         end
 
         private
@@ -216,8 +264,9 @@ module Lutaml
             (0...(1 << members.size)).each do |mask|
               next if mask[index] == 1
 
-              @transitions[states[mask]] << [kind, member,
-                                             states[mask | (1 << index)]]
+              transition = [kind, member, states[mask | (1 << index)]]
+              transition_order(*transition)
+              @transitions[states[mask]] << transition
             end
           end
           entry = states[0]
@@ -231,7 +280,9 @@ module Lutaml
         def leaf_fragment(kind, particle)
           entry = next_state
           exit_state = next_state
-          @transitions[entry] << [kind, particle, exit_state]
+          transition = [kind, particle, exit_state]
+          transition_order(*transition)
+          @transitions[entry] << transition
           [entry, exit_state]
         end
 
