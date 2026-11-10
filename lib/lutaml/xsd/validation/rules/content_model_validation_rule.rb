@@ -165,7 +165,7 @@ module Lutaml
               # wrappers are not identity-stable across accessor calls.
               claims = matcher.deterministic_claims(children)
               collector.content_claims = claims.each_with_object(
-                {}.compare_by_identity
+                {}.compare_by_identity,
               ) { |(node, claim), map| map[claim_key(node)] = claim }
               scan_wildcard_strict_usage(xml_element, particles, collector,
                                          repository, owner_ns)
