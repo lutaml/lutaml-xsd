@@ -513,6 +513,22 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   extension-base walks thread the deriving type namespace through.
   STILL OPEN: schA1/schD10 (the hinted composition's CHILD value
   checks bind the no-ns int ct-A to the ns-b boolean children —
+- TRAIN ADOPTION (2026-11-10): the measurement train moves to
+  moxml 0.6.4 + leptris 1.9.415.0 (from the pin-back's 0.6.2 +
+  1.9.406.0; local Gemfile.lock only — untracked, and the gemspec
+  floors already admit both). VERDICT: conformance-IDENTICAL —
+  4640/4696 = 98.81%, zero regressions and zero fixes against the
+  verified 4640 baseline across all 94 batches. The moxml team's
+  wave report (#529 5 cases + #522 attgD 16/16 "fixed") does NOT
+  translate through our pipeline — the attgD/attgC survivors remain
+  failing identically on the new train; their facade verdicts and
+  our pipeline reading still disagree (registered, not chased).
+  A first adoption attempt measured on a STALE branch (pre-rounds
+  A-G) produced 198 phantom regressions — the tree, not the train;
+  discarded with the branch. The remaining register is unchanged:
+  schD10 (owner decision), the disputed/contested set, the
+  moxml-rs engine arcs.
+
   'true' vs xsd:int — the per-child type plumbing under hint
 - PARENT-CONTEXT ROUND G (2026-11-09): +1 Additional (addB188;
   suite 4639->4640 = 98.81%, pending measure confirm). AN UNDECLARED
