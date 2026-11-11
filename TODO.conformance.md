@@ -560,26 +560,34 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   regressions (stash-attributed per row), rspec 1663 green,
   rubocop clean. schR2 stack-overflow note unchanged (crash masked
   by expected-invalid, counted per convention).
-- SCH R2 STACK OVERFLOW (2026-11-11): Schema_w3c/schR2/schR2.i
-  (expected invalid) crashes the assessment with a SystemStackError
-  in lutaml-model 0.8.167's Base#resolved_element_order/
-  delete_deletables — an unguarded recursion over the cyclic
-  redefine graph schR2's documents build (called from our
-  collect_particles). The crash ESCAPES measure()'s rescue
-  (SystemStackError is not a StandardError); in every prior ledger
-  the case silently recorded as a pass via the crash-as-invalid
-  convention on its expected-invalid expectation, so the ledger
-  number never moved. Files/gems/ruby verified identical to the
-  baseline era; the crash reproduces in fresh single-case runs on
-  origin/main on both trains today. Finding for lutaml-model: a
-  cycle guard in resolved_element_order (our org's repo; owner
-  decides the upstream action).
+- SCH R2 STACK OVERFLOW FIXED (2026-11-12, round shipped): the
+  SystemStackError on Schema_w3c/schR2/schR2.i (expected invalid;
+  masked as pass by the crash-as-invalid convention) is OURS, not
+  lutaml-model's — the infinite recursion cycles between the
+  §4.2.2 redefined group body and the redefine TARGET (two DISTINCT
+  objects reachable by the same group name b-g2), so an OBJECT-keyed
+  guard misses it; the cut is NAME-keyed and PATH-scoped in both
+  walkers: leaf_particles marks the group name on its ancestry
+  (same name cannot expand within its own ancestry; sibling reuse
+  still expands fresh) and ContentModelMatcher#compile_group keeps
+  the same path discipline over resolved containers. LEDGER vs the
+  1.2.110 baseline: 4637/4696 measured + the same 5 reZ budget
+  exclusions, ZERO regressions, and batch 4450's crash list is
+  EMPTY (schR2.i now assesses honestly to invalid instead of
+  overflowing). PROVENANCE: batch 03000 was carried over from the
+  1.2.110 ledger — regex-pattern-only cases whose walk never
+  touches the guards (the batch's reI003 quadratic tax made a
+  re-run cost-prohibitive on the contended machine). Also filed
+  lutaml/moxml#540 this round (the 0.6.4 attribute char-ref
+  regression below; repro included).
 - TRAIN ADOPTION REGRESSION — CHARACTER REFERENCES (2026-11-11):
   the 2026-11-10 adoption verdict ("conformance-IDENTICAL") was
   WRONG for one class: moxml 0.6.4 stopped decoding numeric
   character references in attribute values. Minimal repro:
   `Moxml::Context.new.parse('<x a="&#x2190;"/>').root.attributes.
   first.value` → "←" on moxml 0.6.2, literal "&#x2190;" on 0.6.4.
+  FILED lutaml/moxml#540 (2026-11-12; repro: attribute values keep
+  the reference literal while element text decodes on 0.6.4).
   Downstream this breaks the whole UNICODE-BLOCK pattern-facet
   class — Regex_w3c Arrows/MathematicalOperators/
   ArabicPresentationForms-A/CJKCompatibilityForms/
