@@ -225,7 +225,20 @@ module Lutaml
           container = Array(@group_particles.call(particle)).first
           return empty_fragment unless container
 
-          with_occurrence(particle) { compile_container_body(container) }
+          # §4.2.2 redefine bodies self-reference by name; the body and
+          # the redefine target are distinct objects, so the compile
+          # path set keys on the resolved container's identity — a
+          # container may not compile within its own ancestry, while
+          # sibling reuse still compiles fresh.
+          @group_path ||= []
+          return empty_fragment if @group_path.include?(container)
+
+          @group_path.push(container)
+          fragment = with_occurrence(particle) do
+            compile_container_body(container)
+          end
+          @group_path.pop
+          fragment
         end
 
         # A group ref expands to its declaration's container, whose own
