@@ -2,6 +2,6 @@
 
 module Lutaml
   module Xsd
-    VERSION = "1.2.109"
+    VERSION = "1.2.110"
   end
 end
