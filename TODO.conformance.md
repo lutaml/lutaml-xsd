@@ -546,6 +546,20 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   and the schG1/G4/G7 drift (fail in fresh isolation on origin/main
   stash-verified — inputs/gems/ruby verified identical to the 4641
   era; mechanism not isolated in-round; owner follow-up).
+- NESTED-TYPE-CANDIDATES ROUND (2026-11-11): +2 (schG2 — a baseline
+  parked failure — and the schG1/G4/G7 "drift" trio resolved as REAL
+  DEFECTS, not environment: named_type_candidates appended only ONE
+  nested candidate per root schema — find_nested_named_type returned
+  the first depth-first match and stopped, so a composition importing
+  same-named types two levels deep (schG1: a→b→c) NEVER listed the
+  deepest candidate; the owner-ns preference missed and list.first
+  (ns-a's ct-A) typed the ns-c element — the '123'-is-not-boolean
+  swap. find_nested_named_types now collects EVERY match across the
+  whole nested tree in document order). SUITE 4637/4696 measured +
+  5 budget exclusions (reZ nested-repeat, unchanged), ZERO
+  regressions (stash-attributed per row), rspec 1663 green,
+  rubocop clean. schR2 stack-overflow note unchanged (crash masked
+  by expected-invalid, counted per convention).
 - SCH R2 STACK OVERFLOW (2026-11-11): Schema_w3c/schR2/schR2.i
   (expected invalid) crashes the assessment with a SystemStackError
   in lutaml-model 0.8.167's Base#resolved_element_order/

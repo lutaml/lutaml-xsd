@@ -290,8 +290,8 @@ module Lutaml
             end
             list << found if found
 
-            nested = find_nested_named_type(local_name, schema)
-            list << nested if nested
+            nested = find_nested_named_types(local_name, schema)
+            list.concat(nested)
           end
           unless @redefined_body_names.include?(local_name)
             @redefined_targets.each do |schema|
@@ -307,16 +307,18 @@ module Lutaml
           cache[local_name] = list.uniq
         end
 
-        # Named types declared in documents reached through resolved
-        # includes/imports — chameleon types (ctE018) live in a
-        # no-namespace include target.
+        # EVERY same-named type across the whole nested include/import
+        # tree, in document order. The single-match walk stopped at the
+        # FIRST hit (schG1: ns-b's ct-A shadowed ns-c's two imports
+        # deep, so the owner-ns preference missed and ns-a's type won
+        # for the ns-c element — a same-local-name swap).
         #
-        # @return [Object, nil]
-        def find_nested_named_type(local_name, schema, depth = 0)
-          return nil if depth > 8
+        # @return [Array<Object>]
+        def find_nested_named_types(local_name, schema, depth = 0)
+          return [] if depth > 8
 
-          (Array(schema.include) + Array(schema.import)).each do |nested|
-            next unless nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
+          (Array(schema.include) + Array(schema.import)).flat_map do |nested|
+            next [] unless nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
 
             found = Array(nested.complex_type).find do |ct|
               ct.name == local_name
@@ -324,12 +326,9 @@ module Lutaml
             found ||= Array(nested.simple_type).find do |st|
               st.name == local_name
             end
-            return found if found
-
-            found = find_nested_named_type(local_name, nested, depth + 1)
-            return found if found
+            [found, *find_nested_named_types(local_name, nested, depth + 1)]
+              .compact
           end
-          nil
         end
 
         # Builtin numeric types: values compare in the numeric value
