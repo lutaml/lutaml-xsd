@@ -368,14 +368,31 @@ module Lutaml
             end
           end
 
-          def leaf_particles(particles, repository)
+          def leaf_particles(particles, repository, ancestors = nil)
+            ancestors ||= {}
             particles.flat_map do |particle|
               case particle
               when Lutaml::Xml::Schema::Xsd::Group
-                leaf_particles(expand_group_container(particle, repository),
-                               repository)
+                # §4.2.2 redefine bodies self-reference by NAME; the
+                # body and the redefine target are DISTINCT objects, so
+                # the path set keys on the group name — the same name
+                # cannot expand within its own ancestry, while sibling
+                # reuse still expands fresh.
+                group_name = if particle.name.to_s.empty?
+                               particle.ref.to_s
+                             else
+                               particle.name.to_s
+                             end
+                next [] if group_name.empty? || ancestors.key?(group_name)
+
+                ancestors[group_name] = true
+                body = expand_group_container(particle, repository)
+                leaves = body.nil? ? [] : leaf_particles(body, repository, ancestors)
+                ancestors.delete(group_name)
+                leaves
               when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice, Lutaml::Xsd::All
-                leaf_particles(collect_particles(particle), repository)
+                leaf_particles(collect_particles(particle), repository,
+                               ancestors)
               else
                 [particle]
               end
