@@ -1037,27 +1037,30 @@ module Lutaml
         end
 
         def index_schema(index, schema, held_signatures = [],
-                         chameleon_namespace = nil,
-                         chameleon_includer = nil)
+                         chameleon_namespace = nil)
           # A no-namespace document reached through xs:include is a
-          # chameleon: its declarations adopt the includer's target
-          # namespace AND form/derivation defaults (ctE018).
+          # chameleon: ONLY its absent target namespace converts to the
+          # includer's (XSD 1.0 §4.2.1 clause 3.2). Form and derivation
+          # defaults are read from each declaration's OWN <schema>
+          # ancestor — the chameleon document — because §3.2.2/§3.3.2
+          # map form against the <schema> ancestor of the declaration,
+          # which the namespace conversion never replaces (schD10:
+          # unprefixed group members of a defaults-absent chameleon
+          # stay unqualified beside a qualified includer).
           raw_namespace = schema.target_namespace
           chameleon = raw_namespace.to_s.empty? && chameleon_namespace
           namespace = chameleon ? chameleon_namespace : raw_namespace
-          defaults_schema = chameleon ? chameleon_includer : schema
           register_ref_namespaces(schema)
           Array(schema.element).each do |element|
-            index_element(index, element, namespace, :top, defaults_schema)
+            index_element(index, element, namespace, :top, schema)
             # A global element's INLINE complexType carries local
             # attribute declarations too — their form resolution was
             # only indexed for named types (idG027/idH025).
-            index_local_attributes(element.complex_type, namespace,
-                                   defaults_schema)
+            index_local_attributes(element.complex_type, namespace, schema)
           end
           Array(schema.complex_type).each do |complex_type|
             index_type(index, complex_type, namespace, schema)
-            index_local_attributes(complex_type, namespace, defaults_schema)
+            index_local_attributes(complex_type, namespace, schema)
           end
           Array(schema.attribute).each do |attribute|
             index_attribute(attribute, namespace)
@@ -1070,13 +1073,12 @@ module Lutaml
             # (wildZ013c), a named document's against its own.
             @namespaces[group] = namespace unless name.empty?
             Array(group.attribute).each do |member|
-              index_local_attribute(member, namespace, defaults_schema)
+              index_local_attribute(member, namespace, schema)
             end
           end
           Array(schema.group).each do |group|
             each_particle_element(group, schema) do |element|
-              index_element(index, element, namespace, :inline,
-                            defaults_schema)
+              index_element(index, element, namespace, :inline, schema)
             end
           end
           # lutaml-model nests resolved xs:import / xs:include targets
@@ -1088,8 +1090,7 @@ module Lutaml
             next unless nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
             next if held_signatures.include?(schema_signature(nested))
 
-            index_schema(index, nested, held_signatures, namespace,
-                         defaults_schema)
+            index_schema(index, nested, held_signatures, namespace)
           end
           Array(schema.import).each do |nested|
             next unless nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
@@ -1107,8 +1108,7 @@ module Lutaml
           # indexed under the name (attgC007/attgD036). Runs after the
           # nested descent so included declarations are already in.
           Array(schema.redefine).each do |red|
-            index_redefine(index, schema, red, held_signatures, namespace,
-                           defaults_schema)
+            index_redefine(index, schema, red, held_signatures, namespace)
           end
         end
 
@@ -1120,8 +1120,7 @@ module Lutaml
         # declaration is kept for that hook and the redefining body
         # indexed under the name (attgC007/attgD036). Runs after the
         # nested descent so included declarations are already in.
-        def index_redefine(index, schema, red, held_signatures, namespace,
-                           defaults_schema)
+        def index_redefine(index, schema, red, held_signatures, namespace)
           target_path = nil
           base = begin
             File.dirname(@repository.source_path_for(schema))
@@ -1138,8 +1137,7 @@ module Lutaml
                 File.read(target_path), location: target_path
               )
               @redefined_targets << target
-              index_schema(index, target, held_signatures, namespace,
-                           defaults_schema)
+              index_schema(index, target, held_signatures, namespace)
             rescue StandardError
               nil
             end
