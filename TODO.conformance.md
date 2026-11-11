@@ -513,6 +513,76 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   extension-base walks thread the deriving type namespace through.
   STILL OPEN: schA1/schD10 (the hinted composition's CHILD value
   checks bind the no-ns int ct-A to the ns-b boolean children —
+- CHAMELEON FORM-DEFAULT ROUND (2026-11-11): +1 Schema (schD10;
+  suite 4641-effective of 4696 with 5 measurement-budget exclusions,
+  zero regressions from this round; rspec 1662 green; rubocop clean).
+  RESOLVED BY THE SPEC, not by owner coin-flip: XSD 1.0 §4.2.1
+  clause 3.2 converts ONLY the absent target namespace on a
+  chameleon include (an exhaustive enumeration: named components'
+  {target namespace} + wildcard {namespace constraint}); §3.2.2 and
+  §3.3.2 read elementFormDefault/attributeFormDefault from each
+  declaration's OWN <schema> ancestor — the chameleon document — so
+  the includer's form defaults NEVER apply (schD10: the
+  defaults-absent chameleon's group members stay unqualified beside
+  a qualified includer). index_schema threads the adopted namespace
+  down includes unchanged and every declaration now reads its own
+  document's defaults; the includer-defaults threading is removed.
+  ctE018 unaffected (its documents share identical defaults — only
+  the namespace adoption ever mattered). New resolver specs pin both
+  properties (namespace adoption + own-document defaults).
+  MEASUREMENT PROVENANCE for this round's ledger: batch 4400 was
+  assembled from a per-case subprocess sweep with a 90s watchdog —
+  45/45 measured pass, 5 excluded on budget
+  (Regex_w3c/reZ003v/005v/005i/006v/006i — the nested-repeat
+  instances drive our per-element walk into minutes-long quadratic
+  cost; reZ003v's verdict is probe-established true at 125s warm/
+  410s cold; the others unestablished). Batches 200 and 300 needed
+  re-runs: the morning worker's attO009/011 + attZ014a/b failures
+  were TRANSIENTS (fresh re-runs 50/50; isolated probes pass with
+  this round's tree) — most plausibly poisoned by the mid-run
+  lockfile churn. NON-ROUND FINDINGS registered below: the moxml
+  0.6.4 character-reference regression (train pinned back), the
+  schR2 stack overflow (masked by its expected-invalid expectation),
+  and the schG1/G4/G7 drift (fail in fresh isolation on origin/main
+  stash-verified — inputs/gems/ruby verified identical to the 4641
+  era; mechanism not isolated in-round; owner follow-up).
+- SCH R2 STACK OVERFLOW (2026-11-11): Schema_w3c/schR2/schR2.i
+  (expected invalid) crashes the assessment with a SystemStackError
+  in lutaml-model 0.8.167's Base#resolved_element_order/
+  delete_deletables — an unguarded recursion over the cyclic
+  redefine graph schR2's documents build (called from our
+  collect_particles). The crash ESCAPES measure()'s rescue
+  (SystemStackError is not a StandardError); in every prior ledger
+  the case silently recorded as a pass via the crash-as-invalid
+  convention on its expected-invalid expectation, so the ledger
+  number never moved. Files/gems/ruby verified identical to the
+  baseline era; the crash reproduces in fresh single-case runs on
+  origin/main on both trains today. Finding for lutaml-model: a
+  cycle guard in resolved_element_order (our org's repo; owner
+  decides the upstream action).
+- TRAIN ADOPTION REGRESSION — CHARACTER REFERENCES (2026-11-11):
+  the 2026-11-10 adoption verdict ("conformance-IDENTICAL") was
+  WRONG for one class: moxml 0.6.4 stopped decoding numeric
+  character references in attribute values. Minimal repro:
+  `Moxml::Context.new.parse('<x a="&#x2190;"/>').root.attributes.
+  first.value` → "←" on moxml 0.6.2, literal "&#x2190;" on 0.6.4.
+  Downstream this breaks the whole UNICODE-BLOCK pattern-facet
+  class — Regex_w3c Arrows/MathematicalOperators/
+  ArabicPresentationForms-A/CJKCompatibilityForms/
+  HalfwidthandFullwidthForms/Specials etc. validate on
+  moxml 0.6.2 + leptris 1.9.406.0 and fail on 0.6.4/1.9.415.0
+  (attribute_pattern_violation on character-reference values,
+  e.g. Regex_w3c/Arrows/Arrows.v). The adoption's 94-batch diff
+  compared TOTALS against the old-train baseline; the per-batch
+  regression class slipped through (baseline_4641's batch_04400
+  was 50/50 old-train). The pattern facet path itself is our Ruby
+  XsdRegex — the drift sits in the ENGINE's attribute-value
+  parsing. VERDICT: the measurement train is PINNED BACK to
+  moxml 0.6.2 + leptris 1.9.406.0 (the baseline's train; untracked
+  Gemfile.lock) until moxml restores character-reference decoding;
+  the finding goes to our moxml/leptris repos with the minimal
+  repro for the owner to act on. The 2026-11-10 adoption entry
+  above is superseded by this one.
 - TRAIN ADOPTION (2026-11-10): the measurement train moves to
   moxml 0.6.4 + leptris 1.9.415.0 (from the pin-back's 0.6.2 +
   1.9.406.0; local Gemfile.lock only — untracked, and the gemspec
