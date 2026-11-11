@@ -197,4 +197,87 @@ RSpec.describe Lutaml::Xsd::Validation::SchemaDefinitionResolver do
       expect(resolver.expected_namespace_for(member)).to be_nil
     end
   end
+
+  context "with same-named types nested two imports deep (schG1)" do
+    let(:c_schema_source) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/c">
+          <xs:complexType name="t_shared">
+            <xs:sequence>
+              <xs:element name="v" type="xs:int"/>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:element name="e" type="t_shared"/>
+        </xs:schema>
+      XSD
+    end
+
+    let(:b_schema_source) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/b">
+          <xs:import namespace="http://example.com/c"
+                     schemaLocation="c.xsd"/>
+          <xs:complexType name="t_shared">
+            <xs:sequence>
+              <xs:element name="v" type="xs:boolean"/>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:element name="e" type="t_shared"/>
+        </xs:schema>
+      XSD
+    end
+
+    let(:a_schema_source) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/a">
+          <xs:import namespace="http://example.com/b"
+                     schemaLocation="b.xsd"/>
+          <xs:complexType name="t_shared">
+            <xs:sequence>
+              <xs:element name="v" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:element name="e" type="t_shared"/>
+        </xs:schema>
+      XSD
+    end
+
+    let(:parent_schema) do
+      schema = Lutaml::Xml::Schema::Xsd.parse(a_schema_source)
+      b_schema = Lutaml::Xml::Schema::Xsd.parse(b_schema_source)
+      b_schema.import = [Lutaml::Xml::Schema::Xsd.parse(c_schema_source)]
+      schema.import = [b_schema]
+      schema
+    end
+
+    let(:repository) do
+      Class.new do
+        def initialize(schemas)
+          @schemas = schemas
+        end
+
+        attr_reader :schemas
+
+        def all_schemas
+          @schemas
+        end
+      end.new({ "http://example.com/a" => parent_schema })
+    end
+
+    it "resolves each element's type to its OWN namespace's candidate" do
+      %w[http://example.com/a http://example.com/b http://example.com/c]
+        .each do |ns|
+        element = resolver.resolve("e", ns)
+        type = resolver.resolve_type(element)
+
+        # The single-match nested walk stopped at b's t_shared, so the
+        # owner-ns preference never saw c's candidate and every deep
+        # element fell back to the first list entry.
+        expect(resolver.target_namespace_for(type)).to eq(ns)
+      end
+    end
+  end
 end
