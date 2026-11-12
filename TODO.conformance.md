@@ -716,6 +716,13 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   method's signature carries it — a mechanical gsub crosses
   scope boundaries silently, and the crash-as-invalid
   convention turns the NameError into wholesale false verdicts.
+- MODEL-175 RIDE (2026-11-13): lutaml-model 0.8.167→0.8.175
+  (eight upstream releases; the gemspec floor already admits
+  them) — CONFORMANCE-NEUTRAL, verified by a full 94-batch
+  re-measure: 4664/4696 identical per-set to the 1.2.115
+  ledger, zero regressions. rspec 1663 green. The lockfile is
+  an untracked local pin (the standing policy); no release
+  dispatched for this docs-only round.
 - TRAIN ADOPTION REGRESSION — CHARACTER REFERENCES (2026-11-11):
   the 2026-11-10 adoption verdict ("conformance-IDENTICAL") was
   WRONG for one class: moxml 0.6.4 stopped decoding numeric
