@@ -120,6 +120,71 @@ module Lutaml
           "NOTATION" => %w[QName anySimpleType anyType].freeze,
         }.freeze
 
+        # The VALUE-SPACE key of a lexical under a union member
+        # builtin — nil when the member does not accept the lexical.
+        # A union maps a lexical through its FIRST accepting member
+        # (§4.1.7), so 'true' and '1' are both boolean-true (stE050)
+        # and token collapse equates trailing blanks (stE065/066).
+        #
+        # @param local [String] builtin member local name
+        # @param value [String] the lexical
+        # @return [Object, nil] a comparable value, or nil
+        def self.union_member_value_key(local, value)
+          text = value.to_s
+          case local
+          when "boolean"
+            b = text.strip
+            return nil unless b.match?(/\A(?:true|false|1|0)\z/)
+
+            %w[true 1].include?(b)
+          when *INTEGER_TYPES
+            return nil unless integer_valid?(local, text)
+
+            Integer(text.strip)
+          when "float", "double"
+            return nil unless text.strip.match?(
+              /\A(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|INF|-INF|NaN)\z/,
+            )
+
+            f = Float(text.strip)
+            f.nan? ? "nan" : f
+          when "decimal"
+            return nil unless text.strip.match?(
+              /\A[+-]?(?:\d+(?:\.\d*)?|\.\d+)\z/,
+            )
+
+            require "bigdecimal"
+            BigDecimal(text.strip)
+          when "string"
+            text
+          when "normalizedString"
+            text.gsub(/[\t\n\r]/, " ")
+          when *COLLAPSED_STRING_TYPES, "language", "Name", "NCName",
+            "ID", "IDREF", "NMTOKEN", "anyURI"
+            text.strip.split(/\s+/).join(" ")
+          when "gYear", "gYearMonth", "gMonth", "gMonthDay", "gDay"
+            return nil unless calendar_lexical_valid?(local, text)
+
+            calendar_key(text)
+          when "date", "dateTime", "time"
+            return nil unless lexical_answer(local, text) == true
+
+            temporal_key(text)
+          when "duration"
+            return nil unless duration_valid?(text)
+
+            duration_key(text)
+          when "hexBinary"
+            return nil unless text.match?(/\A(?:[0-9a-fA-F]{2})*\z/)
+
+            text.upcase
+          when "base64Binary"
+            return nil unless base64_valid?(text)
+
+            text
+          end
+        end
+
         # Whether a builtin override local is validly derived from the
         # declared local: identity or the declared name sits in the
         # override's builtin ancestry. TRI-STATE: nil when the override

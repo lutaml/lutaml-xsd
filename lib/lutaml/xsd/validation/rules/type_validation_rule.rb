@@ -127,7 +127,8 @@ module Lutaml
               # A type-less declaration is xs:anyType; its fixed value
               # still constrains the lexical content (isDefault070).
               validate_fixed_content(xml_element, schema_element,
-                                     xml_element.text_content, collector)
+                                     xml_element.text_content, collector,
+                                     repository: repository)
               return
             end
 
@@ -143,14 +144,16 @@ module Lutaml
               # complex walk checks the type's model, this checks the
               # declaration's own fixed content (isDefault077).
               validate_fixed_content(xml_element, schema_element,
-                                     xml_element.text_content, collector)
+                                     xml_element.text_content, collector,
+                                     repository: repository)
               validate_complex_type_content(xml_element, type_def, collector,
                                             repository: repository,
                                             declared: schema_element)
             else
               # Handle built-in types
               validate_builtin_type(xml_element, type_def, collector,
-                                    declared: schema_element)
+                                    declared: schema_element,
+                                    repository: repository)
             end
           end
 
@@ -557,7 +560,7 @@ module Lutaml
           #
           # @return [Boolean]
           def union_member_covers_builtin?(union_type, override, repository)
-            members = Array(union_type.union.member_types)
+            members = union_type.union.member_types.to_s.split(/\s+/)
             members.any? do |member|
               local = member.to_s.split(":").last
               next true if local == override
@@ -592,7 +595,8 @@ module Lutaml
             validate_builtin_type(xml_element,
                                   builtin_override_reference(xml_element),
                                   collector,
-                                  declared: schema_element)
+                                  declared: schema_element,
+                                  repository: repository)
             true
           end
 
@@ -653,12 +657,17 @@ module Lutaml
           end
 
           # XSD 1.0 §3.3.3: a fixed value constrains the element — a
-          # non-empty lexical must equal it in the value space
+          # non-empty lexical must equal it in the VALUE space
           # (elemQ018). Empty content already validates against the
-          # fixed value through effective_text.
+          # fixed value through effective_text. Union/list-typed
+          # declarations map each lexical through the FIRST accepting
+          # member (§4.1.7) — 'true' equals fixed '1' as boolean-true
+          # (stE050), token collapse equates trailing blanks
+          # (stE065/066), float forms compare numerically (stE055).
           #
           # @return [void]
-          def validate_fixed_content(xml_element, declared, value, collector)
+          def validate_fixed_content(xml_element, declared, value, collector,
+                                     repository: nil)
             return unless declared.is_a?(Lutaml::Xml::Schema::Xsd::Element)
 
             fixed = declared.fixed.to_s
@@ -667,6 +676,8 @@ module Lutaml
 
             rule = declared_whitespace_rule(declared)
             return if canonical(value.to_s, rule) == canonical(fixed, rule)
+            return if fixed_value_space_equal?(declared, value.to_s, fixed,
+                                               repository)
 
             report_error(
               collector,
@@ -680,6 +691,76 @@ module Lutaml
                 actual: value,
               },
             )
+          end
+
+          # Value-space equality for union/list-typed declarations:
+          # each side keys through the first accepting member and the
+          # keys must match.
+          #
+          # @return [Boolean]
+          def fixed_value_space_equal?(declared, value, fixed, repository)
+            simple = declared.simple_type
+            return false unless simple
+
+            if simple.union
+              members = simple.union.member_types.to_s.split(/\s+/)
+              return union_keys_equal?(value, fixed, members, repository)
+            end
+            return false unless simple.list
+
+            item_union = inline_item_union(simple.list, repository)
+            return false unless item_union
+
+            left = value.split
+            right = fixed.split
+            return false unless left.size == right.size
+
+            left.zip(right).all? do |a, b|
+              union_keys_equal?(a, b, item_union, repository)
+            end
+          end
+
+          # The member_types array of a list's item type: an inline
+          # union, else the named union resolved through the
+          # repository.
+          #
+          # @return [Array, nil]
+          def inline_item_union(list, repository)
+            inline = Array(list.simple_type).first
+            return inline.union.member_types.to_s.split(/\s+/) if inline&.union
+
+            reference = list.item_type.to_s.split(":").last
+            named = repository&.resolve_named_type(reference)
+            return named.union.member_types.to_s.split(/\s+/) if
+              named.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType) && named.union
+
+            nil
+          end
+
+          # @return [Boolean]
+          def union_keys_equal?(value, fixed, members, repository)
+            a = first_member_key(value, members, repository)
+            b = first_member_key(fixed, members, repository)
+            !a.nil? && !b.nil? && a == b
+          end
+
+          # @return [Object, nil]
+          def first_member_key(lexical, members, repository)
+            members.each do |member|
+              local = member.to_s.split(":").last
+              key = ValueSpace.union_member_value_key(local, lexical)
+              return key unless key.nil?
+
+              named = repository&.resolve_named_type(local)
+              next unless named.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType) &&
+                named.union
+
+              nested = first_member_key(lexical,
+                                        named.union.member_types.to_s.split(/\s+/),
+                                        repository)
+              return nested unless nested.nil?
+            end
+            nil
           end
 
           # @return [Symbol] :preserve, :replace or :collapse
@@ -730,7 +811,8 @@ module Lutaml
                                            collector, repository: nil,
                                            declared: nil)
             value = effective_text(xml_element, declared)
-            validate_fixed_content(xml_element, declared, value, collector)
+            validate_fixed_content(xml_element, declared, value, collector,
+                                   repository: repository)
 
             # Validate base type if present
             if simple_type.restriction
@@ -1251,7 +1333,8 @@ module Lutaml
                                              declared: declared)
               elsif builtin_base?(raw_base)
                 validate_builtin_type(xml_element, raw_base, collector,
-                                      declared: declared)
+                                      declared: declared,
+                                      repository: repository)
               end
             elsif simple_content.restriction
               # Restriction constrains a simple type
@@ -1273,9 +1356,10 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_builtin_type(xml_element, type_name, collector,
-                                    declared: nil)
+                                    declared: nil, repository: nil)
             value = effective_text(xml_element, declared)
-            validate_fixed_content(xml_element, declared, value, collector)
+            validate_fixed_content(xml_element, declared, value, collector,
+                                   repository: repository)
             # A simple type has no element content: children under a
             # builtin-typed element are illegal even when the lexical
             # text is fine (dtZ86723 — the xsi:type-overridden root
