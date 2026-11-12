@@ -37,6 +37,7 @@ module Lutaml
           PARTICLE_TYPES = [
             Lutaml::Xsd::Element,
             Lutaml::Xsd::Any,
+            Lutaml::Xml::Schema::Xsd::Any,
             Lutaml::Xsd::Sequence,
             Lutaml::Xsd::Choice,
             Lutaml::Xsd::All,

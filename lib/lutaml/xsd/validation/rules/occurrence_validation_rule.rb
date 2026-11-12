@@ -415,7 +415,15 @@ module Lutaml
                                                       repository)
             occurrence_count = choice_occurrence_count(present_count, choice, repository)
 
-            if occurrence_count < min_occurs
+            # A branch whose occurrence minimum is zero satisfies the
+            # choice with the EMPTY sequence (XSD particle semantics),
+            # so the choice's own minimum cannot fail on a zero count
+            # (particlesIe004: choice(e1 1, e2 0) against an empty doc).
+            empty_branch = choice_alternatives(choice).any? do |alt|
+              parse_occurs(alt.min_occurs, 1).zero?
+            end
+
+            if occurrence_count < min_occurs && !empty_branch
               report_error(
                 collector,
                 code: "choice_min_occurs_violation",

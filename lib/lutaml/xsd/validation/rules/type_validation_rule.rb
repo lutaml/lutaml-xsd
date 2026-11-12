@@ -26,6 +26,14 @@ module Lutaml
           include EngineBacked
           include ValueSpace
 
+          # The ur-simple root: every simple type derives from it
+          # (XSD 1.0 §4.1.2).
+          ANY_SIMPLE_TYPE_LOCAL = "anySimpleType"
+
+          # The ur-type: root of the type hierarchy, derives from
+          # nothing but itself.
+          ANY_TYPE_LOCAL = "anyType"
+
           # Rule category
           #
           # @return [Symbol] :type
@@ -62,14 +70,14 @@ module Lutaml
                                           repository)
               unless type_def
                 # xsi:type may name a built-in — resolve_named_type only
-                # sees schema documents (addB028).
-                if builtin_override_reference(xml_element)
-                  validate_builtin_type(xml_element,
-                                        builtin_override_reference(xml_element),
-                                        collector,
-                                        declared: schema_element)
-                  return
-                end
+                # sees schema documents (addB028). A builtin override
+                # still owes the §3.3.4 derivation against the declared
+                # type: anyType derives from nothing else, so overriding
+                # an anySimpleType declaration with xs:anyType is
+                # invalid (stZ056).
+                return if builtin_override_reference(xml_element) &&
+                  builtin_override_handled?(xml_element, schema_element,
+                                            collector, repository)
 
                 report_error(
                   collector,
@@ -136,7 +144,9 @@ module Lutaml
               # declaration's own fixed content (isDefault077).
               validate_fixed_content(xml_element, schema_element,
                                      xml_element.text_content, collector)
-              validate_complex_type_content(xml_element, type_def, collector)
+              validate_complex_type_content(xml_element, type_def, collector,
+                                            repository: repository,
+                                            declared: schema_element)
             else
               # Handle built-in types
               validate_builtin_type(xml_element, type_def, collector,
@@ -172,7 +182,12 @@ module Lutaml
           # from one (elemT071); the override's block-kind comes from
           # the member chain (elemT074). Complex types derive through
           # both content kinds — a simpleContent extension of a simple
-          # base is a derivation too (elemT058).
+          # base is a derivation too (elemT058). anySimpleType is the
+          # ur-simple root (§4.1.2): EVERY simple type derives from it
+          # — restriction-of-builtin chains and pure lists/unions alike
+          # (stZ054) — and a simpleContent derivation over a builtin
+          # base reaches it transitively (stZ055's extension of
+          # xs:string).
           #
           # @return [Boolean]
           def validly_derived?(type, base_local, repository, depth = 0)
@@ -190,14 +205,19 @@ module Lutaml
               part = derivation_part(type)
               return false unless part
 
-              next_local = part.base.to_s.split(":").last
+              raw_base = part.base.to_s
+              next_local = raw_base.split(":").last
               return true if next_local == base_local
+              return true if base_local == ANY_SIMPLE_TYPE_LOCAL &&
+                builtin_base?(raw_base)
 
               validly_derived?(
                 repository&.resolve_named_type(next_local),
                 base_local, repository, depth + 1
               )
             when Lutaml::Xml::Schema::Xsd::SimpleType
+              return true if base_local == ANY_SIMPLE_TYPE_LOCAL
+
               restriction = type.restriction
               return false unless restriction
 
@@ -231,6 +251,18 @@ module Lutaml
             end
           end
 
+          # Whether a derivation base attribute names a BUILTIN type —
+          # the xs:/xsd:-prefixed spellings only. An unresolvable
+          # UNPREFIXED base is a lenient-fallback miss, never a builtin
+          # (the string-fallback lesson).
+          #
+          # @param raw_base [String]
+          # @return [Boolean]
+          def builtin_base?(raw_base)
+            prefix = raw_base.to_s.split(":", 2).first
+            ValueSpace::BUILTIN_PREFIXES.include?(prefix)
+          end
+
           # XSD 1.0 §3.3.4 / §3.4.6: block on the element declaration
           # AND on the declared complexType forbids replacing the type
           # with one derived by the blocked kind. A type-less
@@ -241,15 +273,20 @@ module Lutaml
           # @return [Boolean]
           def override_blocked?(schema_element, override_type, repository)
             declared_local = schema_element.type.to_s.split(":").last
-            kind =
+            kinds =
               if declared_local.to_s.empty?
-                any_type_derivation_kind(override_type)
+                any_type_chain_kinds(override_type, repository)
               else
-                derivation_kind_from(override_type, declared_local) ||
-                  member_derivation_kind(override_type, declared_local,
-                                         repository)
+                direct = derivation_kind_from(override_type, declared_local)
+                direct ||= member_derivation_kind(override_type,
+                                                  declared_local,
+                                                  repository)
+                direct ||= derivation_chain_kinds(override_type,
+                                                  declared_local,
+                                                  repository).first
+                Array(direct)
               end
-            return false unless kind
+            return false if kinds.empty?
 
             tokens = effective_block_tokens(schema_element, repository)
             declared = repository&.resolve_named_type(declared_local)
@@ -261,7 +298,68 @@ module Lutaml
               tokens.intersect?(%w[extension restriction])
 
             blocked = tokens.include?("#all") ? %w[extension restriction] : tokens
-            blocked.include?(kind)
+            kinds.any? { |kind| blocked.include?(kind) }
+          end
+
+          # §3.3.4 clause 2.2.2: the block applies to the derivation
+          # IN WHOLE OR IN PART — the kinds of EVERY hop from the
+          # override down to the declared type (ctI's indirect shapes).
+          #
+          # @return [Array<String>]
+          def derivation_chain_kinds(type, declared_local, repository,
+                                     depth = 0)
+            return [] if type.nil? || declared_local.to_s.empty? || depth > 10
+
+            case type
+            when Lutaml::Xml::Schema::Xsd::ComplexType
+              part = derivation_part(type)
+              return [] unless part
+
+              kind = part.class.name.include?("Extension") ? "extension" : "restriction"
+              next_local = part.base.to_s.split(":").last
+              return [kind] if next_local == declared_local
+
+              [kind, *derivation_chain_kinds(
+                repository&.resolve_named_type(next_local), declared_local,
+                repository, depth + 1
+              )]
+            when Lutaml::Xml::Schema::Xsd::SimpleType
+              restriction = type.restriction
+              return [] unless restriction
+
+              next_local = restriction.base.to_s.split(":").last
+              return ["restriction"] if next_local == declared_local
+
+              derivation_chain_kinds(
+                repository&.resolve_named_type(next_local), declared_local,
+                repository, depth + 1
+              )
+            end
+          end
+
+          # Kinds along the override's whole chain down to the ur-type
+          # — a type-less declaration's block governs every hop
+          # (particlesIg003: ext extends base, base restricts anyType).
+          #
+          # @return [Array<String>]
+          def any_type_chain_kinds(type, repository, depth = 0)
+            return [] if type.nil? || depth > 10
+
+            if type.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
+              return ["restriction"]
+            end
+
+            part = derivation_part(type)
+            # A bare complexType (no derivation marker) restricts the
+            # ur-type per §3.4.3.
+            return ["restriction"] unless part
+
+            kind = part.class.name.include?("Extension") ? "extension" : "restriction"
+            next_local = part.base.to_s.split(":").last
+            [kind, *any_type_chain_kinds(
+              repository&.resolve_named_type(next_local), repository,
+              depth + 1
+            )]
           end
 
           # Derivation kind of an override against a type-less
@@ -418,6 +516,95 @@ module Lutaml
             "#{prefix}:#{local}"
           end
 
+          # XSD 1.0 §3.3.4 clause 2.2: a builtin override owes valid
+          # derivation from the declared type. anyType derives from
+          # nothing but itself; every other builtin derives from
+          # anySimpleType (§4.1.2 ancestry table); a named declared
+          # type must BE the builtin or one of its ancestors
+          # (stZ073b: xs:integer is no derivation of the
+          # restriction-of-union st.unionType); a declared UNION admits
+          # overrides naming a member or a builtin derived from one
+          # (the elemT071 rule, builtin members included).
+          #
+          # @return [Boolean]
+          def builtin_override_undervalued?(xml_element, schema_element,
+                                            repository)
+            override = xsi_type_name(xml_element).to_s
+            declared = declared_local_name(schema_element)
+            return false if declared.empty? || declared == override
+            return true if override == ANY_TYPE_LOCAL
+            return false if declared == ANY_SIMPLE_TYPE_LOCAL
+
+            covered = ValueSpace.builtin_derivation_cover(declared,
+                                                          override)
+            return !covered unless covered.nil?
+
+            declared_type = repository&.resolve_named_type(declared)
+            return false unless declared_type.is_a?(
+              Lutaml::Xml::Schema::Xsd::SimpleType,
+            )
+
+            if declared_type.union
+              return !union_member_covers_builtin?(declared_type, override,
+                                                   repository)
+            end
+
+            !validly_derived?(declared_type, override, repository)
+          end
+
+          # Whether the override builtin is admitted by a declared
+          # union: it names a member, or a member's chain reaches it.
+          #
+          # @return [Boolean]
+          def union_member_covers_builtin?(union_type, override, repository)
+            members = Array(union_type.union.member_types)
+            members.any? do |member|
+              local = member.to_s.split(":").last
+              next true if local == override
+
+              member_type = repository&.resolve_named_type(local)
+              next false unless member_type
+
+              validly_derived?(member_type, override, repository)
+            end
+          end
+
+          # Handles an element whose xsi:type names a built-in: the
+          # §3.3.4 derivation gate, then builtin content validation.
+          #
+          # @return [Boolean] true when the element was handled
+          def builtin_override_handled?(xml_element, schema_element,
+                                        collector, repository)
+            if builtin_override_undervalued?(xml_element, schema_element,
+                                             repository)
+              report_error(
+                collector,
+                code: "xsi_type_not_derived",
+                message: "xsi:type '#{xsi_type_name(xml_element)}' is " \
+                         "not validly derived from the declared type " \
+                         "'#{declared_local_name(schema_element)}'",
+                location: xml_element.xpath,
+                context: { xsi_type: xsi_type_name(xml_element) },
+              )
+              return true
+            end
+
+            validate_builtin_type(xml_element,
+                                  builtin_override_reference(xml_element),
+                                  collector,
+                                  declared: schema_element)
+            true
+          end
+
+          # The declared type's local name ('' when the declaration is
+          # type-less — the implicit anyType).
+          #
+          # @param schema_element [Object]
+          # @return [String]
+          def declared_local_name(schema_element)
+            schema_element.type.to_s.split(":").last.to_s
+          end
+
           # Resolve the type definition for an element
           #
           # @param schema_element [Lutaml::Xsd::Element, Lutaml::Xsd::ComplexType] Schema element
@@ -566,7 +753,8 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_complex_type_content(xml_element, complex_type,
-                                            collector, repository: nil)
+                                            collector, repository: nil,
+                                            declared: nil)
             # Complex type validation is handled by:
             # - AttributeValidationRule for attributes
             # - ContentModelValidationRule for content model
@@ -575,7 +763,8 @@ module Lutaml
             # Check for simple content
             if complex_type.simple_content
               validate_simple_content(xml_element, complex_type.simple_content,
-                                      collector, repository: repository)
+                                      collector, repository: repository,
+                                                 declared: declared)
             end
           end
 
@@ -1044,12 +1233,26 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_simple_content(xml_element, simple_content, collector,
-                                      repository: nil)
+                                      repository: nil, declared: nil)
             # Simple content means element has text content and attributes
             # Validate the text content as a simple type
             if simple_content.extension
-              # Extension adds attributes to a simple type
-              # Text content validation handled by base type
+              # The extension's TEXT still validates against the
+              # extension's base type — the extension itself only adds
+              # attributes (addB114: '62' violates base A's enumeration
+              # and range through E-A's simpleContent extension).
+              raw_base = simple_content.extension.base.to_s
+              base_local = raw_base.split(":").last
+              base_type = repository&.resolve_named_type(base_local)
+              if base_type.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
+                validate_simple_type_content(xml_element, base_type,
+                                             collector,
+                                             repository: repository,
+                                             declared: declared)
+              elsif builtin_base?(raw_base)
+                validate_builtin_type(xml_element, raw_base, collector,
+                                      declared: declared)
+              end
             elsif simple_content.restriction
               # Restriction constrains a simple type
               value = xml_element.text_content
