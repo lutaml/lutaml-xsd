@@ -80,8 +80,17 @@ module Lutaml
                 resolver.resolve(parent.name, parent.namespace_uri)
               candidates = resolver.positional_children(parent_declaration,
                                                         xml_element.name)
-              positional = candidates[same_name_sibling_index(xml_element,
-                                                              parent)]
+              # The scan only matters when the parent's content model
+              # holds DUPLICATE same-named declarations (isDefault079);
+              # a sole candidate binds regardless of position — skipping
+              # the sibling scan keeps wide documents linear.
+              positional = if candidates.size > 1
+                             candidates[same_name_sibling_index(
+                               xml_element, parent
+                             )]
+                           else
+                             candidates.first
+                           end
               # The binding must agree with the child's OWN namespace:
               # an unqualified ref's global namesake never serves a
               # qualified local namesake (particlesQ016).
@@ -245,21 +254,31 @@ module Lutaml
           override && override.value.to_s.split(":").last
         end
 
-        # The child's position among its same-named siblings — the index
+        # The child's ordinal among its same-named siblings — the index
         # the positional binding (duplicate same-named declarations,
-        # isDefault079) binds to. Computed on the RAW moxml nodes: the
+        # isDefault079) binds to. Keyed on the RAW moxml nodes: the
         # wrapper objects are not identity-stable across accessor calls
-        # (the IdUniquenessRule lesson).
+        # (the IdUniquenessRule lesson). The per-parent ordinal map is
+        # memoized — a document of N same-named siblings costs one
+        # O(N) pass per parent instead of an O(N) scan per child
+        # (reZ003v: 65k siblings made every dispatch quadratic, times
+        # five category walks).
         #
         # @return [Integer]
         def same_name_sibling_index(element, parent)
-          raw_children = Array(parent.moxml_element.elements)
-          position = raw_children.index do |node|
-            node.equal?(element.moxml_element)
+          parent_raw = parent.moxml_element
+          cache = (@sibling_ordinals ||= {}.compare_by_identity)
+          ordinals = cache[parent_raw]
+          if ordinals.nil?
+            ordinals = {}.compare_by_identity
+            counts = Hash.new(0)
+            parent_raw.elements.each do |node|
+              ordinals[node] = counts[node.name]
+              counts[node.name] += 1
+            end
+            cache[parent_raw] = ordinals
           end
-          return 0 if position.nil?
-
-          raw_children.take(position).count { |node| node.name == element.name }
+          ordinals.fetch(element.moxml_element, 0)
         end
 
         # Whether the parent's content model holds a processContents

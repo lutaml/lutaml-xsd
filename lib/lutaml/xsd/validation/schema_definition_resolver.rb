@@ -607,17 +607,28 @@ module Lutaml
         # @param parent_declaration [Lutaml::Xml::Schema::Xsd::Element, nil]
         # @param local_name [String]
         # @return [Array<Lutaml::Xml::Schema::Xsd::Element>]
+        #
+        # Memoized per (declaration, local name): the dispatch calls
+        # this for every element, and the particle-tree walk cost is
+        # constant across elements of the same parent type (the schema
+        # is immutable once indexed).
         def positional_children(parent_declaration, local_name)
+          key = [parent_declaration.object_id, local_name]
+          cache = (@positional_children ||= {})
+          cached = cache[key]
+          return cached if cached
+
           type = parent_declaration&.complex_type ||
             resolve_type(parent_declaration)
-          return [] unless type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
-
-          particles = []
-          collect_named_particles(particle_for_type(type), local_name,
-                                  particles, {}.compare_by_identity, 0)
-          return [] unless particles.all? { |p| @namespaces.key?(p) }
-
-          particles
+          computed = []
+          if type.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
+            particles = []
+            collect_named_particles(particle_for_type(type), local_name,
+                                    particles, {}.compare_by_identity, 0)
+            computed = particles if particles.all? { |p| @namespaces.key?(p) }
+          end
+          cache[key] = computed
+          computed
         end
 
         private
