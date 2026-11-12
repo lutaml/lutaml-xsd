@@ -62,7 +62,11 @@ module Lutaml
         end
 
         def particles_safe?(particles)
-          particles.all? { |particle| product(particle, 1, 0) <= CAP }
+          # Products AT the cap route to the Ruby NFA too — the engine
+          # compiles them into exactly the automata this guard exists
+          # to avoid (particlesA013: any min=2 max=1000000; the engine
+          # answers lax on the wildcard minimum there).
+          particles.all? { |particle| product(particle, 1, 0) < CAP }
         end
 
         # Walks a type's content model. Nested elements referencing
@@ -80,7 +84,7 @@ module Lutaml
               expanded = @group_expander&.call(particle)
               expanded && particles_safe?(expanded)
             else
-              product(particle, 1, 0) <= CAP
+              product(particle, 1, 0) < CAP
             end
           end
         end

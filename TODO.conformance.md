@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4649/4696 (98.91%) — FIRST FULL-DENOMINATOR MEASURE, all 94 batches in one rake run |
+| pipeline | 4658/4696 (99.19%) — first measure above 99 |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -144,7 +144,7 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
 4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
 round) → 4578 (97.49%, attribute-prohibition round) → 4585 (97.64%,
-multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round) → 4617 (98.32%, ic-ancestor-scope round) → 4637 (parent-context rounds + chameleon round 1.2.109) → 4637 (nested-type-candidates round, 1.2.110) → 4637 (redefine-cycle round, 1.2.111) → 4644 measured (98.96% of measured, train-adoption round: moxml 0.6.6 + leptris 1.9.418.0) → 4649 (98.91%, quadratic-dispatch round — first FULL-denominator measure, the 5 reZ budget exclusions retired), +688 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round) → 4617 (98.32%, ic-ancestor-scope round) → 4637 (parent-context rounds + chameleon round 1.2.109) → 4637 (nested-type-candidates round, 1.2.110) → 4637 (redefine-cycle round, 1.2.111) → 4644 measured (98.96% of measured, train-adoption round: moxml 0.6.6 + leptris 1.9.418.0) → 4649 (98.91%, quadratic-dispatch round — first FULL-denominator measure, the 5 reZ budget exclusions retired) → 4658 (99.19%, remainder-classification round — first measure above 99), +697 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -638,6 +638,52 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   ledger (47 still-failing in both — the standing remainder:
   contested 24, the upstream filings' legs, the parked redesign
   tails).
+- REMAINDER-CLASSIFICATION ROUND (2026-11-12, release pending):
+  the live ledger re-derived the queue (the memory's schA1/D10
+  gaps were STALE — all three pass since the chameleon/type-
+  binding rounds); the 47-case remainder splits into 13
+  filed-upstream, ~25 contested/disputed, and NINE ours. ALL
+  NINE FIXED, zero regressions — four mechanism families:
+  (a) DERIVATION COMPLETENESS (stZ054/055/056/073b/ba): §4.1.2
+  anySimpleType is the ur-simple root — EVERY simple type derives
+  from it, restriction-of-builtin chains and pure lists/unions
+  alike, and a simpleContent derivation over a builtin reaches it
+  transitively; a BUILTIN override owes the §3.3.4 check against
+  NAMED declared types via the BUILTIN_ANCESTORS table
+  (ValueSpace) — identity or declared-in-ancestry, xs:anyType
+  derives from nothing but itself (stZ056), restriction-of-union
+  does NOT admit members (stZ073b), direct unions do (the
+  elemT071 rule, builtin members included). (b) NFA LOOP-BRANCH
+  BYPASS (particlesA013 + the matcher probe): with_occurrence's
+  unbounded branch wired ε-edges from the FIRST body copy's exit
+  to final — with min ≥ 2 those bypass the mandatory unrolled
+  copies and accept after one consumption; the edges are
+  redundant at min ≤ 1 (cursor == exit_state) and removed.
+  (c) CHOICE-MIN EMPTY BRANCH (particlesIe004): a branch whose
+  minimum is zero satisfies the choice with the EMPTY sequence —
+  the choice's own minimum cannot fail on a zero count.
+  (d) BLOCK IN WHOLE OR IN PART + EXTENSION TEXT (particlesIg003,
+  addB114): §3.3.4 blocks the derivation CHAIN — any_type_chain_
+  kinds walks every hop to the ur-type (a bare complexType
+  restricts anyType per §3.4.3, so ext→base→anyType carries a
+  restriction hop that block="restriction" catches), and a
+  simpleContent EXTENSION's text validates against the
+  extension's base type (addB114: '62' violates base A's facets
+  through E-A; the branch previously had only a comment).
+  Also routed products AT the OccurrenceProductGuard cap to the
+  Ruby NFA (`< CAP` — the engine answers lax on wildcard
+  minimums there) and admitted the parsed Xml::Schema::Xsd::Any
+  class to PARTICLE_TYPES + the matcher wildcard dispatch.
+  SUITE 4658/4696 (99.19%) — first measure above 99; rspec 1663
+  green; rubocop clean. REMAINDER 38: 13 filed-upstream
+  (leptris-rs#72/#73, #45 legs, attgC035-038), ~25
+  contested/disputed (reJ 14, reS/reT/reU/reDH vintages,
+  attZ014a/b 1.1 drift, gMonth_pattern/double018, particlesZ001).
+  TOOLING NOTE: rubocop -A broke the tri-state
+  builtin_derivation_cover — the nil ("not a builtin") became
+  false, which would have flagged every schema-type override
+  undervalued; caught by re-reading the -A diff (the standing
+  predicate-nil lesson, now with the rename fix applied).
 - TRAIN ADOPTION REGRESSION — CHARACTER REFERENCES (2026-11-11):
   the 2026-11-10 adoption verdict ("conformance-IDENTICAL") was
   WRONG for one class: moxml 0.6.4 stopped decoding numeric

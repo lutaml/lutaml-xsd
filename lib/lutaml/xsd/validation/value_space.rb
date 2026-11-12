@@ -66,6 +66,79 @@ module Lutaml
 
         BUILTIN_PREFIXES = %w[xs xsd].freeze
 
+        # The built-in type hierarchy (XSD 1.0 §4.1.2, Figure 4-1 +
+        # §3.14.6): each local name maps to its ANCESTOR builtins.
+        # A builtin xsi:type override is validly derived from a
+        # declared type only when the declared name is the override
+        # itself or one of its ancestors (§3.3.4 clause 2.2).
+        BUILTIN_ANCESTORS = {
+          "anyType" => [].freeze,
+          "anySimpleType" => %w[anyType].freeze,
+          "string" => %w[anySimpleType anyType].freeze,
+          "normalizedString" => %w[string anySimpleType anyType].freeze,
+          "token" => %w[normalizedString string anySimpleType anyType].freeze,
+          "language" => %w[token normalizedString string anySimpleType anyType].freeze,
+          "Name" => %w[token normalizedString string anySimpleType anyType].freeze,
+          "NCName" => %w[Name token normalizedString string anySimpleType anyType].freeze,
+          "ID" => %w[NCName Name token normalizedString string anySimpleType anyType].freeze,
+          "IDREF" => %w[NCName Name token normalizedString string anySimpleType anyType].freeze,
+          "NMTOKEN" => %w[token normalizedString string anySimpleType anyType].freeze,
+          "IDREFS" => %w[IDREF NCName Name token normalizedString string anySimpleType anyType].freeze,
+          "ENTITY" => %w[NCName Name token normalizedString string anySimpleType anyType].freeze,
+          "ENTITIES" => %w[ENTITY NCName Name token normalizedString string anySimpleType anyType].freeze,
+          "NMTOKENS" => %w[NMTOKEN token normalizedString string anySimpleType anyType].freeze,
+          "decimal" => %w[anySimpleType anyType].freeze,
+          "integer" => %w[decimal anySimpleType anyType].freeze,
+          "long" => %w[integer decimal anySimpleType anyType].freeze,
+          "int" => %w[long integer decimal anySimpleType anyType].freeze,
+          "short" => %w[int long integer decimal anySimpleType anyType].freeze,
+          "byte" => %w[short int long integer decimal anySimpleType anyType].freeze,
+          "nonNegativeInteger" => %w[integer decimal anySimpleType anyType].freeze,
+          "positiveInteger" => %w[nonNegativeInteger integer decimal anySimpleType anyType].freeze,
+          "unsignedLong" => %w[nonNegativeInteger integer decimal anySimpleType anyType].freeze,
+          "unsignedInt" => %w[unsignedLong nonNegativeInteger integer decimal anySimpleType anyType].freeze,
+          "unsignedShort" => %w[unsignedInt unsignedLong nonNegativeInteger integer decimal anySimpleType anyType].freeze,
+          "unsignedByte" => %w[unsignedShort unsignedInt unsignedLong nonNegativeInteger integer decimal anySimpleType anyType].freeze,
+          "nonPositiveInteger" => %w[integer decimal anySimpleType anyType].freeze,
+          "negativeInteger" => %w[nonPositiveInteger integer decimal anySimpleType anyType].freeze,
+          "float" => %w[anySimpleType anyType].freeze,
+          "double" => %w[anySimpleType anyType].freeze,
+          "duration" => %w[anySimpleType anyType].freeze,
+          "dateTime" => %w[anySimpleType anyType].freeze,
+          "time" => %w[anySimpleType anyType].freeze,
+          "date" => %w[anySimpleType anyType].freeze,
+          "gYear" => %w[anySimpleType anyType].freeze,
+          "gYearMonth" => %w[anySimpleType anyType].freeze,
+          "gMonth" => %w[anySimpleType anyType].freeze,
+          "gMonthDay" => %w[anySimpleType anyType].freeze,
+          "gDay" => %w[anySimpleType anyType].freeze,
+          "boolean" => %w[anySimpleType anyType].freeze,
+          "base64Binary" => %w[anySimpleType anyType].freeze,
+          "hexBinary" => %w[anySimpleType anyType].freeze,
+          "anyURI" => %w[anySimpleType anyType].freeze,
+          "QName" => %w[anySimpleType anyType].freeze,
+          "NOTATION" => %w[QName anySimpleType anyType].freeze,
+        }.freeze
+
+        # Whether a builtin override local is validly derived from the
+        # declared local: identity or the declared name sits in the
+        # override's builtin ancestry. TRI-STATE: nil when the override
+        # is not a builtin local at all (the caller falls through to
+        # schema-type resolution). No `?` suffix — rubocop -A rewrites
+        # nil-returning predicate guards to false and breaks the
+        # contract.
+        #
+        # @param declared [String] declared type local name
+        # @param override [String] override builtin local name
+        # @return [Boolean, nil]
+        def self.builtin_derivation_cover(declared, override)
+          ancestors = BUILTIN_ANCESTORS[override.to_s]
+          return nil unless ancestors
+
+          declared.to_s == override.to_s ||
+            ancestors.include?(declared.to_s)
+        end
+
         # xsd:length counts list ITEMS for list types, not characters.
         LIST_BASES = %w[IDREFS ENTITIES NMTOKENS].freeze
 

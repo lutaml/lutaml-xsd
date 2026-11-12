@@ -195,7 +195,7 @@ module Lutaml
             with_occurrence(particle) { compile_all(particle) }
           when Lutaml::Xml::Schema::Xsd::Group
             compile_group(particle)
-          when Lutaml::Xsd::Any
+          when Lutaml::Xsd::Any, Lutaml::Xml::Schema::Xsd::Any
             with_occurrence(particle) { leaf_fragment(:wildcard, particle) }
           else
             with_occurrence(particle) { leaf_fragment(:element, particle) }
@@ -330,10 +330,13 @@ module Lutaml
           @epsilons[entry] << final if min.zero?
           if max == UNBOUNDED || min > MAX_UNROLL ||
               (max != UNBOUNDED && max - min > MAX_UNROLL)
+            # Loop-or-finish from the LAST mandatory copy's exit only.
+            # The first copy's exit must NOT shortcut to final — with
+            # min >= 2 the ε-edge would bypass the mandatory copies and
+            # accept after one consumption (particlesA013: any min=2
+            # matched by a single child).
             @epsilons[cursor] << last_entry
             @epsilons[cursor] << final
-            @epsilons[exit_state] << last_entry
-            @epsilons[exit_state] << final
           else
             @epsilons[cursor] << final
             optional = max - min - (min.zero? && max.is_a?(Integer) ? 1 : 0)
