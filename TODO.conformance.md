@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4658/4696 (99.19%) — first measure above 99 |
+| pipeline | 4664/4696 (99.32%) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -144,7 +144,7 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
 4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
 round) → 4578 (97.49%, attribute-prohibition round) → 4585 (97.64%,
-multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round) → 4617 (98.32%, ic-ancestor-scope round) → 4637 (parent-context rounds + chameleon round 1.2.109) → 4637 (nested-type-candidates round, 1.2.110) → 4637 (redefine-cycle round, 1.2.111) → 4644 measured (98.96% of measured, train-adoption round: moxml 0.6.6 + leptris 1.9.418.0) → 4649 (98.91%, quadratic-dispatch round — first FULL-denominator measure, the 5 reZ budget exclusions retired) → 4658 (99.19%, remainder-classification round — first measure above 99), +697 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round) → 4617 (98.32%, ic-ancestor-scope round) → 4637 (parent-context rounds + chameleon round 1.2.109) → 4637 (nested-type-candidates round, 1.2.110) → 4637 (redefine-cycle round, 1.2.111) → 4644 measured (98.96% of measured, train-adoption round: moxml 0.6.6 + leptris 1.9.418.0) → 4649 (98.91%, quadratic-dispatch round — first FULL-denominator measure, the 5 reZ budget exclusions retired) → 4658 (99.19%, remainder-classification round — first measure above 99) → 4664 (99.32%, ride-419 round), +703 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -684,6 +684,38 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   false, which would have flagged every schema-type override
   undervalued; caught by re-reading the -A diff (the standing
   predicate-nil lesson, now with the rename fix applied).
+- RIDE-419 ROUND (2026-11-13, release pending): leptris
+  1.9.419.0 closed BOTH overnight filings — leptris-rs#72
+  (wildZ013b/c: the namespace-less-import wildcard admission
+  restored) and #73 (attZ014a/b: the multi-xs:ID 1.0 reading
+  restored). The ride also surfaced that OUR fixed-value check
+  was lexical-only where the suite demands VALUE-space equality
+  through a union's first-accepting member (§4.1.7): stE050
+  ('true' == fixed '1' as boolean-true) and stE055 (float forms)
+  now pass via ValueSpace.union_member_value_key + the
+  fixed_value_space_equal? comparison in TypeValidationRule
+  (union members split per the established member_types.to_s.
+  split pattern — Array() on the attribute yields ONE
+  space-separated string, which silently never matches; three
+  call sites corrected, including a latent one from the previous
+  round). stE065/066/096 remain ENGINE-bound — filed
+  leptris-rs#74 (the engine's own fixed-value comparison is
+  lexical-only for unions); attgC035-038 remain FACADE-bound —
+  filed moxml#545 (the closed-#522 thread's uncovered legs: the
+  strict re-check false-reports attributeGroup-redefine §4.2.2
+  hook members). SUITE 4664/4696 (99.32%), zero regressions;
+  rspec 1663 green; rubocop clean. INCIDENT (recovered
+  in-round): threading repository: into validate_fixed_content
+  via a bulk gsub landed a call inside validate_builtin_type,
+  whose scope has no repository local — NameError on every
+  builtin-typed element, a 686-case regression wave that
+  briefly looked like a leptris-419 breakage; the pin-back
+  battery exonerated the train (the wave reproduced on 418)
+  and the signature fix recovered the battery. LESSON: when
+  threading a parameter through call sites, verify the RECEIVER
+  method's signature carries it — a mechanical gsub crosses
+  scope boundaries silently, and the crash-as-invalid
+  convention turns the NameError into wholesale false verdicts.
 - TRAIN ADOPTION REGRESSION — CHARACTER REFERENCES (2026-11-11):
   the 2026-11-10 adoption verdict ("conformance-IDENTICAL") was
   WRONG for one class: moxml 0.6.4 stopped decoding numeric
