@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4617/4696 (98.32%) |
+| pipeline | 4644/4696 measured + 5 budget exclusions (98.96% of measured) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -144,7 +144,7 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
 4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
 round) → 4578 (97.49%, attribute-prohibition round) → 4585 (97.64%,
-multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round) → 4617 (98.32%, ic-ancestor-scope round), +656 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round) → 4617 (98.32%, ic-ancestor-scope round) → 4637 (parent-context rounds + chameleon round 1.2.109) → 4637 (nested-type-candidates round, 1.2.110) → 4637 (redefine-cycle round, 1.2.111) → 4644 measured (98.96% of measured, train-adoption round: moxml 0.6.6 + leptris 1.9.418.0), +683 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -580,6 +580,38 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   re-run cost-prohibitive on the contended machine). Also filed
   lutaml/moxml#540 this round (the 0.6.4 attribute char-ref
   regression below; repro included).
+- TRAIN ADOPTION COMPLETE (2026-11-12, release pending): the
+  measurement train moves to moxml 0.6.2→0.6.6 + leptris
+  1.9.406.0→1.9.418.0 (moxml#540 CLOSED — the attribute
+  character-reference decode is verified restored: attr
+  `&#x2190;` decodes to "←" on 0.6.6). SUITE 4644/4691 measured
+  (98.96% of measured) + the same 5 reZ budget exclusions (the
+  nested-repeat walks still exceed the 90s per-case watchdog on
+  418 — a mid-bisect "faster reZ" reading was sweep-churn noise).
+  WINS +11: attgD019/020/021/022/025/027/029/031/033/034 (the
+  strict-attribute class through chameleon/imported attributeGroup
+  refs — the moxml#522 thread, FIXED at last) and elemZ020
+  (leptris-rs#46, the substitution binding). REGRESSIONS −4:
+  wildZ013b/c (FILED leptris-rs#72 — strict anyAttribute admission
+  through namespace-less-import wildcards now reports "not
+  declared (strict)"; the flip is between 1.9.409.0 and 1.9.410.0,
+  bisected) and attZ014a/b (FILED leptris-rs#73 — the
+  multiple-xs:ID-per-element pair drifted to the XSD 1.1 reading;
+  suite-contested 1.0-invalid/1.1-valid, harness takes the 1.0
+  expectation). NOT carried by this train: the leptris-rs#45
+  stE050/055/065/066 legs and attgC035-038 (still failing on 418 —
+  the 407-era wins were lost somewhere in 408-418 and have not
+  returned). TOOLING LESSONS, both the hard way: (a) moxml 0.6.6
+  CANNOT drive leptris ≤ 1.9.409.0 — the adapter reports unusable
+  and silently falls back to nokogiri, so probes answer without an
+  engine; check for the fallback warning before trusting any
+  probe; (b) `bundle lock --update` RE-RESOLVES to latest and
+  silently undoes pin edits — pins go lockfile-version-edit +
+  `bundle install` + an installed-version verify, never
+  `bundle lock`; (c) the per-case sweep's verdict column stores
+  the RAW validity boolean — expected-INVALID rows reading false
+  are PASSES; the first assembly inverted them and manufactured 9
+  phantom reZ regressions before the correction.
 - TRAIN ADOPTION REGRESSION — CHARACTER REFERENCES (2026-11-11):
   the 2026-11-10 adoption verdict ("conformance-IDENTICAL") was
   WRONG for one class: moxml 0.6.4 stopped decoding numeric
