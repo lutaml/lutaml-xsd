@@ -162,6 +162,16 @@ module Lutaml
           when *COLLAPSED_STRING_TYPES, "language", "Name", "NCName",
             "ID", "IDREF", "NMTOKEN", "anyURI"
             text.strip.split(/\s+/).join(" ")
+          when *LIST_BASES
+            # NMTOKENS/IDREFS/ENTITIES are whitespace lists of their
+            # item tokens — the value is the ordered item sequence.
+            text.strip.split(/\s+/)
+          when "QName", "NOTATION"
+            # Keyed by the prefix:local form — prefix-to-namespace
+            # binding equivalence is out of reach here (highlighted).
+            return nil unless qname_valid?(text)
+
+            text.strip
           when "gYear", "gYearMonth", "gMonth", "gMonthDay", "gDay"
             return nil unless calendar_lexical_valid?(local, text)
 

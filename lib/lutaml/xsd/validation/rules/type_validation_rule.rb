@@ -674,10 +674,20 @@ module Lutaml
             return if fixed.empty?
             return if value.to_s.empty?
 
-            rule = declared_whitespace_rule(declared)
-            return if canonical(value.to_s, rule) == canonical(fixed, rule)
-            return if fixed_value_space_equal?(declared, value.to_s, fixed,
-                                               repository)
+            # A union's whitespace semantics live on its MEMBERS — the
+            # first accepting member supplies the value (§4.1.7), so
+            # for union/list declarations the whole-lexical canonical
+            # collapse must not shortcut the comparison (stE063: the
+            # fixed 'abcd edfgh\n' is not 'abcd edfgh' under
+            # normalizedString).
+            union_typed = declared.simple_type&.union ||
+              declared.simple_type&.list
+            unless union_typed
+              rule = declared_whitespace_rule(declared)
+              return if canonical(value.to_s, rule) == canonical(fixed, rule)
+            end
+            return if fixed_value_space_equal?(declared, value.to_s,
+                                               fixed, repository)
 
             report_error(
               collector,
@@ -752,15 +762,43 @@ module Lutaml
               return key unless key.nil?
 
               named = repository&.resolve_named_type(local)
-              next unless named.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType) &&
-                named.union
+              next unless named.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
 
-              nested = first_member_key(lexical,
-                                        named.union.member_types.to_s.split(/\s+/),
-                                        repository)
-              return nested unless nested.nil?
+              if named.union
+                nested = first_member_key(lexical,
+                                          named.union.member_types.to_s.split(/\s+/),
+                                          repository)
+                return nested unless nested.nil?
+              elsif named.list
+                listed = named_list_member_key(named, lexical, repository)
+                return listed unless listed.nil?
+              end
             end
             nil
+          end
+
+          # A named LIST member's value: the ordered sequence of item
+          # keys (stE080: union member `list` of xsd:int).
+          #
+          # @return [Array, nil]
+          def named_list_member_key(named, lexical, repository)
+            items = lexical.to_s.strip.split
+            item_local = named.list.item_type.to_s.split(":").last
+            keys = items.map do |item|
+              key = ValueSpace.union_member_value_key(item_local, item)
+              next key unless key.nil?
+
+              nested_named = repository&.resolve_named_type(item_local)
+              next nil unless nested_named.is_a?(
+                Lutaml::Xml::Schema::Xsd::SimpleType,
+              )
+              next nil unless nested_named.union
+
+              first_member_key(item,
+                               nested_named.union.member_types.to_s.split(/\s+/),
+                               repository)
+            end
+            keys.any?(&:nil?) ? nil : keys
           end
 
           # @return [Symbol] :preserve, :replace or :collapse

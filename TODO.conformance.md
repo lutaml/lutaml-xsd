@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4664/4696 (99.32%) |
+| pipeline | 4671/4696 (99.47%) — the non-contested set is fully green; the 25 remaining are contested (see the policy statement below) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -144,7 +144,7 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
 4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
 round) → 4578 (97.49%, attribute-prohibition round) → 4585 (97.64%,
-multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round) → 4617 (98.32%, ic-ancestor-scope round) → 4637 (parent-context rounds + chameleon round 1.2.109) → 4637 (nested-type-candidates round, 1.2.110) → 4637 (redefine-cycle round, 1.2.111) → 4644 measured (98.96% of measured, train-adoption round: moxml 0.6.6 + leptris 1.9.418.0) → 4649 (98.91%, quadratic-dispatch round — first FULL-denominator measure, the 5 reZ budget exclusions retired) → 4658 (99.19%, remainder-classification round — first measure above 99) → 4664 (99.32%, ride-419 round), +703 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride) → 4611 (98.19%, engine-406 ride) → 4613 (98.23%, temporal-enumeration round) → 4614 (98.25%, simple-type-children round) → 4617 (98.32%, ic-ancestor-scope round) → 4637 (parent-context rounds + chameleon round 1.2.109) → 4637 (nested-type-candidates round, 1.2.110) → 4637 (redefine-cycle round, 1.2.111) → 4644 measured (98.96% of measured, train-adoption round: moxml 0.6.6 + leptris 1.9.418.0) → 4649 (98.91%, quadratic-dispatch round — first FULL-denominator measure, the 5 reZ budget exclusions retired) → 4658 (99.19%, remainder-classification round — first measure above 99) → 4664 (99.32%, ride-419 round) → 4671 (99.47%, ride-420 round — the non-contested set fully green), +710 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -218,6 +218,19 @@ corners.
   verdicts agree with the DISPUTED or Unicode-6 reading. These are
   highlighted, not chased: changing our code to satisfy the first
   expectation would codify a suite mistake.
+
+  **Policy statement — INTENTIONALLY NOT IMPLEMENTED**: the
+  contested readings are a deliberate scope decision, not
+  outstanding debt. Where the suite meta itself records the
+  dispute (contradictory `<expected>` entries, `status="queried"`,
+  bugzilla references, version-dependent annotations such as the
+  Michael Kay xsdtests#12 modifications), this implementation
+  takes the XSD 1.0 REC reading and DOES NOT implement the
+  alternative. Any change here requires an owner decision that
+  names the specific case and the reading to switch to — an
+  engine or dependency update that flips one of these cases
+  without such a decision is treated as upstream drift, reported
+  to the filer, and the case returns to this list.
 - **Cap-inert exposure**: the moxml#514 fix (engine cap silent at
   validation) removed a COINCIDENTAL rejection — particlesA013.i was
   passing only because the engine's cap error rejected it; the Ruby
@@ -723,6 +736,28 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   ledger, zero regressions. rspec 1663 green. The lockfile is
   an untracked local pin (the standing policy); no release
   dispatched for this docs-only round.
+- RIDE-420 ROUND (2026-11-13, release pending): leptris
+  1.9.420.0 + moxml 0.6.9 close BOTH filings — leptris-rs#74
+  (the engine's union fixed-value comparison now value-space)
+  and moxml#545 (the facade strict re-check admits the
+  attributeGroup-redefine §4.2.2 hook members). SUITE
+  4671/4696 = 99.47% — the ENTIRE non-contested set is GREEN:
+  every remaining measured failure (25) is in the contested/
+  disputed family above. The ride also completed OUR fixed-value
+  machinery to full family coverage: the union/list branch skips
+  the whole-lexical canonical collapse (a union's whitespace
+  semantics live on its members — stE063: fixed 'abcd edfgh\n'
+  is not 'abcd edfgh' under normalizedString), and
+  union_member_value_key grew the missing branches the family
+  exposed one case at a time (QName/NOTATION keyed by the
+  prefix:local form — binding equivalence highlighted; NMTOKENS/
+  IDREFS/ENTITIES as ordered item sequences; named list members
+  keyed item-wise through the item type, named unions nested).
+  Batch crosstalk note: the stE fixed family flaked one case at
+  a time across 4450/4500 reruns (stE065/066 → stE069 → settled
+  50/50 both) — isolation probes are the honest verdict, and
+  every family member passes in isolation. rspec 1663 green;
+  rubocop clean.
 - TRAIN ADOPTION REGRESSION — CHARACTER REFERENCES (2026-11-11):
   the 2026-11-10 adoption verdict ("conformance-IDENTICAL") was
   WRONG for one class: moxml 0.6.4 stopped decoding numeric
