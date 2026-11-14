@@ -28,7 +28,19 @@ module Lutaml
         SUITE_NS_TEST_GROUP = "//*[local-name()='testGroup']"
 
         Case = Struct.new(:name, :schema_paths, :instance_path, :expected,
-                          :contributor, keyword_init: true)
+                          :contributor, :expected_versions,
+                          keyword_init: true) do
+          # The expectation for a schema version. Split cases carry
+          # `<expected validity="..." version="1.0"/>` AND
+          # `version="1.1"` entries; unversioned entries apply to the
+          # suite default (1.0). Falls back to the first entry — the
+          # pre-versioning reading.
+          def expected_for(version = DEFAULT_VERSION)
+            expected_versions[version] || expected
+          end
+        end
+
+        DEFAULT_VERSION = "1.0"
 
         module_function
 
@@ -90,12 +102,21 @@ module Lutaml
                           contributor)
           name = instance_test.attribute("name")&.value.to_s
           doc_node = instance_test.xpath("./*[local-name()='instanceDocument']").first
-          expected_node = instance_test.xpath("./*[local-name()='expected']").first
+          expected_nodes = instance_test.xpath("./*[local-name()='expected']")
+          expected_node = expected_nodes.first
           return nil unless doc_node && expected_node
 
           instance_path = resolve_href(doc_node, base)
           expected = expected_node.attribute("validity")&.value
           return nil unless instance_path && %w[valid invalid].include?(expected)
+
+          expected_versions = expected_nodes.each_with_object({}) do |node, h|
+            validity = node.attribute("validity")&.value
+            next unless %w[valid invalid].include?(validity)
+
+            version = node.attribute("version")&.value
+            h[version || DEFAULT_VERSION] = validity
+          end
 
           Case.new(
             name: "#{contributor}/#{group_name}/#{name}",
@@ -103,6 +124,7 @@ module Lutaml
             instance_path: instance_path,
             expected: expected,
             contributor: contributor,
+            expected_versions: expected_versions,
           )
         end
 
@@ -119,17 +141,19 @@ module Lutaml
         # Runs the production pipeline over the selected cases. Cases run
         # in one process per call — lutaml-model's global schema cache
         # grows per parse and the full suite OOMs a single invocation;
-        # drive it through offset/limit batches.
+        # drive it through offset/limit batches. `version` selects the
+        # expectation for version-split cases (the DEFAULT_VERSION
+        # reading is byte-identical to the first-expected behavior).
         #
         # @return [Hash] report with :passed, :failures, :total
-        def measure(offset: 0, limit: nil)
+        def measure(offset: 0, limit: nil, version: DEFAULT_VERSION)
           cases_list = cases[offset, limit || cases.size].to_a
           failures = []
           passed = 0
 
           cases_list.each do |test_case|
             valid = pipeline_valid?(test_case)
-            if valid == (test_case.expected == "valid")
+            if valid == (test_case.expected_for(version) == "valid")
               passed += 1
             else
               failures << test_case

@@ -121,13 +121,23 @@ namespace :conformance do
       puts "vendored #{Lutaml::Xsd::Conformance::W3CSuite.vendor_dir}"
     end
 
-    desc "Run the pipeline over the official W3C suite instance tests"
+    desc "Run the pipeline over the official W3C suite instance tests " \
+         "(W3C_SCHEMA_VERSION=1.1 selects the 1.1 expectations for " \
+         "version-split cases; batch files land in tmp/w3c_batch_11/)"
     task run: "conformance:w3c:setup" do
       # One process per batch: lutaml-model's global schema cache grows
       # per parse and the full suite OOMs a single invocation.
       require "lutaml/xsd"
       require "json"
       require_relative "lib/lutaml/xsd/conformance/w3c_suite"
+      version = ENV.fetch("W3C_SCHEMA_VERSION",
+                          Lutaml::Xsd::Conformance::W3CSuite::DEFAULT_VERSION)
+      out_dir = if version == Lutaml::Xsd::Conformance::W3CSuite::DEFAULT_VERSION
+                  "tmp"
+                else
+                  File.join("tmp", "w3c_batch_#{version.tr('.', '')}")
+                end
+      FileUtils.mkdir_p(out_dir)
       total = Lutaml::Xsd::Conformance::W3CSuite.cases.size
       batch = 50
       status = []
@@ -138,11 +148,12 @@ namespace :conformance do
           "require 'lutaml/xsd/conformance/w3c_suite'; " \
           "require 'json'; " \
           "r = Lutaml::Xsd::Conformance::W3CSuite.measure(" \
-          "offset: #{offset}, limit: #{batch}); " \
+          "offset: #{offset}, limit: #{batch}, " \
+          "version: '#{version}'); " \
           "r[:failures] = r[:failures].map { |f| " \
           "{ name: f.name, expected: f.expected, " \
           "contributor: f.contributor } }; " \
-          "File.write(File.join('tmp', " \
+          "File.write(File.join('#{out_dir}', " \
           "'w3c_batch_#{format('%05d', offset)}.json'), JSON.generate(r))"
         )
         status << "#{offset}: #{ok ? 'ok' : 'CRASHED'}"
