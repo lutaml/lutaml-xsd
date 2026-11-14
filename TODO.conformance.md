@@ -778,10 +778,23 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   implementation satisfies 1.0 on 6, fails honestly on 4) + 6
   Unicode-vintage splits (reS/reT/reU, unaffected — the version
   selector does not apply and they fall back to first-expected).
-  1.1-reading satisfaction: 4/16. Phase 2 (the 1.1 relaxations
-  behind explicit configuration) and phase 3 (assertions/CTA/
-  openContent/override, moxml#460-dependent) remain designed, not
-  built.
+  1.1-reading satisfaction: 4/16.
+- XSD-1.1-PHASE-2 ROUND (2026-11-14, release pending): the 1.1
+  relaxations land behind explicit configuration —
+  ValidationConfiguration.schema_version ("1.0" default) + the
+  version arbitration in ValidationJob: under a non-1.0 dialect the
+  engine's 1.0-only strictness findings (the one-ID-per-element
+  marker, parseable since leptris-rs#73's restoration) arbitrate
+  out; the rule engine's own 1.0-shaped checks stay. The harness
+  threads the version into the config, so
+  `W3C_SCHEMA_VERSION=1.1 rake conformance:w3c:run` now measures
+  the 1.1 reading with the arbitration engaged. VERIFIED: attZ014a/b
+  read invalid under 1.0 and VALID under 1.1 (the multi-ID case
+  satisfies BOTH readings per version — no more contested-adjacent
+  loss); float018/double018/dateTime011/particlesZ001 keep their
+  engine-accepting verdicts (already the 1.1 reading). Phase 3
+  (assertions/CTA/openContent/override, moxml#460-dependent)
+  remains designed, not built.
 - SERVE-PLAYGROUND ROUND (2026-11-14, release pending): the
   comprehension pillar's killer feature lands — `lutaml-xsd serve
   PACKAGE.lxr` serves the built SPA plus a JSON validation API.

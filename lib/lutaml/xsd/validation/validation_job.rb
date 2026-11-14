@@ -26,6 +26,10 @@ module Lutaml
       #   )
       #   result = job.execute
       class ValidationJob
+        # The engine's marker for the XSD 1.0 one-ID-per-element rule —
+        # arbitrates out under a 1.1 schema dialect.
+        ONE_ID_PER_ELEMENT_MARKER = /XSD 1\.0 one-ID-per-element/
+
         # Initialize a new ValidationJob
         #
         # @param xml_content [String] The XML content to validate
@@ -90,6 +94,7 @@ module Lutaml
 
           validate_identity if @config.feature_enabled?(:validate_identity_constraints)
           arbitrate_engine_findings
+          arbitrate_version_findings
 
           result_from_collector
         end
@@ -189,6 +194,22 @@ module Lutaml
 
           tail = message.match(/\ADuplicate .* for '([^']+)'\z/i)
           tail && tail[1]
+        end
+
+        # Under a non-1.0 schema dialect the engine's 1.0-only
+        # strictness findings arbitrate out — the one-ID-per-element
+        # rule is XSD 1.0's (§3.2.6); XSD 1.1 lifted it. The marker is
+        # the engine's own wording (leptris-rs#73's 1.0 restoration
+        # made it parseable).
+        #
+        # @return [void]
+        def arbitrate_version_findings
+          return if @config.schema_version == ValidationConfiguration::DEFAULT_SCHEMA_VERSION
+
+          @result_collector.errors.reject! do |error|
+            error.code == EngineContext::ENGINE_CODE &&
+              error.message.match?(ONE_ID_PER_ELEMENT_MARKER)
+          end
         end
 
         # Schema-side UPA checking (XSD 1.0 3.8.6). Findings describe the
