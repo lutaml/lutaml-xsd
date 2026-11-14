@@ -12,6 +12,9 @@
       <div class="editor-pane">
         <div class="editor-toolbar">
           <span class="pane-label">Instance</span>
+          <button class="btn btn-secondary export-btn" @click="exportJsonSchema">
+            Export JSON Schema
+          </button>
           <label class="btn btn-secondary upload-btn">
             Upload…
             <input type="file" accept=".xml,text/xml" @change="onUpload" />
@@ -236,6 +239,27 @@ function onUpload(event: Event) {
   file.text().then((text) => {
     instance.value = text
   })
+}
+
+async function exportJsonSchema() {
+  try {
+    const res = await fetch('/api/json-schema')
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      error.value = body?.error || `Export failed (${res.status})`
+      return
+    }
+    const blob = new Blob([await res.text()], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'json-schema-export.json'
+    anchor.click()
+    URL.revokeObjectURL(url)
+    error.value = ''
+  } catch (err) {
+    error.value = `Could not reach the export API: ${String(err)}`
+  }
 }
 
 async function validate() {

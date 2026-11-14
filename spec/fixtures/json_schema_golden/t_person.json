@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "t_person": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "age": {
+          "type": "integer"
+        },
+        "email": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "mode": {
+          "const": "auto"
+        }
+      },
+      "required": [
+        "name",
+        "status",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "person": {
+      "$ref": "#/$defs/t_person"
+    }
+  },
+  "$id": "http://example.com/test",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/person"
+    }
+  ]
+}
