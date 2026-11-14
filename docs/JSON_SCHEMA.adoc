@@ -40,3 +40,22 @@ File.write("schema.json", json)
 
 The exporter targets documentation, tooling interop, and contract
 publication; it is not a validation-equivalence layer.
+
+## Consumers
+
+lutaml-jsonschema consumes this contract: its model is lossless over
+2020-12 (`map_unmapped`), so exporter output — including keys it does
+not model — round-trips verbatim, and the 492-example suite there
+exercises exporter-shaped documents end-to-end. The golden file at
+`spec/fixtures/json_schema_golden/t_person.json` (pinned by the
+exporter spec) is the contract's byte-level anchor on this side; a
+diff there is a contract break. Losses above are prose here and the
+extension-preservation note on the lutaml-jsonschema side — the two
+documents describe the same boundary from each direction.
+
+## Serving
+
+`lutaml-xsd serve PACKAGE.lxr` exposes the export at
+`GET /api/json-schema` — every schema in the package as its
+draft-2020-12 document — and the SPA playground carries an "Export
+JSON Schema" action that downloads it.

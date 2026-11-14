@@ -795,6 +795,27 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   engine-accepting verdicts (already the 1.1 reading). Phase 3
   (assertions/CTA/openContent/override, moxml#460-dependent)
   remains designed, not built.
+- JSON-SCHEMA-EXPORT ROUND (2026-11-14, #133, release pending):
+  the interop item's three parts land — (1) the SPA export action:
+  GET /api/json-schema in ServeCommand (every package schema as its
+  draft-2020-12 document via JsonSchemaExporter) and the
+  "Export JSON Schema" button in the playground toolbar
+  (downloads the bundle); (2) OUR half of the cross-repo golden
+  spec: spec/fixtures/json_schema_golden/t_person.json pins the
+  exporter's output byte-for-byte (a diff is a contract break —
+  lutaml-jsonschema consumes this shape); (3) the docs cross-link
+  (docs/JSON_SCHEMA.adoc "Consumers" + "Serving"). Endpoint
+  verified live (200, draft-2020-12). lutaml-jsonschema's
+  mirror-image spec stays their side (the issue's "say the word"
+  is the owner's call).
+- RIDE-0610 NOTE (2026-11-14): moxml 0.6.10 + leptris 1.9.420.2
+  (the perf-bound release) probed green on the battery; the full
+  measure verdict lands with this round. moxml#460 is CLOSED but
+  the engine's assertion EVALUATION is not shipped: the facade
+  compiles 1.1 syntax (vc:minVersion + xs:assert) yet accepts
+  assertion-violating instances silently (probe: sum(a) > 0 with
+  a=-5 → no findings); the finding is posted on #460 with the
+  repro — phase 3 stays engine-gated until evaluation lands.
 - SERVE-PLAYGROUND ROUND (2026-11-14, release pending): the
   comprehension pillar's killer feature lands — `lutaml-xsd serve
   PACKAGE.lxr` serves the built SPA plus a JSON validation API.

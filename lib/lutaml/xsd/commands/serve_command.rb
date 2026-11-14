@@ -113,6 +113,9 @@ module Lutaml
           server.mount_proc "/api/validate" do |req, res|
             handle_validate(req, res, schemas, config)
           end
+          server.mount_proc "/api/json-schema" do |_req, res|
+            handle_json_schema(res, schemas)
+          end
           verbose_output "Serving #{@package_path} on " \
                          "http://localhost:#{@port}"
           server.start
@@ -141,6 +144,28 @@ module Lutaml
           res.body = JSON.generate(valid: false, errors: [
                                      { "code" => "request_error", "message" => e.message },
                                    ])
+        end
+
+        # GET /api/json-schema — every schema in the package as a
+        # draft-2020-12 document (the JsonSchemaExporter contract;
+        # lutaml-jsonschema consumes this shape). Keyed by source file.
+        def handle_json_schema(res, schemas)
+          require_relative "../json_schema_exporter"
+          exported = schemas[:repository].all_schemas.map do |key, schema|
+            {
+              key: key,
+              target_namespace: schema.target_namespace,
+              json_schema: JsonSchemaExporter.new(schema).export,
+            }
+          end
+          res["Content-Type"] = "application/json"
+          res.body = JSON.generate(schemas: exported)
+        rescue StandardError => e
+          res.status = 500
+          res["Content-Type"] = "application/json"
+          res.body = JSON.generate(
+            error: "export failed: #{e.message}",
+          )
         end
 
         def finding_h(finding)

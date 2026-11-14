@@ -85,4 +85,16 @@ RSpec.describe Lutaml::Xsd::JsonSchemaExporter do
 
     expect(parsed["$schema"]).to eq(described_class::DRAFT)
   end
+
+  # The golden file pins the exporter's output byte-for-byte: this is
+  # the contract lutaml-jsonschema consumes (issue #133's cross-repo
+  # spec, our half). A diff here is a contract break, not a style
+  # change — regenerate deliberately and note the loss table.
+  it "matches the pinned golden export" do
+    golden = File.read(
+      File.join(__dir__, "..", "..", "fixtures", "json_schema_golden",
+                "t_person.json"),
+    )
+    expect("#{JSON.pretty_generate(exported)}\n").to eq(golden)
+  end
 end
