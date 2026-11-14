@@ -1,12 +1,14 @@
 {
   "provenance": {
     "generated": "2026-11-14",
-    "git": "a858b9e"
+    "git": "1d9d9a4"
   },
-  "passed": 4671,
+  "passed": 4669,
   "total": 4696,
   "failures": [
+    "DataTypes_w3c/dateTime011_2008/dateTime011_2008.i",
     "DataTypes_w3c/double018_1956/double018_1956.i",
+    "DataTypes_w3c/float018_1917/float018_1917.i",
     "DataTypes_w3c/gMonth_pattern001_1274/gMonth_pattern001_1274.v",
     "Particles_w3c/particlesZ001/particlesZ001.i",
     "Regex_w3c/reDH7a/reDH7a.i",
