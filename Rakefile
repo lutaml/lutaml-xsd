@@ -79,6 +79,14 @@ desc "Run the conformance suite"
 task conformance: "conformance:run"
 
 namespace :conformance do
+  desc "Ride check: probe the pinned train against the ride battery " \
+       "(ADOPT/PIN BACK verdict; a full `conformance:w3c:run` remains " \
+       "the adoption gate)"
+  task ride: "conformance:w3c:setup" do
+    require_relative "lib/lutaml/xsd/conformance/ride_battery"
+    Lutaml::Xsd::Conformance::RideBattery.run!
+  end
+
   desc "Run the pipeline over the official W3C suite instance tests"
   task w3c: "conformance:w3c:run"
 
