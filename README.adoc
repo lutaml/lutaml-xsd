@@ -354,6 +354,30 @@ The pipeline passes 42/42 checks of its conformance corpus
 (`rake conformance`); measured results live in `docs/CONFORMANCE.adoc` and
 `TODO.conformance.md`.
 
+=== W3C XML Schema Test Suite conformance
+
+The implementation is measured against the official
+https://github.com/w3c/xsdtests[W3C XML Schema Test Suite] at a pinned
+commit:
+
+* **4671/4696 = 99.47%** (measured at commit 93fd311, release 1.2.116)
+* Denominator: 4755 instance tests in the suite; 4696 are runnable (59
+  schema-less testGroups are excluded) and every one of them is measured
+- The 25 remaining measured failures are **contested readings**: cases
+  where the suite metadata itself records a dispute (contradictory
+  `<expected>` entries, `status="queried"` flags, bugzilla references,
+  version-dependent annotations). This implementation takes the XSD 1.0
+  Recommendation reading and **intentionally does not implement** the
+  alternative readings — these are a deliberate scope decision, not
+  outstanding debt. Flipping any contested case requires an explicit
+  decision naming the case and the reading to switch to.
+
+Methodology: the Ruby rule pipeline produces the verdicts, with tier-1
+engine findings layered additively on top; the full measure runs all 94
+batches in one pass (`rake conformance:w3c:run`). The complete register —
+per-round history, upstream filings, and the caveats audit — lives in
+`TODO.conformance.md`.
+
 [NOTE]
 ====
 Guaranteed feature set requires `lutaml-model >= 0.8.123` (the gemspec
