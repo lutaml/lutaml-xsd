@@ -42,8 +42,13 @@ module Lutaml
 
         # @param pattern [String] an XSD regular expression
         # @return [Regexp] whole-string, multiline Ruby regexp
+        # Memoized per pattern string: the same facet compiles once
+        # and serves every element (the reZ005-class instances carry
+        # ~130k <value> elements over one trivial pattern — the
+        # re-translation dominated their wall time).
         def self.to_regexp(pattern)
-          new(pattern).to_regexp
+          @cache ||= {}
+          @cache[pattern] ||= new(pattern).to_regexp
         end
 
         def initialize(pattern)
