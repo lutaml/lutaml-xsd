@@ -1,0 +1,36 @@
+{
+  "provenance": {
+    "generated": "2026-11-14",
+    "git": "a858b9e"
+  },
+  "passed": 4671,
+  "total": 4696,
+  "failures": [
+    "DataTypes_w3c/double018_1956/double018_1956.i",
+    "DataTypes_w3c/gMonth_pattern001_1274/gMonth_pattern001_1274.v",
+    "Particles_w3c/particlesZ001/particlesZ001.i",
+    "Regex_w3c/reDH7a/reDH7a.i",
+    "Regex_w3c/reJ11/reJ11.i",
+    "Regex_w3c/reJ13/reJ13.i",
+    "Regex_w3c/reJ19/reJ19.i",
+    "Regex_w3c/reJ21/reJ21.i",
+    "Regex_w3c/reJ23/reJ23.i",
+    "Regex_w3c/reJ25/reJ25.i",
+    "Regex_w3c/reJ29/reJ29.i",
+    "Regex_w3c/reJ31/reJ31.i",
+    "Regex_w3c/reJ33/reJ33.i",
+    "Regex_w3c/reJ35/reJ35.i",
+    "Regex_w3c/reJ61/reJ61.i",
+    "Regex_w3c/reJ69/reJ69.i",
+    "Regex_w3c/reJ75/reJ75.i",
+    "Regex_w3c/reJ77/reJ77.i",
+    "Regex_w3c/reS21/reS21.i",
+    "Regex_w3c/reS42/reS42.i",
+    "Regex_w3c/reS51/reS51.i",
+    "Regex_w3c/reT51/reT51.v",
+    "Regex_w3c/reT63/reT63.i",
+    "Regex_w3c/reT84/reT84.i",
+    "Regex_w3c/reU6/reU6.i"
+  ],
+  "excluded": []
+}
