@@ -809,8 +809,11 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   mirror-image spec stays their side (the issue's "say the word"
   is the owner's call).
 - RIDE-0610 NOTE (2026-11-14): moxml 0.6.10 + leptris 1.9.420.2
-  (the perf-bound release) probed green on the battery; the full
-  measure verdict lands with this round. moxml#460 is CLOSED but
+  (the perf-bound release) probed green on the battery and the
+  FULL measure is CONFORMANCE-NEUTRAL: 4669/4696 identical to the
+  1.2.119 ledger (the diff's two "regressions" vs the older
+  comparator are the registered harness-order corrections, not
+  train movement). ADOPTED. moxml#460 is CLOSED but
   the engine's assertion EVALUATION is not shipped: the facade
   compiles 1.1 syntax (vc:minVersion + xs:assert) yet accepts
   assertion-violating instances silently (probe: sum(a) > 0 with
