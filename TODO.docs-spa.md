@@ -13,10 +13,14 @@ tracked in TODO.conformance.md.
 
 ## Live validation playground (the killer feature)
 
-- [ ] SPA page: paste/upload an XML instance → validate against the loaded
+- [x] SPA page: paste/upload an XML instance → validate against the loaded
       package (engine + rule stack via a CLI/HTTP seam) → findings with
-      line/column/path — DEFERRED: backend seam decision + frontend build
-      loop
+      line/column/path — DONE 2026-11-14: the seam decision is HTTP
+      (`lutaml-xsd serve PACKAGE.lxr`, WEBrick lazily loaded,
+      Gemfile-side only — never the gemspec). The playground view
+      (frontend/src/views/PlaygroundView.vue) posts to /api/validate;
+      the server validates through ValidationJob with the same
+      repository recipe the W3C suite harness measures with.
 - [ ] Click-through: finding → schema component page — DEFERRED (needs
       the playground first)
 - [ ] Instance tree view with per-node validity — DEFERRED (needs

@@ -5,6 +5,7 @@ require_relative "commands/pkg_command"
 require_relative "commands/xml_command"
 require_relative "commands/build_command"
 require_relative "commands/generate_spa_command"
+require_relative "commands/serve_command"
 
 module Lutaml
   module Xsd
@@ -103,6 +104,30 @@ module Lutaml
              desc: "Documentation title"
       def spa(package_path)
         Commands::GenerateSpaCommand.new(package_path, options).run
+      end
+
+      desc "serve PACKAGE", "Serve the SPA playground with live validation"
+      long_desc <<~DESC
+        Serve an LXR package's documentation with the live validation
+        playground: paste or upload an XML instance and validate it
+        against the package's schemas.
+
+        Requires the `webrick` gem (a Gemfile-side dependency, not
+        bundled with lutaml-xsd).
+
+        Examples:
+          # Serve on the default port 4567
+          lutaml-xsd serve schemas.lxr
+
+          # Serve on a custom port
+          lutaml-xsd serve schemas.lxr --port 8080
+      DESC
+      option :port,
+             type: :numeric,
+             default: 4567,
+             desc: "Port to listen on"
+      def serve(package_path)
+        Commands::ServeCommand.new(package_path, options).run
       end
 
       desc "version", "Display lutaml-xsd version"

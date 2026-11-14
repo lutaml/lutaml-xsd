@@ -782,6 +782,24 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   behind explicit configuration) and phase 3 (assertions/CTA/
   openContent/override, moxml#460-dependent) remain designed, not
   built.
+- SERVE-PLAYGROUND ROUND (2026-11-14, release pending): the
+  comprehension pillar's killer feature lands — `lutaml-xsd serve
+  PACKAGE.lxr` serves the built SPA plus a JSON validation API.
+  The seam decision (CLI vs HTTP) resolves to HTTP: ServeCommand
+  extracts the package's schemas and parses them with the EXACT
+  recipe the W3C suite harness measures with (location-aware,
+  collision-suffixing Runner::Repository), then WEBrick serves
+  frontend/dist + POST /api/validate through ValidationJob.
+  WEBrick loads LAZILY and stays Gemfile-side only — never the
+  gemspec (the optional-tooling rule); the serve command tells
+  the user to add it. PlaygroundView (Vue) posts pasted/uploaded
+  instances and renders findings with code/severity/location/
+  message; the beaker icon in the SPA header links to
+  #/playground. Verified live: package round-trip valid/invalid
+  both directions, 400 + request_error on malformed input,
+  static serving 200, frontend build + vitest green.
+  TODO.docs-spa.md's playground checkbox is DONE; click-through
+  and the instance tree remain deferred.
 - TRAIN ADOPTION REGRESSION — CHARACTER REFERENCES (2026-11-11):
   the 2026-11-10 adoption verdict ("conformance-IDENTICAL") was
   WRONG for one class: moxml 0.6.4 stopped decoding numeric

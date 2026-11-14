@@ -15,3 +15,8 @@ gem "rexml"
 gem "rspec"
 gem "rubocop"
 gem "rubocop-performance"
+
+# The `lutaml-xsd serve` playground server: WEBrick loads lazily inside
+# the command and stays out of the gemspec — an optional tooling
+# dependency, never a runtime requirement.
+gem "webrick"
