@@ -13,6 +13,11 @@ const router = createRouter({
       name: 'schema',
       component: () => import('./views/SchemaView.vue'),
       props: true
+    },
+    {
+      path: '/playground',
+      name: 'playground',
+      component: () => import('./views/PlaygroundView.vue')
     }
   ]
 })

@@ -380,6 +380,28 @@ batches in one pass (`rake conformance:w3c:run`). The complete register —
 per-round history, upstream filings, and the caveats audit — lives in
 `TODO.conformance.md`.
 
+=== Live validation playground
+
+Serve a package's documentation with an interactive validation
+playground: paste or upload an XML instance and validate it against the
+package's schemas — findings arrive with code, severity, location, and
+message.
+
+[source,bash]
+----
+lutaml-xsd serve schemas.lxr              # http://localhost:4567
+lutaml-xsd serve schemas.lxr --port 8080
+----
+
+The playground needs the `webrick` gem, which is a Gemfile-side
+dependency of this repository only — the gem deliberately does not
+declare it (optional tooling stays out of the gemspec). Add `gem
+"webrick"` to your bundle to use `serve`. Validation runs through the
+same production pipeline as `lutaml-xsd validate` (the Ruby rule engine
+plus additive engine findings). The playground UI itself is generated
+into the SPA (the beaker icon in the header) — build the frontend and
+serve the package to use it.
+
 [NOTE]
 ====
 Guaranteed feature set requires `lutaml-model >= 0.8.123` (the gemspec
