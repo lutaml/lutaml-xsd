@@ -819,22 +819,6 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   assertion-violating instances silently (probe: sum(a) > 0 with
   a=-5 → no findings); the finding is posted on #460 with the
   repro — phase 3 stays engine-gated until evaluation lands.
-- XSD-1.1 MEASURE (2026-11-14): the FIRST 1.1-reading measure —
-  `W3C_SCHEMA_VERSION=1.1 rake conformance:w3c:run` over all 94
-  batches: 4672/4696 (24 failures). The 1.1 reading satisfies six
-  of the ten schema-version splits (float018/double018/
-  dateTime011/particlesZ001 pass; attZ014a/b pass via the
-  one-ID arbitration; net −3 vs the 1.0 ledger's 27, the fourth a
-  batch-crosstalk ±1). THE SCOREBOARD FINDING: the pinned suite
-  (7bc3365) contains NO enumerable 1.1-feature testGroups — the
-  assertion/CTA/override/notQName schema files exist in vendor
-  (saxonData/Override, wgData/sg, saxonData/VC) but their
-  testGroups are absent from the measured set (unresolvable or
-  unenumerated schemaTests), so moxml#460's per-category
-  acceptance scoreboard cannot be produced from this suite
-  version; producing it needs a newer xsdtests snapshot — an
-  owner decision (the pinned SHA moves, the 1.0 ledger
-  re-baselines).
 - SERVE-PLAYGROUND ROUND (2026-11-14, release pending): the
   comprehension pillar's killer feature lands — `lutaml-xsd serve
   PACKAGE.lxr` serves the built SPA plus a JSON validation API.
