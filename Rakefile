@@ -78,6 +78,10 @@ end
 desc "Run the conformance suite"
 task conformance: "conformance:run"
 
+# The conformance namespace accumulates the suite/ride/ledger task
+# bodies; splitting them into rakelib/ would scatter the setup
+# dependency graph.
+# rubocop:disable Metrics/BlockLength
 namespace :conformance do
   desc "Ride check: probe the pinned train against the ride battery " \
        "(ADOPT/PIN BACK verdict; a full `conformance:w3c:run` remains " \
@@ -89,6 +93,24 @@ namespace :conformance do
 
   desc "Run the pipeline over the official W3C suite instance tests"
   task w3c: "conformance:w3c:run"
+
+  namespace :ledger do
+    desc "Regenerate the committed baseline ledger from the current tmp/ measure"
+    task :generate do
+      require_relative "lib/lutaml/xsd/conformance/ledger"
+      snapshot = Lutaml::Xsd::Conformance::Ledger.regenerate!
+      puts "baseline written: #{snapshot['passed']}/#{snapshot['total']} " \
+           "(#{snapshot['failures'].size} failures, " \
+           "#{snapshot['excluded'].size} excluded) at " \
+           "#{Lutaml::Xsd::Conformance::Ledger::BASELINE_PATH}"
+    end
+
+    desc "Compare the current tmp/ measure against the committed baseline"
+    task :check do
+      require_relative "lib/lutaml/xsd/conformance/ledger"
+      Lutaml::Xsd::Conformance::Ledger.check!
+    end
+  end
 
   namespace :w3c do
     desc "Clone the official W3C XML Schema Test Suite into vendor/xsdtests"
@@ -129,6 +151,8 @@ namespace :conformance do
     end
   end
 end
+
+# rubocop:enable Metrics/BlockLength
 
 namespace :benchmark do
   desc "Benchmark leptris vs nokogiri through Moxml on a real corpus"

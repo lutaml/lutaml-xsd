@@ -1,0 +1,57 @@
+# Nightly ledger drift detector: measures main against the committed
+# baseline ledger (baseline/w3c_ledger.json). The baseline moves ONLY
+# via register commits; this workflow never writes it.
+#
+# Hand-maintained — the other workflows are Cimas-generated.
+name: ledger
+
+permissions:
+  contents: read
+  issues: write
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  ledger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      - name: Measure the full W3C suite
+        run: bundle exec rake conformance:w3c:run
+
+      - name: Compare against the baseline
+        run: |
+          set -o pipefail
+          bundle exec rake conformance:ledger:check 2>&1 | tee tmp/ledger_check.txt
+
+      - name: Report regressions
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            printf '%s\n\n' "The nightly ledger run regressed against baseline/w3c_ledger.json — full logs at ${RUN_URL}."
+            echo '```'
+            cat tmp/ledger_check.txt 2>/dev/null || echo 'check output unavailable'
+            echo '```'
+          } > /tmp/body.md
+          gh issue comment 266 --body-file /tmp/body.md
+
+      - name: Upload measure artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w3c-ledger-batches
+          path: tmp/w3c_batch_*.json
+          if-no-files-found: ignore
