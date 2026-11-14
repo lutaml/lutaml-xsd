@@ -30,6 +30,9 @@ module Lutaml
           __dir__, "..", "..", "..", "..", "config", "validation.yml"
         )
 
+        # The default schema dialect: XSD 1.0 (REC 2004).
+        DEFAULT_SCHEMA_VERSION = "1.0"
+
         # Initialize configuration from hash
         #
         # @param config_hash [Hash] Configuration settings
@@ -91,6 +94,17 @@ module Lutaml
         # @return [Boolean]
         def feature_enabled?(feature)
           get_nested("validation", "features", feature.to_s) != false
+        end
+
+        # The schema dialect the instance is assessed against —
+        # "1.0" (the default) or "1.1". Under 1.1 the engine's 1.0-only
+        # strictness findings (the one-ID-per-element rule) arbitrate
+        # out; the rule engine's own checks are 1.0-shaped and stay.
+        #
+        # @return [String]
+        def schema_version
+          get_nested("validation", "schema_version") ||
+            DEFAULT_SCHEMA_VERSION
         end
 
         # Get error reporting verbosity level

@@ -152,7 +152,7 @@ module Lutaml
           passed = 0
 
           cases_list.each do |test_case|
-            valid = pipeline_valid?(test_case)
+            valid = pipeline_valid?(test_case, version)
             if valid == (test_case.expected_for(version) == "valid")
               passed += 1
             else
@@ -172,7 +172,7 @@ module Lutaml
           { total: cases_list.size, passed: passed, failures: failures }
         end
 
-        def pipeline_valid?(test_case)
+        def pipeline_valid?(test_case, version = DEFAULT_VERSION)
           schemas = {}
           locations = {}
           test_case.schema_paths.each do |path|
@@ -192,7 +192,9 @@ module Lutaml
             schemas[key] = schema
             locations[path] = schema
           end
-          config = Validation::ValidationConfiguration.new
+          config = Validation::ValidationConfiguration.new(
+            "validation" => { "schema_version" => version },
+          )
           job = Validation::ValidationJob.new(
             xml_content: File.read(test_case.instance_path),
             repository: Runner::Repository.new(schemas, locations),
