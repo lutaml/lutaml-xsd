@@ -863,6 +863,15 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   green. moxml#551 resolved-and-confirmed (0.6.11 + 1.9.421.0 =
   the first working released pairing). Docs-only round, no
   release (the gemspec floors already admit moxml 0.6.11).
+- RIDE-0612 ROUND (2026-11-15): moxml 0.6.12 (the same-day
+  revert of the consumer-contract binding on the facade classes —
+  a measured regression) rides CONFORMANCE-NEUTRAL: 4669/4696
+  identical to 1.2.120, battery 8/8, rspec 1668 green. The
+  pairing with leptris 1.9.421.0 HOLDS (the revert removes the
+  measured regression without losing the ns_uri face — the
+  attribute access that broke on 0.6.10 + 420.3 stays working).
+  #556 (the assertion evaluation) remains open and unshipped.
+  Docs-only round, no release.
 - SERVE-PLAYGROUND ROUND (2026-11-14, release pending): the
   comprehension pillar's killer feature lands — `lutaml-xsd serve
   PACKAGE.lxr` serves the built SPA plus a JSON validation API.
