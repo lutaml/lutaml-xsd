@@ -851,6 +851,18 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   mechanism). LESSON: the ride loop's probe caught the break
   BEFORE any measure ran — the adapter-floor check belongs in
   the battery.
+- RIDE-421 ROUND (2026-11-15): the block clears — moxml 0.6.11
+  RELEASED (c1838b9's LaneAttribute ns_uri face) and leptris
+  1.9.421.0 (the perf/CI round) shipped the same day; the stack
+  rides BOTH (the fresh resolve also flushed the torn
+  lockfile-git-section state from the blocked attempt — lockfile
+  regenerated from scratch). Battery 8/8 green, full measure
+  CONFORMANCE-NEUTRAL: 4669/4696 identical to the 1.2.120
+  ledger (the diff's two rows vs the older comparator are the
+  registered harness-order corrections). ADOPTED; rspec 1668
+  green. moxml#551 resolved-and-confirmed (0.6.11 + 1.9.421.0 =
+  the first working released pairing). Docs-only round, no
+  release (the gemspec floors already admit moxml 0.6.11).
 - SERVE-PLAYGROUND ROUND (2026-11-14, release pending): the
   comprehension pillar's killer feature lands — `lutaml-xsd serve
   PACKAGE.lxr` serves the built SPA plus a JSON validation API.
