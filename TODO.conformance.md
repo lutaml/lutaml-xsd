@@ -835,6 +835,22 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   version; producing it needs a newer xsdtests snapshot — an
   owner decision (the pinned SHA moves, the 1.0 ledger
   re-baselines).
+- RIDE-BLOCK 420.3 (2026-11-15): leptris 1.9.420.3 ("the
+  consumer-contract attribute carries the namespace URI") is
+  UNRIDEABLE — it pairs with an UNRELEASED moxml: 0.6.10's
+  LaneAttribute takes 2..3 args and the 420.3 native factory now
+  passes 4 (the ns_uri face), so EVERY attribute access detonates
+  (ArgumentError from adapter/leptris.rb:118; the suite
+  enumeration collapses to zero cases). The fix exists on moxml
+  main (c1838b9, LaneAttribute + ns_uri) but 0.6.10 shipped
+  before it. PINNED BACK to 1.9.420.2 (the last working released
+  pair: 0.6.10 + 420.2, battery green). FILED moxml#551 (the
+  pairing report + the release-priority note: 0.6.11+ carrying
+  c1838b9 — and ideally a MINIMUM_BINDING_VERSION floor at
+  420.3 — unlocks the ride; the adapter's floor gate is the
+  mechanism). LESSON: the ride loop's probe caught the break
+  BEFORE any measure ran — the adapter-floor check belongs in
+  the battery.
 - SERVE-PLAYGROUND ROUND (2026-11-14, release pending): the
   comprehension pillar's killer feature lands — `lutaml-xsd serve
   PACKAGE.lxr` serves the built SPA plus a JSON validation API.
