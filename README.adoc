@@ -380,6 +380,23 @@ batches in one pass (`rake conformance:w3c:run`). The complete register —
 per-round history, upstream filings, and the caveats audit — lives in
 `TODO.conformance.md`.
 
+=== Diagram Interchange Model export
+
+Export a schema as a DIM 0.1 document — the graph the Etassia engine
+lays out and draws: one node per top-level type and global element,
+its members as content blocks, and its relationships as semantic
+edges (extension → generalization, restriction → dependency,
+element-to-type membership → association).
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+schema = Lutaml::Xml::Schema::Xsd.parse(File.read('schema.xsd'))
+dim = Lutaml::Xsd::DimExporter.new(schema).export      # a DIM document hash
+File.write('schema-dim.json', JSON.pretty_generate(dim))
+----
+
 === Live validation playground
 
 Serve a package's documentation with an interactive validation
