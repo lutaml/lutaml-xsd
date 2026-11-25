@@ -872,6 +872,23 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   attribute access that broke on 0.6.10 + 420.3 stays working).
   #556 (the assertion evaluation) remains open and unshipped.
   Docs-only round, no release.
+- RIDE-1616 ROUND — THE ASSERTION WAVE (2026-11-25): moxml
+  0.6.14→0.6.16 + leptris 1.9.422→1.9.442 (the nine-train wave)
+  ship the #556 acceptance: xs:assert now EVALUATES (probe: the
+  `sum(a) > 0` violation produces the assertion finding; the
+  valid instance passes clean — the same probe that documented
+  the acceptance gap twice). The stack rides moxml 0.6.16 +
+  leptris 1.9.442.0 + lutaml-model 0.8.178. LEDGER: 1.0 = 4669/
+  4696 identical to 1.2.120 (zero regressions); 1.1 = 4672/4696
+  with ALL 24 failures in the contested set (reJ/reS/reT/reU
+  vintages, gMonth_pattern, elemZ016, reDH7a — no
+  assertion-category failures). #556 closed-as-completed is now
+  TRUE on the released pair. #269 phase 3 (the 1.1 SOM
+  constructs + rule wiring) UNBLOCKS. Hygiene rides along: the
+  interop/som boards updated (the export action done; the
+  model-export/Metanorma/Schematron items carry their filed
+  issues #290-#292), the DIM exporter documented in the README.
+  Docs-only round, no release (the floors admit the stack).
 - SERVE-PLAYGROUND ROUND (2026-11-14, release pending): the
   comprehension pillar's killer feature lands — `lutaml-xsd serve
   PACKAGE.lxr` serves the built SPA plus a JSON validation API.
