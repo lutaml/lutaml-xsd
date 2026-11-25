@@ -889,6 +889,17 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   model-export/Metanorma/Schematron items carry their filed
   issues #290-#292), the DIM exporter documented in the README.
   Docs-only round, no release (the floors admit the stack).
+- RIDE-0618 ROUND + HIERARCHY SLICE (2026-11-25): moxml
+  0.6.17→0.6.18 + leptris 1.9.443 ride CONFORMANCE-NEUTRAL —
+  1.0 = 4669/4696 identical to 1.2.120 (zero regressions),
+  1.1 = 4672/4696 stable (24 contested). #289's hierarchy
+  DATA LAYER ships: the serializer derives per-type derivation
+  chains from the serialized base links (the analyzer-index
+  plumbing drift — find_type + registry unpopulated on the
+  loading paths — recorded on the issue), and type cards render
+  the chain-to-root. The SPA graph views, search ranking, usage
+  matrix, coverage view, and a11y pass remain on #289.
+  Docs-only round, no release.
 - SERVE-PLAYGROUND ROUND (2026-11-14, release pending): the
   comprehension pillar's killer feature lands — `lutaml-xsd serve
   PACKAGE.lxr` serves the built SPA plus a JSON validation API.
