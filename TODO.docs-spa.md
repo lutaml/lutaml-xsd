@@ -21,25 +21,37 @@ tracked in TODO.conformance.md.
       (frontend/src/views/PlaygroundView.vue) posts to /api/validate;
       the server validates through ValidationJob with the same
       repository recipe the W3C suite harness measures with.
-- [ ] Click-through: finding → schema component page — DEFERRED (needs
-      the playground first)
-- [ ] Instance tree view with per-node validity — DEFERRED (needs
-      element-path findings in the UI; engine already reports paths)
+- [x] Click-through: finding → schema component page — DONE 2026-11-14
+      (PR #276): a finding whose location/message names a schema
+      component routes to its page with the detail panel open
+- [x] Instance tree view with per-node validity — DONE 2026-11-14
+      (PR #276): client-side DOMParser tree with per-node invalid
+      markers matched by finding references
 
 ## Navigation & comprehension
 
+All items here are tracked in issue #289 (the comprehension package).
+
 - [ ] Global search across types/elements/attributes/groups — DEFERRED:
       the search index exists (`build_index`); ranking design + UI work
+      (#289)
 - [ ] Usage navigation matrix for attributes and groups — DEFERRED:
       liquid methods pattern exists; extend `used_by` coverage first
-- [ ] Type hierarchy graph in the SPA — DEFERRED (pairs with TODO.som.md)
-- [ ] Dependency graph page — DEFERRED
+      (#289)
+- [~] Type hierarchy graph in the SPA — the DATA layer is DONE
+      (2026-11-25): the serializer ships per-type derivation chains as
+      the `hierarchy` map and type cards render chain-to-root; the
+      graph VIEW and the analyzer-index loading-path design remain
+      (#289 — the drift discovery is recorded there)
+- [ ] Dependency graph page — DEFERRED (#289; the DependencyGrapher
+      data layer exists, the same loading-path design pass applies)
 
 ## Evolution
 
 - [ ] Schema diff between package versions — DEFERRED: structural diff
-      design needed (component identity across versions)
-- [ ] Coverage view wired to `coverage_analyzer` — DEFERRED
+      design needed (component identity across versions). FILED as
+      issue #288 (the design-first campaign)
+- [ ] Coverage view wired to `coverage_analyzer` — DEFERRED (#289)
 
 ## Polish
 
