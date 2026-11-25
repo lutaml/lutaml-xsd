@@ -39,6 +39,13 @@
             </div>
             <h3 class="type-name">{{ type.name }}</h3>
             <p v-if="type.base" class="type-base">Base: {{ type.base }}</p>
+            <p
+              v-if="hierarchyChain(type.name).length"
+              class="type-hierarchy"
+              :title="hierarchyChain(type.name).join(' → ')"
+            >
+              ⇑ {{ hierarchyChain(type.name).length }} to root: {{ hierarchyRoot(type.name) }}
+            </p>
           </div>
         </div>
 
@@ -108,6 +115,15 @@ const allTypes = computed(() => {
   const simple = (schema.value.simple_types || []).map(t => ({ ...t, type: 'simple' as const }))
   return [...complex, ...simple]
 })
+
+
+function hierarchyChain(name: string): string[] {
+  return (schemaStore.hierarchy as Record<string, { chain: string[] }> | undefined)?.[name]?.chain ?? []
+}
+function hierarchyRoot(name: string): string {
+  const chain = hierarchyChain(name)
+  return chain.length ? (chain[chain.length - 1].split(" --> ")[1] ?? "") : ""
+}
 
 function selectType(type: (ComplexType | SimpleType) & { type: 'complex' | 'simple' }) {
   schemaStore.selectSchema(props.id)

@@ -10,6 +10,7 @@ export interface SchemaData {
   metadata: PackageMetadata
   schemas: Schema[]
   namespaces: Namespace[]
+  hierarchy?: Record<string, { chain: string[]; mermaid: string[] }>
 }
 
 export interface PackageMetadata {

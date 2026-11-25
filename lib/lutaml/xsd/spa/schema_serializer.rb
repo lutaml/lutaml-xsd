@@ -71,12 +71,52 @@ module Lutaml
           metadata_hash = hash.to_h do |k, v|
             [k.is_a?(String) ? k.to_sym : k, v]
           end
+          schemas_data = serialize_schemas
           {
             metadata: metadata_hash,
-            schemas: serialize_schemas,
+            schemas: schemas_data,
             namespaces: build_namespaces,
             index: build_index,
+            hierarchy: build_hierarchy_graphs(schemas_data),
           }
+        end
+
+        # Derivation trees per named type, derived from the SERIALIZED
+        # base links (the same data the SPA type cards render) — no
+        # dependency on the analyzer's index plumbing. Each type gets
+        # its chain to the root as a mermaid classRelation line set.
+        def build_hierarchy_graphs(schemas_data)
+          parents = {}
+          kinds = {}
+          schemas_data.each do |schema|
+            (Array(schema[:complex_types]) + Array(schema[:simple_types])).each do |type|
+              name = type[:name].to_s
+              next if name.empty?
+
+              base = type[:base].to_s
+              parents[name] = base unless base.empty?
+              kinds[name] = type[:type].to_s
+            end
+          end
+          graphs = {}
+          parents.keys.sort.each do |name|
+            chain = []
+            seen = Set.new([name])
+            cursor = name
+            while (parent = parents[cursor])
+              break if seen.include?(parent)
+
+              chain << "#{cursor} --> #{parent}"
+              seen << parent
+              cursor = parent
+            end
+            kind = kinds[name] == "complex" ? "class" : "subclass"
+            diagrams = chain.map do |edge|
+              "classDiagram\n  #{edge.split(' --> ').map { |n| "#{kind}_#{n.tr(':', '_')}" }.join(' --> ')}"
+            end
+            graphs[name] = { chain: chain, mermaid: diagrams }
+          end
+          graphs
         end
 
         # Convert serialized data to JSON string
