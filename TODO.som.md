@@ -14,8 +14,12 @@ not start mid-cycle.
 
 - [ ] `xs:redefine` semantics (redefinition chains, component shadowing)
       — DEFERRED: needs a component-resolution design note first
-- [ ] Chameleon includes (namespace adoption rules) — DEFERRED: verify
-      current behavior against the rng include fixes, then design
+- [~] Chameleon includes (namespace adoption rules) — the
+      VALIDATION side shipped (the resolver's chameleon_namespace
+      threading, §4.2.1 clause 3.2 exhaustive adoption; schD10
+      resolved by spec in the 1.2.109 round); the MODEL-side
+      design (namespace adoption as SOM object semantics) remains
+      deferred
 - [ ] Substitution group closure and membership enumeration on the model
       — DEFERRED: pairs with the conformance substitution-group gap
 - [ ] `xs:group` / `xs:attributeGroup` reference resolution including

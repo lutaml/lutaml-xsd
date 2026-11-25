@@ -33,20 +33,26 @@ delivered; remaining items deferred with reasons below.
 - [x] Loss table documented in docs/JSON_SCHEMA.adoc (XSD regex dialect,
       identity constraints, substitution groups, derivation flattening,
       wildcards, defaults, mixed content, XSD 1.1)
-- [ ] SPA "export JSON Schema" action per package — DEFERRED: needs the
-      SPA work in TODO.docs-spa.md
+- [x] SPA "export JSON Schema" action per package — DONE 2026-11-14
+      (PR #278): `GET /api/json-schema` in `lutaml-xsd serve` + the
+      playground "Export JSON Schema" button; the golden contract
+      pinned (issue #133 closed)
 
 ## LutaML cross-model (the differentiator)
 
 - [ ] XSD → LutaML model export — DEFERRED: there is no cross-model
       contract in this repo yet (LutaML class/association export needs a
       design note agreed with the lutaml-model owners); the exporter
-      here is the template for that work
-- [ ] Metanorma integration for schema-package documentation — DEFERRED:
-      depends on the SPA data contract being frozen
+      here is the template for that work. Filed as issue #290 (the
+      target-representation design, demand-gated)
+- [ ] Metanorma integration for schema-package documentation —
+      DEFERRED → FILED as issue #291 (the unitsml corpus is the
+      concrete target: its schema-document sections are hand-maintained
+      today)
 
 ## Adjacent (evaluate, don't commit)
 
 - [ ] ISO Schematron rule-engine plugin — DEFERRED: evaluate demand;
       the rule_registry pattern fits, and the conformance harness gives
-      the measurement hook when it is taken up
+      the measurement hook when it is taken up. Filed as issue #292
+      (the demand survey is the first step)
