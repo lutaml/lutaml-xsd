@@ -14,6 +14,7 @@ export const useSchemaStore = defineStore('schema', () => {
   const schemas = computed(() => schemaData.value?.schemas ?? [])
   const namespaces = computed(() => schemaData.value?.namespaces ?? [])
   const metadata = computed(() => schemaData.value?.metadata)
+  const hierarchy = computed(() => schemaData.value?.hierarchy ?? {})
 
   const selectedSchema = computed(() =>
     schemas.value.find(s => s.id === selectedSchemaId.value)
@@ -166,6 +167,7 @@ export const useSchemaStore = defineStore('schema', () => {
     schemas,
     namespaces,
     metadata,
+    hierarchy,
     selectedSchema,
     selectedType,
     schemaCounts,
