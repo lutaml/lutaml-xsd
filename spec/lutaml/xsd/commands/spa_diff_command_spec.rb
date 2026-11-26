@@ -21,6 +21,14 @@ RSpec.describe "spa generation with --diff" do
   end
 
   it "embeds the component-level changeset in the payload" do
+    dist = File.expand_path("../../../../frontend/dist/app.iife.js", __dir__)
+    unless File.exist?(dist)
+      # The SPA strategies require the built frontend; browser-less
+      # lanes (CI without `rake build_frontend`) skip the embed leg —
+      # a CommandError here would SystemExit and truncate the suite.
+      skip "frontend/dist missing; run `rake build_frontend` for the embed leg"
+    end
+
     Dir.mktmpdir do |dir|
       old_path = build_package("v1", File.join(dir, "v1.lxr"))
       new_path = build_package("v2", File.join(dir, "v2.lxr"))
