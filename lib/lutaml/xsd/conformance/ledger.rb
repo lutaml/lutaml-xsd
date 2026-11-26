@@ -15,18 +15,34 @@ module Lutaml
       # round regenerates it from tmp/); the nightly job never writes
       # it.
       module Ledger
-        BASELINE_PATH = File.join(__dir__, "..", "..", "..", "..",
-                                  "baseline", "w3c_ledger.json")
-        BATCH_DIR = "tmp"
+        BASELINE_DIR = File.join(__dir__, "..", "..", "..", "..",
+                                 "baseline")
+        DEFAULT_VERSION = "1.0"
 
         module_function
+
+        # The reading's batch directory and committed baseline path —
+        # the 1.0 ledger lives at baseline/w3c_ledger.json over tmp/,
+        # the 1.1 ledger at baseline/w3c_ledger_11.json over
+        # tmp/w3c_batch_11/.
+        #
+        # @param version [String]
+        # @return [Array<String>]
+        def paths(version = DEFAULT_VERSION)
+          if version == DEFAULT_VERSION
+            ["tmp", File.join(BASELINE_DIR, "w3c_ledger.json")]
+          else
+            [File.join("tmp", "w3c_batch_#{version.tr('.', '')}"),
+             File.join(BASELINE_DIR, "w3c_ledger_#{version.tr('.', '')}.json")]
+          end
+        end
 
         # Loads the fresh per-batch results (tmp/w3c_batch_*.json as
         # written by conformance:w3c:run).
         #
         # @param dir [String]
         # @return [Hash{String => Hash}]
-        def load_batches(dir = BATCH_DIR)
+        def load_batches(dir = paths.first)
           Dir.glob(File.join(dir, "w3c_batch_*.json"))
             .each_with_object({}) do |path, h|
             data = JSON.parse(File.read(path))
@@ -42,16 +58,18 @@ module Lutaml
 
         # The committed baseline.
         #
+        # @param version [String]
         # @return [Hash]
-        def baseline
-          JSON.parse(File.read(BASELINE_PATH))
+        def baseline(version = DEFAULT_VERSION)
+          JSON.parse(File.read(paths(version).last))
         end
 
         # Regenerates the baseline from the current tmp/ measure.
         #
+        # @param version [String]
         # @return [Hash]
-        def regenerate!
-          batches = load_batches
+        def regenerate!(version = DEFAULT_VERSION)
+          batches = load_batches(paths(version).first)
           failures = batches.values.flat_map { |b| b["failures"] }.sort
           excluded = batches.values.flat_map { |b| b["excluded"] }.sort
           passed = batches.values.sum { |b| b["passed"] }
@@ -66,8 +84,9 @@ module Lutaml
             "failures" => failures,
             "excluded" => excluded,
           }
-          FileUtils.mkdir_p(File.dirname(BASELINE_PATH))
-          File.write(BASELINE_PATH, "#{JSON.pretty_generate(snapshot)}\n")
+          FileUtils.mkdir_p(File.dirname(paths(version).last))
+          File.write(paths(version).last,
+                     "#{JSON.pretty_generate(snapshot)}\n")
           snapshot
         end
 
@@ -75,10 +94,11 @@ module Lutaml
         # batches are re-run once (the crosstalk families flake one
         # case at a time); the rerun verdict stands.
         #
+        # @param version [String]
         # @return [Hash] wins/regressions/flakes + the headline
-        def compare(rerun: true)
-          base_failures = baseline["failures"]
-          batches = load_batches
+        def compare(version = DEFAULT_VERSION, rerun: true)
+          base_failures = baseline(version)["failures"]
+          batches = load_batches(paths(version).first)
           new_failures = batches.values.flat_map { |b| b["failures"] }
           passed = batches.values.sum { |b| b["passed"] }
           total = batches.values.sum { |b| b["total"] }
@@ -87,7 +107,7 @@ module Lutaml
           regressions = (new_failures - base_failures).sort
 
           if rerun && regressions.any?
-            regressions = rerun_regressions(regressions, batches)
+            regressions = rerun_regressions(regressions, batches, version)
           end
 
           {
@@ -102,8 +122,12 @@ module Lutaml
         # subprocess per batch, the measure's own invocation) and
         # recomputes the regression list from the fresh files.
         #
+        # @param regressions [Array<String>]
+        # @param batches [Hash{String => Hash}]
+        # @param version [String]
         # @return [Array<String>]
-        def rerun_regressions(regressions, batches)
+        def rerun_regressions(regressions, batches, version)
+          batch_dir, = paths(version)
           files = regressions.filter_map do |name|
             batches.find { |_, b| b["failures"].include?(name) }
           end.map(&:first).uniq
@@ -116,16 +140,18 @@ module Lutaml
               "require 'lutaml/xsd/conformance/w3c_suite'; " \
               "require 'json'; " \
               "r = Lutaml::Xsd::Conformance::W3CSuite.measure(" \
-              "offset: #{offset}, limit: #{limit}); " \
+              "offset: #{offset}, limit: #{limit}, " \
+              "version: '#{version}'); " \
               "r[:failures] = r[:failures].map { |f| " \
               "{ name: f.name, expected: f.expected, " \
               "contributor: f.contributor } }; " \
-              "File.write(File.join('tmp', '#{file}'), JSON.generate(r))"
+              "File.write(File.join('#{batch_dir}', '#{file}'), " \
+              "JSON.generate(r))"
             )
           end
-          fresh = load_batches
+          fresh = load_batches(paths(version).first)
           fresh_failures = fresh.values.flat_map { |b| b["failures"] }
-          base_failures = baseline["failures"]
+          base_failures = baseline(version)["failures"]
           (fresh_failures - base_failures).sort
         end
 
@@ -133,9 +159,10 @@ module Lutaml
         # and the per-case diff, aborts on real regressions (the
         # crosstalk rerun already applied inside compare).
         #
+        # @param version [String]
         # @return [void]
-        def self.check!
-          result = compare
+        def self.check!(version = DEFAULT_VERSION)
+          result = compare(version)
           puts "ledger: #{result['passed']}/#{result['total']} measured"
           puts "wins (#{result['wins'].size}):"
           result["wins"].each { |name| puts "  + #{name}" }

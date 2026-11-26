@@ -95,20 +95,28 @@ namespace :conformance do
   task w3c: "conformance:w3c:run"
 
   namespace :ledger do
-    desc "Regenerate the committed baseline ledger from the current tmp/ measure"
+    version = -> {
+      ENV.fetch("LEDGER_VERSION",
+                Lutaml::Xsd::Conformance::Ledger::DEFAULT_VERSION)
+    }
+
+    desc "Regenerate the committed baseline ledger from the current tmp/ " \
+         "measure (LEDGER_VERSION=1.1 selects the 1.1 baseline)"
     task :generate do
       require_relative "lib/lutaml/xsd/conformance/ledger"
-      snapshot = Lutaml::Xsd::Conformance::Ledger.regenerate!
-      puts "baseline written: #{snapshot['passed']}/#{snapshot['total']} " \
+      v = version.call
+      snapshot = Lutaml::Xsd::Conformance::Ledger.regenerate!(v)
+      puts "baseline written (#{v}): #{snapshot['passed']}/#{snapshot['total']} " \
            "(#{snapshot['failures'].size} failures, " \
            "#{snapshot['excluded'].size} excluded) at " \
-           "#{Lutaml::Xsd::Conformance::Ledger::BASELINE_PATH}"
+           "#{Lutaml::Xsd::Conformance::Ledger.paths(v).last}"
     end
 
-    desc "Compare the current tmp/ measure against the committed baseline"
+    desc "Compare the current tmp/ measure against the committed " \
+         "baseline (LEDGER_VERSION=1.1 selects the 1.1 baseline)"
     task :check do
       require_relative "lib/lutaml/xsd/conformance/ledger"
-      Lutaml::Xsd::Conformance::Ledger.check!
+      Lutaml::Xsd::Conformance::Ledger.check!(version.call)
     end
   end
 
@@ -138,27 +146,42 @@ namespace :conformance do
                   File.join("tmp", "w3c_batch_#{version.tr('.', '')}")
                 end
       FileUtils.mkdir_p(out_dir)
-      total = Lutaml::Xsd::Conformance::W3CSuite.cases.size
+      total = Lutaml::Xsd::Conformance::W3CSuite.cases(version).size
       batch = 50
-      status = []
-      (0...total).step(batch) do |offset|
-        ok = system(
-          RbConfig.ruby, "-Ilib", "-e",
-          "require 'lutaml/xsd'; " \
-          "require 'lutaml/xsd/conformance/w3c_suite'; " \
-          "require 'json'; " \
-          "r = Lutaml::Xsd::Conformance::W3CSuite.measure(" \
-          "offset: #{offset}, limit: #{batch}, " \
-          "version: '#{version}'); " \
-          "r[:failures] = r[:failures].map { |f| " \
-          "{ name: f.name, expected: f.expected, " \
-          "contributor: f.contributor } }; " \
-          "File.write(File.join('#{out_dir}', " \
-          "'w3c_batch_#{format('%05d', offset)}.json'), JSON.generate(r))"
-        )
-        status << "#{offset}: #{ok ? 'ok' : 'CRASHED'}"
+      # Batch processes are independent, so the measure shards across
+      # worker processes (the engine is CPU-bound; processes bypass
+      # the GVL). W3C_JOBS=1 restores the sequential run. The default
+      # leaves headroom on the 8-performance-core dev machines.
+      jobs = ENV.fetch("W3C_JOBS", "8").to_i
+      offsets = Queue.new
+      (0...total).step(batch) { |offset| offsets << offset }
+      statuses = Queue.new
+      workers = Array.new([jobs, 1].max) do
+        Thread.new do
+          while (offset = offsets.pop(true))
+            ok = system(
+              RbConfig.ruby, "-Ilib", "-e",
+              "require 'lutaml/xsd'; " \
+              "require 'lutaml/xsd/conformance/w3c_suite'; " \
+              "require 'json'; " \
+              "r = Lutaml::Xsd::Conformance::W3CSuite.measure(" \
+              "offset: #{offset}, limit: #{batch}, " \
+              "version: '#{version}'); " \
+              "r[:failures] = r[:failures].map { |f| " \
+              "{ name: f.name, expected: f.expected, " \
+              "contributor: f.contributor } }; " \
+              "File.write(File.join('#{out_dir}', " \
+              "'w3c_batch_#{format('%05d', offset)}.json'), JSON.generate(r))"
+            )
+            statuses << "#{offset}: #{ok ? 'ok' : 'CRASHED'}"
+          end
+        rescue ThreadError
+          # queue drained — worker exits
+        end
       end
-      puts "batches: #{status.join(', ')}"
+      workers.each(&:join)
+      puts "batches (#{jobs} jobs): #{statuses.size}" \
+           " — #{statuses.map { |s| s.split(': ').first }.sort.join(', ')}"
     end
   end
 end

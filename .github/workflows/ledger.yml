@@ -25,13 +25,21 @@ jobs:
           ruby-version: "3.4"
           bundler-cache: true
 
-      - name: Measure the full W3C suite
+      - name: Measure the full W3C suite (1.0)
         run: bundle exec rake conformance:w3c:run
 
-      - name: Compare against the baseline
+      - name: Compare against the baseline (1.0)
         run: |
           set -o pipefail
           bundle exec rake conformance:ledger:check 2>&1 | tee tmp/ledger_check.txt
+
+      - name: Measure the W3C suite (1.1 readings)
+        run: W3C_SCHEMA_VERSION=1.1 bundle exec rake conformance:w3c:run
+
+      - name: Compare against the baseline (1.1)
+        run: |
+          set -o pipefail
+          LEDGER_VERSION=1.1 bundle exec rake conformance:ledger:check 2>&1 | tee tmp/ledger_check_11.txt
 
       - name: Report regressions
         if: failure()
@@ -41,9 +49,10 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
-            printf '%s\n\n' "The nightly ledger run regressed against baseline/w3c_ledger.json — full logs at ${RUN_URL}."
+            printf '%s\n\n' "The nightly ledger run regressed against a committed baseline (w3c_ledger.json / w3c_ledger_11.json) — full logs at ${RUN_URL}."
             echo '```'
-            cat tmp/ledger_check.txt 2>/dev/null || echo 'check output unavailable'
+            cat tmp/ledger_check.txt 2>/dev/null || echo '1.0 check output unavailable'
+            cat tmp/ledger_check_11.txt 2>/dev/null || echo '1.1 check output unavailable'
             echo '```'
           } > /tmp/body.md
           gh issue comment 266 --body-file /tmp/body.md

@@ -1447,3 +1447,52 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   Attribute classes: attributeGroup-in-restriction shapes (attLb —
   aga1-style refs unreached), use=/default under-detections (attMb),
   engine attribute-lexical false rejections (attO — moxml queue)
+
+## The 1.1-scope expansion round (2026-11-26, #295 resolved)
+
+DISCOVERY: the harness enumeration (`Dir[*Meta/*.xml]`) matched ONLY
+msMeta — every other contributor ships `.testSet` files. The pinned
+snapshot already carried the FULL official suite (26,271 cases):
+nist 19,217, saxon 929, sun 929, ibm 423, wg 48, boeing 12, oracle 17.
+Upstream xsdtests has not moved past the pin (7bc3365 is the latest
+commit) — no bump needed; the glob was the gap. The suite metadata
+carries almost no version tags (26,250/26,271 unversioned): the 1.1
+organization lives in XSD1_1TestCategories.xml, not the per-case
+`<expected version>` entries.
+
+OWNER DECISION (#295): activate the 1.1 reading only — saxon + ibm
+join the 1.1 enumeration (4,696 → 6,048 cases); the 1.0 ledger stays
+ms-only (byte-identical, verified 4669/4696 zero-drift after the
+round's code changes). The full-suite expansion is a separate
+owner-gated decision (#297).
+
+MEASURE: 1.0 = 4669/4696 (unchanged, byte-stable); 1.1 = **5561/6048
+(91.95%), 487 failures**, baseline committed at baseline/w3c_ledger_11.json
+(nightly ledger.yml now measures and checks both readings).
+
+ATTRIBUTION of the 487:
+- lutaml-model-gated ~160: assert/CTA/openContent dropped at parse —
+  FILED lutaml-model#1203; the 1.1 scoreboard rows activate when the
+  constructs survive a parse (the engine tier evaluates them today
+  when fed raw strings — the #556 acceptance).
+- override resolution ~30: our pipeline feeds single documents; the
+  engine's xsd_set path resolves xs:override — set-composition wiring
+  is ours to design.
+- our-stack queue ~330: FILED #298 (saxon Wild 64, Id/idIDREF 66,
+  precisionDecimal 24, 1.1 datetime/timezone semantics ~30, assorted
+  ~80). Deep per-family triage is that issue's round.
+
+CRASH FIX (cyclic derivation): the ibm sets' cyclic extension chains
+(A extends B extends A) blew the attribute walks — SystemStackError is
+not a StandardError, so one batch subprocess DIED (batch 00300,
+discovered via the 5998-vs-6048 case-count gap). Guards (identity-keyed
+seen sets, compare_by_identity per the model-object-key rule) added to
+collect_schema_attributes and collect_any_attribute;
+spec/lutaml/xsd/validation/cyclic_derivation_spec.rb pins the
+no-crash property. Byte-neutral on the 1.0 ledger.
+
+RUNNER: conformance:w3c:run now SHARDS the batch subprocesses
+(W3C_JOBS, default 8; the measure dropped ~1.5h → ~15 min locally).
+Same batch files, same JSON semantics — the ledger rerun path threads
+the reading's version now (LEDGER_VERSION on generate/check).
+
