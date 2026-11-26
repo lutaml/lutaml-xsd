@@ -38,21 +38,25 @@ All items here are tracked in issue #289 (the comprehension package).
 - [ ] Usage navigation matrix for attributes and groups — DEFERRED:
       liquid methods pattern exists; extend `used_by` coverage first
       (#289)
-- [~] Type hierarchy graph in the SPA — the DATA layer is DONE
-      (2026-11-25): the serializer ships per-type derivation chains as
-      the `hierarchy` map and type cards render chain-to-root; the
-      LOADING PATH is FIXED (2026-11-26): `SchemaRepositoryPackage#load_repository`
-      now runs the resolve step (the type index + namespace registry
-      used to stay empty on loaded packages), and the
-      TypeHierarchyAnalyzer works end-to-end (real-model specs over
-      the metaschema package). Remaining: the graph VIEW and wiring
-      the analyzer into the SPA build (#289)
-- [~] Dependency graph page — the data layer WORKS now (2026-11-26):
-      DependencyGrapher resolves references across the loaded
-      repository (AttributeGroup index entries guarded, chameleon
-      unprefixed refs resolved against the referencing type's
-      namespace). Remaining: the build-time JSON emission + the page
-      (#289)
+- [x] Type hierarchy graph in the SPA — DONE (2026-11-26): the
+      serializer ships per-type derivation chains (hierarchy map) AND
+      the loading path is fixed (resolve on package load; the
+      TypeHierarchyAnalyzer works end-to-end with the SOM derivation
+      queries), and the /graphs view renders the chains with
+      click-through (PR: the graphs round). Remaining polish: mermaid
+      rendering (the SPA carries no mermaid dependency; chains render
+      as link trees today)
+- [x] Usage navigation matrix — the DATA layer is DONE (2026-11-26):
+      the serializer derives the `usage` map from the serialized
+      payloads (element/particle/attribute/derivation references,
+      extension bodies included — which also fixed the payload
+      completeness gap where complexContent particles never reached
+      the SPA), and the /graphs usage tab ranks types by reference
+      count with expandable used_by lists
+- [~] Dependency graph page — FOLDED into the /graphs view (the
+      usage/derivation tabs are the package-level graph page); the
+      corpus-level include/import view remains (imports serialize per
+      schema; a page-level render is a follow-up)
 
 ## Evolution
 

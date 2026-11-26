@@ -170,6 +170,8 @@ module Lutaml
               metadata: data[:metadata],
               schemas: data[:schemas],
               namespaces: data[:namespaces],
+              hierarchy: data[:hierarchy],
+              usage: data[:usage],
             }
 
             json_data.to_json

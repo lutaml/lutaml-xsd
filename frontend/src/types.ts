@@ -11,6 +11,13 @@ export interface SchemaData {
   schemas: Schema[]
   namespaces: Namespace[]
   hierarchy?: Record<string, { chain: string[]; mermaid: string[] }>
+  usage?: Record<string, UsageRef[]>
+}
+
+export interface UsageRef {
+  by: 'element' | 'attribute' | 'particle' | 'derivation'
+  name: string
+  schema: string
 }
 
 export interface PackageMetadata {

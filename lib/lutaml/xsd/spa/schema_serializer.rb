@@ -78,6 +78,7 @@ module Lutaml
             namespaces: build_namespaces,
             index: build_index,
             hierarchy: build_hierarchy_graphs(schemas_data),
+            usage: build_usage_graph(schemas_data),
           }
         end
 
@@ -117,6 +118,87 @@ module Lutaml
             graphs[name] = { chain: chain, mermaid: diagrams }
           end
           graphs
+        end
+
+        # Per-type usage navigation: who references each named type
+        # (elements typed as it, attributes typed as it, child
+        # particles, and derivation children). Derived from the
+        # SERIALIZED payloads — no dependency on the repository index.
+        # Type references match by local name (prefix-stripped); the
+        # payload's component namespace is the local name, as in the
+        # hierarchy map.
+        def build_usage_graph(schemas_data)
+          names = Set.new
+          schemas_data.each do |schema|
+            Array(schema[:complex_types]).each do |t|
+              names << t[:name].to_s unless t[:name].to_s.empty?
+            end
+            Array(schema[:simple_types]).each do |t|
+              names << t[:name].to_s unless t[:name].to_s.empty?
+            end
+          end
+
+          used_by = Hash.new { |h, k| h[k] = [] }
+          record = lambda do |target, schema, kind, name|
+            local = local_ref(target)
+            return if local.empty? || !names.include?(local)
+
+            used_by[local] << { by: kind, name: name,
+                                schema: schema[:name] }
+          end
+
+          schemas_data.each do |schema|
+            Array(schema[:elements]).each do |e|
+              record.call(e[:type], schema, "element", e[:name])
+            end
+            Array(schema[:attributes]).each do |a|
+              record.call(a[:type], schema, "attribute", a[:name])
+            end
+            (Array(schema[:complex_types]) + Array(schema[:simple_types])).each do |t|
+              record.call(t[:base], schema, "derivation", t[:name])
+              Array(t[:elements]).each do |child|
+                record.call(child[:type], schema, "particle", t[:name])
+              end
+              Array(t[:attributes]).each do |a|
+                record.call(a[:type], schema, "attribute", t[:name])
+              end
+              Array(t[:extension_attributes]).each do |a|
+                record.call(a[:type], schema, "attribute", t[:name])
+              end
+              collect_particle_refs(t[:sequence], t[:name], schema, record)
+              collect_particle_refs(t[:choice], t[:name], schema, record)
+            end
+          end
+
+          used_by.transform_values { |refs| refs.sort_by { |r| [r[:by], r[:name].to_s] } }
+        end
+
+        # Particle payloads nest: a sequence carries its own elements
+        # plus nested sequences and choices. Walk the whole content
+        # model, crediting each particle's type reference to the
+        # OWNING type.
+        def collect_particle_refs(node, type_name, schema, record)
+          return unless node.is_a?(Hash)
+
+          Array(node[:elements]).each do |el|
+            record.call(el[:type], schema, "particle", type_name)
+          end
+          Array(node[:sequences]).each do |nested|
+            collect_particle_refs(nested, type_name, schema, record)
+          end
+          Array(node[:choices]).each do |nested|
+            collect_particle_refs(nested, type_name, schema, record)
+          end
+        end
+
+        # The local part of a type reference (a bare name, a prefixed
+        # name, or a QName value) — builtins and empties excluded.
+        def local_ref(target)
+          ref = target.to_s.strip
+          return "" if ref.empty?
+          return "" if ref.start_with?("xs:", "xsd:")
+
+          ref.include?(":") ? ref.split(":").last : ref
         end
 
         # Convert serialized data to JSON string
@@ -710,6 +792,22 @@ schema_source = nil, file_path = nil)
           unless extension_attrs.empty?
             type_data[:extension_attributes] =
               extension_attrs
+          end
+
+          # Particles nested in a complexContent derivation body never
+          # reach the top-level sequence/choice attributes — serialize
+          # them into the same payload keys so the type view and the
+          # usage graph see them. (SimpleContent bodies carry only
+          # attributes; they have no particle accessors at all.)
+          if type.complex_content
+            derivation_body = type.complex_content.extension ||
+              type.complex_content.restriction
+            if derivation_body&.sequence && !type_data[:sequence]
+              type_data[:sequence] = serialize_sequence(derivation_body.sequence)
+            end
+            if derivation_body&.choice && !type_data[:choice]
+              type_data[:choice] = serialize_choice(derivation_body.choice)
+            end
           end
 
           # Add SVG diagram

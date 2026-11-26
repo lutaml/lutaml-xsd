@@ -29,6 +29,14 @@
     </div>
 
     <div class="header-right">
+      <router-link to="/graphs" class="btn btn-ghost graphs-btn" title="Model graphs: derivation chains and usage">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="4" cy="4" r="2" stroke="currentColor" stroke-width="1.3"/>
+          <circle cx="14" cy="9" r="2" stroke="currentColor" stroke-width="1.3"/>
+          <circle cx="4" cy="14" r="2" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M5.8 5.2L12.2 8M12.2 10L5.8 12.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </router-link>
       <router-link to="/playground" class="btn btn-ghost playground-btn" title="Live validation playground">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
           <path d="M6 3h6M9 3v4M5 13a4 4 0 0 0 8 0l2-6H3l2 6Z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
