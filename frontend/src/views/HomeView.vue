@@ -160,7 +160,7 @@
             </svg>
           </div>
           <div class="schema-card-content">
-            <h3>{{ schema.name }}</h3>
+            <h2>{{ schema.name }}</h2>
             <p v-if="schema.namespace" class="schema-ns">{{ schema.namespace }}</p>
             <div class="schema-card-stats">
               <span>{{ (schema.complex_types?.length || 0) + (schema.simple_types?.length || 0) }} types</span>
@@ -562,7 +562,7 @@ const hasLinks = computed(() => {
   min-width: 0;
 }
 
-.schema-card-content h3 {
+.schema-card-content h2 {
   font-size: var(--text-base);
   font-weight: 600;
   margin-bottom: var(--space-1);

@@ -3,9 +3,14 @@
     <AppSidebar />
     <div class="main-content">
       <AppHeader />
-      <div class="content-area">
+      <main
+        id="main-content"
+        class="content-area"
+        tabindex="0"
+        aria-label="Schema documentation"
+      >
         <RouterView />
-      </div>
+      </main>
     </div>
     <DetailPanel v-if="uiStore.detailPanelOpen" />
     <SearchModal v-if="uiStore.searchOpen" />

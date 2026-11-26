@@ -10,7 +10,18 @@ interface SearchResult {
   schemaName: string
   schemaId: string
   doc?: string
+  deprecated?: boolean
 }
+
+// Exact-name matches outrank prefix matches, prefix outranks
+// substring; entrypoint schemas rank above the rest; deprecated
+// components sink below equivalent non-deprecated ones; types edge
+// out elements as a tiebreak.
+const SCORE_EXACT = 100
+const SCORE_PREFIX = 60
+const SCORE_SUBSTRING = 30
+const SCORE_ENTRYPOINT = 15
+const SCORE_DEPRECATED = -40
 
 export function useSearch() {
   const schemaStore = useSchemaStore()
@@ -27,7 +38,7 @@ export function useSearch() {
     document: {
       id: 'id',
       index: ['name', 'doc'],
-      store: ['id', 'type', 'name', 'schemaName', 'schemaId', 'doc']
+      store: ['id', 'type', 'name', 'schemaName', 'schemaId', 'doc', 'deprecated']
     },
     tokenize: 'forward',
     resolution: 9
@@ -38,7 +49,7 @@ export function useSearch() {
     document: {
       id: 'id',
       index: ['name', 'doc'],
-      store: ['id', 'type', 'name', 'schemaName', 'schemaId', 'doc']
+      store: ['id', 'type', 'name', 'schemaName', 'schemaId', 'doc', 'deprecated']
     },
     tokenize: 'forward',
     resolution: 9
@@ -53,7 +64,8 @@ export function useSearch() {
         name: t.name,
         schemaName: t.schemaName,
         schemaId: t.schemaId,
-        doc: t.documentation
+        doc: t.documentation,
+        deprecated: Boolean(t.deprecated)
       })
     })
 
@@ -65,7 +77,8 @@ export function useSearch() {
         name: t.name,
         schemaName: t.schemaName,
         schemaId: t.schemaId,
-        doc: t.documentation
+        doc: t.documentation,
+        deprecated: Boolean(t.deprecated)
       })
     })
 
@@ -77,7 +90,8 @@ export function useSearch() {
         name: e.name,
         schemaName: e.schemaName,
         schemaId: e.schemaId,
-        doc: e.documentation
+        doc: e.documentation,
+        deprecated: Boolean((e as unknown as { deprecated?: boolean }).deprecated)
       })
     })
   }
@@ -124,8 +138,32 @@ export function useSearch() {
       })
     }
 
-    results.value = combined.slice(0, 50)
+    results.value = combined
+      .map(r => ({ result: r, score: scoreResult(r, query.value) }))
+      .sort((a, b) => b.score - a.score || a.result.name.localeCompare(b.result.name))
+      .map(e => e.result)
+      .slice(0, 50)
     isSearching.value = false
+  }
+
+  function scoreResult(r: SearchResult, q: string): number {
+    const name = r.name.toLowerCase()
+    const needle = q.trim().toLowerCase()
+    let score = 0
+
+    if (name === needle) score += SCORE_EXACT
+    else if (name.startsWith(needle)) score += SCORE_PREFIX
+    else if (name.includes(needle)) score += SCORE_SUBSTRING
+
+    const schema = schemaStore.getSchemaById(r.schemaId)
+    if (schema?.is_entrypoint) score += SCORE_ENTRYPOINT
+
+    if (r.deprecated) score += SCORE_DEPRECATED
+
+    if (r.type === 'complex') score += 4
+    else if (r.type === 'simple') score += 3
+
+    return score
   }
 
   function debouncedSearch() {
