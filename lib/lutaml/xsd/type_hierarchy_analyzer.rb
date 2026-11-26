@@ -12,6 +12,54 @@ module Lutaml
         @repository = repository
       end
 
+      # The derivation chain from the type up to its root (extension/
+      # restriction bases, builtins excluded).
+      #
+      # @param qualified_name [String] Clark-notation or prefixed name
+      # @param depth [Integer] Maximum depth to traverse
+      # @return [Array<Hash>, nil] nearest-base-first ancestor list,
+      #   nil when the type does not resolve
+      def supertypes(qualified_name, depth: 10)
+        type_result = @repository.find_type(qualified_name)
+        return nil unless type_result.resolved?
+
+        find_ancestors(type_result.definition, depth, Set.new,
+                       type_result.namespace)
+      end
+
+      # Every type whose derivation chain reaches the given type.
+      #
+      # @param qualified_name [String] Clark-notation or prefixed name
+      # @param depth [Integer] Maximum depth to traverse
+      # @return [Array<Hash>, nil] descendant list, nil when the type
+      #   does not resolve
+      def descendants(qualified_name, depth: 10)
+        type_result = @repository.find_type(qualified_name)
+        return nil unless type_result.resolved?
+
+        find_descendants(qualified_name, depth)
+      end
+
+      # Whether the derivation chain from candidate reaches root.
+      #
+      # @param candidate [String] the putative subtype
+      # @param root [String] the putative supertype
+      # @return [Boolean, nil] TRUE when the chain reaches root, FALSE
+      #   when it does not, NIL when candidate does not resolve —
+      #   tri-state, so the name carries no question mark
+      def subtype_of(candidate, root, depth: 10)
+        chain = supertypes(candidate, depth: depth)
+        return nil if chain.nil?
+
+        root_result = @repository.find_type(root)
+        return false unless root_result.resolved?
+
+        chain.any? do |ancestor|
+          ancestor[:namespace] == root_result.namespace &&
+            ancestor[:local_name] == root_result.local_name
+        end
+      end
+
       # Analyze complete hierarchy for a type
       # @param qualified_name [String] The qualified type name (e.g., "gml:AbstractFeatureType")
       # @param depth [Integer] Maximum depth to traverse (default: 10)
@@ -27,7 +75,8 @@ module Lutaml
           namespace: type_result.namespace,
           local_name: type_result.local_name,
           type_category: determine_type_category(type_result.definition),
-          ancestors: find_ancestors(type_result.definition, depth),
+          ancestors: find_ancestors(type_result.definition, depth,
+                                    Set.new, type_result.namespace),
           descendants: find_descendants(qualified_name, depth),
           tree: root_node.to_h,
           formats: {
@@ -39,12 +88,33 @@ module Lutaml
 
       private
 
+      # Resolve a derivation base name. Chameleon schemas write bases
+      # unprefixed (their default xmlns IS the target namespace), while
+      # the index keys by Clark notation — an unprefixed miss retries
+      # against the deriving type's own namespace.
+      #
+      # @param base_type [String] base attribute value (possibly unprefixed)
+      # @param owner_namespace [String, nil] the deriving type's namespace
+      # @return [TypeResolutionResult]
+      def resolve_base(base_type, owner_namespace)
+        result = @repository.find_type(base_type)
+        return result if result.resolved?
+
+        return result if base_type.include?(":") || base_type.start_with?("{")
+        return result unless owner_namespace.to_s.match?(/\S/)
+
+        @repository.find_type("{#{owner_namespace}}#{base_type}")
+      end
+
       # Find all ancestor types (base types through extension/restriction)
       # @param definition [Base] The type definition
       # @param depth [Integer] Maximum depth to traverse
       # @param visited [Set] Already visited types (cycle detection)
+      # @param owner_namespace [String, nil] the deriving type's
+      #   namespace for unprefixed base resolution
       # @return [Array<Hash>] List of ancestor types
-      def find_ancestors(definition, depth, visited = Set.new)
+      def find_ancestors(definition, depth, visited = Set.new,
+                         owner_namespace = nil)
         return [] if depth <= 0
         return [] if visited.include?(definition.object_id)
 
@@ -58,12 +128,19 @@ module Lutaml
         return ancestors if /^xsd?:/.match?(base_type)
 
         # Resolve the base type
-        base_result = @repository.find_type(base_type)
+        base_result = resolve_base(base_type, owner_namespace)
         return ancestors unless base_result.resolved?
 
         # Add this ancestor
+        local = base_result.local_name.to_s
+        resolved_qname =
+          if base_result.namespace.to_s.match?(/\S/) && local.match?(/\S/)
+            "{#{base_result.namespace}}#{local}"
+          else
+            base_type
+          end
         ancestors << {
-          qualified_name: base_type,
+          qualified_name: resolved_qname,
           namespace: base_result.namespace,
           local_name: base_result.local_name,
           type_category: determine_type_category(base_result.definition),
@@ -71,7 +148,7 @@ module Lutaml
 
         # Recursively find ancestors of the base type
         parent_ancestors = find_ancestors(base_result.definition, depth - 1,
-                                          visited)
+                                          visited, base_result.namespace)
         ancestors.concat(parent_ancestors)
 
         ancestors
@@ -84,8 +161,11 @@ module Lutaml
       def find_descendants(qualified_name, depth)
         return [] if depth <= 0
 
+        target = @repository.find_type(qualified_name)
+        return [] unless target.resolved?
+
         descendants = []
-        all_types = @repository.instance_variable_get(:@type_index).all
+        all_types = @repository.type_index.all
 
         all_types.each_value do |type_info|
           definition = type_info[:definition]
@@ -94,9 +174,14 @@ module Lutaml
           base_type = extract_base_type(definition)
           next unless base_type
 
-          # Check if this type extends/restricts our target type
-          next unless types_match?(base_type, qualified_name,
-                                   type_info[:namespace])
+          # Check if this type extends/restricts our target type —
+          # resolved both sides (chameleon schemas write bases
+          # unprefixed; string comparison against Clark names misses).
+          base_result = resolve_base(base_type, type_info[:namespace])
+          next unless base_result.resolved?
+
+          next unless base_result.namespace == target.namespace &&
+            base_result.local_name == target.local_name
 
           qname = build_qualified_name(type_info)
           descendants << {
@@ -140,7 +225,7 @@ module Lutaml
         end
 
         # Find descendants (derived types)
-        all_types = @repository.instance_variable_get(:@type_index).all
+        all_types = @repository.type_index.all
         all_types.each_value do |type_info|
           definition = type_info[:definition]
           next unless definition
@@ -247,6 +332,12 @@ module Lutaml
       # @param definition [Base] The type definition
       # @return [String, nil] The base type qualified name
       def extract_base_type(definition)
+        # The type index also holds attributeGroup declarations (they
+        # carry ref/base chains of their own) — only particle/derivation
+        # shapes have derivation bases.
+        return nil unless definition.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType) ||
+          definition.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType)
+
         # ComplexType with complexContent/extension
         if definition.complex_content
           return definition.complex_content.extension.base if definition.complex_content.extension
@@ -260,7 +351,10 @@ module Lutaml
         end
 
         # SimpleType with restriction
-        return definition.restriction.base if definition.restriction
+        if definition.is_a?(Lutaml::Xml::Schema::Xsd::SimpleType) &&
+            definition.restriction
+          return definition.restriction.base
+        end
 
         nil
       end

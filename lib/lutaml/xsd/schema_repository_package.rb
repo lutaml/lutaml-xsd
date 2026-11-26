@@ -142,6 +142,12 @@ module Lutaml
 
         @metadata = validation.metadata
         @repository = extract_and_build_repository
+        # The resolve step builds the type index and namespace registry
+        # from the deserialized schemas; without it every find_type /
+        # analyzer query on a loaded package resolves nothing (the
+        # schemas sit in the global cache, the indexes stay empty).
+        @repository.resolve
+        @repository
       end
 
       # Get schemas from the repository

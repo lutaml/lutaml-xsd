@@ -24,10 +24,11 @@ not start mid-cycle.
       — DEFERRED: pairs with the conformance substitution-group gap
 - [ ] `xs:group` / `xs:attributeGroup` reference resolution including
       redefined groups — DEFERRED (same design cycle)
-- [ ] Complex type derivation graph: extension/restriction chains,
-      `{base type definition}` reachability — DEFERRED: the type-hierarchy
-      analyzer exists; extending it into a full derivation graph is the
-      design entry point
+- [~] Complex type derivation graph: extension/restriction chains,
+      `{base type definition}` reachability — the QUERY SURFACE is DONE
+      (2026-11-26): TypeHierarchyAnalyzer#supertypes / #descendants /
+      subtype_of (tri-state) over the resolved repository, chameleon
+      unprefixed bases included; the graph RENDER remains (#289)
 - [ ] Simple type facets carried losslessly — DEFERRED: covered
       opportunistically by the JSON Schema exporter tests; a dedicated
       round-trip matrix should come with the recalibration
