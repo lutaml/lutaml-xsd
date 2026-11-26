@@ -12,12 +12,32 @@ export interface SchemaData {
   namespaces: Namespace[]
   hierarchy?: Record<string, { chain: string[]; mermaid: string[] }>
   usage?: Record<string, UsageRef[]>
+  diff?: DiffChangeSet
 }
 
 export interface UsageRef {
   by: 'element' | 'attribute' | 'particle' | 'derivation'
   name: string
   schema: string
+}
+
+export interface DiffModification {
+  aspect: string
+  old?: string | null
+  new?: string | null
+}
+
+export interface DiffChange {
+  category: 'added' | 'removed' | 'modified' | 'renamed' | 'moved_namespace'
+  kind: string
+  namespace: string
+  local_name: string
+  renamed_from?: string | null
+  modifications?: DiffModification[]
+}
+
+export interface DiffChangeSet {
+  changes: DiffChange[]
 }
 
 export interface PackageMetadata {

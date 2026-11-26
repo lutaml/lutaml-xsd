@@ -39,6 +39,24 @@ module Lutaml
       # Internal state (not serialized)
       attr_reader :lazy_load
 
+      # The schemas THIS repository parsed, by source path. The global
+      # processed_schemas cache is process-wide and shared across
+      # repositories — consumers that must not see foreign schemas
+      # (the schema diff) scope by this map.
+      attr_reader :owned_schemas
+
+      # Registers the schema under the repository's ownership and in
+      # the global cache.
+      #
+      # @param path [String]
+      # @param schema [Lutaml::Xml::Schema::Xsd::Schema]
+      # @return [void]
+      def register_owned_schema(path, schema)
+        @owned_schemas ||= {}
+        @owned_schemas[path] = schema
+        Lutaml::Xml::Schema::Xsd::Schema.schema_processed(path, schema)
+      end
+
       def initialize(**attributes)
         # Initialize internal state first
         @parsed_schemas = Lutaml::Store::BasicStore.new(adapter_type: :memory)
@@ -48,6 +66,7 @@ module Lutaml
         @resolved = false
         @validated = false
         @verbose = false
+        @owned_schemas = {}
 
         # Call super to set attributes from Lutaml::Model::Serializable
         super
@@ -1060,9 +1079,9 @@ module Lutaml
 
         parsed_schemas.set(file_path, parsed_schema)
 
-        # Register in global cache for cross-repository access
-        Lutaml::Xml::Schema::Xsd::Schema.schema_processed(file_path,
-                                                          parsed_schema)
+        # Register in global cache for cross-repository access, and
+        # record ownership for repository-scoped consumers
+        register_owned_schema(file_path, parsed_schema)
       rescue StandardError => e
         warn "Warning: Failed to parse schema #{file_path}: #{e.message}"
         # Parse errors are expected for schemas with unresolvable imports

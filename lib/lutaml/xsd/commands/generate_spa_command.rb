@@ -29,7 +29,7 @@ module Lutaml
         def run
           validate_inputs
           package = load_package
-          generator = create_generator(package)
+          generator = create_generator(package, diff_changeset: compute_diff(package))
 
           output_files = generator.generate
           display_results(output_files)
@@ -40,6 +40,27 @@ module Lutaml
         end
 
         private
+
+        # The component-level diff against the previous version named
+        # by --diff (nil when the option is absent).
+        #
+        # @param package [SchemaRepositoryPackage] the NEW package
+        # @return [Lutaml::Xsd::SchemaDiff::ChangeSet, nil]
+        def compute_diff(package)
+          diff_path = options[:diff]
+          return nil unless diff_path
+
+          unless File.exist?(diff_path)
+            error "Diff package file not found: #{diff_path}"
+            raise CommandError
+          end
+
+          verbose_output "Diffing against #{diff_path}..."
+          old_package = SchemaRepositoryPackage.load(diff_path)
+          Lutaml::Xsd::SchemaDiff.new(
+            old_package.load_repository, package.load_repository
+          ).diff
+        end
 
         # Validate command inputs
         #
@@ -78,7 +99,7 @@ module Lutaml
         #
         # @param package [SchemaRepositoryPackage] Schema package
         # @return [Spa::Generator] Generator instance
-        def create_generator(package)
+        def create_generator(package, diff_changeset: nil)
           verbose_output "Initializing SPA generator..."
 
           mode = options[:mode] || "inlined"
@@ -88,6 +109,7 @@ module Lutaml
             output_path,
             mode: mode,
             verbose: verbose?,
+            diff_changeset: diff_changeset,
           )
 
           verbose_output "✓ Generator initialized in #{mode} mode"

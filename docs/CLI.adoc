@@ -496,8 +496,17 @@ lutaml-xsd spa my_composition.yml --output docs.html
 
 # With separate asset files
 lutaml-xsd spa my_composition.yml --output docs.html --mode cdn
+
+# Embed the component-level diff against the previous version
+lutaml-xsd spa NEW.lxr --diff OLD.lxr --output docs.html
 ----
 ====
+
+The `--diff` option runs the schema diff engine (#288) between the two
+packages and embeds the ChangeSet in the SPA; the documentation gains a
+"Schema changes" view listing added/removed/modified/renamed/
+namespace-moved components with per-aspect modifications.
+
 
 === Namespace operations with composed repository
 

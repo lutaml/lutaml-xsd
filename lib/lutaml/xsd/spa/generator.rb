@@ -30,6 +30,9 @@ module Lutaml
         # @param options [Hash] Generation options
         # @option options [String] :mode Output mode ('inlined' or 'cdn')
         # @option options [Boolean] :verbose Enable verbose output
+        # @option options [SchemaDiff::ChangeSet] :diff_changeset the
+        #   component-level diff against a previous version, embedded
+        #   in the SPA payload when present
         def initialize(package, output_path, options = {})
           @package = package
           @output_path = output_path
@@ -53,6 +56,8 @@ module Lutaml
           # Serialize schema data
           serialized_data = @serializer.serialize
           log "✓ Serialized #{serialized_data[:schemas]&.size || 0} schema(s)"
+          changeset = options[:diff_changeset]
+          serialized_data[:diff] = changeset.to_hash if changeset
 
           # Generate output using strategy
           output_files = strategy.generate(serialized_data, nil)

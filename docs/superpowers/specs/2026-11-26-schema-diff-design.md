@@ -1,7 +1,7 @@
 # Design: schema diff between package versions
 
 - Date: 2026-11-26
-- Status: implemented with this PR (engine + specs; SPA view follows)
+- Status: implemented (engine + specs + the --diff SPA view)
 - Scope: lutaml-xsd (issue #288, the design-first campaign)
 
 ## 1. Problem

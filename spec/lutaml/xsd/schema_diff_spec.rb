@@ -7,25 +7,15 @@ require "json"
 FIXTURE_DIR = File.expand_path("../../fixtures/schema_diff", __dir__)
 
 RSpec.describe Lutaml::Xsd::SchemaDiff do
-  # The engine consumes resolved repositories; the fixture repos carry
-  # only their own schemas (real parsed models, no repository-wide
-  # resolution needed for the diff).
+  # The engine consumes repositories' OWNED schemas (isolated from
+  # the process-global cache); the fixture repos register their
+  # schemas through the ownership API (real parsed models).
   def build_repository(paths)
     repo = Lutaml::Xsd::SchemaRepository.new
-    schemas = paths.each_with_object({}) do |path, h|
+    paths.each do |path|
       schema = Lutaml::Xml::Schema::Xsd.parse(File.read(path), location: path)
-      h[path] = schema
+      repo.register_owned_schema(path, schema)
     end
-
-    def repo.set_all(hash)
-      @all = hash
-    end
-
-    def repo.all_schemas
-      @all
-    end
-
-    repo.set_all(schemas)
     repo
   end
 

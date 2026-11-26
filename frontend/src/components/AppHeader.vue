@@ -29,6 +29,17 @@
     </div>
 
     <div class="header-right">
+      <router-link
+        v-if="schemaStore.diff"
+        to="/diff"
+        class="btn btn-ghost diff-btn"
+        title="Schema changes against the previous version"
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M4 4h10M4 9h10M4 14h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M13.5 11.5v4M11.5 13.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </router-link>
       <router-link to="/graphs" class="btn btn-ghost graphs-btn" title="Model graphs: derivation chains and usage">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
           <circle cx="4" cy="4" r="2" stroke="currentColor" stroke-width="1.3"/>
