@@ -66,9 +66,14 @@ All items here are tracked in issue #289 (the comprehension package).
 
 ## Evolution
 
-- [ ] Schema diff between package versions — DEFERRED: structural diff
-      design needed (component identity across versions). FILED as
-      issue #288 (the design-first campaign)
+- [~] Schema diff between package versions — the DESIGN and the ENGINE
+      are DONE (2026-11-26, the schema-diff round):
+      docs/superpowers/specs/2026-11-26-schema-diff-design.md (identity
+      key, taxonomy, rename heuristic), Lutaml::Xsd::SchemaDiff with
+      the ChangeSet/Change/Modification models (lutaml-model
+      serialization), and the golden-contract spec over the versioned
+      fixture corpus. Remaining: the CLI flag + the SPA change-list
+      view
 - [ ] Coverage view wired to `coverage_analyzer` — DEFERRED (#289)
 
 ## Polish
