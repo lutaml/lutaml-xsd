@@ -66,12 +66,35 @@ module Lutaml
             File.exist?(File.join(VENDOR_DIR, "00COPYRIGHT"))
         end
 
-        # @return [Array<Case>] instance tests with a definite expectation
-        def cases
-          Dir[File.join(VENDOR_DIR, "*Meta", "*.xml")].flat_map do |meta_path|
-            contributor = File.basename(meta_path, ".xml").sub(/Meta$/, "")
+        # Contributor directories measured per reading. The 1.0 ledger
+        # stays on the Microsoft contribution (byte-stable with the
+        # committed baseline). The 1.1 reading adds the saxon 1.1
+        # feature categories (CTA/assert/override/openContent/VC) and
+        # IBM's testSets. The remaining contributors (nist/sun/wg/
+        # boeing/oracle) carry the rest of the official suite (~26k
+        # cases) — activating them is a separate, owner-gated expansion.
+        VERSION_CONTRIBUTORS = {
+          DEFAULT_VERSION => %w[ms],
+          "1.1" => %w[ms saxon ibm],
+        }.freeze
+
+        def meta_paths
+          (Dir[File.join(VENDOR_DIR, "*Meta", "*.xml")] +
+            Dir[File.join(VENDOR_DIR, "*Meta", "*.testSet")]).sort
+        end
+
+        # @return [Array<Case>] instance tests with a definite
+        #   expectation, for the given schema-version reading
+        def cases(version = DEFAULT_VERSION)
+          allowed = VERSION_CONTRIBUTORS.fetch(version, %w[ms])
+          meta_paths.filter_map do |meta_path|
+            dir = File.basename(File.dirname(meta_path)).sub(/Meta$/, "")
+            next unless allowed.include?(dir)
+
+            contributor = File.basename(meta_path, File.extname(meta_path))
+              .sub(/Meta$/, "")
             parse_test_set(meta_path, contributor)
-          end
+          end.flatten
         end
 
         def parse_test_set(meta_path, contributor)
@@ -147,7 +170,8 @@ module Lutaml
         #
         # @return [Hash] report with :passed, :failures, :total
         def measure(offset: 0, limit: nil, version: DEFAULT_VERSION)
-          cases_list = cases[offset, limit || cases.size].to_a
+          all_cases = cases(version)
+          cases_list = all_cases[offset, limit || all_cases.size].to_a
           failures = []
           passed = 0
 

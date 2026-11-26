@@ -192,10 +192,16 @@ module Lutaml
           #
           # @param schema_def [Lutaml::Xsd::Element, Lutaml::Xsd::ComplexType]
           #   Schema definition
+          # @param seen [Hash, nil] identity-keyed derivation-walk
+          #   guard — a cyclic base chain (A extends B extends A) is
+          #   writable in XML but must terminate the walk, not exhaust
+          #   the stack (the cyclicRedefineIncludeImportOverride suite
+          #   family)
           # @return [Array<Lutaml::Xsd::Attribute>]
           def collect_schema_attributes(schema_def, repository = nil,
-                                        xml_element = nil)
+                                        xml_element = nil, seen = nil)
             attributes = []
+            seen ||= {}.compare_by_identity
 
             # For elements, get attributes from type — an xsi:type
             # override replaces the declared type.
@@ -204,15 +210,19 @@ module Lutaml
                                            xml_element)
               if override
                 return collect_schema_attributes(override, repository,
-                                                 xml_element)
+                                                 xml_element, seen)
               end
 
               type_def = resolve_type(schema_def, repository)
               if type_def
                 return collect_schema_attributes(type_def, repository,
-                                                 xml_element)
+                                                 xml_element, seen)
               end
             end
+
+            return attributes if seen.key?(schema_def)
+
+            seen[schema_def] = true
 
             # For complex types, collect attributes
             attributes.concat(Array(schema_def.attribute)) if schema_def.attribute
@@ -238,7 +248,7 @@ module Lutaml
               # §3.4.2).
               if part
                 attributes.concat(
-                  inherited_attributes(part, repository),
+                  inherited_attributes(part, repository, seen),
                 )
               end
             end
@@ -254,7 +264,7 @@ module Lutaml
                 Array(schema_def.simple_content.restriction).first
               if part
                 attributes.concat(
-                  inherited_attributes(part, repository),
+                  inherited_attributes(part, repository, seen),
                 )
               end
             end
@@ -294,14 +304,14 @@ module Lutaml
           # to the original definition.
           #
           # @return [Array<Lutaml::Xml::Schema::Xsd::Attribute>]
-          def inherited_attributes(part, repository)
+          def inherited_attributes(part, repository, seen)
             local = part.base.to_s.split(":").last
             return [] if local.to_s.empty?
 
             base = repository&.resolve_named_type(local)
             return [] unless base.is_a?(Lutaml::Xml::Schema::Xsd::ComplexType)
 
-            collect_schema_attributes(base, repository)
+            collect_schema_attributes(base, repository, nil, seen)
           end
 
           # The xsi:type override's type for an instance element, when
@@ -1180,19 +1190,29 @@ module Lutaml
           #   (wildZ013e: intersection1's two attributeGroup refs give
           #   set(b, c), rejecting what ##other alone would admit).
           def collect_any_attribute(schema_def, repository = nil,
-                                    xml_element = nil)
+                                    xml_element = nil, seen = nil)
+            seen ||= {}.compare_by_identity
             if schema_def.is_a?(Lutaml::Xml::Schema::Xsd::Element)
               override = xsi_override_type(schema_def, repository,
                                            xml_element)
               if override
                 return collect_any_attribute(override, repository,
-                                             xml_element)
+                                             xml_element, seen)
               end
 
               type_def = resolve_type(schema_def, repository)
-              return collect_any_attribute(type_def, repository) if type_def
+              if type_def
+                return collect_any_attribute(type_def, repository, nil,
+                                             seen)
+              end
             end
             return [] unless schema_def
+
+            # A cyclic base chain terminates the derivation walk (the
+            # attribute walk's guard, same suite family).
+            return [] if seen.key?(schema_def)
+
+            seen[schema_def] = true
 
             own = []
             complex_wildcard = schema_def.any_attribute if
@@ -1234,7 +1254,12 @@ module Lutaml
             # through extension and restriction alike — as its own
             # layer beside the derived one.
             base = derivation_base(schema_def, repository)
-            groups = base ? collect_any_attribute(base, repository) : []
+            groups = if base
+                       collect_any_attribute(base, repository, nil,
+                                             seen)
+                     else
+                       []
+                     end
             groups.unshift(own) unless own.empty?
             groups
           end
