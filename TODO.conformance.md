@@ -1496,3 +1496,22 @@ RUNNER: conformance:w3c:run now SHARDS the batch subprocesses
 Same batch files, same JSON semantics — the ledger rerun path threads
 the reading's version now (LEDGER_VERSION on generate/check).
 
+
+## The upstream-delivery ride (2026-11-26): 159 wins, zero regressions
+
+THE RIDE THE 1.1 CAMPAIGN WAITED FOR: moxml#579 (CTA/openContent
+evaluation) and lutaml-model#1203 (the 1.1 constructs dropped at
+parse) SHIPPED the same day — moxml 0.6.19 + leptris 1.9.446 +
+lutaml-model 0.8.185 adopted after the ride battery (39/39).
+
+- 1.0 ledger: 4669/4696, BYTE-STABLE (zero wins/regressions).
+- 1.1 ledger: 5561 → **5688/6048 (94.06%)** — 159 wins, zero
+  regressions, baseline regenerated. Families: assertions 39
+  (Assert 25, assert 7, assertion 7 — the constructs now flow
+  through the model to the engine), precisionDecimal 19, idIDREF 29,
+  openContent+Open 14, timezone semantics 15 (Zone 11,
+  explicitTimezone 4), VC/vc 11. The #298 triage queue SHRINKS by
+  the upstream-resolved families; the remaining 360 are its
+  re-scoped surface.
+- The lutaml-model floor raise (0.8.156 → 0.8.178, release 1.2.121)
+  stays valid; the lockfile rides 0.8.185 within the constraint.
