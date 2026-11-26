@@ -1,0 +1,50 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://example.com/diff"
+  xmlns:tns="http://example.com/diff"
+  elementFormDefault="qualified">
+
+  <xs:complexType name="BaseType">
+    <xs:sequence>
+      <xs:element name="alpha" type="xs:string"/>
+      <xs:element name="beta" type="xs:int"/>
+    </xs:sequence>
+    <xs:attribute name="tag" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="DerivedType">
+    <xs:complexContent>
+      <xs:extension base="tns:BaseType">
+        <xs:sequence>
+          <xs:element name="extra" type="xs:string"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="OldNameType">
+    <xs:sequence>
+      <xs:element name="payload" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="LevelType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="low"/>
+      <xs:enumeration value="high"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:attribute name="mode" type="xs:string"/>
+
+  <xs:element name="document" type="tns:BaseType"/>
+
+  <xs:group name="CoreGroup">
+    <xs:sequence>
+      <xs:element name="core-one" type="xs:string"/>
+    </xs:sequence>
+  </xs:group>
+
+  <xs:attributeGroup name="CoreAttributes">
+    <xs:attribute name="core-attr" type="xs:string"/>
+  </xs:attributeGroup>
+</xs:schema>

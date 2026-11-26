@@ -1,0 +1,108 @@
+{
+  "changes": [
+    {
+      "category": "added",
+      "kind": "complex_type",
+      "namespace": "http://example.com/diff",
+      "local_name": "AddedType"
+    },
+    {
+      "category": "added",
+      "kind": "element",
+      "namespace": "http://example.com/diff",
+      "local_name": "archive"
+    },
+    {
+      "category": "modified",
+      "kind": "complex_type",
+      "namespace": "http://example.com/diff",
+      "local_name": "BaseType",
+      "modifications": [
+        {
+          "aspect": "attributes",
+          "new": "version"
+        },
+        {
+          "aspect": "particles",
+          "new": "gamma"
+        }
+      ]
+    },
+    {
+      "category": "modified",
+      "kind": "group",
+      "namespace": "http://example.com/diff",
+      "local_name": "CoreGroup",
+      "modifications": [
+        {
+          "aspect": "particles",
+          "new": "core-two"
+        }
+      ]
+    },
+    {
+      "category": "modified",
+      "kind": "complex_type",
+      "namespace": "http://example.com/diff",
+      "local_name": "DerivedType",
+      "modifications": [
+        {
+          "aspect": "particles",
+          "new": "bonus"
+        }
+      ]
+    },
+    {
+      "category": "modified",
+      "kind": "simple_type",
+      "namespace": "http://example.com/diff",
+      "local_name": "LevelType",
+      "modifications": [
+        {
+          "aspect": "facets",
+          "new": "enumeration=medium"
+        }
+      ]
+    },
+    {
+      "category": "modified",
+      "kind": "element",
+      "namespace": "http://example.com/diff",
+      "local_name": "document",
+      "modifications": [
+        {
+          "aspect": "type",
+          "old": "tns:BaseType",
+          "new": "tns:DerivedType"
+        }
+      ]
+    },
+    {
+      "category": "modified",
+      "kind": "attribute",
+      "namespace": "http://example.com/diff",
+      "local_name": "mode",
+      "modifications": [
+        {
+          "aspect": "use",
+          "old": "optional",
+          "new": "required"
+        }
+      ]
+    },
+    {
+      "category": "moved_namespace",
+      "kind": "complex_type",
+      "namespace": "http://example.com/diff-new",
+      "local_name": "MoveTargetType",
+      "renamed_from": "{http://example.com/diff-old}MoveTargetType"
+    },
+    {
+      "category": "renamed",
+      "kind": "complex_type",
+      "namespace": "http://example.com/diff",
+      "local_name": "NewNameType",
+      "renamed_from": "{http://example.com/diff}OldNameType"
+    }
+  ]
+}

@@ -59,6 +59,15 @@ require_relative "xsd/namespace_remapper"
 require_relative "xsd/schema_file_validation_results"
 require_relative "xsd/schema_dependency_analyzer"
 require_relative "xsd/type_hierarchy_analyzer"
+
+# Schema diff (#288): the models load through autoload so the diff
+# machinery stays out of the hot require path.
+module Lutaml
+  module Xsd
+    autoload :SchemaDiff, "lutaml/xsd/schema_diff"
+  end
+end
+
 require_relative "xsd/xsd_spec_validator"
 require_relative "xsd/cli"
 
