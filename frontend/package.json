@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
+    "axe-core": "^4.14.1",
     "puppeteer": "^25.1.0",
     "terser": "^5.46.1",
     "typescript": "^5.4.0",

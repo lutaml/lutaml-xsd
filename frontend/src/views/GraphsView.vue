@@ -202,7 +202,7 @@ function findComponent(name: string, schemaHint?: string): ComponentTarget | nul
 
 .graphs-subtitle {
   margin: 0;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
@@ -211,8 +211,29 @@ function findComponent(name: string, schemaHint?: string): ComponentTarget | nul
   gap: 0.5rem;
 }
 
+.graphs-tabs .tab-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.graphs-tabs .tab-btn:hover {
+  background: var(--bg-hover);
+}
+
+.graphs-tabs .tab-btn.active {
+  background: var(--color-accent-alpha);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: 600;
+}
+
 .graphs-empty {
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   padding: 2rem 0;
   text-align: center;
 }
@@ -232,7 +253,7 @@ function findComponent(name: string, schemaHint?: string): ComponentTarget | nul
   border: none;
   cursor: pointer;
   padding: 0 0.15rem;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .usage-caret {
@@ -242,7 +263,7 @@ function findComponent(name: string, schemaHint?: string): ComponentTarget | nul
 .usage-type-link {
   background: none;
   border: none;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   cursor: pointer;
   font-weight: 600;
   font-size: 0.92rem;
@@ -256,7 +277,7 @@ function findComponent(name: string, schemaHint?: string): ComponentTarget | nul
 .usage-count {
   margin-left: auto;
   background: var(--color-accent-alpha);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   border-radius: 999px;
   padding: 0.1rem 0.55rem;
   font-size: 0.78rem;
@@ -284,7 +305,7 @@ function findComponent(name: string, schemaHint?: string): ComponentTarget | nul
 }
 
 .usage-ref:hover {
-  background: var(--color-bg-secondary);
+  background: var(--bg-hover);
 }
 
 .usage-ref-name {
@@ -292,7 +313,7 @@ function findComponent(name: string, schemaHint?: string): ComponentTarget | nul
 }
 
 .usage-ref-schema {
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   font-size: 0.78rem;
   margin-left: auto;
 }
@@ -301,19 +322,19 @@ function findComponent(name: string, schemaHint?: string): ComponentTarget | nul
   font-size: 0.68rem;
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
-  background: var(--color-bg-secondary);
-  color: var(--color-text-secondary);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   text-transform: capitalize;
 }
 
 .badge-element {
   background: var(--color-accent-alpha);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .badge-derivation {
   background: rgba(46, 125, 50, 0.15);
-  color: #2e7d32;
+  color: var(--color-derivation-text);
 }
 
 .chain-steps {
@@ -324,13 +345,13 @@ function findComponent(name: string, schemaHint?: string): ComponentTarget | nul
 }
 
 .chain-arrow {
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .chain-hop {
   background: none;
   border: none;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   cursor: pointer;
   font-size: 0.88rem;
   padding: 0;

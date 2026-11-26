@@ -11,6 +11,10 @@
   --color-accent: #dbab3e;
   --color-accent-light: #f0ca6e;
   --color-accent-alpha: rgba(219, 171, 62, 0.12);
+  /* Text-grade accent: AA contrast on tinted/elevated backgrounds,
+     where the raw accent (2.1:1 on white) fails */
+  --color-accent-text: #7c5f14;
+  --color-derivation-text: #1a5c20;
 
   /* Teal (#60c3a7) */
   --color-teal: #60c3a7;
@@ -39,7 +43,8 @@
   /* Text - Warm Grays */
   --text-primary: #1C1917;
   --text-secondary: #57534E;
-  --text-muted: #A8A29E;
+  /* AA: 4.5:1+ on the light backgrounds (the old #A8A29E was 2.4:1) */
+  --text-muted: #6E6A65;
 
   /* Borders */
   --border-light: #E7E5E4;
@@ -118,7 +123,11 @@
 
   --text-primary: #e8edf4;
   --text-secondary: #a8b4c8;
-  --text-muted: #6b7a8f;
+  /* AA: 4.5:1+ on the dark backgrounds (the old #6b7a8f was ~3.4:1) */
+  --text-muted: #8e9cb4;
+
+  --color-accent-text: #f0ca6e;
+  --color-derivation-text: #a5d6a7;
 
   --border-light: #3a4256;
   --border-medium: #4a5572;
@@ -133,6 +142,11 @@
   --color-red-alpha: rgba(179, 31, 36, 0.15);
   --color-green: #7cc242;
   --color-green-alpha: rgba(124, 194, 66, 0.15);
+
+  /* AA link/primary colors: the light-theme navy (#26489e) sinks
+     into the dark backgrounds */
+  --color-primary: #7db5e2;
+  --color-primary-dark: #9fc4ea;
 
   /* Badge colors - dark mode with brand colors */
   --badge-element: #60c3a7;

@@ -565,8 +565,8 @@ function formatDate(isoString?: string): string {
 }
 
 .footer-text a {
-  color: var(--color-primary);
-  text-decoration: none;
+  color: var(--color-primary-dark, var(--color-primary));
+  text-decoration: underline;
 }
 
 .footer-text a:hover {

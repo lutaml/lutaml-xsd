@@ -210,3 +210,8 @@ end
 
 # Hook into bundler's release task to ensure frontend is built
 Rake::Task["release"].enhance(["build_frontend"])
+
+desc "axe-core accessibility audit of the generated SPA (needs Chrome; skips on browser-less lanes)"
+task :axe do
+  system("bundle exec ruby script/axe_audit") || raise("axe audit failed")
+end

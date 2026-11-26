@@ -1,0 +1,111 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# axe-core accessibility audit of the generated SPA (#289's AA bar,
+# mirroring lutaml-jsonschema's script/axe_audit). Uses the axe-core
+# copy vendored by the frontend's npm devDependencies (sovereign: no
+# CDN fetch). Exits non-zero when violations are found; skips cleanly
+# when no Chrome binary or no built frontend exists, so `rake` stays
+# green on browser-less lanes (windows CI) while the browser-equipped
+# lanes (ubuntu/macos) always run it.
+
+require "json"
+require "open3"
+require "fileutils"
+require "tmpdir"
+require "lutaml/xsd"
+
+CHROME_CANDIDATES = [
+  ENV.fetch("CHROME_BIN", nil),
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/google-chrome",
+].freeze
+
+ROOT = File.expand_path("..", __dir__)
+PACKAGE = ARGV.first || File.join(ROOT, "examples", "04-metaschema",
+                                  "metaschema.lxr")
+
+chrome = CHROME_CANDIDATES.find { |path| path && File.executable?(path) }
+unless chrome
+  warn "axe audit: SKIP (no Chrome binary; set CHROME_BIN to enable)"
+  exit 0
+end
+
+dist = File.join(ROOT, "frontend", "dist")
+unless File.exist?(File.join(dist, "app.iife.js"))
+  warn "axe audit: SKIP (frontend/dist missing; run `rake build_frontend`)"
+  exit 0
+end
+
+axe = File.join(ROOT, "frontend", "node_modules", "axe-core", "axe.min.js")
+unless File.exist?(axe)
+  abort "axe audit: frontend/node_modules/axe-core missing; " \
+        "run `npm install` in frontend/"
+end
+
+INJECT = <<~SCRIPT.freeze
+  <script src="file://#{axe}"></script>
+  <script>
+    window.addEventListener('load', () => setTimeout(() => {
+      axe.run().then((r) => {
+        document.body.setAttribute('data-axe', JSON.stringify({
+          violations: r.violations.map((v) => ({ id: v.id, impact: v.impact,
+                                                 nodes: v.nodes.length,
+                                                 targets: v.nodes.map((n) => n.target.join(' ')) })),
+          passes: r.passes.length,
+        }));
+        document.title = 'AXE-DONE';
+      }).catch((e) => {
+        document.body.setAttribute('data-axe', JSON.stringify({ error: String(e) }));
+        document.title = 'AXE-ERROR';
+      });
+    }, 4000));
+  </script>
+SCRIPT
+
+dir = Dir.mktmpdir("axe-audit")
+package = Lutaml::Xsd::SchemaRepositoryPackage.load(PACKAGE)
+Lutaml::Xsd::Spa::Generator.new(package, File.join(dir, "index.html"),
+                                mode: "inlined").generate
+
+# the package-level graph view (the #289 acceptance target) is
+# audited beside the home view — the new views must meet the same bar
+File.write(File.join(dir, "audit.html"),
+           File.read(File.join(dir, "index.html")).sub("</body>", "#{INJECT}\n</body>"))
+
+VARIANTS = [
+  { label: "home", page: "audit.html", query: "" },
+  { label: "graphs", page: "audit.html", query: "#/graphs" },
+].freeze
+
+failed = false
+
+VARIANTS.each do |variant|
+  dom, err, status = Open3.capture3(
+    chrome, "--headless=new", "--disable-gpu", "--virtual-time-budget=20000",
+    "--dump-dom", "file://#{File.join(dir, variant[:page])}#{variant[:query]}"
+  )
+  abort "axe audit: Chrome failed: #{err[0, 400]}" unless status.success?
+
+  match = dom[/data-axe="([^"]*)"/, 1]
+  abort "axe audit (#{variant[:label]}): no result captured" unless match
+
+  result = JSON.parse(match.gsub("&quot;", '"'))
+  abort "axe audit: axe failed: #{result['error']}" if result["error"]
+
+  if result["violations"].empty?
+    puts "axe audit (#{variant[:label]}): PASS (#{result['passes']} rule groups)"
+  else
+    failed = true
+    puts "axe audit (#{variant[:label]}): " \
+         "#{result['violations'].sum { |v| v['nodes'] }} violations"
+    result["violations"].each do |violation|
+      puts "  [#{violation['impact']}] #{violation['id']} x#{violation['nodes']}"
+      violation["targets"].each { |target| puts "    #{target}" }
+    end
+  end
+end
+
+exit 1 if failed

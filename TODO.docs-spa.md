@@ -32,12 +32,18 @@ tracked in TODO.conformance.md.
 
 All items here are tracked in issue #289 (the comprehension package).
 
-- [ ] Global search across types/elements/attributes/groups — DEFERRED:
-      the search index exists (`build_index`); ranking design + UI work
-      (#289)
-- [ ] Usage navigation matrix for attributes and groups — DEFERRED:
-      liquid methods pattern exists; extend `used_by` coverage first
-      (#289)
+- [x] Global search ranking — DONE (2026-11-26, the graphs round):
+      exact-name > prefix > substring, entrypoint schemas boosted,
+      deprecated demoted, types edge elements as tiebreak
+      (useSearch scoreResult; composable tests pin the ordering)
+- [x] The a11y pass over the new views — DONE (2026-11-26): the axe
+      gate (`rake axe`, script/axe_audit — sovereign axe-core copy,
+      headless Chrome, skips on browser-less lanes like the
+      lutaml-jsonschema precedent) audits the home AND /graphs views;
+      both PASS the AA bar. The pass also fixed the app-wide findings:
+      the main landmark + focusable content area, AA-grade muted and
+      dark-theme primary/link tokens, the tab styling that never
+      applied outside HomeView, and the sidebar footer links
 - [x] Type hierarchy graph in the SPA — DONE (2026-11-26): the
       serializer ships per-type derivation chains (hierarchy map) AND
       the loading path is fixed (resolve on package load; the
@@ -69,6 +75,6 @@ All items here are tracked in issue #289 (the comprehension package).
 
 - [ ] SPA generation performance on large corpora — DEFERRED until the
       post-recalibration corpus exists (TODO.performance.md)
-- [ ] Accessibility pass on the SPA — DEFERRED (rides the next UI change)
+- [x] Accessibility pass on the SPA — DONE 2026-11-26: the axe gate audits home + /graphs at the AA bar (`rake axe`); the app-wide fixes shipped with it (see the Navigation section)
 - [ ] Nightly demo package regeneration in CI — DEFERRED: cimas-owned
       workflow; needs an owner decision on schedule
