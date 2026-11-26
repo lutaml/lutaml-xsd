@@ -102,6 +102,10 @@ module Lutaml
       option :title,
              type: :string,
              desc: "Documentation title"
+      option :diff,
+             type: :string,
+             desc: "Path to the PREVIOUS package version; embeds the " \
+                   "component-level schema diff in the SPA"
       def spa(package_path)
         Commands::GenerateSpaCommand.new(package_path, options).run
       end

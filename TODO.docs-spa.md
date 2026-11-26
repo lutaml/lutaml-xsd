@@ -66,14 +66,15 @@ All items here are tracked in issue #289 (the comprehension package).
 
 ## Evolution
 
-- [~] Schema diff between package versions — the DESIGN and the ENGINE
-      are DONE (2026-11-26, the schema-diff round):
+- [x] Schema diff between package versions — DONE (2026-11-26, the
+      schema-diff rounds):
       docs/superpowers/specs/2026-11-26-schema-diff-design.md (identity
       key, taxonomy, rename heuristic), Lutaml::Xsd::SchemaDiff with
       the ChangeSet/Change/Modification models (lutaml-model
       serialization), and the golden-contract spec over the versioned
-      fixture corpus. Remaining: the CLI flag + the SPA change-list
-      view
+      fixture corpus; `lutaml-xsd spa --diff OLD.lxr` embeds the
+      ChangeSet and the SPA renders the grouped change list with
+      click-through (axe-audited at the AA bar)
 - [ ] Coverage view wired to `coverage_analyzer` — DEFERRED (#289)
 
 ## Polish

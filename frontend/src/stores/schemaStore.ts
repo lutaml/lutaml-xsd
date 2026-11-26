@@ -16,6 +16,7 @@ export const useSchemaStore = defineStore('schema', () => {
   const metadata = computed(() => schemaData.value?.metadata)
   const hierarchy = computed(() => schemaData.value?.hierarchy ?? {})
   const usage = computed<Record<string, UsageRef[]>>(() => schemaData.value?.usage ?? {})
+  const diff = computed(() => schemaData.value?.diff ?? null)
 
   const selectedSchema = computed(() =>
     schemas.value.find(s => s.id === selectedSchemaId.value)
@@ -170,6 +171,7 @@ export const useSchemaStore = defineStore('schema', () => {
     metadata,
     hierarchy,
     usage,
+    diff,
     selectedSchema,
     selectedType,
     schemaCounts,

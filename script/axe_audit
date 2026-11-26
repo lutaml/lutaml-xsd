@@ -78,6 +78,7 @@ File.write(File.join(dir, "audit.html"),
 VARIANTS = [
   { label: "home", page: "audit.html", query: "" },
   { label: "graphs", page: "audit.html", query: "#/graphs" },
+  { label: "diff", page: "audit.html", query: "#/diff" },
 ].freeze
 
 failed = false

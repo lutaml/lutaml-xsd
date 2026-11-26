@@ -23,6 +23,11 @@ const router = createRouter({
       path: '/graphs',
       name: 'graphs',
       component: () => import('./views/GraphsView.vue')
+    },
+    {
+      path: '/diff',
+      name: 'diff',
+      component: () => import('./views/DiffView.vue')
     }
   ]
 })

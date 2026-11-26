@@ -121,17 +121,34 @@ module Lutaml
         )
       end
 
-      # Extract every named component from the repository's schemas.
+      # Extract every named component from the repository's own
+      # schemas (and their resolved import/include children). The
+      # ownership scope keeps the diff isolated from other schemas
+      # sharing the process-global cache.
       #
       # @param repository [SchemaRepository]
       # @return [Hash{String => Component}]
       def components(repository)
         result = {}
-        repository.all_schemas.each_value do |schema|
-          namespace = schema.target_namespace.to_s
-          collect_components(schema, namespace, result)
+        sources = repository.owned_schemas || repository.all_schemas || {}
+        sources.each_value do |schema|
+          collect_schema_tree(schema, result)
         end
         result
+      end
+
+      # Walks a schema and its nested import/include children
+      # (resolved Schema objects), each contributing under its OWN
+      # target namespace.
+      def collect_schema_tree(schema, result, seen = {}.compare_by_identity)
+        return if schema.nil? || seen.key?(schema)
+
+        seen[schema] = true
+        collect_components(schema, schema.target_namespace.to_s, result)
+
+        Array(schema.import).concat(Array(schema.include)).each do |child|
+          collect_schema_tree(child, result, seen)
+        end
       end
 
       def collect_components(schema, namespace, result)

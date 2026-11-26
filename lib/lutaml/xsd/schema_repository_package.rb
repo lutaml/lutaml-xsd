@@ -535,7 +535,7 @@ module Lutaml
       # Load serialized schemas into repository
       # @param repository [SchemaRepository] Repository to load into
       # @param serialized_schemas_data [Array<Hash>] Serialized schema data from metadata
-      def load_serialized_schemas(_repository, serialized_schemas_data)
+      def load_serialized_schemas(repository, serialized_schemas_data)
         return unless serialized_schemas_data.is_a?(Array)
 
         # Parse SerializedSchema objects from metadata hashes
@@ -547,12 +547,12 @@ module Lutaml
           end
         end
 
-        # Deserialize each schema and add to global processed_schemas cache
+        # Deserialize each schema and add to global processed_schemas
+        # cache, under the repository's ownership
         serialized_schemas.each do |serialized_schema|
           schema = serialized_schema.to_schema
-          Lutaml::Xml::Schema::Xsd::Schema.schema_processed(
-            serialized_schema.file_path, schema
-          )
+          repository.register_owned_schema(serialized_schema.file_path,
+                                           schema)
         end
 
         # Don't mark as resolved yet - let the caller call resolve()
@@ -689,8 +689,7 @@ metadata)
 
           # Register schema in global cache using the actual schema file path
           # This makes the schema available for type resolution and queries
-          Lutaml::Xml::Schema::Xsd::Schema.schema_processed(actual_schema_path,
-                                                            schema)
+          repository.register_owned_schema(actual_schema_path, schema)
         end
       end
 
