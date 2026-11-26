@@ -9,7 +9,7 @@ module Lutaml
 
       def initialize(repository)
         @repository = repository
-        @type_index = repository.instance_variable_get(:@type_index)
+        @type_index = repository.type_index
       end
 
       # Find all dependencies of a type (what it depends on)
@@ -67,7 +67,8 @@ module Lutaml
 
           # Check if this type references our target
           next unless deps.any? do |dep|
-            matches_target?(dep, result.namespace, result.local_name)
+            matches_target?(dep, result.namespace, result.local_name,
+                            type_info[:namespace])
           end
 
           dependents_list << {
@@ -194,16 +195,27 @@ module Lutaml
       # @param definition [Object] XSD type definition
       # @return [Array<String>] List of referenced type qualified names
       def extract_type_references(definition)
+        # The type index also holds attributeGroup declarations whose
+        # shapes lack the derivation accessors (raising through
+        # lutaml-model's method_missing) — types and elements carry
+        # the reference edges.
         refs = []
 
-        refs.concat(extract_from_complex_content(definition.complex_content)) if definition.complex_content
-        refs.concat(extract_from_simple_content(definition.simple_content)) if definition.simple_content
-        refs << definition.restriction.base if definition.restriction&.base
-        refs.concat(extract_from_sequence(definition.sequence)) if definition.sequence
-        refs.concat(extract_from_choice(definition.choice)) if definition.choice
-        refs.concat(extract_from_all(definition.all)) if definition.all
-        refs.concat(extract_from_attributes(definition.attribute)) if definition.attribute
-        refs << definition.type if definition.type
+        case definition
+        when Lutaml::Xml::Schema::Xsd::ComplexType
+          refs.concat(extract_from_complex_content(definition.complex_content)) if definition.complex_content
+          refs.concat(extract_from_simple_content(definition.simple_content)) if definition.simple_content
+          refs.concat(extract_from_sequence(definition.sequence)) if definition.sequence
+          refs.concat(extract_from_choice(definition.choice)) if definition.choice
+          refs.concat(extract_from_all(definition.all)) if definition.all
+          refs.concat(extract_from_attributes(definition.attribute)) if definition.attribute
+          refs << definition.type if definition.type
+        when Lutaml::Xml::Schema::Xsd::SimpleType
+          refs << definition.restriction.base if definition.restriction&.base
+          refs.concat(extract_from_attributes(definition.attribute)) if definition.attribute
+        when Lutaml::Xml::Schema::Xsd::Element
+          refs << definition.type if definition.type
+        end
 
         refs.compact.uniq.grep_v(/^xsd?:/)
       end
@@ -331,10 +343,17 @@ module Lutaml
         refs
       end
 
-      # Check if a type reference matches the target
-      def matches_target?(ref, target_namespace, target_local_name)
+      # Check if a type reference matches the target. Unprefixed
+      # references resolve against the referencing type's namespace
+      # (chameleon schemas write bare local names).
+      def matches_target?(ref, target_namespace, target_local_name,
+                          owner_namespace = nil)
         # Try to resolve the reference
         result = repository.find_type(ref)
+        result = repository.find_type("{#{owner_namespace}}#{ref}") if
+          !result.resolved? && !ref.include?(":") &&
+            !ref.start_with?("{") && owner_namespace.to_s.match?(/\S/)
+
         return false unless result.resolved?
 
         result.namespace == target_namespace && result.local_name == target_local_name

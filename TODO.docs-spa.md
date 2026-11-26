@@ -41,10 +41,18 @@ All items here are tracked in issue #289 (the comprehension package).
 - [~] Type hierarchy graph in the SPA — the DATA layer is DONE
       (2026-11-25): the serializer ships per-type derivation chains as
       the `hierarchy` map and type cards render chain-to-root; the
-      graph VIEW and the analyzer-index loading-path design remain
-      (#289 — the drift discovery is recorded there)
-- [ ] Dependency graph page — DEFERRED (#289; the DependencyGrapher
-      data layer exists, the same loading-path design pass applies)
+      LOADING PATH is FIXED (2026-11-26): `SchemaRepositoryPackage#load_repository`
+      now runs the resolve step (the type index + namespace registry
+      used to stay empty on loaded packages), and the
+      TypeHierarchyAnalyzer works end-to-end (real-model specs over
+      the metaschema package). Remaining: the graph VIEW and wiring
+      the analyzer into the SPA build (#289)
+- [~] Dependency graph page — the data layer WORKS now (2026-11-26):
+      DependencyGrapher resolves references across the loaded
+      repository (AttributeGroup index entries guarded, chameleon
+      unprefixed refs resolved against the referencing type's
+      namespace). Remaining: the build-time JSON emission + the page
+      (#289)
 
 ## Evolution
 

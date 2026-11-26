@@ -86,93 +86,101 @@ RSpec.describe Lutaml::Xsd::TypeHierarchyAnalyzer do
 
   describe "private methods" do
     describe "#extract_base_type" do
-      context "with complex content extension" do
-        let(:extension) { double("Extension", base: "test:BaseType") }
-        let(:complex_content) do
-          double("ComplexContent", extension: extension, restriction: nil)
-        end
-        let(:complex_type) do
-          double("ComplexType", complex_content: complex_content,
-                                simple_content: nil, restriction: nil)
-        end
-
-        it "extracts base type from complex content extension" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to eq("test:BaseType")
-        end
+      # Real parsed models — the class gate in extract_base_type
+      # (added when attributeGroup index entries crashed the walk)
+      # rejects doubles.
+      def type_from_schema(schema_xml, type_name)
+        schema = Lutaml::Xml::Schema::Xsd.parse(schema_xml)
+        Array(schema.complex_type).find { |t| t.name == type_name } ||
+          Array(schema.simple_type).find { |t| t.name == type_name }
       end
 
-      context "with complex content restriction" do
-        let(:restriction) { double("Restriction", base: "test:BaseType") }
-        let(:complex_content) do
-          double("ComplexContent", extension: nil, restriction: restriction)
-        end
-        let(:complex_type) do
-          double("ComplexType", complex_content: complex_content,
-                                simple_content: nil, restriction: nil)
-        end
-
-        it "extracts base type from complex content restriction" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to eq("test:BaseType")
-        end
+      it "extracts the base from a complexContent extension" do
+        definition = type_from_schema(<<~XSD, "Derived")
+          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:complexType name="Derived">
+              <xs:complexContent>
+                <xs:extension base="test:BaseType"/>
+              </xs:complexContent>
+            </xs:complexType>
+          </xs:schema>
+        XSD
+        expect(analyzer.send(:extract_base_type, definition))
+          .to eq("test:BaseType")
       end
 
-      context "with simple content extension" do
-        let(:extension) { double("Extension", base: "xs:string") }
-        let(:simple_content) do
-          double("SimpleContent", extension: extension, restriction: nil)
-        end
-        let(:complex_type) do
-          double("ComplexType", complex_content: nil,
-                                simple_content: simple_content, restriction: nil)
-        end
-
-        it "extracts base type from simple content extension" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to eq("xs:string")
-        end
+      it "extracts the base from a complexContent restriction" do
+        definition = type_from_schema(<<~XSD, "Derived")
+          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:complexType name="Derived">
+              <xs:complexContent>
+                <xs:restriction base="test:BaseType"/>
+              </xs:complexContent>
+            </xs:complexType>
+          </xs:schema>
+        XSD
+        expect(analyzer.send(:extract_base_type, definition))
+          .to eq("test:BaseType")
       end
 
-      context "with simple content restriction" do
-        let(:restriction) { double("Restriction", base: "xs:integer") }
-        let(:simple_content) do
-          double("SimpleContent", extension: nil, restriction: restriction)
-        end
-        let(:complex_type) do
-          double("ComplexType", complex_content: nil,
-                                simple_content: simple_content, restriction: nil)
-        end
-
-        it "extracts base type from simple content restriction" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to eq("xs:integer")
-        end
+      it "extracts the base from a simpleContent extension" do
+        definition = type_from_schema(<<~XSD, "Derived")
+          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:complexType name="Derived">
+              <xs:simpleContent>
+                <xs:extension base="xs:string"/>
+              </xs:simpleContent>
+            </xs:complexType>
+          </xs:schema>
+        XSD
+        expect(analyzer.send(:extract_base_type, definition))
+          .to eq("xs:string")
       end
 
-      context "with simple type restriction" do
-        let(:restriction) { double("Restriction", base: "xs:string") }
-        let(:simple_type) do
-          double("SimpleType", complex_content: nil, simple_content: nil,
-                               restriction: restriction)
-        end
-
-        it "extracts base type from simple type restriction" do
-          base = analyzer.send(:extract_base_type, simple_type)
-          expect(base).to eq("xs:string")
-        end
+      it "extracts the base from a simpleContent restriction" do
+        definition = type_from_schema(<<~XSD, "Derived")
+          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:complexType name="Derived">
+              <xs:simpleContent>
+                <xs:restriction base="xs:integer"/>
+              </xs:simpleContent>
+            </xs:complexType>
+          </xs:schema>
+        XSD
+        expect(analyzer.send(:extract_base_type, definition))
+          .to eq("xs:integer")
       end
 
-      context "with no base type" do
-        let(:complex_type) do
-          double("ComplexType", complex_content: nil, simple_content: nil,
-                                restriction: nil)
-        end
+      it "extracts the base from a simpleType restriction" do
+        definition = type_from_schema(<<~XSD, "Derived")
+          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:simpleType name="Derived">
+              <xs:restriction base="xs:string"/>
+            </xs:simpleType>
+          </xs:schema>
+        XSD
+        expect(analyzer.send(:extract_base_type, definition))
+          .to eq("xs:string")
+      end
 
-        it "returns nil" do
-          base = analyzer.send(:extract_base_type, complex_type)
-          expect(base).to be_nil
-        end
+      it "returns nil without a derivation" do
+        definition = type_from_schema(<<~XSD, "Plain")
+          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:complexType name="Plain">
+              <xs:sequence>
+                <xs:element name="a" type="xs:int"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:schema>
+        XSD
+        expect(analyzer.send(:extract_base_type, definition)).to be_nil
+      end
+
+      it "skips shapes without derivation accessors" do
+        definition = Lutaml::Xml::Schema::Xsd::AttributeGroup.new(
+          name: "attrs",
+        )
+        expect(analyzer.send(:extract_base_type, definition)).to be_nil
       end
     end
 
