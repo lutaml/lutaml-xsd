@@ -98,6 +98,66 @@ RSpec.describe Lutaml::Xsd::Spa::SchemaSerializer do
     end
   end
 
+  describe "#serialize usage graph" do
+    let(:usage_schema_xml) do
+      <<~XML
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.com/test">
+          <xs:element name="Root" type="ns:ChildType"/>
+          <xs:complexType name="ChildType">
+            <xs:complexContent>
+              <xs:extension base="ns:BaseType">
+                <xs:sequence>
+                  <xs:element name="item" type="ns:ItemType"/>
+                </xs:sequence>
+                <xs:attribute name="flag" type="ns:FlagType"/>
+              </xs:extension>
+            </xs:complexContent>
+          </xs:complexType>
+          <xs:complexType name="BaseType"/>
+          <xs:simpleType name="ItemType">
+            <xs:restriction base="xs:string"/>
+          </xs:simpleType>
+          <xs:simpleType name="FlagType">
+            <xs:restriction base="xs:token"/>
+          </xs:simpleType>
+        </xs:schema>
+      XML
+    end
+
+    let(:usage_serializer) do
+      schema = Lutaml::Xml::Schema::Xsd.parse(usage_schema_xml)
+      repo = Lutaml::Xsd::SchemaRepository.new
+      def repo.all_schemas
+        { "usage-schema.xsd" => @test_schema }
+      end
+
+      def repo.test_schema=(schema)
+        @test_schema = schema
+      end
+      repo.test_schema = schema
+      described_class.new(repo, config)
+    end
+
+    it "records element, particle, attribute and derivation references" do
+      usage = usage_serializer.serialize[:usage]
+
+      expect(usage).to be_a(Hash)
+      expect(usage["BaseType"]).to include(
+        { by: "derivation", name: "ChildType", schema: "usage-schema" },
+      )
+      expect(usage["ItemType"].map { |r| r[:by] }).to include("particle")
+      expect(usage["FlagType"].map { |r| r[:by] }).to include("attribute")
+    end
+
+    it "excludes builtins and unknown targets" do
+      usage = usage_serializer.serialize[:usage]
+
+      expect(usage).not_to have_key("string")
+      expect(usage).not_to have_key("token")
+    end
+  end
+
   describe "#to_json" do
     it "returns JSON string" do
       json = serializer.to_json(pretty: false)

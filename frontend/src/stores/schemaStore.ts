@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { SchemaData, Schema, ComplexType, SimpleType, SchemaElement, GroupRef, AttributeGroup, SchemaAttribute, Namespace } from '@/types'
+import type { SchemaData, Schema, ComplexType, SimpleType, SchemaElement, GroupRef, AttributeGroup, SchemaAttribute, Namespace, UsageRef } from '@/types'
 
 export const useSchemaStore = defineStore('schema', () => {
   // State
@@ -15,6 +15,7 @@ export const useSchemaStore = defineStore('schema', () => {
   const namespaces = computed(() => schemaData.value?.namespaces ?? [])
   const metadata = computed(() => schemaData.value?.metadata)
   const hierarchy = computed(() => schemaData.value?.hierarchy ?? {})
+  const usage = computed<Record<string, UsageRef[]>>(() => schemaData.value?.usage ?? {})
 
   const selectedSchema = computed(() =>
     schemas.value.find(s => s.id === selectedSchemaId.value)
@@ -168,6 +169,7 @@ export const useSchemaStore = defineStore('schema', () => {
     namespaces,
     metadata,
     hierarchy,
+    usage,
     selectedSchema,
     selectedType,
     schemaCounts,
