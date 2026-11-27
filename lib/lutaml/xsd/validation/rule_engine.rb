@@ -93,11 +93,13 @@ module Lutaml
                            end
               # The binding must agree with the child's OWN namespace:
               # an unqualified ref's global namesake never serves a
-              # qualified local namesake (particlesQ016).
+              # qualified local namesake (particlesQ016). A wildcard-
+              # claimed child keeps the global resolution instead —
+              # the positional particle never claimed it (wild063).
               child_ns = xml_element.namespace_uri.to_s
               expected_ns =
                 resolver.expected_namespace_for(positional).to_s
-              if positional &&
+              if positional && !wildcard_claimed_child?(xml_element) &&
                   ((child_ns.empty? && expected_ns.empty?) ||
                    child_ns == expected_ns)
                 schema_def = positional
@@ -290,6 +292,19 @@ module Lutaml
         # (QFE1700c1: the ref claims the second e2; its content must be
         # validated).
         #
+        # Whether the content matcher claimed this child for a WILDCARD
+        # (as opposed to a declared particle). A wildcard-claimed child
+        # assesses against its RESOLVED global declaration — the
+        # parent's positional particle never claimed it (wild063: the
+        # lax wildcard's third e assesses against the global
+        # positiveInteger, not the sequence's xs:integer namesake).
+        #
+        # @return [Boolean]
+        def wildcard_claimed_child?(child)
+          claim = @collector.content_claims[claim_key(child)]
+          claim && claim.first == :wildcard
+        end
+
         # @return [Boolean]
         def skip_wildcard_subtree?(parent, child, resolver)
           return false unless parent
