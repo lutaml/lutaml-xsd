@@ -1515,3 +1515,28 @@ lutaml-model 0.8.185 adopted after the ride battery (39/39).
   re-scoped surface.
 - The lutaml-model floor raise (0.8.156 → 0.8.178, release 1.2.121)
   stays valid; the lockfile rides 0.8.185 within the constraint.
+
+## The model-0.8.187 ride + the full upstream sweep (2026-11-27)
+
+lutaml-model#1215 (OpenContent.any) and #1216 (simpleType assertion)
+SHIPPED overnight in 0.8.186/187 — the lockfile rides 0.8.187 +
+leptris 1.9.448 (battery 39/39; 1.0 byte-stable; 1.1 5688/6048
+zero-drift — conformance-neutral: the flips wait on the evaluation
+legs).
+
+THE CLASSIFICATION SWEEP (engine-direct vs pipeline, per family over
+the remaining 360): engine-gated filed in one round — moxml#585
+(simple-type assertion evaluation), #587 (asserts on recursive
+element refs, the assert020 class), #588 (fixed-value attribute
+false-rejects through attributeGroup refs, simple001), #589
+(xsd:dateTimeStamp semantics, d3_4_28), #590 (xs:override on the
+xsd_set composition path, over001); model-gated filed —
+lutaml-model#1221 (wildcard notNamespace/notQName, 51 Wild cases),
+#1222 (vc:minVersion/maxVersion drop at parse — the roundtrip erases
+the 1.1 dialect; gates the CTA family and the openContent lane's
+engine compilation even with #1215's any now present).
+
+OURS (the remaining our-stack surface of #298): Id 36, Zone,
+PDecimal remainder, Override wiring (set-composition), the 10 named
+Wild cases (lax resolution + all-compositor), halves of
+Complex/All/XmlVersions/VC, Regex_w3c 22 (contested carryovers).
