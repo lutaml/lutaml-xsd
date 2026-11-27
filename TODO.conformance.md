@@ -1540,3 +1540,25 @@ OURS (the remaining our-stack surface of #298): Id 36, Zone,
 PDecimal remainder, Override wiring (set-composition), the 10 named
 Wild cases (lax resolution + all-compositor), halves of
 Complex/All/XmlVersions/VC, Regex_w3c 22 (contested carryovers).
+
+## The wildcard-claim binding fix (2026-11-27)
+
+THE LAX-RESOLUTION ROUND, first fix: a child the content matcher
+claimed for a WILDCARD now assesses against its RESOLVED GLOBAL
+declaration instead of the parent content model's same-named
+positional particle (which never claimed it — wild063's shape: lax
+##local wildcard, global e=positiveInteger, local e=integer; the
+third e assessed integer and passed -12). The claims machinery now
+gates the positional binding in the engine dispatch
+(wildcard_claimed_child?).
+
+- 1.0 ledger: 4669/4696 BYTE-STABLE (zero wins/regressions).
+- 1.1 ledger: 5688 → **5698/6048 (94.22%)** — 14 wins, zero
+  regressions; baseline regenerated.
+- Filed on the way: moxml#594 (same-named global/local declarations
+  collapse to one engine binding — the engine tier's automaton
+  false-rejects valid locals; pre-existing, separate from this fix).
+- The Wild remainder is DEEP 1.1 machinery: wild068's own comment
+  names it — the dynamic EDT check (Element Delegation Table,
+  wildcard assessment across type hierarchies). wild068/wild073/
+  wild101-104 = the next design round, not patches.
